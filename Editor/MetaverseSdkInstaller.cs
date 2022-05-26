@@ -56,9 +56,8 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 "Cancel"))
                 return false;
             
-            if (Directory.Exists(SdkPath))
-                Directory.Delete(SdkPath, true);
-            
+            if (AssetDatabase.IsValidFolder(SdkPath))
+                AssetDatabase.DeleteAsset(SdkPath);
             AssetDatabase.Refresh();
             ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
             CompilationPipeline.RequestScriptCompilation();
