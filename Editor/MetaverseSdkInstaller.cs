@@ -7,8 +7,9 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 {
     public static class MetaverseSdkInstaller
     {
-        private const string UninstallPath = "Assets/MetaverseCloudEngine/SDK";
-        private const string MetaverseCloudEngineVersionKey = "MVCE_Version";
+        private const string BasePath = "Assets/MetaverseCloudEngine";
+        private const string SdkPath = BasePath + "/SDK";
+        private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
 
         [InitializeOnLoadMethod]
         private static void Init()
@@ -20,11 +21,19 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 return;
             
             var version = name.Split("_")[1];
-            var packageVer = EditorPrefs.GetString(MetaverseCloudEngineVersionKey, null);
-            if (version != packageVer && Uninstall())
+            var packageVer = File.Exists(VersionFilePath) ? File.ReadAllText(VersionFilePath) : null;
+            if (version != packageVer)
             {
-                AssetDatabase.ImportPackage(asset, false);
-                EditorPrefs.SetString(MetaverseCloudEngineVersionKey, version);   
+                if (Uninstall())
+                    AssetDatabase.ImportPackage(asset, false);
+
+                if (!File.Exists(VersionFilePath))
+                {
+                    File.Create(VersionFilePath).Dispose();
+                }
+                
+                File.WriteAllText(VersionFilePath, version);   
+                AssetDatabase.Refresh();
             }
         }
 
@@ -32,13 +41,13 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             if (!EditorUtility.DisplayDialog(
                 "Update Metaverse SDK", "DATA LOSS WARNING: You are about to uninstall the " +
-                $"Metaverse Cloud Engine SDK. This will delete everything underneath '{UninstallPath}'. " +
+                $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
                 "All modifications to these files will be lost as a result. Have you made a backup?", 
                 "Yes. I've made a backup, continue.", 
                 "Cancel"))
                 return false;
             
-            Directory.Delete(UninstallPath, true);
+            Directory.Delete(SdkPath, true);
             AssetDatabase.Refresh();
             ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
             CompilationPipeline.RequestScriptCompilation();
