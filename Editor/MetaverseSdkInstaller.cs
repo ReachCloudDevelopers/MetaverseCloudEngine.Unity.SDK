@@ -21,19 +21,29 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 return;
             
             var version = name.Split("_")[1];
-            var packageVer = File.Exists(VersionFilePath) ? File.ReadAllText(VersionFilePath) : null;
+            var packageVer = GetVersion();
             if (version != packageVer)
             {
                 if (Uninstall())
                     AssetDatabase.ImportPackage(asset, false);
-
-                var versionDir = Path.GetDirectoryName(VersionFilePath);
-                if (!Directory.Exists(versionDir))
-                    Directory.CreateDirectory(versionDir);
-                
-                File.WriteAllText(VersionFilePath, version);   
-                AssetDatabase.Refresh();
+                SetVersion(version);
             }
+        }
+
+        private static string GetVersion()
+        {
+            var packageVer = File.Exists(VersionFilePath) ? File.ReadAllText(VersionFilePath) : null;
+            return packageVer;
+        }
+
+        private static void SetVersion(string version)
+        {
+            var versionDir = Path.GetDirectoryName(VersionFilePath);
+            if (!Directory.Exists(versionDir))
+                Directory.CreateDirectory(versionDir);
+
+            File.WriteAllText(VersionFilePath, version);
+            AssetDatabase.Refresh();
         }
 
         private static bool Uninstall()
