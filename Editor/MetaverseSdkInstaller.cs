@@ -25,7 +25,10 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             if (version != packageVer)
             {
                 if (Uninstall())
+                {
                     AssetDatabase.ImportPackage(asset, false);
+                    CompilationPipeline.RequestScriptCompilation();
+                }
                 SetVersion(version);
             }
         }
