@@ -27,10 +27,11 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 if (Uninstall())
                     AssetDatabase.ImportPackage(asset, false);
 
+                if (!Directory.Exists(VersionFilePath))
+                    Directory.CreateDirectory(VersionFilePath);
+                
                 if (!File.Exists(VersionFilePath))
-                {
                     File.Create(VersionFilePath).Dispose();
-                }
                 
                 File.WriteAllText(VersionFilePath, version);   
                 AssetDatabase.Refresh();
@@ -47,7 +48,9 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 "Cancel"))
                 return false;
             
-            Directory.Delete(SdkPath, true);
+            if (Directory.Exists(SdkPath))
+                Directory.Delete(SdkPath, true);
+            
             AssetDatabase.Refresh();
             ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
             CompilationPipeline.RequestScriptCompilation();
