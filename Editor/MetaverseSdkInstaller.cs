@@ -27,11 +27,9 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 if (Uninstall())
                     AssetDatabase.ImportPackage(asset, false);
 
-                if (!Directory.Exists(VersionFilePath))
-                    Directory.CreateDirectory(VersionFilePath);
-                
-                if (!File.Exists(VersionFilePath))
-                    File.Create(VersionFilePath).Dispose();
+                var versionDir = Path.GetDirectoryName(VersionFilePath);
+                if (!Directory.Exists(versionDir))
+                    Directory.CreateDirectory(versionDir);
                 
                 File.WriteAllText(VersionFilePath, version);   
                 AssetDatabase.Refresh();
