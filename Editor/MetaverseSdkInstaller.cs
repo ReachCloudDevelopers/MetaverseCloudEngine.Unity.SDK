@@ -1,3 +1,4 @@
+#if !METAVERSE_CLOUD_ENGING_INTERNAL
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -14,10 +15,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
-            #if METAVERSE_CLOUD_ENGING_INTERNAL
-            return;
-            #endif
-            
             var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_").FirstOrDefault();
             var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
             var name = Path.GetFileNameWithoutExtension(asset);
@@ -76,4 +73,5 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             return true;
         }
     }
-}
+}            
+#endif
