@@ -14,12 +14,16 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            #if METAVERSE_CLOUD_ENGING_INTERNAL
+            return;
+            #endif
+            
             var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_").FirstOrDefault();
             var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
             var name = Path.GetFileNameWithoutExtension(asset);
             if (string.IsNullOrEmpty(name))
                 return;
-            
+
             var version = name.Split("_")[1];
             var packageVer = GetVersion();
             if (version != packageVer)
@@ -29,6 +33,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                     AssetDatabase.ImportPackage(asset, false);
                     CompilationPipeline.RequestScriptCompilation();
                 }
+
                 SetVersion(version);
             }
         }
@@ -51,17 +56,21 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static bool Uninstall()
         {
-            if (!EditorUtility.DisplayDialog(
-                "Update Metaverse SDK", "DATA LOSS WARNING: You are about to uninstall the " +
-                $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
-                "All modifications to these files will be lost as a result. Have you made a backup?", 
-                "Yes. I've made a backup, continue.", 
-                "Cancel"))
-                return false;
-            
             if (AssetDatabase.IsValidFolder(SdkPath))
+            {
+                if (!EditorUtility.DisplayDialog(
+                        "Update Metaverse SDK",
+                        "DATA LOSS WARNING: You are about to uninstall the " +
+                        $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
+                        "All modifications to these files will be lost as a result. Have you made a backup?",
+                        "Yes. I've made a backup, continue.",
+                        "Cancel"))
+                    return false;
+
                 AssetDatabase.DeleteAsset(SdkPath);
-            AssetDatabase.Refresh();
+                AssetDatabase.Refresh();
+            }
+
             ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
             CompilationPipeline.RequestScriptCompilation();
             return true;

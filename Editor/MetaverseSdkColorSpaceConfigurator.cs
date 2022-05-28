@@ -19,17 +19,17 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void CheckColorSpace()
         {
-            if (PlayerSettings.colorSpace != ColorSpace.Linear)
-            {
-                EditorUtility.DisplayDialog(
-                    "Color Space",
-                    $"The '{PlayerSettings.colorSpace}' color space is not supported. " +
-                    "Only the 'Linear' color space is supported in the Metaverse Cloud SDK. " +
-                    "Your project will now be switched to the 'Linear' Color space. This may " +
-                    "take quite some time depending on the size of your project.",
-                    "Ok");
-                PlayerSettings.colorSpace = ColorSpace.Linear;
-            }
+            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+                return;
+
+            EditorUtility.DisplayDialog(
+                "Color Space",
+                $"The '{PlayerSettings.colorSpace}' color space is not supported. " +
+                "Only the 'Linear' color space is supported in the Metaverse Cloud SDK. " +
+                "Your project will now be switched to the 'Linear' Color space. This may " +
+                "take quite some time depending on the size of your project.",
+                "Ok");
+            PlayerSettings.colorSpace = ColorSpace.Linear;
         }
 
         private static void OnEditorUpdate()
