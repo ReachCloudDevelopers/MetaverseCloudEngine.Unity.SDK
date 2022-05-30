@@ -1,4 +1,4 @@
-//#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !METAVERSE_CLOUD_ENGINE_INTERNAL
 
 using System;
 using System.IO;
@@ -44,7 +44,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 return;
 
             var version = name.Split("_")[1];
-            var packageVer = GetVersion();
+            var packageVer = ReadVersion();
             if (version != packageVer)
             {
                 if (Uninstall())
@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             }
         }
 
-        private static string GetVersion()
+        private static string ReadVersion()
         {
             var packageVer = File.Exists(VersionFilePath) ? File.ReadAllText(VersionFilePath) : null;
             return packageVer;
@@ -97,4 +97,4 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
     }
 }
 
-//#endif
+#endif
