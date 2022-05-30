@@ -1,4 +1,4 @@
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+//#if !METAVERSE_CLOUD_ENGINE_INTERNAL
 
 using System;
 using System.IO;
@@ -8,50 +8,52 @@ using UnityEditor.Compilation;
 
 namespace MetaverseCloudEngine.Unity.Installer.Editor
 {
-    public static class MetaverseSdkInstaller
+    public class MetaverseSdkInstaller : AssetPostprocessor
     {
         private const string BasePath = "Assets/MetaverseCloudEngine";
         private const string SdkPath = BasePath + "/SDK";
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
         private const string PackagePath = "Packages/com.reachcloud.metaverse-cloud-sdk";
 
-        private static DateTime _nextUpdateCheck;
-
-        [InitializeOnLoadMethod]
-        private static void Init() => EditorApplication.update += OnEditorUpdate;
-
-        private static void OnEditorUpdate()
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            try
+            var inPackages = 
+                importedAssets.Any(path => path.StartsWith("Packages/")) ||
+                deletedAssets.Any(path => path.StartsWith("Packages/")) ||
+                movedAssets.Any(path => path.StartsWith("Packages/")) ||
+                movedFromAssetPaths.Any(path => path.StartsWith("Packages/"));
+ 
+            if (inPackages)
             {
-                if (DateTime.UtcNow > _nextUpdateCheck)
-                {
-                    var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] {PackagePath}).FirstOrDefault();
-                    var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
-                    if (string.IsNullOrEmpty(asset))
-                        return;
-
-                    var name = Path.GetFileNameWithoutExtension(asset);
-                    if (string.IsNullOrEmpty(name))
-                        return;
-
-                    var version = name.Split("_")[1];
-                    var packageVer = GetVersion();
-                    if (version != packageVer)
-                    {
-                        if (Uninstall())
-                        {
-                            AssetDatabase.ImportPackage(asset, false);
-                            CompilationPipeline.RequestScriptCompilation();
-                        }
-
-                        SetVersion(version);
-                    }
-                }
+                CheckPackages();
             }
-            finally
+        }
+        
+        [InitializeOnLoadMethod]
+        private static void Init() => CheckPackages();
+
+        private static void CheckPackages()
+        {
+            var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] {PackagePath}).FirstOrDefault();
+            var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
+            if (string.IsNullOrEmpty(asset))
+                return;
+
+            var name = Path.GetFileNameWithoutExtension(asset);
+            if (string.IsNullOrEmpty(name))
+                return;
+
+            var version = name.Split("_")[1];
+            var packageVer = GetVersion();
+            if (version != packageVer)
             {
-                _nextUpdateCheck = DateTime.UtcNow.AddSeconds(15);
+                if (Uninstall())
+                {
+                    AssetDatabase.ImportPackage(asset, false);
+                    CompilationPipeline.RequestScriptCompilation();
+                }
+
+                SetVersion(version);
             }
         }
 
@@ -95,4 +97,4 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
     }
 }
 
-#endif
+//#endif
