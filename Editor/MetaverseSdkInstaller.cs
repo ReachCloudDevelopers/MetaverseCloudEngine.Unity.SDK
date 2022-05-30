@@ -1,4 +1,4 @@
-//#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !METAVERSE_CLOUD_ENGINE_INTERNAL
 
 using System;
 using System.IO;
@@ -95,4 +95,4 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
     }
 }
 
-//#endif
+#endif
