@@ -83,7 +83,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                     $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
                     "All modifications to these files will be lost as a result. Have you made a backup?",
                     "Yes. I've made a backup, continue.",
-                    "Skip"))
+                    "Don't Update"))
                     return false;
 
                 AssetDatabase.DeleteAsset(SdkPath);
