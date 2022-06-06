@@ -32,6 +32,10 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         public static void Add(BuildTargetGroup group, string[] defines)
         {
+            var currentDefines = GetAll(group);
+            if (currentDefines.All(defines.Contains))
+                return;
+
             Defs.Clear();
             Defs.AddRange(GetDefines(group));
             Defs.AddRange(defines.Except(Defs));
@@ -51,6 +55,20 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             UpdateDefines(group, Defs);
         }
 
+        public static string[] GetAll()
+        {
+            var groups = GetBuildGroups();
+            var defines = new List<string>();
+            foreach (var g in groups)
+                defines.AddRange(GetDefines(g));
+            return defines.Distinct().ToArray();
+        }
+
+        public static string[] GetAll(BuildTargetGroup group)
+        {
+            return GetDefines(group).ToArray();
+        }
+        
         private static BuildTargetGroup[] GetBuildGroups()
         {
             return ((BuildTarget[]) Enum.GetValues(typeof(BuildTarget)))
