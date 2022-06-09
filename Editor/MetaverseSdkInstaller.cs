@@ -1,4 +1,4 @@
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+//#if !METAVERSE_CLOUD_ENGINE_INTERNAL
 
 using System;
 using System.IO;
@@ -14,6 +14,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         private const string SdkPath = BasePath + "/SDK";
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
         private const string PackagePath = "Packages/com.reachcloud.metaverse-cloud-sdk";
+        private const string DialogTitle = "Update Metaverse SDK";
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
@@ -47,14 +48,30 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             var packageVer = ReadVersion();
             if (version != packageVer)
             {
+                var installed = false;
                 if (Uninstall())
                 {
-                    AssetDatabase.ImportPackage(asset, false);
-                    CompilationPipeline.RequestScriptCompilation();
+                    installed = true;
+                    Install(asset);
                 }
 
                 SetVersion(version);
+
+                if (installed)
+                    TryRestart();
             }
+        }
+
+        private static void Install(string package)
+        {
+            AssetDatabase.ImportPackage(package, false);
+            CompilationPipeline.RequestScriptCompilation();
+        }
+
+        private static void TryRestart()
+        {
+            if (EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK needs to restart Unity.", "Restart Now", "Restart Later"))
+                EditorApplication.OpenProject(Directory.GetCurrentDirectory());
         }
 
         private static string ReadVersion()
@@ -78,7 +95,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             if (AssetDatabase.IsValidFolder(SdkPath))
             {
                 if (!EditorUtility.DisplayDialog(
-                    "Update Metaverse SDK",
+                    DialogTitle,
                     "DATA LOSS WARNING: You are about to uninstall the " +
                     $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
                     "All modifications to these files will be lost as a result. Have you made a backup?",
@@ -97,4 +114,4 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
     }
 }
 
-#endif
+//#endif
