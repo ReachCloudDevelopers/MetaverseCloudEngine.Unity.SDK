@@ -35,6 +35,10 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void CheckPackages()
         {
+            #if METAVERSE_CLOUD_ENGINE_INTERNAL
+            return;
+            #endif
+            
             var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] {PackagePath}).FirstOrDefault();
             var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
             if (string.IsNullOrEmpty(asset))
