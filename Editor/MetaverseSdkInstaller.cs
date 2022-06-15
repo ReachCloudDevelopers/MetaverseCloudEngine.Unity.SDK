@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Compilation;
+using UnityEditor.SceneManagement;
 
 namespace MetaverseCloudEngine.Unity.Installer.Editor
 {
@@ -75,7 +76,10 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         private static void TryRestart()
         {
             if (EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK needs to restart Unity.", "Allow Restart", "Don't Restart"))
+            {
+                EditorSceneManager.SaveOpenScenes();
                 EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+            }
         }
 
         private static string ReadVersion()
