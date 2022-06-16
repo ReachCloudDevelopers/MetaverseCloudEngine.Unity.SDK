@@ -69,13 +69,14 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void Install(string package)
         {
+            MetaverseTmpInstaller.InstallTmpEssentials();
             AssetDatabase.ImportPackage(package, false);
             CompilationPipeline.RequestScriptCompilation();
         }
 
         private static void TryRestart()
         {
-            if (EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK needs to restart Unity.", "Allow Restart", "Don't Restart"))
+            if (EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK needs to restart Unity.", "Yes (Recommended)", "No"))
             {
                 EditorSceneManager.SaveOpenScenes();
                 EditorApplication.OpenProject(Directory.GetCurrentDirectory());
@@ -104,11 +105,11 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             {
                 if (!EditorUtility.DisplayDialog(
                     DialogTitle,
-                    "DATA LOSS WARNING: You are about to uninstall the " +
-                    $"Metaverse Cloud Engine SDK. This will delete everything underneath '{SdkPath}'. " +
-                    "All modifications to these files will be lost as a result. Have you made a backup?",
-                    "Yes. I've made a backup, continue.",
-                    "Don't Update"))
+                    "DATA LOSS WARNING! You are about to uninstall the " +
+                    $"Metaverse Cloud Engine SDK. This will delete everything underneath the '{SdkPath}' path. " +
+                    "All modifications to these files will be lost as a result. Do you wish to continue?",
+                    "Yes",
+                    "No"))
                     return false;
 
                 AssetDatabase.DeleteAsset(SdkPath);
@@ -119,6 +120,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             CompilationPipeline.RequestScriptCompilation();
             return true;
         }
+
     }
 }
 
