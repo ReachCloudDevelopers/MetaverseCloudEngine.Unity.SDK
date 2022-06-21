@@ -105,9 +105,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             {
                 if (!EditorUtility.DisplayDialog(
                     DialogTitle,
-                    "DATA LOSS WARNING! You are about to uninstall the " +
-                    $"Metaverse Cloud Engine SDK. This will delete everything underneath the '{SdkPath}' path. " +
-                    "All modifications to these files will be lost as a result. Do you wish to continue?",
+                    "A Metaverse Cloud Engine SDK update is available. Would you like to update now?",
                     "Yes",
                     "No"))
                     return false;
