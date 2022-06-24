@@ -71,7 +71,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             MetaverseTmpInstaller.InstallTmpEssentials();
             AssetDatabase.ImportPackage(package, false);
-            CompilationPipeline.RequestScriptCompilation();
         }
 
         private static void TryRestart()
@@ -115,7 +114,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             }
 
             ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
-            CompilationPipeline.RequestScriptCompilation();
             return true;
         }
 
