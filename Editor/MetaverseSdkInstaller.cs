@@ -75,11 +75,9 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void TryRestart()
         {
-            if (EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK needs to restart Unity.", "Yes (Recommended)", "No"))
-            {
-                EditorSceneManager.SaveOpenScenes();
-                EditorApplication.OpenProject(Directory.GetCurrentDirectory());
-            }
+            EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK is going to restart Unity to finish updating.", "Ok!");
+            EditorSceneManager.SaveOpenScenes();
+            EditorApplication.OpenProject(Directory.GetCurrentDirectory());
         }
 
         private static string ReadVersion()
