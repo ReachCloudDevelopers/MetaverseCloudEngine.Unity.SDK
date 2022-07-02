@@ -17,7 +17,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         public static void Add(string[] symbols)
         {
             var symbol = string.Join(DefSeparator, symbols);
-            var groups = GetBuildGroups();
+            var groups = GetSupportedBuildTargetGroups();
             foreach (var g in groups)
                 Add(g, symbol.Split(DefSeparator));
         }
@@ -25,7 +25,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         public static void Remove(string[] symbols)
         {
             var symbol = string.Join(DefSeparator, symbols);
-            var groups = GetBuildGroups();
+            var groups = GetSupportedBuildTargetGroups();
             foreach (var g in groups)
                 Remove(g, symbol.Split(DefSeparator));
         }
@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         public static string[] GetAll()
         {
-            var groups = GetBuildGroups();
+            var groups = GetSupportedBuildTargetGroups();
             var defines = new List<string>();
             foreach (var g in groups)
                 defines.AddRange(GetDefines(g));
@@ -67,16 +67,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         public static string[] GetAll(BuildTargetGroup group)
         {
             return GetDefines(group).ToArray();
-        }
-        
-        private static BuildTargetGroup[] GetBuildGroups()
-        {
-            return ((BuildTarget[]) Enum.GetValues(typeof(BuildTarget)))
-                .Select(x => new {group = BuildPipeline.GetBuildTargetGroup(x), target = x})
-                .Where(x => BuildPipeline.IsBuildTargetSupported(x.group, x.target))
-                .Select(x => x.group)
-                .Distinct()
-                .ToArray();
         }
 
         private static IEnumerable<string> GetDefines(BuildTargetGroup group)
@@ -88,6 +78,16 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             PlayerSettings.SetScriptingDefineSymbolsForGroup(group,
                 string.Join(DefSeparator.ToString(), allDefines.Distinct().ToArray()));
+        }
+
+        private static IEnumerable<BuildTargetGroup> GetSupportedBuildTargetGroups()
+        {
+            return ((BuildTarget[]) Enum.GetValues(typeof(BuildTarget)))
+                .Select(x => new {group = BuildPipeline.GetBuildTargetGroup(x), target = x})
+                .Where(x => BuildPipeline.IsBuildTargetSupported(x.group, x.target))
+                .Select(x => x.group)
+                .Distinct()
+                .ToArray();
         }
     }
 }
