@@ -1,6 +1,6 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "1.20.20",
+  "version": "1.20.21",
   "description": "The Unity SDK for the Metaverse Cloud Engine",
   "author": "Reach Cloud",
   "unity": "2021.3",
