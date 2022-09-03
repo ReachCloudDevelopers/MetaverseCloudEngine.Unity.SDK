@@ -10,4 +10,4 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 * Install of git on your system: https://git-scm.com/downloads
 * Latest version of .NET: https://dotnet.microsoft.com/en-us/download
 
-![image](https://user-images.githubusercontent.com/14853489/173468960-c997933e-66d3-4b00-9fbd-49c3f19fdb3d.png)
+![image](https://user-images.githubusercontent.com/14853489/188254018-453aae49-a6a3-4e6e-8fd2-fe4bbf6310d1.png)
