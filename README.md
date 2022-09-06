@@ -1,7 +1,7 @@
 ![icon_2](https://user-images.githubusercontent.com/14853489/173468609-0bcdbde1-e38c-454e-8c50-707564d380f7.png)
 
 # MetaverseCloudEngine Unity SDK
-Powered by REACH Cloud Ⓒ 2022
+Powered by Reach Cloud Ⓒ 2022
 ### The Metaverse Cloud Engine Unity SDK
 This package enables you to install the Metaverse Cloud Engine SDK and perform automatic updates within Unity Editor.
 
