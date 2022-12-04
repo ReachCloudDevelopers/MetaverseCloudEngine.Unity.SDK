@@ -1,6 +1,7 @@
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEditor.SceneManagement;
 
 namespace MetaverseCloudEngine.Unity.Installer.Editor
@@ -26,9 +27,18 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 CheckPackages();
             }
         }
-        
+
         [InitializeOnLoadMethod]
-        private static void Init() => CheckPackages();
+        private static void Init()
+        {
+            if (SessionState.GetBool("MVCE_Restart", false))
+            {
+                EditorApplication.delayCall += () => EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+                return;
+            }
+
+            CheckPackages();
+        }
 
         private static void CheckPackages()
         {
@@ -73,7 +83,8 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK is going to restart Unity to finish updating.", "Ok");
             EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-            EditorApplication.delayCall += () => EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+            SessionState.SetBool("MVCE_Restart", true);
+            CompilationPipeline.RequestScriptCompilation();
         }
 
         private static string ReadVersion()
