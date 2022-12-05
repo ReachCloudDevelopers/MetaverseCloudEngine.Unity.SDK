@@ -117,7 +117,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 var dir = new DirectoryInfo(SdkPath);
                 if (dir.Exists)
                 {
-                    dir.Delete();
+                    dir.Delete(true);
                 }
             }
 
