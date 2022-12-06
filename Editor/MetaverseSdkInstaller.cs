@@ -98,9 +98,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             var versionDir = Path.GetDirectoryName(VersionFilePath);
             if (!Directory.Exists(versionDir))
                 Directory.CreateDirectory(versionDir);
-
             File.WriteAllText(VersionFilePath, version);
-            AssetDatabase.Refresh();
         }
 
         private static bool Uninstall()
