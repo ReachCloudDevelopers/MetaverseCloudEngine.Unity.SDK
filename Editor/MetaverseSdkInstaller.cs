@@ -33,7 +33,10 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             if (SessionState.GetBool("MVCE_Restart", false))
             {
-                EditorApplication.delayCall += () => EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+                EditorApplication.delayCall += () => 
+                    EditorApplication.delayCall += () => 
+                        EditorApplication.delayCall += () => 
+                            EditorApplication.OpenProject(Directory.GetCurrentDirectory());
                 return;
             }
 
