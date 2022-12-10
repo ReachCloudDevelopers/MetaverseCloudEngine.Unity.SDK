@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -33,10 +34,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             if (SessionState.GetBool("MVCE_Restart", false))
             {
-                EditorApplication.delayCall += () => 
-                    EditorApplication.delayCall += () => 
-                        EditorApplication.delayCall += () => 
-                            EditorApplication.OpenProject(Directory.GetCurrentDirectory());
+                EditorFrameDelay(() => EditorApplication.OpenProject(Directory.GetCurrentDirectory()), 3); // Wait a few frames before restarting to prevent crashes.
                 return;
             }
 
@@ -126,5 +124,23 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             return true;
         }
 
+        private static void EditorFrameDelay(Action action, int frames = 1)
+        {
+            var frameCount = 1;
+            void OnFinish()
+            {
+                if (EditorApplication.isCompiling)
+                    return;
+
+                frameCount++;
+                if (frameCount < frames)
+                    return;
+
+                EditorApplication.delayCall -= OnFinish;
+                action?.Invoke();
+            }
+
+            EditorApplication.delayCall += OnFinish;
+        }
     }
 }
