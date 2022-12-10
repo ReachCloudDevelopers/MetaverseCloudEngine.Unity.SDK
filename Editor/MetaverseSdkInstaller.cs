@@ -126,18 +126,17 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void EditorFrameDelay(Action action, int frames = 1)
         {
-            var frameCount = 1;
             void OnFinish()
             {
-                if (EditorApplication.isCompiling)
-                    return;
-
-                frameCount++;
-                if (frameCount < frames)
-                    return;
-
                 EditorApplication.delayCall -= OnFinish;
-                action?.Invoke();
+
+                if (frames == 0)
+                {
+                    action?.Invoke();
+                    return;
+                }
+
+                EditorFrameDelay(action, --frames);
             }
 
             EditorApplication.delayCall += OnFinish;
