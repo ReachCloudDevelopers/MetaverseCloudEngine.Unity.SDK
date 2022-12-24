@@ -37,7 +37,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 if (EditorApplication.isCompiling)
                     return;
 
-                EditorFrameDelay(() => EditorApplication.OpenProject(Environment.CurrentDirectory), 15); // Wait a few frames before restarting to prevent crashes.
+                EditorFrameDelay(() => EditorApplication.OpenProject(Environment.CurrentDirectory), 150); // Wait a few frames before restarting to prevent crashes.
                 return;
             }
 
