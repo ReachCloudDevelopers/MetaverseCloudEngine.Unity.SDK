@@ -34,10 +34,13 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             if (SessionState.GetBool("MVCE_Restart", false))
             {
-                if (EditorApplication.isCompiling)
-                    return;
+                EditorFrameDelay(() =>
+                {
+                    if (EditorApplication.isCompiling)
+                        return;
 
-                EditorFrameDelay(() => EditorApplication.OpenProject(Environment.CurrentDirectory), 150); // Wait a few frames before restarting to prevent crashes.
+                    EditorApplication.OpenProject(Environment.CurrentDirectory);
+                }, 150); // Wait a few frames before restarting to prevent crashes.
                 return;
             }
 
