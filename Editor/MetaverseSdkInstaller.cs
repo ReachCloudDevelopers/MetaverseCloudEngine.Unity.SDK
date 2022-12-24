@@ -9,6 +9,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 {
     public class MetaverseSdkInstaller : AssetPostprocessor
     {
+        private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
         private const string BasePath = "Assets/MetaverseCloudEngine";
         private const string SdkPath = BasePath + "/SDK";
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
@@ -17,12 +18,12 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            var inPackages = 
+            var inPackages =
                 importedAssets.Any(path => path.StartsWith("Packages/")) ||
                 deletedAssets.Any(path => path.StartsWith("Packages/")) ||
                 movedAssets.Any(path => path.StartsWith("Packages/")) ||
                 movedFromAssetPaths.Any(path => path.StartsWith("Packages/"));
- 
+
             if (inPackages)
             {
                 CheckPackages();
@@ -32,28 +33,16 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
-            //if (SessionState.GetBool("MVCE_Restart", false))
-            //{
-            //    EditorFrameDelay(() =>
-            //    {
-            //        if (EditorApplication.isCompiling)
-            //            return;
-
-            //        EditorApplication.OpenProject(Environment.CurrentDirectory);
-            //    }, 25); // Wait a few frames before restarting to prevent crashes.
-            //    return;
-            //}
-
             CheckPackages();
         }
 
         private static void CheckPackages()
         {
-            #if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
             return;
-            #endif
-            
-            var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] {PackagePath}).FirstOrDefault();
+#endif
+
+            var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] { PackagePath }).FirstOrDefault();
             var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
             if (string.IsNullOrEmpty(asset))
                 return;
@@ -76,7 +65,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 SetVersion(version);
 
                 if (installed)
-                    TryRestart();
+                    RefreshEditor();
             }
         }
 
@@ -86,11 +75,9 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             AssetDatabase.ImportPackage(package, false);
         }
 
-        public static void TryRestart()
+        public static void RefreshEditor()
         {
-            //EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK is going to restart Unity to finish updating.", "Ok");
-            //EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-            //SessionState.SetBool("MVCE_Restart", true);
+            SessionState.SetBool(InitialUpdateCheckFlag, false); // This will trigger the installer again.
             CompilationPipeline.RequestScriptCompilation();
         }
 
@@ -126,7 +113,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                 }
             }
 
-            ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
+            ScriptingDefines.Remove(new[] { ScriptingDefines.DefaultSymbols });
             return true;
         }
 
