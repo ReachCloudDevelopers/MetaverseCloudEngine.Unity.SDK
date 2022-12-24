@@ -32,17 +32,17 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         [InitializeOnLoadMethod]
         private static void Init()
         {
-            if (SessionState.GetBool("MVCE_Restart", false))
-            {
-                EditorFrameDelay(() =>
-                {
-                    if (EditorApplication.isCompiling)
-                        return;
+            //if (SessionState.GetBool("MVCE_Restart", false))
+            //{
+            //    EditorFrameDelay(() =>
+            //    {
+            //        if (EditorApplication.isCompiling)
+            //            return;
 
-                    EditorApplication.OpenProject(Environment.CurrentDirectory);
-                }, 25); // Wait a few frames before restarting to prevent crashes.
-                return;
-            }
+            //        EditorApplication.OpenProject(Environment.CurrentDirectory);
+            //    }, 25); // Wait a few frames before restarting to prevent crashes.
+            //    return;
+            //}
 
             CheckPackages();
         }
@@ -90,7 +90,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             EditorUtility.DisplayDialog(DialogTitle, "The Metaverse Cloud SDK is going to restart Unity to finish updating.", "Ok");
             EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
-            SessionState.SetBool("MVCE_Restart", true);
+            //SessionState.SetBool("MVCE_Restart", true);
             CompilationPipeline.RequestScriptCompilation();
         }
 
