@@ -40,7 +40,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                         return;
 
                     EditorApplication.OpenProject(Environment.CurrentDirectory);
-                }, 150); // Wait a few frames before restarting to prevent crashes.
+                }, 25); // Wait a few frames before restarting to prevent crashes.
                 return;
             }
 
