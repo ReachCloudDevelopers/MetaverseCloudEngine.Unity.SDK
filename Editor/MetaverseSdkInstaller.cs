@@ -77,8 +77,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         public static void RefreshEditor()
         {
-            SessionState.SetBool(InitialUpdateCheckFlag, false); // This will trigger the installer again.
-            CompilationPipeline.RequestScriptCompilation();
+            EditorApplication.OpenProject(Environment.CurrentDirectory);
         }
 
         private static string ReadVersion()
