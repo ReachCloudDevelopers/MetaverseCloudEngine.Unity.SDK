@@ -2,14 +2,11 @@ using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Compilation;
-using UnityEditor.SceneManagement;
 
 namespace MetaverseCloudEngine.Unity.Installer.Editor
 {
     public class MetaverseSdkInstaller : AssetPostprocessor
     {
-        private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
         private const string BasePath = "Assets/MetaverseCloudEngine";
         private const string SdkPath = BasePath + "/SDK";
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
