@@ -73,6 +73,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             MetaverseTmpInstaller.InstallTmpEssentials();
             AssetDatabase.ImportPackage(package, false);
+            InstallTriInspector();
         }
 
         public static void RefreshEditor()
@@ -132,6 +133,23 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             }
 
             EditorApplication.delayCall += OnFinish;
+        }
+
+        private static void InstallTriInspector()
+        {
+            const string TriInspectorBridgeSDKPath = "Assets/MetaverseCloudEngine/SDK/Integrations/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
+            const string TriInspectorBridgeTargetPath = "Assets/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
+            if (!File.Exists(TriInspectorBridgeTargetPath))
+            {
+                if (File.Exists(TriInspectorBridgeSDKPath))
+                {
+                    if (!Directory.Exists(Path.GetDirectoryName(TriInspectorBridgeTargetPath)))
+                        Directory.CreateDirectory(Path.GetDirectoryName(TriInspectorBridgeTargetPath));
+                    File.Move(TriInspectorBridgeSDKPath, TriInspectorBridgeTargetPath);
+                }
+            }
+            else if (File.Exists(TriInspectorBridgeSDKPath))
+                File.Delete(TriInspectorBridgeSDKPath);
         }
     }
 }
