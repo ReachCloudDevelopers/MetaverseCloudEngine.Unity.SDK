@@ -38,7 +38,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
             return;
 #endif
-
             var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] { PackagePath }).FirstOrDefault();
             var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
             if (string.IsNullOrEmpty(asset))
@@ -52,24 +51,89 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             var packageVer = ReadVersion();
             if (version != packageVer)
             {
-                var installed = false;
-                if (Uninstall())
-                {
-                    installed = true;
-                    Install(asset);
-                }
-
-                SetVersion(version);
-
-                if (installed)
-                    RefreshEditor();
+                ReInstall(asset, version);
             }
         }
 
-        private static void Install(string package)
+        /// <summary>
+        /// Re-install the SDK.
+        /// </summary>
+        [MenuItem("Assets/Metaverse/Re-Install Metaverse SDK")]
+        public static void ReInstallSDK()
+        {
+            var sdkPackageGuid = AssetDatabase.FindAssets("MVCESDK_", new[] { PackagePath }).FirstOrDefault();
+            var asset = AssetDatabase.GUIDToAssetPath(sdkPackageGuid);
+            if (string.IsNullOrEmpty(asset))
+                return;
+            if (!EditorUtility.DisplayDialog(
+                "Install SDK", "You are about to install the SDK again. Are you sure you want to do that? This won't restart Unity.", "Yes", "Cancel"))
+                return;
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            return;
+#endif
+            Install(asset);
+        }
+
+        /// <summary>
+        /// Uninstalls the SDK.
+        /// </summary>
+        [MenuItem("Assets/Metaverse/Uninstall Metaverse SDK")]
+        public static void UninstallSDK()
+        {
+            if (!EditorUtility.DisplayDialog(
+                DialogTitle,
+                "Are you sure you want to uninstall the SDK?",
+                "Yes",
+                "No"))
+                return;
+
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            return;
+#endif
+            Uninstall(false);
+        }
+
+        private static bool Uninstall(bool isUpdating = true)
+        {
+            if (AssetDatabase.IsValidFolder(SdkPath))
+            {
+                if (isUpdating && !EditorUtility.DisplayDialog(
+                    DialogTitle,
+                    "A Metaverse Cloud Engine SDK update is available. Would you like to update now?",
+                    "Yes",
+                    "No"))
+                    return false;
+
+                var dir = new DirectoryInfo(SdkPath);
+                if (dir.Exists)
+                {
+                    dir.Delete(true);
+                }
+            }
+
+            ScriptingDefines.Remove(new[] { ScriptingDefines.DefaultSymbols });
+            return true;
+        }
+
+        private static void ReInstall(string asset, string version)
+        {
+            var installed = false;
+            if (Uninstall())
+            {
+                installed = true;
+                Install(asset);
+            }
+
+            SetVersion(version);
+
+            if (installed)
+                RefreshEditor();
+        }
+
+        private static void Install(string package, bool interactive = false)
         {
             MetaverseTmpInstaller.InstallTmpEssentials();
-            AssetDatabase.ImportPackage(package, false);
+            AssetDatabase.ImportPackage(package, interactive);
         }
 
         public static void RefreshEditor()
@@ -89,28 +153,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             if (!Directory.Exists(versionDir))
                 Directory.CreateDirectory(versionDir);
             File.WriteAllText(VersionFilePath, version);
-        }
-
-        private static bool Uninstall()
-        {
-            if (AssetDatabase.IsValidFolder(SdkPath))
-            {
-                if (!EditorUtility.DisplayDialog(
-                    DialogTitle,
-                    "A Metaverse Cloud Engine SDK update is available. Would you like to update now?",
-                    "Yes",
-                    "No"))
-                    return false;
-
-                var dir = new DirectoryInfo(SdkPath);
-                if (dir.Exists)
-                {
-                    dir.Delete(true);
-                }
-            }
-
-            ScriptingDefines.Remove(new[] { ScriptingDefines.DefaultSymbols });
-            return true;
         }
 
         private static void EditorFrameDelay(Action action, int frames = 1)
