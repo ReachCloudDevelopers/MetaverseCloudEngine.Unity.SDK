@@ -12,8 +12,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
         private const string PackagePath = "Packages/com.reachcloud.metaverse-cloud-sdk";
         private const string DialogTitle = "Update Metaverse SDK";
-        private const string TriInspectorBridgeSDKPath = "Assets/MetaverseCloudEngine/SDK/Integrations/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
-        private const string TriInspectorBridgeTargetPath = "Assets/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
