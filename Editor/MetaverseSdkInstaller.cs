@@ -138,7 +138,8 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         public static void RefreshEditor()
         {
-            EditorApplication.OpenProject(Environment.CurrentDirectory);
+            static void RestartProj() { EditorApplication.update -= RestartProj; EditorApplication.OpenProject(Environment.CurrentDirectory); }
+            EditorApplication.update += RestartProj;
         }
 
         private static string ReadVersion()
