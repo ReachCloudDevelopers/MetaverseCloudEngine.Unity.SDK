@@ -12,6 +12,8 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         private const string VersionFilePath = BasePath + "/MVCE_Version.txt";
         private const string PackagePath = "Packages/com.reachcloud.metaverse-cloud-sdk";
         private const string DialogTitle = "Update Metaverse SDK";
+        private const string TriInspectorBridgeSDKPath = "Assets/MetaverseCloudEngine/SDK/Integrations/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
+        private const string TriInspectorBridgeTargetPath = "Assets/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
 
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
@@ -70,7 +72,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
         {
             MetaverseTmpInstaller.InstallTmpEssentials();
             AssetDatabase.ImportPackage(package, false);
-            InstallTriInspector();
         }
 
         public static void RefreshEditor()
@@ -130,23 +131,6 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
             }
 
             EditorApplication.delayCall += OnFinish;
-        }
-
-        private static void InstallTriInspector()
-        {
-            const string TriInspectorBridgeSDKPath = "Assets/MetaverseCloudEngine/SDK/Integrations/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
-            const string TriInspectorBridgeTargetPath = "Assets/Plugins/TriInspector/Unity.InternalAPIEditorBridge.012/Unity.InternalAPIEditorBridge.012.asmdef";
-            if (!File.Exists(TriInspectorBridgeTargetPath))
-            {
-                if (File.Exists(TriInspectorBridgeSDKPath))
-                {
-                    if (!Directory.Exists(Path.GetDirectoryName(TriInspectorBridgeTargetPath)))
-                        Directory.CreateDirectory(Path.GetDirectoryName(TriInspectorBridgeTargetPath));
-                    File.Move(TriInspectorBridgeSDKPath, TriInspectorBridgeTargetPath);
-                }
-            }
-            else if (File.Exists(TriInspectorBridgeSDKPath))
-                File.Delete(TriInspectorBridgeSDKPath);
         }
     }
 }
