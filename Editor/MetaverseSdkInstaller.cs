@@ -113,17 +113,26 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
 
         private static void ReInstall(string asset, string version)
         {
-            var installed = false;
-            if (Uninstall())
+            void Update(bool restartEditor)
             {
-                installed = true;
-                Install(asset);
+                SetVersion(version);
+
+                if (restartEditor)
+                    RefreshEditor();
             }
 
-            SetVersion(version);
+            if (Uninstall())
+            {
+                void InstallDelayed()
+                {
+                    EditorApplication.update -= InstallDelayed;
+                    Install(asset);
+                }
+                EditorApplication.update += InstallDelayed;
+                return;
+            }
 
-            if (installed)
-                RefreshEditor();
+            Update(false);
         }
 
         private static void Install(string package, bool interactive = false)
