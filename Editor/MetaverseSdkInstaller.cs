@@ -104,7 +104,11 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                     "No"))
                     return false;
 
-                AssetDatabase.DeleteAsset(SdkPath);
+                if (!AssetDatabase.DeleteAsset(SdkPath))
+                {
+                    EditorUtility.DisplayDialog("Delete SDK failed", "Failed to delete the SDK folder.", "Ok");
+                    return false;
+                }
             }
 
             ScriptingDefines.Remove(new[] { ScriptingDefines.DefaultSymbols });
