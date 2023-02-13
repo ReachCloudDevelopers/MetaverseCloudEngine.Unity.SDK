@@ -104,11 +104,7 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
                     "No"))
                     return false;
 
-                var dir = new DirectoryInfo(SdkPath);
-                if (dir.Exists)
-                {
-                    dir.Delete(true);
-                }
+                AssetDatabase.DeleteAsset(SdkPath);
             }
 
             ScriptingDefines.Remove(new[] { ScriptingDefines.DefaultSymbols });
