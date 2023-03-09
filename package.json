@@ -1,6 +1,6 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.21.0",
+  "version": "2.22.0",
   "description": "The Unity SDK for the Metaverse Cloud Engine",
   "author": "Reach Cloud",
   "unity": "2022.1",
@@ -11,13 +11,12 @@
     "com.unity.inputsystem": "1.0.0",
     "com.unity.mathematics": "1.0.0",
     "com.unity.nuget.newtonsoft-json": "3.0.2",
-    "com.unity.xr.management": "4.0.0",
-    "com.unity.xr.interaction.toolkit": "2.2.0",
-    "com.unity.xr.openxr": "1.6.0",
-    "com.unity.xr.oculus": "3.0.0",
     "com.unity.visualscripting": "1.0.0",
     "com.unity.scriptablebuildpipeline": "1.0.0",
-    "com.unity.xr.arcore": "4.0.0",
-    "com.unity.xr.arfoundation": "4.0.0"
+    "com.unity.xr.openxr": "1.0.0",
+    "com.unity.xr.oculus": "3.0.0",
+    "com.unity.xr.interaction.toolkit": "2.0.0",
+    "com.unity.xr.management": "1.0.0",
+    "com.unity.xr.arcore": "5.0.0"
   }
 }
