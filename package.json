@@ -17,6 +17,6 @@
     "com.unity.xr.oculus": "3.0.0",
     "com.unity.xr.interaction.toolkit": "2.0.0",
     "com.unity.xr.management": "1.0.0",
-    "com.unity.xr.arcore": "5.0.0"
+    "com.unity.xr.arcore": "4.0.0"
   }
 }
