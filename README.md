@@ -1,5 +1,3 @@
-![icon_2](https://user-images.githubusercontent.com/14853489/173468609-0bcdbde1-e38c-454e-8c50-707564d380f7.png)
-
 # MetaverseCloudEngine Unity SDK
 Powered by Reach Cloud Ⓒ 2023
 ### The Metaverse Cloud Engine Unity SDK
