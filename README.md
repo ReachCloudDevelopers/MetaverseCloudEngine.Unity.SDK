@@ -4,7 +4,7 @@ Powered by Reach Cloud Ⓒ 2023
 This package enables you to install the Metaverse Cloud Engine SDK and perform automatic updates within Unity Editor.
 
 ### Requirements
-* Unity 2022.1 and above
+* Unity 2022 LTS
 * Install of git on your system: https://git-scm.com/downloads
 * Latest version of .NET: https://dotnet.microsoft.com/en-us/download
 
