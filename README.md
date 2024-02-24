@@ -1,5 +1,5 @@
 # MetaverseCloudEngine Unity SDK
-Powered by Reach Cloud Ⓒ 2023
+Powered by Reach Cloud Ⓒ 2024
 ### The Metaverse Cloud Engine Unity SDK
 This package enables you to install the Metaverse Cloud Engine SDK and perform automatic updates within Unity Editor.
 
