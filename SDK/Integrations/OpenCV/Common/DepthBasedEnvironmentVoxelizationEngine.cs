@@ -330,9 +330,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             instance.FinalizeReplacement();
             instance.Instance.SetActive(true);
 
-            if (!_voxelObjectMap.ContainsKey(objectInstance))
-                _voxelObjectMap[objectInstance] = new List<GameObject>();
-
             if ((minVoxelSize > 0 || maxVoxelSize > 0) && !instance.ObjectType.positionTrackingOnly)
             {
                 for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
@@ -368,7 +365,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 }
                 else ren.enabled = false;
             }
-            _voxelObjectMap[objectInstance].Add(voxel);
+
+            if (!_voxelObjectMap.TryGetValue(objectInstance, out var voxels))
+                voxels = _voxelObjectMap[objectInstance] = new List<GameObject>();
+            voxels.Add(voxel);
         }
 
         private bool TryTrackObject(

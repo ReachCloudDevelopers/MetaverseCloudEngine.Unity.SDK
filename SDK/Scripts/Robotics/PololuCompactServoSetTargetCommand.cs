@@ -25,9 +25,9 @@ namespace MetaverseCloudEngine.Unity.Robotics
         [Tooltip("The maximum microseconds. This value will depend on the manufacturer.")]
         [LabelText("\u00B5s Max")]
         [SerializeField] private float pMax = 2200;
-        [SerializeField] private UnityEvent<byte[]> onWriteBytes = new();
         [Tooltip("Automatically write to the servo in FixedUpdate().")]
         [SerializeField] private bool writeInFixedUpdate = true;
+        [SerializeField] private UnityEvent<byte[]> onWriteBytes = new();
         [ShowIf(nameof(writeInFixedUpdate))]
         [Tooltip("Specify settings to do software based dampening.")]
         [SerializeField] private SmoothDamp smoothDampSettings = new();
