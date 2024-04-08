@@ -1,0 +1,38 @@
+{
+    "name": "MetaverseCloudEngine.Unity.OpenCV.YOLO",
+    "rootNamespace": "MetaverseCloudEngine.Unity.OpenCV.YOLO",
+    "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:cef0e9dabbfe59a4790acbf31c21f33e",
+        "GUID:a70490b4692f1674a9403edee9881494"
+    ],
+    "includePlatforms": [
+        "Android",
+        "Editor",
+        "iOS",
+        "LinuxStandalone64",
+        "CloudRendering",
+        "macOSStandalone",
+        "WebGL",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "MV_OPENCV",
+        "MV_UNITASK"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "MV_UNITASK"
+        }
+    ],
+    "noEngineReferences": false
+}

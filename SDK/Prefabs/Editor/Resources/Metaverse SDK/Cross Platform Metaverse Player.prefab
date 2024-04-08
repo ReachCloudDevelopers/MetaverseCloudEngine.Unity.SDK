@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &5040218964890997446
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5040218964890997447}
+  - component: {fileID: 5040218964890997442}
+  - component: {fileID: 5040218964890997441}
+  - component: {fileID: 5199146486549060794}
+  m_Layer: 0
+  m_Name: Cross Platform Metaverse Player
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5040218964890997447
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5040218964890997446}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5040218964890997442
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5040218964890997446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0ad67ef08555a34ca7654f4cc3875d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  destroyWhenCreatorLeaves: 1
+  transferAuthorityOnCollide: 0
+  sceneID: -1
+  takeOwnershipOnCollision: 0
+--- !u!114 &5040218964890997441
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5040218964890997446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0c5defb972f842499be5a0c382f48d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: 8fb5de8a-cce4-4780-8858-7cd4aa4fe49b
+  spawnOnStart: 1
+  concurrent: 0
+  syncDestroy: 1
+  requireStateAuthority: 1
+  networkObject: {fileID: 0}
+  parent: {fileID: 0}
+  spawnAddons: []
+  retryAttempts: 2
+  retryCooldown: 0.75
+  previewInEditor: 0
+  events:
+    onStartedLoading:
+      m_PersistentCalls:
+        m_Calls: []
+    onFinishedLoading:
+      m_PersistentCalls:
+        m_Calls: []
+    onProgress:
+      m_PersistentCalls:
+        m_Calls: []
+    onSpawned:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 5199146486549060794}
+          m_TargetAssemblyTypeName: MetaverseCloudEngine.Unity.Components.SetParent,
+            MetaverseCloudEngine.Unity
+          m_MethodName: Set
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2
+    onFailed:
+      m_PersistentCalls:
+        m_Calls: []
+    onLastSpawnedObjectDestroyed:
+      m_PersistentCalls:
+        m_Calls: []
+  requireNetworkOwnership: 0
+  loadOnStart: 0
+--- !u!114 &5199146486549060794
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5040218964890997446}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26acd040fe124ea489714f5eb72e276e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  child: {fileID: 5040218964890997447}
+  parent: {fileID: 0}
+  setOnStart: 0
+  allowNull: 1
+  transformSettings:
+    worldPositionStays: 0
+    setLocalPos: 1
+    localPos: {x: 0, y: 0, z: 0}
+    setLocalRot: 1
+    localRot: {x: 0, y: 0, z: 0}
+    setLocalScale: 1
+    localScale: {x: 1, y: 1, z: 1}
+  events:
+    onSetNull:
+      m_PersistentCalls:
+        m_Calls: []
+    onSetTransform:
+      m_PersistentCalls:
+        m_Calls: []
+    onSetGameObject:
+      m_PersistentCalls:
+        m_Calls: []

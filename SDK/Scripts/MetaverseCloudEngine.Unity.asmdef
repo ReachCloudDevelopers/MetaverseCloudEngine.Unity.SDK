@@ -1,0 +1,122 @@
+{
+    "name": "MetaverseCloudEngine.Unity",
+    "rootNamespace": "MetaverseCloudEngine.Unity",
+    "references": [
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:dc960734dc080426fa6612f1c5fe95f3",
+        "GUID:e40ba710768534012815d3193fa296cb",
+        "GUID:fe685ec1767f73d42b749ea8045bfe43",
+        "GUID:9e6bdf94fcb245c585c26819fa23a202",
+        "GUID:92703082f92b41ba80f0d6912de66115",
+        "GUID:a9420e37d7990b54abdef6688edbe313",
+        "GUID:4847341ff46394e83bb78fbd0652937e",
+        "GUID:95054a9710b0f114a85f6ced6b7f891c",
+        "GUID:a9582160ded7e3c46829c5005bf42835",
+        "GUID:4af21795022437d4bb139a86514b9ff9",
+        "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30",
+        "GUID:7040c93f6035f5749888e6fdf5ef28f8",
+        "GUID:3b7cf88e9d6729441884290e764f086b",
+        "GUID:2a230cb87a1d3ba4a98bdc0ddae76e6c",
+        "GUID:a9f1da384a134aa5af763cbed09bbfcf",
+        "GUID:ce522b6ed64c8be4c989a1d26d0e3275",
+        "GUID:75469ad4d38634e559750d17036d5f7c",
+        "GUID:ba171b3dd2a51234ab864770f99741a5",
+        "GUID:21b0c8d1703a94250bfac916590cea4f",
+        "GUID:ea715009a4efd4c6cbc85be3ae097dd3",
+        "GUID:d60799ab2a985554ea1a39cd38695018",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
+        "GUID:c55d28459d9c4444ebb4788be912e1f1",
+        "GUID:4307f53044263cf4b835bd812fc161a4",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:6e5063adab271564ba0098a06a8cebda",
+        "GUID:3128918e24629064082cc7fb78c41926",
+        "GUID:5ad926ab5ff9d914ea1f6812dfd6f07a",
+        "GUID:bd138c7a207f4ee4894d6faa1b365b8c",
+        "GUID:2ace7ebb826df10459d12b4f3c4a9407",
+        "GUID:774f0e7b520e24644b448f5ac7fa5d94",
+        "GUID:6506d016782ec1d4082f393438028cd1",
+        "GUID:a3608d6c771df4d5ea920975c31d3a5f",
+        "GUID:b4318b6f3695442c4983c360248781db",
+        "GUID:4d1d8df5021c48d98561b50ca850d1dc",
+        "GUID:69ab3f10cf42d0b42a6cd1353c374377"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "MV_INPUT_SYSTEM",
+        "MV_CINEMACHINE",
+        "MV_CYSHARP",
+        "MV_GLTF",
+        "MV_XR_MANAGEMENT",
+        "MV_XR_HANDS",
+        "MV_XR_HANDS_LEGACY"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "MV_INPUT_SYSTEM"
+        },
+        {
+            "name": "com.unity.cinemachine",
+            "expression": "",
+            "define": "MV_CINEMACHINE"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "MV_CYSHARP"
+        },
+        {
+            "name": "com.siccity.gltfutility",
+            "expression": "",
+            "define": "MV_GLTF"
+        },
+        {
+            "name": "com.unity.xr.management",
+            "expression": "",
+            "define": "MV_XR_MANAGEMENT"
+        },
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "1.1.0",
+            "define": "MV_XR_HANDS"
+        },
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "1.0.0-pre.2",
+            "define": "MV_XR_HANDS_LEGACY"
+        },
+        {
+            "name": "com.unity.code-analysis",
+            "expression": "",
+            "define": "MV_CODE_ANALYSIS"
+        },
+        {
+            "name": "com.meta.xr.sdk.core",
+            "expression": "",
+            "define": "MV_META_CORE"
+        },
+        {
+            "name": "com.meta.xr.sdk.avatars",
+            "expression": "",
+            "define": "MV_META_AVATAR"
+        },
+        {
+            "name": "com.unity.xr.oculus",
+            "expression": "",
+            "define": "MV_OCULUS_PLUGIN"
+        },
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "",
+            "define": "MV_URP"
+        }
+    ],
+    "noEngineReferences": false
+}

@@ -1,0 +1,38 @@
+{
+    "name": "MetaverseCloudEngine.Unity.OpenCV.Common",
+    "rootNamespace": "MetaverseCloudEngine.Unity.OpenCV.Common",
+    "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:cef0e9dabbfe59a4790acbf31c21f33e",
+        "GUID:7e0981bc57e8458e956298de98b2839b"
+    ],
+    "includePlatforms": [
+        "Android",
+        "Editor",
+        "iOS",
+        "LinuxStandalone64",
+        "CloudRendering",
+        "macOSStandalone",
+        "WebGL",
+        "WindowsStandalone64"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "MV_OPENCV",
+        "MV_UNITASK"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "MV_UNITASK"
+        }
+    ],
+    "noEngineReferences": false
+}

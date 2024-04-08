@@ -1,0 +1,16 @@
+{
+    "name": "MetaverseCloudEngine.Unity.Integrations.PuppetMaster",
+    "rootNamespace": "",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

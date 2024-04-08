@@ -1,0 +1,80 @@
+{
+    "name": "MetaverseCloudEngine.Unity.Editor",
+    "rootNamespace": "MetaverseCloudEngine.Unity.Editor",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:836e41294c3b2f847aa625f61c0682e7",
+        "GUID:4847341ff46394e83bb78fbd0652937e",
+        "GUID:96aa6ba065960476598f8f643e7252b6",
+        "GUID:e40ba710768534012815d3193fa296cb",
+        "GUID:f9fe0089ec81f4079af78eb2287a6163",
+        "GUID:a9582160ded7e3c46829c5005bf42835",
+        "GUID:c66676bdb1cd68648a487fd6c7ea0937",
+        "GUID:9e6bdf94fcb245c585c26819fa23a202",
+        "GUID:d76576b768da4171b007f21c44fabe13",
+        "GUID:8b0c2853a940d4fd9979bac438eb5bf3",
+        "GUID:a9420e37d7990b54abdef6688edbe313",
+        "GUID:4af21795022437d4bb139a86514b9ff9",
+        "GUID:d1502596da9f12c4ead8bb8b8542bdc8",
+        "GUID:fe685ec1767f73d42b749ea8045bfe43",
+        "GUID:95054a9710b0f114a85f6ced6b7f891c",
+        "GUID:ce522b6ed64c8be4c989a1d26d0e3275",
+        "GUID:43e9109b8cf6eec438823b2311391706",
+        "GUID:5c1ff9bd975acec488150743d53a93ca",
+        "GUID:c5ecc461727906345a35491a0440694f",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
+        "GUID:54cb1906aeb4e4264bc1d2aa3818a43f",
+        "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30",
+        "GUID:d2761a0af0f567748a72629d4bb18a26"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "MetaverseCloudEngine.ApiClient.dll",
+        "MetaverseCloudEngine.Common.dll",
+        "Newtonsoft.Json.dll",
+        "Mono.Cecil.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_EDITOR",
+        "METAVERSE_CLOUD_ENGINE"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.management",
+            "expression": "",
+            "define": "MV_XR_MANAGEMENT"
+        },
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "",
+            "define": "MV_XR_HANDS"
+        },
+        {
+            "name": "com.unity.code-analysis",
+            "expression": "",
+            "define": "MV_CODE_ANALYSIS"
+        },
+        {
+            "name": "com.meta.xr.sdk.core",
+            "expression": "",
+            "define": "MV_META_CORE"
+        },
+        {
+            "name": "com.unity.xr.oculus",
+            "expression": "",
+            "define": "MV_OCULUS_PLUGIN"
+        },
+        {
+            "name": "com.unity.scriptablebuildpipeline",
+            "expression": "1.21.22",
+            "define": "MV_BUILD_PIPELINE"
+        }
+    ],
+    "noEngineReferences": false
+}
