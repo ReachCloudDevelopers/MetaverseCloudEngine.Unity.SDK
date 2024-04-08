@@ -63,7 +63,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         private readonly Dictionary<GameObject, List<GameObject>> _voxelObjectMap = new();
         private readonly List<int> _trackedObjectIds = new();
         private bool _frameDirty;
-        private ObjectInstance _environment;
+        private ObjectInstance _background;
 
         private readonly ObjectPool<GameObject> _voxelPool = new(() =>
             {
@@ -173,6 +173,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void DeleteAll()
         {
+            if (_background != null)
+            {
+                ReleaseVoxelsForInstance(_background);
+                Destroy(_background.Instance);
+                _background = null;
+            }
+            
             foreach (var spawnedObject in _spawnedObjects.Where(spawnedObject => spawnedObject.Instance))
             {
                 ReleaseVoxelsForInstance(spawnedObject);
@@ -261,16 +268,20 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private ObjectInstance GetBackgroundObjectInstance()
         {
-            _environment ??= new ObjectInstance
+            _background ??= new ObjectInstance
             {
-                Instance = new GameObject("background"),
+                Instance = new GameObject("background")
+                {
+                    transform = { parent = parent }
+                    
+                }.Do(x => x.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity)),
                 ObjectType = new ObjectType
                 {
                     color = Color.black,
                 }
             };
 
-            return _environment;
+            return _background;
         }
 
         private void TrackAndDetectObject(Detection<IObjectDetectionPipeline.DetectedObject> detectionInfo, Track trackedResult, IObjectDetectionPipeline.DetectedObject detectedObjectReference)
