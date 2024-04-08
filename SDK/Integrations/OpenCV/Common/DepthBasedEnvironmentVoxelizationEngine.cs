@@ -53,6 +53,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         [Min(0)] [SerializeField] private float maxVoxelSize = 0.5f;
         [Tooltip("The larger this value, the longer an object will stay in memory when it is no longer tracked.")]
         [Min(1)] [SerializeField] private int trackingBuffer = 5;
+        [SerializeField] private bool backgroundEnabled = true;
 
         private BYTETracker.BYTETracker _tracker;
         private IObjectDetectionPipeline _pipeline;
@@ -192,7 +193,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!_frameDirty)
                 return;
 
-            if (_lastFrameObjects.Count > 0 && _lastFrameObjects[0].IsBackground)
+            if (backgroundEnabled && _lastFrameObjects.Count > 0 && _lastFrameObjects[0].IsBackground)
             {
                 var envInstance = GetBackgroundObjectInstance();
                 var lastFrameObject = _lastFrameObjects[0];
