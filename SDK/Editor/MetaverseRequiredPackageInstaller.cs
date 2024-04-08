@@ -18,11 +18,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             "https://github.com/Unity-Technologies/AssetBundles-Browser.git",
             "https://github.com/ReachCloudDevelopers/GLTFUtility.git",
 #if !METAVERSE_CLOUD_ENGINE_INTERNAL
-#if MVCE_PRERELEASE
-            "https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#pre-release"
-#else
             "https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git",
-#endif
 #endif
         };
 
