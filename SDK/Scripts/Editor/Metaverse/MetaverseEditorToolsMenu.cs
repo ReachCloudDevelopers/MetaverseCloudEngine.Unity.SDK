@@ -63,13 +63,6 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorApplication.update += RestartProj;
         }
 
-        [MenuItem(MetaverseConstants.MenuItems.MenuRootPath + "Play in VR")]
-        public static void ConfigureXRLoaders()
-        {
-            MetaverseProjectConfigurator.ConfigureXRLoaders(true);
-            EditorApplication.isPlaying = true;
-        }
-
         [MenuItem("Assets/Selection/Select All Models")]
         public static void SelectAllModels()
         {

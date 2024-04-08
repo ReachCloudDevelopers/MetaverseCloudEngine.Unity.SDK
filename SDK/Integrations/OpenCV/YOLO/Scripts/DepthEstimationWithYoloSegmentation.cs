@@ -127,7 +127,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                     var environment = !string.IsNullOrEmpty(environmentLabel) ? new IObjectDetectionPipeline.DetectedObject
                     {
                         Label = environmentLabel,
-                        Vertices = new List<Vector3>()
+                        Vertices = new List<Vector3>(),
+                        Score = 1,
+                        IsBackground = true,
+                        
                     } : null;
 
                     if (environment is not null)
@@ -255,7 +258,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                             detectableObject.NearestZ = nearestZ;
                             detectableObject.Score = obj.conf;
                             detectableObject.Origin = bounds.center;
-                            detectableObject.Volume = bounds.size;
                         }
                     }
 

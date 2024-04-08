@@ -1,16 +1,14 @@
-﻿#if (MV_SERIAL_PORT_UTILITY_PRO && METAVERSE_CLOUD_ENGINE) || METAVERSE_CLOUD_ENGINE_INTERNAL
-
-using System;
+﻿using System;
 using System.Globalization;
 using TriInspectorMVCE;
 using UnityEngine;
+using UnityEngine.Events;
 
-namespace MetaverseCloudEngine.Unity.SerialPortUtilityPro
+namespace MetaverseCloudEngine.Unity.Robotics
 {
     [HideMonoScript]
     public class PololuCompactServoSetTargetCommand : TriInspectorMonoBehaviour
     {
-        [SerializeField] private SerialPortUtility.SerialPortUtilityPro serialPortUtilityPro;
         [Tooltip("The channel to send the command to.")]
         [SerializeField] private byte channel;
         [Tooltip("The current value that's going to processed then sent to the servo.")]
@@ -27,6 +25,7 @@ namespace MetaverseCloudEngine.Unity.SerialPortUtilityPro
         [Tooltip("The maximum microseconds. This value will depend on the manufacturer.")]
         [LabelText("\u00B5s Max")]
         [SerializeField] private float pMax = 2200;
+        [SerializeField] private UnityEvent<byte[]> onWriteBytes = new();
         [Tooltip("Automatically write to the servo in FixedUpdate().")]
         [SerializeField] private bool writeInFixedUpdate = true;
         [ShowIf(nameof(writeInFixedUpdate))]
@@ -72,14 +71,6 @@ namespace MetaverseCloudEngine.Unity.SerialPortUtilityPro
             }
         }
 
-        private void Awake()
-        {
-            if (!serialPortUtilityPro)
-                serialPortUtilityPro = GetComponentInParent<SerialPortUtility.SerialPortUtilityPro>(true);
-            if (!serialPortUtilityPro)
-                enabled = false;
-        }
-
         private void OnValidate()
         {
             if (pMin > pMax)
@@ -107,20 +98,13 @@ namespace MetaverseCloudEngine.Unity.SerialPortUtilityPro
             if (!isActiveAndEnabled)
                 return;
             
-            if (!serialPortUtilityPro)
-            {
-                serialPortUtilityPro = GetComponentInParent<SerialPortUtility.SerialPortUtilityPro>(true);
-                if (!serialPortUtilityPro)
-                    return;
-            }
-
             var servoValue = GetServoValue();
             var command = new byte[4];
             command[0] = 0x84; // Set Target
             command[1] = (byte)channel;
             command[2] = (byte)(servoValue & 0x7F); // low bits
             command[3] = (byte)((servoValue >> 7) & 0x7F); // high bits
-            serialPortUtilityPro.Write(command);
+            onWriteBytes?.Invoke(command);
         }
 
         private int GetServoValue()
@@ -171,5 +155,3 @@ namespace MetaverseCloudEngine.Unity.SerialPortUtilityPro
 #endif
     }
 }
-
-#endif

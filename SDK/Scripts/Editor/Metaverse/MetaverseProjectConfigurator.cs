@@ -105,22 +105,6 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        [MenuItem(MetaverseConstants.ProductName + "/Project/Integrations/Enable Serial Port Utility Pro Integration")]
-        private static void EnableSerialPortUtilityProIntegration_MenuItem()
-        {
-            if (EditorUtility.DisplayDialog(
-                    "Enable Serial Port Utility Pro Integration", 
-                    "Would you like to enable the Serial Port Utility Pro Integration?", 
-                    "Enable", "Disable"))
-            {
-                ScriptingDefines.Add(new [] { "MV_SERIAL_PORT_UTILITY_PRO" });
-            }
-            else
-            {
-                ScriptingDefines.Remove(new [] { "MV_SERIAL_PORT_UTILITY_PRO" });
-            }
-        }
-
         [MenuItem(MetaverseConstants.ProductName + "/Project/Allow Project Configuration")]
         private static void CanConfigureProject_MenuItem() => CanConfigureProject(true);
 

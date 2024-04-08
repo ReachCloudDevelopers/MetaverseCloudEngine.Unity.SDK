@@ -21,6 +21,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             /// </summary>
             public string Label;
             /// <summary>
+            /// True if this is the environment.
+            /// </summary>
+            public bool IsBackground;
+            /// <summary>
             /// The object's on-screen rect.
             /// </summary>
             public Vector4 Rect;
@@ -32,10 +36,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             /// The object's origin relative to the camera.
             /// </summary>
             public Vector3 Origin;
-            /// <summary>
-            /// The object's origin relative to the camera.
-            /// </summary>
-            public Vector3 Volume;
             /// <summary>
             /// The nearest Z value of all vertices.
             /// </summary>
