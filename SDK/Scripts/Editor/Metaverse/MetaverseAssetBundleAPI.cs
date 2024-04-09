@@ -47,6 +47,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             var lockedAssemblies = true;
             EditorApplication.LockReloadAssemblies();
+            AssetDatabase.ReleaseCachedFileHandles();
 
             preProcessBuild?.Invoke();
             try
@@ -150,7 +151,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         Directory.CreateDirectory(outputFolder);
 
                     // Configure editor and settings.
-                    UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
+                    if (buildTarget != BuildTarget.WebGL)
+                        UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
                     ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
@@ -158,6 +160,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
                     yield return null;
+                    AssetDatabase.SaveAssets();
                     
                     try
                     {
@@ -254,7 +257,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                     "Would you like to reset the build target to the default platform to " + defaultTarget + "?", 
                     "Yes (Recommended)", "No, stay on " + EditorUserBuildSettings.activeBuildTarget))
                 {
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultTarget), defaultTarget);
+                    var defaultGroup = BuildPipeline.GetBuildTargetGroup(defaultTarget);
+                    EditorUserBuildSettings.SwitchActiveBuildTarget(defaultGroup, defaultTarget);
+                    EditorUserBuildSettings.selectedBuildTargetGroup = defaultGroup;
+                    if (defaultGroup == BuildTargetGroup.Standalone)
+                        EditorUserBuildSettings.selectedStandaloneTarget = defaultTarget;
                 }
                 
                 postProcessBuild?.Invoke();
