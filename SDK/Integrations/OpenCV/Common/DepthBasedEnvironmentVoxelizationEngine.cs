@@ -67,6 +67,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private readonly ObjectPool<GameObject> _voxelPool = new(() =>
             {
+                if (!Application.isPlaying)
+                    return null;
+                
                 var voxel = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 voxel.hideFlags = HideFlags.HideInHierarchy;
                 return voxel;
@@ -360,6 +363,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             Vector3 objectOrigin,
             GameObject objectInstance)
         {
+            if (!Application.isPlaying)
+                return;
+            
             var vertex = detectedObjectReference.Vertices[vertexIndex];
             if (instance.ObjectType.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.ObjectType.expectedObjectRadius) return;
             if (instance.ObjectType.maxDistance > 0 && vertex.z > instance.ObjectType.maxDistance) return;
