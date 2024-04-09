@@ -145,11 +145,14 @@ namespace MetaverseCloudEngine.Unity.Editors
                     UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
-                    PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+                    yield return null;
+                    if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
+                        PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
+                    else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
                     yield return null;
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
                     yield return null;
