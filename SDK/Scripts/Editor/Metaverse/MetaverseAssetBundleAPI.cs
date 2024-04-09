@@ -118,6 +118,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                             $"Build target {platform} is not supported by your Unity Editor configuration. Please install the necessary development kits.");
                         continue;
                     }
+                    
+                    // Switch current build target before pre-processing assets.
+                    EditorUserBuildSettings.selectedBuildTargetGroup = group;
+                    if (group == BuildTargetGroup.Standalone)
+                        EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
+                    EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+                    yield return null;
+                    EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+                    yield return null;
 
                     var targetBundleId = bundleId + "_" + platform;
                     var validAssetNames = new List<string>();
@@ -141,11 +150,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                         Directory.CreateDirectory(outputFolder);
 
                     // Configure editor and settings.
-                    EditorUserBuildSettings.selectedBuildTargetGroup = group;
-                    if (group == BuildTargetGroup.Standalone)
-                        EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
-                    EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
-                    yield return null;
                     UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
@@ -153,8 +157,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
-                    yield return null;
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
                     yield return null;
                     AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                     yield return null;
