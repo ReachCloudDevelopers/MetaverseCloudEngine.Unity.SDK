@@ -213,7 +213,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 OutputPath = results.BundleInfos.Select(x => x.Value.FileName).First(),
                                 Platforms = platform
                             });
-
                         }
                         finally
                         {
@@ -233,6 +232,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                         successfulBuilds.Clear();
                         break;
                     }
+
+                    AssetDatabase.ReleaseCachedFileHandles();
+                    AssetDatabase.Refresh();
+
+                    yield return null;
                 }
 
                 completed?.Invoke(successfulBuilds);
