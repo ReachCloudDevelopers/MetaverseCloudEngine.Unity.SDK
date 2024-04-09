@@ -104,11 +104,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (platform != Platform.AndroidVR)
                     {
                         if (!Enum.TryParse(platform.ToString(), out buildTarget))
-                        {
-                            MetaverseProgram.Logger.Log(
-                                $"Unable to parse platform: '{platform}' as valid build target.");
                             continue;
-                        }
                     }
                     else
                     {
