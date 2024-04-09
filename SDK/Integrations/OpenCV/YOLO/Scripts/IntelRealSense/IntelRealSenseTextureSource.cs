@@ -38,7 +38,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             private readonly Vector3Int _colorSize;
             private readonly IntPtr _colorBuffer;
             private readonly Vector3Int _depthSize;
-            private readonly Intrinsics _depthIntrinsics;
+            private readonly Intrinsics _intrinsics;
             private readonly IntelRealSenseTextureSource _source;
             private readonly IntPtr _depthBuffer;
             private readonly float _depthUnits;
@@ -49,7 +49,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 Vector3Int depthSize, 
                 IntPtr depthBuffer, 
                 float depthUnits,
-                Intrinsics depthIntrinsics,
+                Intrinsics intrinsics,
                 IntelRealSenseTextureSource source)
             {
                 _colorSize = colorSize;
@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 _depthSize = depthSize;
                 _depthBuffer = depthBuffer;
                 _depthUnits = depthUnits;
-                _depthIntrinsics = depthIntrinsics;
+                _intrinsics = intrinsics;
                 _source = source;
             }
             
@@ -84,19 +84,19 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             {
                 point = default;
 
-                if (_depthIntrinsics.model == Distortion.ModifiedBrownConrady)
+                if (_intrinsics.model == Distortion.ModifiedBrownConrady)
                     return false;
                 
                 var depth = SampleDepth(sampleX, sampleY);
                 if (depth <= 0)
                     return false;
                 
-                var x = (sampleX - _depthIntrinsics.ppx) / _depthIntrinsics.fx;
-                var y = (sampleY - _depthIntrinsics.ppy) / _depthIntrinsics.fy;
+                var x = (sampleX - _intrinsics.ppx) / _intrinsics.fx;
+                var y = (sampleY - _intrinsics.ppy) / _intrinsics.fy;
                 var xo = x;
                 var yo = y;
 
-                switch (_depthIntrinsics.model)
+                switch (_intrinsics.model)
                 {
                     case Distortion.InverseBrownConrady:
                     {
@@ -105,11 +105,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                         for (var i = 0; i < 10; i++)
                         {
                             var r2 = x * x + y * y;
-                            var icDist = 1 / (1 + ((_depthIntrinsics.coeffs[4] * r2 + _depthIntrinsics.coeffs[1]) * r2 + _depthIntrinsics.coeffs[0]) * r2);
+                            var icDist = 1 / (1 + ((_intrinsics.coeffs[4] * r2 + _intrinsics.coeffs[1]) * r2 + _intrinsics.coeffs[0]) * r2);
                             var xq = x / icDist;
                             var yq = y / icDist;
-                            var deltaX = 2 * _depthIntrinsics.coeffs[2] * xq * yq + _depthIntrinsics.coeffs[3] * (r2 + 2 * xq * xq);
-                            var deltaY = 2 * _depthIntrinsics.coeffs[3] * xq * yq + _depthIntrinsics.coeffs[2] * (r2 + 2 * yq * yq);
+                            var deltaX = 2 * _intrinsics.coeffs[2] * xq * yq + _intrinsics.coeffs[3] * (r2 + 2 * xq * xq);
+                            var deltaY = 2 * _intrinsics.coeffs[3] * xq * yq + _intrinsics.coeffs[2] * (r2 + 2 * yq * yq);
                             x = (xo - deltaX) * icDist;
                             y = (yo - deltaY) * icDist;
                         }
@@ -123,9 +123,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                         for (var i = 0; i < 10; i++)
                         {
                             var r2 = x * x + y * y;
-                            var icDist = 1f / (1f + ((_depthIntrinsics.coeffs[4] * r2 + _depthIntrinsics.coeffs[1]) * r2 + _depthIntrinsics.coeffs[0]) * r2);
-                            var deltaX = 2 * _depthIntrinsics.coeffs[2] * x * y + _depthIntrinsics.coeffs[3] * (r2 + 2 * x * x);
-                            var deltaY = 2 * _depthIntrinsics.coeffs[3] * x * y + _depthIntrinsics.coeffs[2] * (r2 + 2 * y * y);
+                            var icDist = 1f / (1f + ((_intrinsics.coeffs[4] * r2 + _intrinsics.coeffs[1]) * r2 + _intrinsics.coeffs[0]) * r2);
+                            var deltaX = 2 * _intrinsics.coeffs[2] * x * y + _intrinsics.coeffs[3] * (r2 + 2 * x * x);
+                            var deltaY = 2 * _intrinsics.coeffs[3] * x * y + _intrinsics.coeffs[2] * (r2 + 2 * y * y);
                             x = (xo - deltaX) * icDist;
                             y = (yo - deltaY) * icDist;
                         }
@@ -144,10 +144,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                         var theta2 = rd * rd;
                         for (var i = 0; i < 4; i++)
                         {
-                            var f = theta * (1 + theta2 * (_depthIntrinsics.coeffs[0] + theta2 * (_depthIntrinsics.coeffs[1] + theta2 * (_depthIntrinsics.coeffs[2] + theta2 * _depthIntrinsics.coeffs[3])))) - rd;
+                            var f = theta * (1 + theta2 * (_intrinsics.coeffs[0] + theta2 * (_intrinsics.coeffs[1] + theta2 * (_intrinsics.coeffs[2] + theta2 * _intrinsics.coeffs[3])))) - rd;
                             if (Mathf.Abs(f) < float.Epsilon)
                                 break;
-                            var df = 1 + theta2 * (3 * _depthIntrinsics.coeffs[0] + theta2 * (5 * _depthIntrinsics.coeffs[1] + theta2 * (7 * _depthIntrinsics.coeffs[2] + 9 * theta2 * _depthIntrinsics.coeffs[3])));
+                            var df = 1 + theta2 * (3 * _intrinsics.coeffs[0] + theta2 * (5 * _intrinsics.coeffs[1] + theta2 * (7 * _intrinsics.coeffs[2] + 9 * theta2 * _intrinsics.coeffs[3])));
                             theta -= f / df;
                             theta2 = theta * theta;
                         }
@@ -161,7 +161,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                         var rd = Mathf.Sqrt(x * x + y * y);
                         if (rd < float.Epsilon)
                             rd = float.Epsilon;
-                        var r = Mathf.Tan(_depthIntrinsics.coeffs[0] * rd) / Mathf.Atan(2 * Mathf.Tan(_depthIntrinsics.coeffs[0] / 2.0f));
+                        var r = Mathf.Tan(_intrinsics.coeffs[0] * rd) / Mathf.Atan(2 * Mathf.Tan(_intrinsics.coeffs[0] / 2.0f));
                         x *= r / rd;
                         y *= r / rd;
                         break;
@@ -246,8 +246,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 using var dFrame = composite.DepthFrame;
                 if (cFrame is null || dFrame is null)
                     return;
-
-                var dIntrinsics = dFrame.Profile.As<VideoStreamProfile>().GetIntrinsics();
+                
+                var intrinsics = cFrame.Profile.As<VideoStreamProfile>().GetIntrinsics();
                 var dBuffer = Marshal.AllocHGlobal(dFrame.Stride * dFrame.Height);
                 var dSize = new Vector3Int(dFrame.Width, dFrame.Height, dFrame.Stride);
                 var dUnits = dFrame.GetUnits();
@@ -273,7 +273,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     dSize,
                     dBuffer,
                     dUnits,
-                    dIntrinsics,
+                    intrinsics,
                     this));
 
                 _gotFrame = true;
