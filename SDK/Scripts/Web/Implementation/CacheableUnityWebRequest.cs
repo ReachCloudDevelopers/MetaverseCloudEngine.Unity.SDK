@@ -198,7 +198,9 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
 
                     if (!Request.isDone)
                     {
-                        Request.downloadHandler = DownloadHandlerFactory?.Invoke(Request);
+                        if (Request.downloadHandler is null && DownloadHandlerFactory is not null)
+                            Request.downloadHandler = DownloadHandlerFactory?.Invoke(Request);
+                        
                         await Request.SendWebRequest()
                             .ToUniTask(progress: progress, cancellationToken: cancellationToken);
                     }

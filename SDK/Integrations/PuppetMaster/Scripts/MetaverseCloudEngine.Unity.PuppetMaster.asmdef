@@ -1,6 +1,6 @@
 {
-    "name": "MetaverseCloudEngine.Unity.Integrations.PuppetMaster",
-    "rootNamespace": "",
+    "name": "MetaverseCloudEngine.Unity.PuppetMaster",
+    "rootNamespace": "MetaverseCloudEngine.Unity.PuppetMaster",
     "references": [
         "GUID:f19b7182756095a428b94d1459e7491e"
     ],
