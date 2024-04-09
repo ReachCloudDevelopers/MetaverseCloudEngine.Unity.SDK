@@ -45,6 +45,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             Action postProcessBuild = null,
             bool includeIOSFix = true)
         {
+            var lockedAssemblies = true;
             preProcessBuild?.Invoke();
             try
             {
@@ -90,6 +91,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     targetPlatforms.Insert(0, Platform.iOS);
                 }
 
+                // Let's start processing each platform.
                 var alreadyDonePlatforms = new List<int>();
                 foreach (var platform in targetPlatforms.Where(
                              platform => !alreadyDonePlatforms.Contains((int)platform)))
@@ -118,6 +120,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                             $"Build target {platform} is not supported by your Unity Editor configuration. Please install the necessary development kits.");
                         continue;
                     }
+                    
+                    EditorApplication.LockReloadAssemblies();
                     
                     // Switch current build target before pre-processing assets.
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
@@ -158,8 +162,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
                     yield return null;
-                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-                    yield return null;
+                    
+                    EditorApplication.UnlockReloadAssemblies();
 
                     try
                     {
@@ -244,23 +248,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                 
                 postProcessBuild?.Invoke();
             }
-        }
-
-        private static IEnumerator ReloadScriptingAssembly()
-        {
-            var maxTime = DateTime.UtcNow.AddSeconds(10);
-
-            while (EditorApplication.isCompiling)
-                yield return null;
-
-            yield return null;
-            
-            CompilationPipeline.RequestScriptCompilation();
-
-            while (DateTime.UtcNow < maxTime && !EditorApplication.isCompiling)
-                yield return null;
-            
-            yield return null;
         }
 
         private static void ApplyGraphicsApiForCurrentPlatform(BuildTarget buildTarget, Platform platform)
