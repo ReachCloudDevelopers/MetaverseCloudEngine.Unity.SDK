@@ -49,7 +49,7 @@ namespace MetaverseCloudEngine.Unity
                         outputDirectory, 
                         file.Item2);
 
-                    request.Request.downloadHandler = new DownloadHandlerFile(outputPath, true)
+                    request.DownloadHandlerFactory = _ => new DownloadHandlerFile(outputPath, true)
                     {
                         removeFileOnAbort = false
                     };

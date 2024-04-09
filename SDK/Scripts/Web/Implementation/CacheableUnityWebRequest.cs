@@ -50,6 +50,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
         public HttpStatusCode ResponseCode => _cacheSuccess ? HttpStatusCode.NotModified : (HttpStatusCode)Request.responseCode;
         public byte[] Data => _buffer ?? Request.downloadHandler.data;
         public bool IgnoreModifications { get; set; }
+        public Func<UnityWebRequest, DownloadHandler> DownloadHandlerFactory { get; set; }
 
         public Texture2D GetTexture(bool readable = true)
         {
@@ -196,8 +197,11 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                         return;
 
                     if (!Request.isDone)
+                    {
+                        Request.downloadHandler = DownloadHandlerFactory?.Invoke(Request);
                         await Request.SendWebRequest()
                             .ToUniTask(progress: progress, cancellationToken: cancellationToken);
+                    }
                     else
                         await UniTask.WaitUntil(() => Request.isDone, cancellationToken: cancellationToken);
 

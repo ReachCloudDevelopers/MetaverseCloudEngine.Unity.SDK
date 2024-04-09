@@ -40,7 +40,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         [Tooltip("The number of pixels around the object mask to discard from the object detection.")]
         public int objectBoundaryMargin = 5;
         [Tooltip("A label to assign to the environment. This is not a label from the YOLO model.")]
-        [Required]
         public string environmentLabel = "env";
         
         private YOLOSegmentPredictor _segmentPredictor;

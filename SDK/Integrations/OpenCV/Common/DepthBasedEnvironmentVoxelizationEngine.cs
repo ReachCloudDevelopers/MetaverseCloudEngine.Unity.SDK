@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         [Min(1)] [SerializeField] private int trackingBuffer = 5;
         [SerializeField] private bool backgroundEnabled = true;
 
-        private BYTETracker.BYTETracker _tracker;
+        private ByteTracker _tracker;
         private IObjectDetectionPipeline _pipeline;
         private List<IObjectDetectionPipeline.DetectedObject> _lastFrameObjects;
         private Dictionary<string, ObjectType> _labelToPrefabs;
@@ -88,8 +88,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private class ObjectInstance
         {
+            private Track _previousTrack;
+
             public Track Track;
-            public Track PreviousTrack;
             public GameObject Instance;
             public ObjectType ObjectType;
             public BoxCollider Trigger;
@@ -97,22 +98,22 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             public void ReplaceWith(Track newTrack)
             {
                 Track.MarkAsRemoved();
-                PreviousTrack = Track;
+                _previousTrack = Track;
                 Track = newTrack;
             }
 
             public void FinalizeReplacement()
             {
-                PreviousTrack = null;
+                _previousTrack = null;
             }
 
             public void RevertReplacement()
             {
-                if (PreviousTrack is null)
+                if (_previousTrack is null)
                     return;
                 
                 Track.MarkAsRemoved();
-                Track = PreviousTrack;
+                Track = _previousTrack;
                 Track.DetectionState = TrackState.Tracked;
             }
         }
@@ -129,7 +130,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!Application.isPlaying)
                 return;
             _tracker?.Clear();
-            _tracker = new BYTETracker.BYTETracker(max_retention_time: trackingBuffer);
+            _tracker = new ByteTracker(maxRetentionTime: trackingBuffer);
         }
 
         private void OnValidate()
@@ -451,10 +452,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private static bool NearCoordinates(ObjectInstance source, Detection<IObjectDetectionPipeline.DetectedObject> detection)
         {
-            if (Vector2.Distance(detection.Ref.Origin, source.Instance.transform.localPosition) >
-                source.ObjectType.expectedObjectRadius * 2f)
-                return false;
-            return true;
+            var distance = Vector2.Distance(detection.Ref.Origin, source.Instance.transform.localPosition);
+            return distance <= source.ObjectType.expectedObjectRadius * 2f;
         }
     }
 }

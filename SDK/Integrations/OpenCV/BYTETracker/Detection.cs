@@ -4,11 +4,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.BYTETracker
 {
     public interface IDetectionBase
     {
-        IRectBase Rect { get; }
-        float Score { get; }
-
-        void SetRect(IRectBase rect);
-        void SetScore(float score);
     }
 
     public class Detection<T> : Detection

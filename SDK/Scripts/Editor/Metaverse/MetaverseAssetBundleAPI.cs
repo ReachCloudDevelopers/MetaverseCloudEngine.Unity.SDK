@@ -45,6 +45,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             preProcessBuild?.Invoke();
             try
             {
+                // Ensure we start out with the default build target.
                 const BuildTarget defaultBuildTarget =
 #if UNITY_EDITOR_WIN
                         BuildTarget.StandaloneWindows64
@@ -53,24 +54,19 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                     ;
                 if (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
-
-                if (!Directory.Exists(MetaverseBuildDirectory))
-                    Directory.CreateDirectory(MetaverseBuildDirectory);
-
-                AssetDatabase.SaveAssets();
-
-                var successfulBuilds = new List<BundleBuild>();
-                var targetPlatforms = ((Platform[])Enum.GetValues(typeof(Platform)))
-                    .Where(x => platforms.HasFlag(x))
-                    .ToList();
-
-                if (includeIOSFix && targetPlatforms.Contains(Platform.iOS))
                 {
-                    targetPlatforms.Remove(Platform.iOS);
-                    targetPlatforms.Insert(0, Platform.iOS);
+                    EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
+                    EditorApplication.Step();
+                    while (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
+                        EditorApplication.Step();
+                    EditorApplication.Step();
+                    ReloadScriptingAssembly();
                 }
 
+                // Make sure all dirty assets are saved and cleaned up.
+                AssetDatabase.SaveAssets();
+                MetaPrefabLoadingAPI.ClearPool(false);
+                MetaverseProjectConfigurator.ConfigureXRLoaders(true);
                 if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 {
                     if (!forceSaveScene)
@@ -79,8 +75,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                         throw new OperationCanceledException("You must save the open scene before building.");
                 }
 
-                MetaPrefabLoadingAPI.ClearPool(false);
-                MetaverseProjectConfigurator.ConfigureXRLoaders(true);
+                // Create the build output directory.
+                if (!Directory.Exists(MetaverseBuildDirectory))
+                    Directory.CreateDirectory(MetaverseBuildDirectory);
+
+                // Initialize build parameters.
+                var successfulBuilds = new List<BundleBuild>();
+                var targetPlatforms = ((Platform[])Enum.GetValues(typeof(Platform)))
+                    .Where(x => platforms.HasFlag(x))
+                    .ToList();
+                if (includeIOSFix && targetPlatforms.Contains(Platform.iOS))
+                {
+                    targetPlatforms.Remove(Platform.iOS);
+                    targetPlatforms.Insert(0, Platform.iOS);
+                }
 
                 var alreadyDonePlatforms = new List<int>();
                 foreach (var platform in targetPlatforms.Where(
@@ -129,38 +137,30 @@ namespace MetaverseCloudEngine.Unity.Editors
                         AssetDatabase.StopAssetEditing();
                     }
 
+                    // Create sub-output directory.
                     var outputFolder = Path.Combine(MetaverseBuildDirectory, targetBundleId) + "_Data";
                     if (!Directory.Exists(outputFolder))
                         Directory.CreateDirectory(outputFolder);
 
                     try
                     {
+                        // Configure editor and settings.
                         MetaverseProgram.IsBuildingAssetBundle = true;
-
                         ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
-
                         UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
                         MetaPrefab.PreProcessBuild();
                         StartDisabled.PreProcessBuild();
-
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                         EditorUserBuildSettings.selectedBuildTargetGroup = group;
                         if (group == BuildTargetGroup.Standalone)
                             EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
                         EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+                        EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+                        ReloadScriptingAssembly();
+                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                         
                         try
                         {
-                            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-                            
-                            EditorApplication.Step();
-
-                            var delay = Task.Delay(100);
-                            while (!delay.IsCompleted)
-                                EditorApplication.Step();
-                            
-                            EditorApplication.Step();
-
                             var result = ContentPipeline.BuildAssetBundles(
                                 new BundleBuildParameters(buildTarget, group, outputFolder)
                                 {
@@ -239,6 +239,24 @@ namespace MetaverseCloudEngine.Unity.Editors
                 
                 postProcessBuild?.Invoke();
             }
+        }
+
+        private static void ReloadScriptingAssembly()
+        {
+            var maxTime = DateTime.UtcNow.AddSeconds(10);
+            
+            while (EditorApplication.isCompiling)
+                EditorApplication.Step();
+            EditorApplication.Step();
+            
+            CompilationPipeline.RequestScriptCompilation();
+            while (DateTime.UtcNow < maxTime && !EditorApplication.isCompiling)
+                EditorApplication.Step();
+            EditorApplication.Step();
+            
+            while (EditorApplication.isCompiling)
+                EditorApplication.Step();
+            EditorApplication.Step();
         }
 
         private static void ApplyGraphicsApiForCurrentPlatform(BuildTarget buildTarget, Platform platform)
