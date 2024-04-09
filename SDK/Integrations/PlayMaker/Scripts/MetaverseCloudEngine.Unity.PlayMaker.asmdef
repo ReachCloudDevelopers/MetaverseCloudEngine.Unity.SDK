@@ -1,0 +1,23 @@
+{
+    "name": "MetaverseCloudEngine.Unity.PlayMaker",
+    "rootNamespace": "MetaverseCloudEngine.Unity.PlayMaker",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "PlayMaker.dll",
+        "MetaverseCloudEngine.Common.dll",
+        "MetaverseCloudEngine.ApiClient.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "PLAYMAKER"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

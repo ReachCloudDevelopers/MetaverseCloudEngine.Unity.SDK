@@ -1,0 +1,25 @@
+{
+    "name": "MetaverseCloudEngine.Unity.PlayMaker.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:fce34495c6961054ca546a3da7e02372"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "PlayMaker.dll",
+        "PlayMakerEditor.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "PLAYMAKER",
+        "METAVERSE_CLOUD_ENGINE"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
