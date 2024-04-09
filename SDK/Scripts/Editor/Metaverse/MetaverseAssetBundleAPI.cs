@@ -161,6 +161,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
                     yield return null;
                     AssetDatabase.SaveAssets();
+                    AssetDatabase.Refresh();
                     
                     try
                     {
