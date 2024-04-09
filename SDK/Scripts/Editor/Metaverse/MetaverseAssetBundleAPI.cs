@@ -46,6 +46,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             bool includeIOSFix = true)
         {
             var lockedAssemblies = true;
+            EditorApplication.LockReloadAssemblies();
+
             preProcessBuild?.Invoke();
             try
             {
@@ -121,8 +123,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                         continue;
                     }
                     
-                    EditorApplication.LockReloadAssemblies();
-                    
                     // Switch current build target before pre-processing assets.
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
                     if (group == BuildTargetGroup.Standalone)
@@ -163,13 +163,17 @@ namespace MetaverseCloudEngine.Unity.Editors
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
                     yield return null;
                     
-                    EditorApplication.UnlockReloadAssemblies();
-
                     try
                     {
                         MetaverseProgram.IsBuildingAssetBundle = true;
                         try
                         {
+                            if (lockedAssemblies)
+                            {
+                                EditorApplication.UnlockReloadAssemblies();
+                                lockedAssemblies = false;
+                            }
+
                             var result = ContentPipeline.BuildAssetBundles(
                                 new BundleBuildParameters(buildTarget, group, outputFolder)
                                 {
@@ -192,6 +196,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                                         }
                                     }
                                 ), out var results);
+
+                            if (!lockedAssemblies)
+                            {
+                                EditorApplication.LockReloadAssemblies();
+                                lockedAssemblies = true;
+                            }
                             
                             if (result < 0)
                             {
@@ -230,6 +240,11 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
             finally
             {
+                if (lockedAssemblies)
+                {
+                    EditorApplication.UnlockReloadAssemblies();
+                }
+                
                 const BuildTarget defaultTarget =
 #if UNITY_EDITOR_WIN
                         BuildTarget.StandaloneWindows64
