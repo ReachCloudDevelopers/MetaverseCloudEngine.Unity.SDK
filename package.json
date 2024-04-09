@@ -19,6 +19,7 @@
     "com.unity.xr.arcore": "4.0.0",
     "com.unity.xr.arfoundation": "4.0.0",
     "com.unity.xr.hands": "1.2.0",
-    "com.unity.render-pipelines.universal": "14.0.0"
+    "com.unity.render-pipelines.universal": "14.0.0",
+    "com.unity.editorcoroutines": "1.0.0"
   }
 }

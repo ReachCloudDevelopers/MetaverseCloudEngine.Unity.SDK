@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +14,7 @@ using UnityEditor.Build.Pipeline;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Unity.Assets.MetaPrefabs;
 using MetaverseCloudEngine.Unity.Components;
+using Unity.EditorCoroutines.Editor;
 using UnityEditor.Build.Pipeline.Interfaces;
 using UnityEditor.Build.Pipeline.Tasks;
 using UnityEditor.Build.Player;
@@ -31,7 +33,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public const string MetaverseBuildDirectory = "Builds/MetaverseAssetBundles";
 
-        private static void BuildAssetBundle(
+        private static IEnumerator BuildAssetBundle(
             string bundleId,
             string[] dependencies,
             bool forceSaveScene,
@@ -56,15 +58,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                 if (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
                 {
                     EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
-                    EditorApplication.Step();
+                    
+                    yield return null;
+
                     while (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
-                        EditorApplication.Step();
-                    EditorApplication.Step();
-                    ReloadScriptingAssembly();
+                        yield return null;
+
+                    yield return null;
+                    
+                    yield return ReloadScriptingAssembly();
                 }
 
                 // Make sure all dirty assets are saved and cleaned up.
                 AssetDatabase.SaveAssets();
+                yield return null;
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
                 if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -126,10 +133,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     try
                     {
                         CollectAssetNamesFromAssetBundleDependencies(dependencies, targetBundleId, validAssetNames);
-
                         if (validAssetNames.Count == 0)
                             throw new BuildFailedException("There were no valid assets to build.");
-
                         ApplyPlatformOptions(platformOptions, platform, validAssetNames, group);
                     }
                     finally
@@ -142,23 +147,24 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (!Directory.Exists(outputFolder))
                         Directory.CreateDirectory(outputFolder);
 
+                    // Configure editor and settings.
+                    ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
+                    UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
+                    MetaPrefab.PreProcessBuild();
+                    StartDisabled.PreProcessBuild();
+                    PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
+                    EditorUserBuildSettings.selectedBuildTargetGroup = group;
+                    if (group == BuildTargetGroup.Standalone)
+                        EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
+                    EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+                    EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+                    yield return ReloadScriptingAssembly();
+                    AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                    yield return null;
+
                     try
                     {
-                        // Configure editor and settings.
                         MetaverseProgram.IsBuildingAssetBundle = true;
-                        ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
-                        UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
-                        MetaPrefab.PreProcessBuild();
-                        StartDisabled.PreProcessBuild();
-                        PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
-                        EditorUserBuildSettings.selectedBuildTargetGroup = group;
-                        if (group == BuildTargetGroup.Standalone)
-                            EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
-                        EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
-                        EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
-                        ReloadScriptingAssembly();
-                        AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-                        
                         try
                         {
                             var result = ContentPipeline.BuildAssetBundles(
@@ -241,22 +247,21 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private static void ReloadScriptingAssembly()
+        private static IEnumerator ReloadScriptingAssembly()
         {
             var maxTime = DateTime.UtcNow.AddSeconds(10);
-            
+
             while (EditorApplication.isCompiling)
-                EditorApplication.Step();
-            EditorApplication.Step();
+                yield return null;
+
+            yield return null;
             
             CompilationPipeline.RequestScriptCompilation();
+
             while (DateTime.UtcNow < maxTime && !EditorApplication.isCompiling)
-                EditorApplication.Step();
-            EditorApplication.Step();
+                yield return null;
             
-            while (EditorApplication.isCompiling)
-                EditorApplication.Step();
-            EditorApplication.Step();
+            yield return null;
         }
 
         private static void ApplyGraphicsApiForCurrentPlatform(BuildTarget buildTarget, Platform platform)
@@ -474,7 +479,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             foreach (var proc in processors)
                 proc.OnPreProcessBuild(prefab);
 
-            BuildAssetBundle(
+            var buildRoutine = BuildAssetBundle(
                 guid,
                 new[] { AssetDatabase.GetAssetPath(prefab) },
                 forceSaveScene: false,
@@ -493,8 +498,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     foreach (var proc in processors)
                         proc.OnPostProcessBuild(prefab);
-                    
+
                 }, includeIOSFix: true);
+
+            EditorCoroutineUtility.StartCoroutineOwnerless(buildRoutine);
         }
 
         public static void BuildStreamedScene(
@@ -537,7 +544,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 .Distinct()
                 .ToArray();
 
-            BuildAssetBundle(
+            var buildRoutine = BuildAssetBundle(
                 guid,
                 scenePaths,
                 forceSaveScene: true,
@@ -558,6 +565,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         proc.OnPostProcessBuild(scene);
                     
                 }, includeIOSFix: false);
+
+            EditorCoroutineUtility.StartCoroutineOwnerless(buildRoutine);
         }
     }
 }
