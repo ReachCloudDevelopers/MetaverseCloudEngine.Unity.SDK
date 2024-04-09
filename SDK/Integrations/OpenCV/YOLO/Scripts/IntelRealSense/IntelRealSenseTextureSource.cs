@@ -168,8 +168,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     }
                 }
 
-                point[0] = (depth * x) + _source.ySlide;
-                point[1] = (depth * -y) + _source.xSlide;
+                point[0] = (depth * x) + _source.xSlide;
+                point[1] = (depth * -y) + _source.ySlide;
                 point[2] = depth;
 
                 return true;
