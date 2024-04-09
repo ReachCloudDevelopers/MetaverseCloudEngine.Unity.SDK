@@ -141,15 +141,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                         Directory.CreateDirectory(outputFolder);
 
                     // Configure editor and settings.
-                    ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
-                    UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
-                    MetaPrefab.PreProcessBuild();
-                    StartDisabled.PreProcessBuild();
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
                     yield return null;
+                    UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
+                    MetaPrefab.PreProcessBuild();
+                    StartDisabled.PreProcessBuild();
+                    ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
                     if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
