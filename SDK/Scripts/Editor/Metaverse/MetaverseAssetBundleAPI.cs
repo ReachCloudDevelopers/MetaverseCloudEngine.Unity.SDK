@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
@@ -16,10 +14,7 @@ using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Unity.Assets.MetaPrefabs;
 using MetaverseCloudEngine.Unity.Components;
 using Unity.EditorCoroutines.Editor;
-using UnityEditor.Build.Pipeline.Interfaces;
-using UnityEditor.Build.Pipeline.Tasks;
 using UnityEditor.Build.Player;
-using UnityEditor.Compilation;
 using UnityEngine.Rendering;
 
 namespace MetaverseCloudEngine.Unity.Editors
@@ -61,14 +56,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                     ;
                 if (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
-                {
                     EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
-                    yield return null;
-                }
 
                 // Make sure all dirty assets are saved and cleaned up.
                 AssetDatabase.SaveAssets();
-                yield return null;
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
                 if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
@@ -125,9 +116,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
-                    yield return null;
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
-                    yield return null;
 
                     var targetBundleId = bundleId + "_" + platform;
                     var validAssetNames = new List<string>();
@@ -159,7 +148,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
                     else PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
-                    yield return null;
                     AssetDatabase.SaveAssets();
                     AssetDatabase.Refresh();
                     
@@ -236,7 +224,6 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     AssetDatabase.ReleaseCachedFileHandles();
                     AssetDatabase.Refresh();
-
                     yield return null;
                 }
 

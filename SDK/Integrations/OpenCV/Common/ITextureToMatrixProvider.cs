@@ -1,6 +1,7 @@
 ﻿#if (METAVERSE_CLOUD_ENGINE_INTERNAL || MV_OPENCV)
 using System;
 using OpenCVForUnity.CoreModule;
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.Common
 {
@@ -9,6 +10,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         Mat GetMat();
         bool ProvidesDepthData();
         float SampleDepth(int sampleX, int sampleY);
+        bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point);
     }
     
     public interface ITextureToMatrixProvider

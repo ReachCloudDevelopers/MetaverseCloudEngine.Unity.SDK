@@ -1043,6 +1043,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             {
                 return -1;
             }
+
+            public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
+            {
+                point = default;
+                return false;
+            }
         }
 
         /// <summary>

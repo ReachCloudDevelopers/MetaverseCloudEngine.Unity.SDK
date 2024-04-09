@@ -6,6 +6,7 @@ using MetaverseCloudEngine.Unity.OpenCV.Common;
 using OpenCVForUnity.CoreModule;
 using TriInspectorMVCE;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
 {
@@ -31,16 +32,18 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             private readonly Vector3Int _colorSize;
             private readonly IntPtr _colorBuffer;
             private readonly Vector3Int _depthSize;
+            private readonly Intrinsics _depthIntrinsics;
             private readonly IntPtr _depthBuffer;
             private readonly float _depthUnits;
 
-            public RealSenseFrameData(Vector3Int colorSize, IntPtr colorBuffer, Vector3Int depthSize, IntPtr depthBuffer, float depthUnits)
+            public RealSenseFrameData(Vector3Int colorSize, IntPtr colorBuffer, Vector3Int depthSize, IntPtr depthBuffer, float depthUnits, Intrinsics depthIntrinsics)
             {
                 _colorSize = colorSize;
                 _colorBuffer = colorBuffer;
                 _depthSize = depthSize;
                 _depthBuffer = depthBuffer;
                 _depthUnits = depthUnits;
+                _depthIntrinsics = depthIntrinsics;
             }
             
             public Mat GetMat()
@@ -60,6 +63,101 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     return -1;
                 var depth = Marshal.ReadInt16(_depthBuffer, sampleY * _depthSize.z + sampleX * 2);
                 return depth * _depthUnits;
+            }
+
+            public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
+            {
+                point = default;
+
+                if (_depthIntrinsics.model == Distortion.ModifiedBrownConrady)
+                    return false;
+                
+                var depth = SampleDepth(sampleX, sampleY);
+                if (depth <= 0)
+                    return false;
+                
+                var x = (sampleX - _depthIntrinsics.ppx) / _depthIntrinsics.fx;
+                var y = (sampleY - _depthIntrinsics.ppy) / _depthIntrinsics.fy;
+                var xo = x;
+                var yo = y;
+
+                switch (_depthIntrinsics.model)
+                {
+                    case Distortion.InverseBrownConrady:
+                    {
+                        // need to loop until convergence 
+                        // 10 iterations determined empirically
+                        for (var i = 0; i < 10; i++)
+                        {
+                            var r2 = x * x + y * y;
+                            var icDist = 1 / (1 + ((_depthIntrinsics.coeffs[4] * r2 + _depthIntrinsics.coeffs[1]) * r2 + _depthIntrinsics.coeffs[0]) * r2);
+                            var xq = x / icDist;
+                            var yq = y / icDist;
+                            var deltaX = 2 * _depthIntrinsics.coeffs[2] * xq * yq + _depthIntrinsics.coeffs[3] * (r2 + 2 * xq * xq);
+                            var deltaY = 2 * _depthIntrinsics.coeffs[3] * xq * yq + _depthIntrinsics.coeffs[2] * (r2 + 2 * yq * yq);
+                            x = (xo - deltaX) * icDist;
+                            y = (yo - deltaY) * icDist;
+                        }
+
+                        break;
+                    }
+                    case Distortion.BrownConrady:
+                    {
+                        // need to loop until convergence 
+                        // 10 iterations determined empirically
+                        for (var i = 0; i < 10; i++)
+                        {
+                            var r2 = x * x + y * y;
+                            var icDist = 1f / (1f + ((_depthIntrinsics.coeffs[4] * r2 + _depthIntrinsics.coeffs[1]) * r2 + _depthIntrinsics.coeffs[0]) * r2);
+                            var deltaX = 2 * _depthIntrinsics.coeffs[2] * x * y + _depthIntrinsics.coeffs[3] * (r2 + 2 * x * x);
+                            var deltaY = 2 * _depthIntrinsics.coeffs[3] * x * y + _depthIntrinsics.coeffs[2] * (r2 + 2 * y * y);
+                            x = (xo - deltaX) * icDist;
+                            y = (yo - deltaY) * icDist;
+                        }
+
+                        break;
+                    }
+                    case Distortion.KannalaBrandt4:
+                    {
+                        var rd = Mathf.Sqrt(x * x + y * y);
+                        if (rd < float.Epsilon)
+                        {
+                            rd = float.Epsilon;
+                        }
+
+                        var theta = rd;
+                        var theta2 = rd * rd;
+                        for (var i = 0; i < 4; i++)
+                        {
+                            var f = theta * (1 + theta2 * (_depthIntrinsics.coeffs[0] + theta2 * (_depthIntrinsics.coeffs[1] + theta2 * (_depthIntrinsics.coeffs[2] + theta2 * _depthIntrinsics.coeffs[3])))) - rd;
+                            if (Mathf.Abs(f) < float.Epsilon)
+                                break;
+                            var df = 1 + theta2 * (3 * _depthIntrinsics.coeffs[0] + theta2 * (5 * _depthIntrinsics.coeffs[1] + theta2 * (7 * _depthIntrinsics.coeffs[2] + 9 * theta2 * _depthIntrinsics.coeffs[3])));
+                            theta -= f / df;
+                            theta2 = theta * theta;
+                        }
+                        var r = Mathf.Tan(theta);
+                        x *= r / rd;
+                        y *= r / rd;
+                        break;
+                    }
+                    case Distortion.Ftheta:
+                    {
+                        var rd = Mathf.Sqrt(x * x + y * y);
+                        if (rd < float.Epsilon)
+                            rd = float.Epsilon;
+                        var r = Mathf.Tan(_depthIntrinsics.coeffs[0] * rd) / Mathf.Atan(2 * Mathf.Tan(_depthIntrinsics.coeffs[0] / 2.0f));
+                        x *= r / rd;
+                        y *= r / rd;
+                        break;
+                    }
+                }
+
+                point[0] = depth * x;
+                point[1] = depth * -y;
+                point[2] = depth;
+
+                return true;
             }
 
             public void Dispose()
@@ -134,6 +232,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 if (cFrame is null || dFrame is null)
                     return;
 
+                var dIntrinsics = dFrame.Profile.As<VideoStreamProfile>().GetIntrinsics();
                 var dBuffer = Marshal.AllocHGlobal(dFrame.Stride * dFrame.Height);
                 var dSize = new Vector3Int(dFrame.Width, dFrame.Height, dFrame.Stride);
                 var dUnits = dFrame.GetUnits();
@@ -158,7 +257,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     cBuffer,
                     dSize,
                     dBuffer,
-                    dUnits));
+                    dUnits,
+                    dIntrinsics));
 
                 _gotFrame = true;
             }

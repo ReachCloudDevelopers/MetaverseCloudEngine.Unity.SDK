@@ -986,28 +986,6 @@ namespace MetaverseCloudEngine.Unity
 
         #region Maths
 
-        public static Vector3 PixelToWorld(float pixelX, float pixelY, float zDepth, float imageWidth, float imageHeight, float verticalFOV, float horizontalFOV)
-        {
-            // Convert FOV from degrees to radians for math functions
-            verticalFOV = verticalFOV * Mathf.PI / 180f;
-            horizontalFOV = horizontalFOV * Mathf.PI / 180f;
-
-            // Convert pixel coordinates to NDC
-            var ndcX = 2 * pixelX / imageWidth - 1;
-            var ndcY = 1 - 2 * pixelY / imageHeight;
-
-            // Calculate the tangent of the half FOV
-            var tanHalfFovX = Mathf.Tan(horizontalFOV / 2);
-            var tanHalfFovY = Mathf.Tan(verticalFOV / 2);
-
-            // Calculate world coordinates
-            var x = zDepth * ndcX * tanHalfFovX;
-            var y = zDepth * ndcY * tanHalfFovY;
-
-            // Return the calculated world coordinates
-            return new Vector3(x, y, zDepth);
-        }
-
         public static bool IsLayerInLayerMask(LayerMask layerMask, int layer)
         {
             return layerMask == (layerMask | (1 << layer));

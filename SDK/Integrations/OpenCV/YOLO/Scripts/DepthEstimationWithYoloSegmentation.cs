@@ -9,38 +9,42 @@ using UnityEngine;
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 {
     [HideMonoScript]
+    [DeclareFoldoutGroup("Advanced")]
     public class DepthEstimationWithYoloSegmentation : ImageInferenceNet, IObjectDetectionPipeline
     {
-        [Header("YOLO Settings")]
+        [Group("Advanced")]
+        public List<string> labelsToConsider = new ();
+        [Group("Advanced")]
         [Range(0, 1)]
         [Tooltip("Confidence threshold. Lower = more less accurate detections, Higher = less more accurate detections. Default is 0.5.")]
         public float confThreshold = 0.5f;
+        [Group("Advanced")]
         [Tooltip("Non-maximum suppression threshold. This value helps prevent duplicate detections. Lower = more detections but with more potential duplicates, Higher = less detections but less potential duplicates. Default is 0.45.")]
         [Range(0, 1f)]
         public float nmsThreshold = 0.45f;
+        [Group("Advanced")]
         [Tooltip("Maximum detections per image.")]
         [Range(1, 100)]
-        public int topK = 20;
-        [Tooltip("Enable mask image upsampling.")]
-        public bool upsample = true;
-        [Tooltip("Visualize bounding boxes. Note: This will cost performance.")]
-        public bool visualizeBoundingBoxes;
-        [Tooltip("Visualize masks. Note: This will cost performance.")]
-        public bool visualizeMasks;
-        public List<string> labelsToConsider = new ();
-
-        [Header("Depth Est. Settings")]
-        [Range(1, 180)]
-        public float verticalFov = 58;
-        [Range(1, 180)]
-        public float horizontalFov = 58;
+        public int topK = 100;
+        [Group("Advanced")]
         [Range(5, 64)]
         [Tooltip("The space between each pixel. A higher value means less pixels to process, but less accurate depth estimation.")]
-        public int pixelMargin = 15;
+        public int pixelMargin = 25;
+        [Group("Advanced")]
         [Tooltip("The number of pixels around the object mask to discard from the object detection.")]
         public int objectBoundaryMargin = 5;
-        [Tooltip("A label to assign to the environment. This is not a label from the YOLO model.")]
-        public string environmentLabel = "env";
+        [Group("Advanced")]
+        [Tooltip("Enable mask image upsampling.")]
+        public bool upsample = true;
+        [Group("Advanced")]
+        [Tooltip("Visualize bounding boxes. Note: This will cost performance.")]
+        public bool visualizeBoundingBoxes;
+        [Group("Advanced")]
+        [Tooltip("Visualize masks. Note: This will cost performance.")]
+        public bool visualizeMasks;
+        [Group("Advanced")]
+        [Tooltip("A label to assign to the background. This is not a label from the YOLO model.")]
+        public string backgroundLabel = "background";
         
         private YOLOSegmentPredictor _segmentPredictor;
         private bool _destroyed;
@@ -123,9 +127,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                     var visualFrameHeight = frameMat.height();
                     var detectedObjects = new List<IObjectDetectionPipeline.DetectedObject>();
                     var objectRects = _segmentPredictor.GetObjectRects(detections);
-                    var environment = !string.IsNullOrEmpty(environmentLabel) ? new IObjectDetectionPipeline.DetectedObject
+                    var environment = !string.IsNullOrEmpty(backgroundLabel) ? new IObjectDetectionPipeline.DetectedObject
                     {
-                        Label = environmentLabel,
+                        Label = backgroundLabel,
                         Vertices = new List<Vector3>(),
                         Score = 1,
                         IsBackground = true,
@@ -163,22 +167,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                 if (blocked)
                                     continue;
 
-                                var depth = frame.SampleDepth(
-                                    visualFrameX, visualFrameY);
-                            
-                                if (depth <= 0)
+                                if (!frame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
                                     continue;
-
-                                var pixelToWorld = MVUtils.PixelToWorld(
-                                    visualFrameX,
-                                    visualFrameY,
-                                    depth,
-                                    visualFrameWidth,
-                                    visualFrameHeight,
-                                    verticalFov,
-                                    horizontalFov);
-
-                                environment.Vertices.Add(pixelToWorld);
+                            
+                                environment.Vertices.Add(point);
                             }
                         }
 
@@ -195,9 +187,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                         var classLabel = _segmentPredictor.GetClassLabel(obj.cls);
                     
                         if (DiscardObject(classLabel, obj))
-                        {
                             continue;
-                        }
 
                         var calculatedBounds = false;
                         Bounds bounds = default;
@@ -212,29 +202,17 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                     continue;
 
                                 var inMask = IsInMask(masks, visualFrameX, visualFrameY, visualFrameWidth, visualFrameHeight, objectIndex);
-                                var cameraRelativeZ = frame.SampleDepth(
-                                    visualFrameX, visualFrameY);
-
-                                if (cameraRelativeZ <= 0)
-                                    continue;
-                            
-                                var pos = MVUtils.PixelToWorld(
-                                    visualFrameX,
-                                    visualFrameY,
-                                    cameraRelativeZ,
-                                    visualFrameWidth,
-                                    visualFrameHeight,
-                                    verticalFov,
-                                    horizontalFov);
-
                                 if (!inMask) 
                                     continue;
-
+                                
                                 if (AreAnyAdjacentPixelsOutOfMask(masks, visualFrameX, visualFrameY, visualFrameWidth, visualFrameHeight, objectIndex, objectBoundaryMargin))
                                     continue;
 
-                                if (cameraRelativeZ < nearestZ)
-                                    nearestZ = cameraRelativeZ;
+                                if (!frame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
+                                    continue;
+
+                                if (point.z < nearestZ)
+                                    nearestZ = point.z;
 
                                 detectableObject ??= new IObjectDetectionPipeline.DetectedObject
                                 {
@@ -243,11 +221,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                     Rect = new Vector4(obj.x1, obj.y1, obj.x2, obj.y2)
                                 };
 
-                                if (!calculatedBounds) bounds = new Bounds(pos, Vector3.zero);
-                                else bounds.Encapsulate(pos);
+                                if (!calculatedBounds) bounds = new Bounds(point, Vector3.zero);
+                                else bounds.Encapsulate(point);
                                 calculatedBounds = true;
                                 
-                                detectableObject.Vertices.Add(pos);
+                                detectableObject.Vertices.Add(point);
                             }
                         }
 
