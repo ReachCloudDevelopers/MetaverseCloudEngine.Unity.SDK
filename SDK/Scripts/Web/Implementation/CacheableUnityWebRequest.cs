@@ -48,7 +48,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
         };
         public bool Success => _cacheSuccess || Request.result == UnityWebRequest.Result.Success;
         public HttpStatusCode ResponseCode => _cacheSuccess ? HttpStatusCode.NotModified : (HttpStatusCode)Request.responseCode;
-        public byte[] Data => _buffer ?? Request.downloadHandler.data;
+        public byte[] Data => _buffer ?? Request.downloadHandler?.data ?? Array.Empty<byte>();
         public bool IgnoreModifications { get; set; }
         public Func<UnityWebRequest, DownloadHandler> DownloadHandlerFactory { get; set; }
 

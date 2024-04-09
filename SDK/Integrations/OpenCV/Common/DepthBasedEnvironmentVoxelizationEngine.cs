@@ -156,6 +156,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             _pipeline.DetectableObjectsUpdated -= ProcessFrame;
         }
 
+        private void OnDestroy()
+        {
+            _voxelPool?.Dispose();
+        }
+
         private void FixedUpdate()
         {
             ProcessFrame();
@@ -189,7 +194,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 ReleaseVoxelsForInstance(spawnedObject);
                 Destroy(spawnedObject.Instance);
             }
-
+            
             _spawnedObjects.Clear();
         }
 
