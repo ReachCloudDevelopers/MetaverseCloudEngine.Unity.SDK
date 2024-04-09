@@ -58,15 +58,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 if (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
                 {
                     EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
-                    
                     yield return null;
-
-                    while (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
-                        yield return null;
-
-                    yield return null;
-                    
-                    yield return ReloadScriptingAssembly();
                 }
 
                 // Make sure all dirty assets are saved and cleaned up.
@@ -157,8 +149,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+                    yield return null;
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
-                    yield return ReloadScriptingAssembly();
+                    yield return null;
                     AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                     yield return null;
 
