@@ -44,7 +44,8 @@
     "autoReferenced": true,
     "defineConstraints": [
         "UNITY_EDITOR",
-        "METAVERSE_CLOUD_ENGINE"
+        "METAVERSE_CLOUD_ENGINE",
+        "MV_EDITOR_COROUTINES"
     ],
     "versionDefines": [
         {
@@ -76,6 +77,11 @@
             "name": "com.unity.scriptablebuildpipeline",
             "expression": "1.21.22",
             "define": "MV_BUILD_PIPELINE"
+        },
+        {
+            "name": "com.unity.editorcoroutines",
+            "expression": "1.0.0",
+            "define": "MV_EDITOR_COROUTINES"
         }
     ],
     "noEngineReferences": false
