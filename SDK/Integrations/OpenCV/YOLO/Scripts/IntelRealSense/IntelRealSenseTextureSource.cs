@@ -18,6 +18,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
         [Tooltip("The RS frame provider that will feed the color and depth frames to this texture source.")]
         [SerializeField]
         private RsFrameProvider frameProvider;
+        [Range(-0.1f, 0.1f)]
+        [Tooltip("If the depth sensor is damaged or not properly aligned internally, you can use this value to adjust the coordinates on the X axis.")]
+        [SerializeField] private float xSlide;
+        [Range(-0.1f, 0.1f)]
+        [Tooltip("If the depth sensor is damaged or not properly aligned internally, you can use this value to adjust the coordinates on the Y axis.")]
+        [SerializeField] private float ySlide;
 
         private bool _isInitialized;
         private bool _isInitializing;
@@ -33,10 +39,18 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             private readonly IntPtr _colorBuffer;
             private readonly Vector3Int _depthSize;
             private readonly Intrinsics _depthIntrinsics;
+            private readonly IntelRealSenseTextureSource _source;
             private readonly IntPtr _depthBuffer;
             private readonly float _depthUnits;
 
-            public RealSenseFrameData(Vector3Int colorSize, IntPtr colorBuffer, Vector3Int depthSize, IntPtr depthBuffer, float depthUnits, Intrinsics depthIntrinsics)
+            public RealSenseFrameData(
+                Vector3Int colorSize, 
+                IntPtr colorBuffer, 
+                Vector3Int depthSize, 
+                IntPtr depthBuffer, 
+                float depthUnits,
+                Intrinsics depthIntrinsics,
+                IntelRealSenseTextureSource source)
             {
                 _colorSize = colorSize;
                 _colorBuffer = colorBuffer;
@@ -44,6 +58,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 _depthBuffer = depthBuffer;
                 _depthUnits = depthUnits;
                 _depthIntrinsics = depthIntrinsics;
+                _source = source;
             }
             
             public Mat GetMat()
@@ -153,8 +168,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     }
                 }
 
-                point[0] = depth * x;
-                point[1] = depth * -y;
+                point[0] = (depth * x) + _source.ySlide;
+                point[1] = (depth * -y) + _source.xSlide;
                 point[2] = depth;
 
                 return true;
@@ -258,7 +273,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                     dSize,
                     dBuffer,
                     dUnits,
-                    dIntrinsics));
+                    dIntrinsics,
+                    this));
 
                 _gotFrame = true;
             }
