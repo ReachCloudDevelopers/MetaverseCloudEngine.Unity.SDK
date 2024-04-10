@@ -52,7 +52,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             using var detections = results[0];
             using var masks = results[1];
             _segmentPredictor.VisualizeMasks(frameMat, detections, masks, 0.5f, true);
-            _segmentPredictor.Visualize(frameMat, detections, false, true);
+            _segmentPredictor.Visualize(frameMat, detections, isRGB: true);
             return default;
         }
 

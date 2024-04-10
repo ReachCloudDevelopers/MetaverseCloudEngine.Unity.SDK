@@ -53,6 +53,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         [Min(0)] [SerializeField] private float maxVoxelSize = 0.5f;
         [Tooltip("The larger this value, the longer an object will stay in memory when it is no longer tracked.")]
         [Min(1)] [SerializeField] private int trackingBuffer = 5;
+        [Range(0, 1f)] 
+        [SerializeField] private float trackingThreshold = 1f;
         [SerializeField] private bool backgroundEnabled = true;
 
         private ByteTracker _tracker;
@@ -133,7 +135,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!Application.isPlaying)
                 return;
             _tracker?.Clear();
-            _tracker = new ByteTracker(maxRetentionTime: trackingBuffer);
+            _tracker = new ByteTracker(maxRetentionTime: trackingBuffer, mul: trackingThreshold);
         }
 
         private void OnValidate()

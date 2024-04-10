@@ -7,7 +7,6 @@ using OpenCVForUnity.ImgprocModule;
 using OpenCVForUnity.UnityUtils;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine;
 using OpenCVRange = OpenCVForUnity.CoreModule.Range;
@@ -15,7 +14,7 @@ using OpenCVRect = OpenCVForUnity.CoreModule.Rect;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 {
-    public class YOLOSegmentPredictor
+    public class YOLOSegmentPredictor : IYoloModel
     {
         Size input_size;
         float conf_threshold;
@@ -33,7 +32,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         List<string> classNames;
         List<Scalar> palette;
 
-        public YOLOSegmentPredictor(string modelFilepath, string classesFilepath, Size inputSize, float confThreshold = 0.25f, float nmsThreshold = 0.45f, int topK = 300, bool upsample = true, int backend = Dnn.DNN_BACKEND_OPENCV, int target = Dnn.DNN_TARGET_CPU)
+        public YOLOSegmentPredictor(
+            string modelFilepath, 
+            string classesFilepath,
+            Size inputSize, 
+            float confThreshold = 0.25f,
+            float nmsThreshold = 0.45f,
+            int topK = 300,
+            bool upsample = true, 
+            int backend = Dnn.DNN_BACKEND_OPENCV,
+            int target = Dnn.DNN_TARGET_CPU)
         {
             // initialize
             if (!string.IsNullOrEmpty(modelFilepath))
@@ -401,7 +409,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             return masks;// [n, 160, 160]
         }
 
-        public virtual void Visualize(Mat image, Mat results, bool printResults = false, bool isRGB = false)
+        public virtual void Visualize(Mat image, Mat results, bool isRGB = false)
         {
             if (image.IsDisposed)
                 return;
@@ -435,27 +443,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                     new Point(left + labelSize.width, top + baseLine[0]), color, Core.FILLED);
                 Imgproc.putText(image, label, new Point(left, top), Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, Scalar.all(255), 1, Imgproc.LINE_AA);
             }
-
-            // Print results
-            if (!printResults) return;
-            var sb = new StringBuilder(512);
-
-            for (var i = 0; i < data.Length; ++i)
-            {
-                var d = data[i];
-                var label = GetClassLabel(d.cls);
-
-                sb.AppendFormat("-----------object {0}-----------", i + 1);
-                sb.AppendLine();
-                sb.AppendFormat("conf: {0:F4}", d.conf);
-                sb.AppendLine();
-                sb.Append("cls: ").Append(label);
-                sb.AppendLine();
-                sb.AppendFormat("box: {0:F0} {1:F0} {2:F0} {3:F0}", d.x1, d.y1, d.x2, d.y2);
-                sb.AppendLine();
-            }
-
-            Debug.Log(sb.ToString());
         }
 
         public virtual void VisualizeMasks(Mat image, Mat det, Mat masks, float alpha = 0.5f, bool isRGB = false)
@@ -562,41 +549,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         }
 
 
-        [StructLayout(LayoutKind.Sequential)]
-        public readonly struct DetectionData
+        public virtual IYoloModel.DetectionData[] GetObjectRects(Mat objects)
         {
-            public readonly float x1;
-            public readonly float y1;
-            public readonly float x2;
-            public readonly float y2;
-            public readonly float conf;
-            public readonly float cls;
-
-            // sizeof(ClassificationData)
-            public const int Size = 6 * sizeof(float);
-
-            public DetectionData(int x1, int y1, int x2, int y2, float conf, int cls)
-            {
-                this.x1 = x1;
-                this.y1 = y1;
-                this.x2 = x2;
-                this.y2 = y2;
-                this.conf = conf;
-                this.cls = cls;
-            }
-
-            public override string ToString()
-            {
-                return "x1:" + x1 + " y1:" + y1 + "x2:" + x2 + " y2:" + y2 + " conf:" + conf + "  cls:" + cls;
-            }
-        }
-
-        public virtual DetectionData[] GetObjectRects(Mat results)
-        {
-            if (results.empty())
-                return Array.Empty<DetectionData>();
-            var dst = new DetectionData[results.rows()];
-            MatUtils.copyFromMat(results, dst);
+            if (objects.empty())
+                return Array.Empty<IYoloModel.DetectionData>();
+            var dst = new IYoloModel.DetectionData[objects.rows()];
+            MatUtils.copyFromMat(objects, dst);
             return dst;
         }
 

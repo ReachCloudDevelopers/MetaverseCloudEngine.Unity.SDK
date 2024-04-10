@@ -13,6 +13,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
     public class DepthEstimationWithYoloSegmentation : ImageInferenceNet, IObjectDetectionPipeline
     {
         [Group("Advanced")]
+        [Space]
         public List<string> labelsToConsider = new ();
         [Group("Advanced")]
         [Range(0, 1)]
@@ -46,7 +47,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         [Tooltip("A label to assign to the background. This is not a label from the YOLO model.")]
         public string backgroundLabel = "background";
         
-        private YOLOSegmentPredictor _segmentPredictor;
+        private IYoloModel _segmentPredictor;
         private bool _destroyed;
         private readonly object _destroyLock = new();
         
@@ -56,6 +57,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         {
             return new List<string>
             {
+                //"yolov8s-worldv2.onnx",
+                //"FastSAM-s.onnx",
                 "yolo.v8.segmentation.onnx",
                 "yolo.v8.coco.names"
             };
@@ -76,7 +79,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 
             if (dependencies.Length != 2)
             {
-                error = "Expected 3 dependencies, but got " + dependencies.Length;
+                error = "Expected 2 dependencies, but got " + dependencies.Length;
                 return false;
             }
 
@@ -96,6 +99,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                 _segmentPredictor = new YOLOSegmentPredictor(
                     dependencies[0],
                     dependencies[1],
+                    //dependencies[2],
                     new Size(640, 640),
                     confThreshold,
                     nmsThreshold,
@@ -251,7 +255,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                 }
         }
 
-        private bool DiscardObject(string classLabel, YOLOSegmentPredictor.DetectionData obj)
+        private bool DiscardObject(string classLabel, IYoloModel.DetectionData obj)
         {
             return labelsToConsider.Count > 0 && 
                    !labelsToConsider.Contains(classLabel) ||

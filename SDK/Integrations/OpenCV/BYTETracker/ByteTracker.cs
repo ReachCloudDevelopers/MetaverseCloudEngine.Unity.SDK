@@ -36,13 +36,18 @@ namespace MetaverseCloudEngine.Unity.OpenCV.BYTETracker
         /// <param name="trackThresh">tracking confidence threshold.</param>
         /// <param name="highThresh">confidence threshold for new tracking to be added. (track_thresh + 1)</param>
         /// <param name="matchThresh">matching threshold for tracking.</param>
+        /// <param name="mul">A multiplier to apply to all threshold values.</param>
         /// <param name="mot20">I have no clue what this does.</param>
-        public ByteTracker(int maxRetentionTime, float trackThresh = 0.5f,
-                            float highThresh = 0.6f, float matchThresh = 0.8f, bool mot20 = false)
+        public ByteTracker(int maxRetentionTime, 
+            float trackThresh = 0.5f,
+            float highThresh = 0.6f, 
+            float matchThresh = 0.8f, 
+            float mul = 1f,
+            bool mot20 = false)
         {
-            _trackThresh = trackThresh;
-            _highThresh = highThresh;
-            _matchThresh = matchThresh;
+            _trackThresh = trackThresh * mul;
+            _highThresh = highThresh * mul;
+            _matchThresh = matchThresh * mul;
             _maxTimeLost = maxRetentionTime;
             _frameID = 0;
             _trackIDCount = 0;
