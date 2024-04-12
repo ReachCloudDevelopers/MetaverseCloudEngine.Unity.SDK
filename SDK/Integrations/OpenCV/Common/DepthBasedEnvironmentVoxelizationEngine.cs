@@ -113,7 +113,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             public string Label;
             public Track Track;
             public GameObject Instance;
-            public BaseObjectType ObjectType;
+            public BaseObjectType Type;
             public BoxCollider Trigger;
 
             public void ReplaceWith(Track newTrack)
@@ -257,7 +257,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     {
                         var width = data.Rect.z - data.Rect.x;
                         var height = data.Rect.w - data.Rect.y;
-                        var rect = new TlwhRect(data.Rect.x, data.Rect.y, width, height);
+                        var rect = new TlwhRect(data.Rect.y, data.Rect.x, width, height);
                         return (Detection)new Detection<IObjectDetectionPipeline.DetectedObject>(data, rect, data.Score);
                     })
                     .ToList());
@@ -306,7 +306,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     transform = { parent = parent }
                     
                 }.Do(x => x.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity)),
-                ObjectType = new ObjectType
+                Type = new ObjectType
                 {
                     color = Color.black,
                 }
@@ -331,7 +331,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 
             var objectInstance = instance.Instance;
                 
-            if (detectionInfo.Ref.Vertices.Count < instance.ObjectType.minVertices)
+            if (detectionInfo.Ref.Vertices.Count < instance.Type.minVertices)
             {
                 _trackedObjectIds.Add(trackedResult.TrackId);
                 instance.RevertReplacement();
@@ -343,14 +343,14 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
             {
                 var vertex = detectedObjectReference.Vertices[vertexIndex];
-                if (instance.ObjectType.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.ObjectType.expectedObjectRadius) continue;
-                if (instance.ObjectType.maxDistance > 0 && vertex.z > instance.ObjectType.maxDistance) continue;
+                if (instance.Type.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.Type.expectedObjectRadius) continue;
+                if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) continue;
                 if (vertexCount == 0) bounds = new Bounds(vertex, Vector3.zero);
                 else bounds.Encapsulate(vertex);
                 vertexCount++;
             }
 
-            if (vertexCount < instance.ObjectType.minVertices)
+            if (vertexCount < instance.Type.minVertices)
             {
                 _trackedObjectIds.Add(trackedResult.TrackId);
                 instance.RevertReplacement();
@@ -363,7 +363,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             var instanceTransform = objectInstance.transform;
             instanceTransform.parent = parent;
             instanceTransform.localPosition = objectOrigin;
-            if (instance.ObjectType.addTriggerVolume)
+            if (instance.Type.addTriggerVolume)
             {
                 instance.Trigger.size = bounds.size;
                 instance.Trigger.enabled = true;
@@ -371,7 +371,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             instance.FinalizeReplacement();
             instance.Instance.SetActive(true);
 
-            if ((minVoxelSize > 0 || maxVoxelSize > 0) && !instance.ObjectType.positionTrackingOnly)
+            if ((minVoxelSize > 0 || maxVoxelSize > 0) && !instance.Type.positionTrackingOnly)
             {
                 for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
                     AddVoxel(detectedObjectReference, vertexIndex, instance, instanceTransform, objectOrigin, objectInstance);
@@ -392,8 +392,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 return;
             
             var vertex = detectedObjectReference.Vertices[vertexIndex];
-            if (instance.ObjectType.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.ObjectType.expectedObjectRadius) return;
-            if (instance.ObjectType.maxDistance > 0 && vertex.z > instance.ObjectType.maxDistance) return;
+            if (instance.Type.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.Type.expectedObjectRadius) return;
+            if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) return;
             var voxel = _voxelPool.Get();
             var inverseLerpSize = Mathf.InverseLerp(0.01f, 10f, vertex.z);
             var voxelSize = Mathf.Lerp(minVoxelSize, maxVoxelSize, inverseLerpSize);
@@ -402,10 +402,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             voxel.transform.localScale = Vector3.one * voxelSize;
             if (voxel.TryGetComponent<MeshRenderer>(out var ren))
             {
-                if (instance.ObjectType.color.a > 0)
+                if (instance.Type.color.a > 0)
                 {
                     ren.enabled = true;
-                    ren.material.color = instance.ObjectType.color;
+                    ren.material.color = instance.Type.color;
                 }
                 else ren.enabled = false;
             }
@@ -450,7 +450,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             {
                 Track = track,
                 Instance = newObj,
-                ObjectType = type,
+                Type = type,
                 Label = label,
             };
             if (type.addTriggerVolume)
@@ -494,7 +494,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         private static bool NearCoordinates(ObjectInstance source, Detection<IObjectDetectionPipeline.DetectedObject> detection)
         {
             var distance = Vector2.Distance(detection.Ref.Origin, source.Instance.transform.localPosition);
-            return distance <= source.ObjectType.expectedObjectRadius * 2f;
+            return distance <= source.Type.expectedObjectRadius * 2f;
         }
     }
 }

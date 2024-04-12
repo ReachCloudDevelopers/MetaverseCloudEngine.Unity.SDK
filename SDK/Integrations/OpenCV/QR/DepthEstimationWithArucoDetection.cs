@@ -10,29 +10,19 @@ using UnityEngine;
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
     [RequireComponent(typeof(ITextureToMatrixProvider))]
-    public class DepthEstimationWithQrCodeDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
+    public class DepthEstimationWithArucoDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
     {
-        [SerializeField] private bool arUco;
-        
-        private GraphicalCodeDetector _detector;
+        private ArucoDetector _detector;
         private ITextureToMatrixProvider _textureProvider;
-        private readonly Mat _points = new();
-        private readonly List<string> _detectionsNonAlloc = new();
+        private readonly Mat _ids = new();
+        private readonly List<Mat> _corners = new();
 
         public event Action<List<IObjectDetectionPipeline.DetectedObject>> DetectableObjectsUpdated;
 
         private void Awake()
         {
-            if (arUco) _detector = new QRCodeDetectorAruco();
-            else _detector = new QRCodeDetector();
-            
+            _detector = new ArucoDetector();
             _textureProvider = GetComponent<ITextureToMatrixProvider>();
-        }
-
-        private void OnValidate()
-        {
-            if (arUco) _detector = new QRCodeDetectorAruco();
-            else _detector = new QRCodeDetector();
         }
 
         private void Update()
@@ -44,25 +34,21 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             {
                 using var inferenceMat = new Mat();
                 Imgproc.cvtColor(frameMat, inferenceMat, Imgproc.COLOR_RGBA2BGR);
-
-                if (_detector.detectAndDecodeMulti(inferenceMat, _detectionsNonAlloc, _points) &&
-                    _detectionsNonAlloc.Count != 0)
-                    for (var objectIndex = 0; objectIndex < _points.size(0); objectIndex++)
+                _detector.detectMarkers(inferenceMat, _corners, _ids);
+                
+                if (!_ids.empty() &&
+                    _corners.Count > 0)
+                    for (var objectIndex = 0; objectIndex < _ids.size(0); objectIndex++)
                     {
-                        if (_detectionsNonAlloc.Count <= objectIndex)
+                        if (_corners.Count <= objectIndex)
                             continue;
 
-                        var label = _detectionsNonAlloc[objectIndex];
-                        if (string.IsNullOrWhiteSpace(label))
-                            continue;
-
-                        var p0 = _points.get(new[] { objectIndex, 0 }); // bottom left
-                        var p1 = _points.get(new[] { objectIndex, 1 }); // bottom right
-                        var p2 = _points.get(new[] { objectIndex, 2 }); // top right
-                        var p3 = _points.get(new[] { objectIndex, 3 }); // top left
-
-                        if (p0 is null || p1 is null || p2 is null || p3 is null)
-                            continue;
+                        var corners = _corners[objectIndex];
+                        var label = _ids.get(new [] { objectIndex, 0 })[0];
+                        var p0 = corners.get(new[] { 0, 0 }); // bottom left
+                        var p1 = corners.get(new[] { 0, 1 }); // bottom right
+                        var p2 = corners.get(new[] { 0, 2 }); // top right
+                        var p3 = corners.get(new[] { 0, 3 }); // top left
 
                         var v0 = new Vector2((float)p0[0], (float)p0[1]);
                         var v1 = new Vector2((float)p1[0], (float)p1[1]);
@@ -75,19 +61,21 @@ namespace MetaverseCloudEngine.Unity.OpenCV
 
                         detectedObjects.Add(new IObjectDetectionPipeline.DetectedObject
                         {
-                            Label = label,
+                            Label = ((int)label).ToString(),
                             Vertices = new List<Vector3>
                             {
                                 vertex
                             },
                             Score = 1,
+                            Origin = vertex,
+                            Rect = new Vector4(v0.x, v0.y, v2.x, v2.y),
                             IsBackground = false,
                             NearestZ = vertex.z,
                         });
                     }
-            }
 
-            DetectableObjectsUpdated?.Invoke(detectedObjects);
+                DetectableObjectsUpdated?.Invoke(detectedObjects);
+            }
         }
     }
 }
