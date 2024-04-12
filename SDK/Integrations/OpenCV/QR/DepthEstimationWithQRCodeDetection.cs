@@ -12,7 +12,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV
     [RequireComponent(typeof(ITextureToMatrixProvider))]
     public class DepthEstimationWithQrCodeDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
     {
-        private QRCodeDetector _detector;
+        [SerializeField] private bool arUco;
+        
+        private GraphicalCodeDetector _detector;
         private ITextureToMatrixProvider _textureProvider;
         private readonly Mat _points = new();
         private readonly List<string> _detectionsNonAlloc = new();
@@ -21,8 +23,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV
 
         private void Awake()
         {
-            _detector = new QRCodeDetector();
+            if (arUco) _detector = new QRCodeDetectorAruco();
+            else _detector = new QRCodeDetector();
+            
             _textureProvider = GetComponent<ITextureToMatrixProvider>();
+        }
+
+        private void OnValidate()
+        {
+            if (arUco) _detector = new QRCodeDetectorAruco();
+            else _detector = new QRCodeDetector();
         }
 
         private void Update()
