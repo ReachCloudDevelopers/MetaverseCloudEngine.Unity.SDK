@@ -42,12 +42,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.BYTETracker
             float trackThresh = 0.5f,
             float highThresh = 0.6f, 
             float matchThresh = 0.8f, 
-            float mul = 1f,
             bool mot20 = false)
         {
-            _trackThresh = trackThresh * mul;
-            _highThresh = highThresh * mul;
-            _matchThresh = matchThresh * mul;
+            _trackThresh = trackThresh;
+            _highThresh = highThresh;
+            _matchThresh = matchThresh;
             _maxTimeLost = maxRetentionTime;
             _frameID = 0;
             _trackIDCount = 0;

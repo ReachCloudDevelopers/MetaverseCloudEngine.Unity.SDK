@@ -80,7 +80,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 
             _segmentPredictor = new YOLOSegmentPredictor(
                 dependencies[0], 
-                dependencies[1], 
                 new Size(inpWidth, inpHeight),
                 confThreshold, nmsThreshold, topK, upsample);
             return true;

@@ -15,18 +15,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
     public class DepthBasedEnvironmentVoxelizationEngine : TriInspectorMonoBehaviour
     {
         [Serializable]
-        public struct ObjectType
+        public class BaseObjectType
         {
-            [Title("$label")]
-            [Required]
-            [Tooltip("The label of the object type")]
-            public string label;
-            [Tooltip("If true, the tracking ID will be appended to the object's name.")]
-            public bool appendTrackingIdToName;
             [Tooltip("The prefab to instantiate to represent the object being detected.")]
             public GameObject prefab;
             [Tooltip("A helpful color distinction.")]
-            public Color color;
+            public Color color = Color.white;
             [Min(0)]
             [Tooltip("The absolute maximum distance away from the camera a vertex can be.")]
             public float maxDistance;
@@ -42,25 +36,47 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             [Tooltip("If true, adds a trigger volume that encapsulates the bounding volume of the object.")]
             public bool addTriggerVolume;
         }
+        
+        [Serializable]
+        public class ObjectType : BaseObjectType
+        {
+            [Title("$label")]
+            [Required]
+            [Tooltip("The label of the object type")]
+            [PropertyOrder(-999)]
+            public string label;
+        }
 
         [Tooltip("The root parent object to use for the generated objects.")]
         [SerializeField] private Transform parent;
         [Tooltip("Object type templates.")]
         [SerializeField] private ObjectType[] objectTypes;
+        [SerializeField] private bool detectOtherObjects;
+        [ShowIf(nameof(detectOtherObjects))]
+        [SerializeField] private BaseObjectType baseObjectType = new ObjectType
+        {
+            color = Color.white,
+            maxDistance = 0,
+            minVertices = 1,
+            expectedObjectRadius = Mathf.Infinity,
+            positionTrackingOnly = false,
+            addTriggerVolume = true,
+        };
         [Tooltip("The minimum size of the voxels when at their nearest to the camera.")]
         [Min(0)] [SerializeField] private float minVoxelSize = 0.001f;
         [Tooltip("The maximum size of the voxels when at their furthest from the camera.")]
         [Min(0)] [SerializeField] private float maxVoxelSize = 0.5f;
         [Tooltip("The larger this value, the longer an object will stay in memory when it is no longer tracked.")]
-        [Min(1)] [SerializeField] private int trackingBuffer = 5;
-        [Range(0, 1f)] 
-        [SerializeField] private float trackingThreshold = 1f;
+        [Min(1)] [SerializeField] private int trackingBuffer = 15;
+        [Range(0, 1f)] [SerializeField] private float trackingThreshold = 45f;
+        [Range(0, 1f)] [SerializeField] private float highThreshold = 0.65f;
+        [Range(0, 1f)] [SerializeField] private float matchThreshold = 0.8f; 
         [SerializeField] private bool backgroundEnabled = true;
 
         private ByteTracker _tracker;
         private IObjectDetectionPipeline _pipeline;
         private List<IObjectDetectionPipeline.DetectedObject> _lastFrameObjects;
-        private Dictionary<string, ObjectType> _labelToPrefabs;
+        private Dictionary<string, BaseObjectType> _labelToPrefabs;
         private readonly List<ObjectInstance> _spawnedObjects = new();
         private readonly Dictionary<GameObject, List<GameObject>> _voxelObjectMap = new();
         private readonly List<int> _trackedObjectIds = new();
@@ -94,10 +110,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         private class ObjectInstance
         {
             private Track _previousTrack;
-
+            public string Label;
             public Track Track;
             public GameObject Instance;
-            public ObjectType ObjectType;
+            public BaseObjectType ObjectType;
             public BoxCollider Trigger;
 
             public void ReplaceWith(Track newTrack)
@@ -125,7 +141,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void Awake()
         {
-            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => obj);
+            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => (BaseObjectType)obj);
             _pipeline = GetComponent<IObjectDetectionPipeline>();
             InitializeTracker();
         }
@@ -135,12 +151,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!Application.isPlaying)
                 return;
             _tracker?.Clear();
-            _tracker = new ByteTracker(maxRetentionTime: trackingBuffer, mul: trackingThreshold);
+            _tracker = new ByteTracker(
+                maxRetentionTime: trackingBuffer, 
+                trackThresh: trackingThreshold,
+                highThresh: highThreshold,
+                matchThresh: matchThreshold);
         }
 
         private void OnValidate()
         {
-            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => obj);
+            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => (BaseObjectType)obj);
             DeleteAll();
             InitializeTracker();
         }
@@ -306,12 +326,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 return;
             }
 
-            if (!TryTrackObject(trackedResult, detectionInfo, out var instance))
+            if (!TryTrackObject(detectionInfo.Ref.Label, trackedResult, detectionInfo, out var instance))
                 return;
                 
             var objectInstance = instance.Instance;
-            if (instance.ObjectType.appendTrackingIdToName)
-                objectInstance.name = $"{detectionInfo.Ref.Label}#{trackedResult.TrackId}";
                 
             if (detectionInfo.Ref.Vertices.Count < instance.ObjectType.minVertices)
             {
@@ -398,14 +416,20 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
 
         private bool TryTrackObject(
-            Track track, Detection<IObjectDetectionPipeline.DetectedObject> detection, out ObjectInstance instance)
+            string label, Track track, Detection<IObjectDetectionPipeline.DetectedObject> detection, out ObjectInstance instance)
         {
             instance = null;
 
-            if (track.DetectionState != TrackState.Tracked || !_labelToPrefabs.TryGetValue(detection.Ref.Label, out var type))
+            if (track.DetectionState != TrackState.Tracked)
                 return false;
 
-            if (!type.prefab)
+            if (!_labelToPrefabs.TryGetValue(detection.Ref.Label, out var type) && !detectOtherObjects)
+                return false;
+
+            var isNewType = type == null;
+            type ??= baseObjectType;
+
+            if (!isNewType && !type.prefab)
             {
                 type.prefab = new GameObject(detection.Ref.Label) { hideFlags = HideFlags.HideInHierarchy };
                 type.prefab.SetActive(false);
@@ -415,8 +439,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (existing)
                 return true;
 
-            var newObj = Instantiate(type.prefab, parent);
-            newObj.name = detection.Ref.Label;
+            var newObj = isNewType && !type.prefab ? new GameObject
+            {
+                transform = { parent = parent }
+            }: Instantiate(type.prefab, parent);
+            newObj.name = $"{detection.Ref.Label}_{track.TrackId}";
             newObj.hideFlags = HideFlags.None;
             newObj.SetActive(false);
             instance = new ObjectInstance
@@ -424,6 +451,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 Track = track,
                 Instance = newObj,
                 ObjectType = type,
+                Label = label,
             };
             if (type.addTriggerVolume)
             {
@@ -443,12 +471,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             ref ObjectInstance instance)
         {
             var match = _spawnedObjects.FirstOrDefault(x => 
-                x.ObjectType.label == detection.Ref.Label && x.Track.TrackId == newTrack.TrackId);
+                x.Label == detection.Ref.Label && x.Track.TrackId == newTrack.TrackId);
             
             if (match == null)
             {
                 match = _spawnedObjects.FirstOrDefault(x =>
-                    x.ObjectType.label == detection.Ref.Label &&
+                    x.Label == detection.Ref.Label &&
                     x.Track.DetectionState == TrackState.Lost &&
                     NearCoordinates(x, detection));
 

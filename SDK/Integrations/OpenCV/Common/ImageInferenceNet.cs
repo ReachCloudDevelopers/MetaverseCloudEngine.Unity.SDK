@@ -53,6 +53,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             
             TextureProvider.Disposed += OnTexToMatDisposed;
 
+            FetchResources();
+        }
+
+        protected void FetchResources()
+        {
             MetaverseResourcesAPI.Fetch(
                 GetRequiredAIModelDependencies().Select(n => (MetaverseResourcesAPI.CloudResourcePath.AIModels, name: n)).ToList(),
                 "ComputerVision",

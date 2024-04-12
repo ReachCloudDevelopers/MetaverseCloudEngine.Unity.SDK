@@ -6,6 +6,7 @@ using OpenCVForUnity.DnnModule;
 using OpenCVForUnity.ImgprocModule;
 using OpenCVForUnity.UnityUtils;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -34,9 +35,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 
         public YOLOSegmentPredictor(
             string modelFilepath, 
-            string classesFilepath,
             Size inputSize, 
-            float confThreshold = 0.25f,
+            float confThreshold = 0,
             float nmsThreshold = 0.45f,
             int topK = 300,
             bool upsample = true, 
@@ -44,16 +44,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             int target = Dnn.DNN_TARGET_CPU)
         {
             // initialize
-            if (!string.IsNullOrEmpty(modelFilepath))
-            {
-                segmentation_net = Dnn.readNet(modelFilepath);
-            }
-
-            if (!string.IsNullOrEmpty(classesFilepath))
-            {
-                classNames = ReadClassNames(classesFilepath);
-                num_classes = classNames.Count;
-            }
+            segmentation_net = Dnn.readNet(modelFilepath);
+            classNames = ReadClassNames(modelFilepath);
 
             input_size = new Size(inputSize.width > 0 ? inputSize.width : 640, inputSize.height > 0 ? inputSize.height : 640);
             conf_threshold = Mathf.Clamp01(confThreshold);
@@ -66,27 +58,29 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             segmentation_net.setPreferableBackend(this.backend);
             segmentation_net.setPreferableTarget(this.target);
 
-            palette = new List<Scalar>();
-            palette.Add(new Scalar(255, 56, 56, 255));
-            palette.Add(new Scalar(255, 157, 151, 255));
-            palette.Add(new Scalar(255, 112, 31, 255));
-            palette.Add(new Scalar(255, 178, 29, 255));
-            palette.Add(new Scalar(207, 210, 49, 255));
-            palette.Add(new Scalar(72, 249, 10, 255));
-            palette.Add(new Scalar(146, 204, 23, 255));
-            palette.Add(new Scalar(61, 219, 134, 255));
-            palette.Add(new Scalar(26, 147, 52, 255));
-            palette.Add(new Scalar(0, 212, 187, 255));
-            palette.Add(new Scalar(44, 153, 168, 255));
-            palette.Add(new Scalar(0, 194, 255, 255));
-            palette.Add(new Scalar(52, 69, 147, 255));
-            palette.Add(new Scalar(100, 115, 255, 255));
-            palette.Add(new Scalar(0, 24, 236, 255));
-            palette.Add(new Scalar(132, 56, 255, 255));
-            palette.Add(new Scalar(82, 0, 133, 255));
-            palette.Add(new Scalar(203, 56, 255, 255));
-            palette.Add(new Scalar(255, 149, 200, 255));
-            palette.Add(new Scalar(255, 55, 199, 255));
+            palette = new List<Scalar>
+            {
+                new(255, 56, 56, 255),
+                new(255, 157, 151, 255),
+                new(255, 112, 31, 255),
+                new(255, 178, 29, 255),
+                new(207, 210, 49, 255),
+                new(72, 249, 10, 255),
+                new(146, 204, 23, 255),
+                new(61, 219, 134, 255),
+                new(26, 147, 52, 255),
+                new(0, 212, 187, 255),
+                new(44, 153, 168, 255),
+                new(0, 194, 255, 255),
+                new(52, 69, 147, 255),
+                new(100, 115, 255, 255),
+                new(0, 24, 236, 255),
+                new(132, 56, 255, 255),
+                new(82, 0, 133, 255),
+                new(203, 56, 255, 255),
+                new(255, 149, 200, 255),
+                new(255, 55, 199, 255)
+            };
         }
 
         protected virtual Mat preprocess(Mat image)
@@ -523,31 +517,30 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 
         protected virtual List<string> ReadClassNames(string filename)
         {
-            var names = new List<string>();
-            System.IO.StreamReader cReader = null;
-            try
+            using var read = File.OpenText(filename);
+            do
             {
-                cReader = new System.IO.StreamReader(filename, Encoding.Default);
-
-                while (cReader.Peek() >= 0)
+                var line = read.ReadLine();
+                if (string.IsNullOrEmpty(line))
+                    continue;
+                
+                if (line.EndsWith("}") && line.Contains("names") && line.Contains("{0: "))
                 {
-                    var name = cReader.ReadLine();
-                    names.Add(name);
+                    var startIndex = line.IndexOf('{');
+                    var substring = line.Substring(startIndex, line.Length - startIndex);
+                    var names = substring
+                        .Replace("{", string.Empty)
+                        .Replace("}", string.Empty)
+                        .Split(", ")
+                        .Select(x => x.Replace("\'", string.Empty)[3..].Trim())
+                        .ToList();
+                    return names;
                 }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError(ex.Message);
-                return null;
-            }
-            finally
-            {
-                cReader?.Close();
-            }
 
-            return names;
+            } while (!read.EndOfStream);
+
+            return null;
         }
-
 
         public virtual IYoloModel.DetectionData[] GetObjectRects(Mat objects)
         {

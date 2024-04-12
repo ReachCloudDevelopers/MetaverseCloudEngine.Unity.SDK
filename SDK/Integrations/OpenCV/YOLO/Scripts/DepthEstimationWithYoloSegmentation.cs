@@ -5,6 +5,7 @@ using OpenCVForUnity.CoreModule;
 using OpenCVForUnity.ImgprocModule;
 using TriInspectorMVCE;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 {
@@ -12,13 +13,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
     [DeclareFoldoutGroup("Advanced")]
     public class DepthEstimationWithYoloSegmentation : ImageInferenceNet, IObjectDetectionPipeline
     {
+        public enum YoloModelDataSet
+        {
+            Coco,
+        }
+
+        public YoloModelDataSet modelDataSet;
+        [FormerlySerializedAs("labelsToConsider")]
         [Group("Advanced")]
-        [Space]
-        public List<string> labelsToConsider = new ();
-        [Group("Advanced")]
-        [Range(0, 1)]
-        [Tooltip("Confidence threshold. Lower = more less accurate detections, Higher = less more accurate detections. Default is 0.5.")]
-        public float confThreshold = 0.5f;
+        [Title("Advanced Settings")]
+        public List<string> labelWhitelist = new ();
         [Group("Advanced")]
         [Tooltip("Non-maximum suppression threshold. This value helps prevent duplicate detections. Lower = more detections but with more potential duplicates, Higher = less detections but less potential duplicates. Default is 0.45.")]
         [Range(0, 1f)]
@@ -26,7 +30,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         [Group("Advanced")]
         [Tooltip("Maximum detections per image.")]
         [Range(1, 100)]
-        public int topK = 100;
+        public int topK = 30;
         [Group("Advanced")]
         [Range(5, 64)]
         [Tooltip("The space between each pixel. A higher value means less pixels to process, but less accurate depth estimation.")]
@@ -49,24 +53,21 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         
         private IYoloModel _segmentPredictor;
         private bool _destroyed;
-        private readonly object _destroyLock = new();
+        private readonly object _lock = new();
         
         public event Action<List<IObjectDetectionPipeline.DetectedObject>> DetectableObjectsUpdated;
-        
+
         protected override IEnumerable<string> GetRequiredAIModelDependencies()
         {
             return new List<string>
             {
-                //"yolov8s-worldv2.onnx",
-                //"FastSAM-s.onnx",
-                "yolo.v8.segmentation.onnx",
-                "yolo.v8.coco.names"
+                GetYoloModelName()
             };
         }
 
         protected override void OnDestroy()
         {
-            lock (_destroyLock)
+            lock (_lock)
             {
                 base.OnDestroy();
                 _segmentPredictor?.Dispose();
@@ -77,40 +78,19 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
         {
             error = null;
 
-            if (dependencies.Length != 2)
-            {
-                error = "Expected 2 dependencies, but got " + dependencies.Length;
-                return false;
-            }
-
             if (string.IsNullOrEmpty(dependencies[0]) || !System.IO.File.Exists(dependencies[0]))
             {
                 error = "The YOLO model file does not exist.";
                 return false;
             }
 
-            if (string.IsNullOrEmpty(dependencies[1]) || !System.IO.File.Exists(dependencies[1]))
-            {
-                error = "The YOLO classes file does not exist.";
-                return false;
-            }
-
-            lock (_destroyLock)
-                _segmentPredictor = new YOLOSegmentPredictor(
-                    dependencies[0],
-                    dependencies[1],
-                    //dependencies[2],
-                    new Size(640, 640),
-                    confThreshold,
-                    nmsThreshold,
-                    topK,
-                    upsample);
+            LoadSegmentPredictor(dependencies[0]);
             return true;
         }
 
         protected override (IInferenceOutputData, Mat) PerformInference(IFrameMatrix frame)
         {
-            lock (_destroyLock)
+            lock (_lock)
                 try
                 {
                     if (_destroyed)
@@ -151,7 +131,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                 {
                                     var obj = objectRects[objectIndex];
                                     var classLabel = _segmentPredictor.GetClassLabel(obj.cls);
-                                    if (DiscardObject(classLabel, obj))
+                                    if (DiscardObject(classLabel))
                                         break;
 
                                     var inMask = IsInMask(masks, visualFrameX, visualFrameY, visualFrameWidth, visualFrameHeight, objectIndex);
@@ -190,7 +170,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                         var obj = objectRects[objectIndex];
                         var classLabel = _segmentPredictor.GetClassLabel(obj.cls);
                     
-                        if (DiscardObject(classLabel, obj))
+                        if (DiscardObject(classLabel))
                             continue;
 
                         var calculatedBounds = false;
@@ -255,11 +235,55 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                 }
         }
 
-        private bool DiscardObject(string classLabel, IYoloModel.DetectionData obj)
+        /// <summary>
+        /// Updates the model at runtime.
+        /// </summary>
+        /// <param name="model">The model ID.</param>
+        public void SetModel(int model)
         {
-            return labelsToConsider.Count > 0 && 
-                   !labelsToConsider.Contains(classLabel) ||
-                   obj.conf < confThreshold;
+            SetModel((YoloModelDataSet)model);
+        }
+
+        /// <summary>
+        /// Updates the model at runtime.
+        /// </summary>
+        /// <param name="modelDataSet">The yolo model to use.</param>
+        public void SetModel(YoloModelDataSet modelDataSet)
+        {
+            this.modelDataSet = modelDataSet;
+            FetchResources();
+        }
+
+        private string GetYoloModelName()
+        {
+            switch (modelDataSet)
+            {
+                case YoloModelDataSet.Coco:
+                    return "yolo.v8.segmentation.onnx";
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private bool DiscardObject(string classLabel)
+        {
+            return labelWhitelist.Count > 0 && !labelWhitelist.Contains(classLabel);
+        }
+
+        private void LoadSegmentPredictor(string modelPath)
+        {
+            lock (_lock)
+            {
+                _segmentPredictor?.Dispose();
+                _segmentPredictor = null;
+                _segmentPredictor = new YOLOSegmentPredictor(
+                    modelPath,
+                    new Size(640, 640),
+                    0,
+                    nmsThreshold,
+                    topK,
+                    upsample);
+            }
         }
 
         private static bool AreAnyAdjacentPixelsOutOfMask(Mat masks, int visualFrameX, int visualFrameY, int imageWidth, int imageHeight, int objectIndex, int neighborThreshold = 1)
@@ -332,8 +356,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 
             // For example if the image size is 640 x 480, the padding y
             // is 80 because 640 - 480 = 160, and 160 / 2 = 80 therefore...
-            y += (maskHeight - imageHeight) / 2;
             x += (maskWidth - imageWidth) / 2;
+            y += (maskHeight - imageHeight) / 2;
             
             if (x >= maskWidth || x < 0 || y >= maskHeight || y < 0)
                 return false;
