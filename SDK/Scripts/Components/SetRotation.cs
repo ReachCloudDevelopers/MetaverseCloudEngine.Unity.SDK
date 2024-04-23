@@ -12,24 +12,33 @@ namespace MetaverseCloudEngine.Unity.Components
     {
         [Tooltip("The target to apply the rotation to. If null, will use this game object.")]
         [Required]
-        [SerializeField] private Transform target;
-        [Tooltip("The rotation to apply.")]
-        [SerializeField] private Vector3 rotation;
-        [Tooltip("Whether to use local space or world space. If true - adds the parent's (if any) rotation to the Rotation value, otherwise uses the raw Rotation value.")]
-        [SerializeField] private bool local = true;
-        [Tooltip("What coordinate system to use when applying the rotation. If World - will apply the rotation relative to the parent (if parented) or world space (if unparented). If Self - adds the rotation to our existing rotation.")]
-        [SerializeField] private Space space = Space.World;
-        [Tooltip("If true, will apply the rotation in degrees per second every frame.")]
-        [SerializeField] private bool perSecond;
-        
-        [Header("Networking")]
-        [Tooltip("If true, broadcasts the rotation to all clients.")]
-        [SerializeField] private bool networked;
-        [ShowIf(nameof(networked))]
-        [Required]
-        [SerializeField] private NetworkObject networkObject;
-        [ShowIf(nameof(networked))]
-        [SerializeField, ReadOnly] private short networkID;
+        [SerializeField]
+        private Transform target;
+
+        [Tooltip("The rotation to apply.")] [SerializeField]
+        private Vector3 rotation;
+
+        [Tooltip(
+            "Whether to use local space or world space. If true - adds the parent's (if any) rotation to the Rotation value, otherwise uses the raw Rotation value.")]
+        [SerializeField]
+        private bool local = true;
+
+        [Tooltip(
+            "What coordinate system to use when applying the rotation. If World - will apply the rotation relative to the parent (if parented) or world space (if unparented). If Self - adds the rotation to our existing rotation.")]
+        [SerializeField]
+        private Space space = Space.World;
+
+        [Tooltip("If true, will apply the rotation in degrees per second every frame.")] [SerializeField]
+        private bool perSecond;
+
+        [Header("Networking")] [Tooltip("If true, broadcasts the rotation to all clients.")] [SerializeField]
+        private bool networked;
+
+        [ShowIf(nameof(networked))] [Required] [SerializeField]
+        private NetworkObject networkObject;
+
+        [ShowIf(nameof(networked))] [SerializeField, ReadOnly]
+        private short networkID;
 
         /// <summary>
         /// Gets or sets the rotation of this object.
@@ -43,9 +52,37 @@ namespace MetaverseCloudEngine.Unity.Components
         /// <summary>
         /// Gets or sets the rotation of this object.
         /// </summary>
-        public Vector3 Rotation {
+        public Vector3 Rotation
+        {
             get => rotation;
             set => rotation = value;
+        }
+
+        /// <summary>
+        /// The X axis rotation in degrees.
+        /// </summary>
+        public float RotationX
+        {
+            get => rotation.x;
+            set => rotation.x = value;
+        }
+
+        /// <summary>
+        /// The Y axis rotation in degrees.
+        /// </summary>
+        public float RotationY
+        {
+            get => rotation.y;
+            set => rotation.y = value;
+        }
+
+        /// <summary>
+        /// The Z axis rotation in degrees.
+        /// </summary>
+        public float RotationZ
+        {
+            get => rotation.z;
+            set => rotation.z = value;
         }
 
         private void OnValidate()
@@ -56,7 +93,7 @@ namespace MetaverseCloudEngine.Unity.Components
                 perSecond = false;
             }
         }
-        
+
         private void Awake()
         {
             if (!target) target = transform;
@@ -73,7 +110,7 @@ namespace MetaverseCloudEngine.Unity.Components
                 networkObject.UnregisterRPC((short)NetworkRpcType.SetPosition, RPC_SetRotation);
             }
         }
-        
+
         private void Reset()
         {
             target = transform;
@@ -84,7 +121,7 @@ namespace MetaverseCloudEngine.Unity.Components
             if (perSecond && !networked)
                 UpdateRotation();
         }
-        
+
         /// <summary>
         /// Updates the rotation.
         /// </summary>
@@ -94,7 +131,7 @@ namespace MetaverseCloudEngine.Unity.Components
             RotationQ = rot;
             UpdateRotation();
         }
-        
+
         /// <summary>
         /// Updates the rotation.
         /// </summary>
@@ -120,8 +157,8 @@ namespace MetaverseCloudEngine.Unity.Components
                     NetworkMessageReceivers.All,
                     new object[]
                     {
-                        networkID, 
-                        rotation 
+                        networkID,
+                        rotation
                     });
                 return;
             }
@@ -147,10 +184,10 @@ namespace MetaverseCloudEngine.Unity.Components
 
         private void RPC_SetRotation(short procedureId, int senderId, object content)
         {
-            if (content is not object[] { Length: 2 } args || 
+            if (content is not object[] { Length: 2 } args ||
                 args[0] is not short id ||
                 args[1] is not Quaternion rot) return;
-            
+
             if (id != networkID)
                 return;
 
