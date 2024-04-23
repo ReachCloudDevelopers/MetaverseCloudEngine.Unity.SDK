@@ -29,11 +29,13 @@ namespace MetaverseCloudEngine.Unity.Components
         /// <summary>
         /// Perform the share operation.
         /// </summary>
-        public void Share()
-        {
-            ShareInternal();
-        }
+        public void Share() => ShareInternal(text);
 
-        partial void ShareInternal();
+        /// <summary>
+        /// Perform the share operation.
+        /// </summary>
+        public void ShareTextSource() => ShareInternal(textSource.text);
+
+        partial void ShareInternal(string s);
     }
 }
