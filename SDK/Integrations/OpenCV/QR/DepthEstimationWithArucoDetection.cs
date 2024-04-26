@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
+    [HideMonoScript]
     [RequireComponent(typeof(ITextureToMatrixProvider))]
     public class DepthEstimationWithArucoDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
     {

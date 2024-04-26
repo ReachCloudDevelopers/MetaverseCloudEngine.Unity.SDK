@@ -21,11 +21,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             public GameObject prefab;
             [Tooltip("A helpful color distinction.")]
             public Color color = Color.white;
-            [Min(0)]
-            [Tooltip("The absolute maximum distance away from the camera a vertex can be.")]
+            [Min(0)] [Tooltip("The absolute maximum distance away from the camera a vertex can be.")]
             public float maxDistance;
-            [Min(1)]
-            [Tooltip("The minimum number of vertices required to modify the object's voxels.")]
+            [Min(1)] [Tooltip("The minimum number of vertices required to modify the object's voxels.")]
             public int minVertices;
             [FormerlySerializedAs("discardVertexDistance")]
             [Min(0)]
@@ -36,7 +34,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             [Tooltip("If true, adds a trigger volume that encapsulates the bounding volume of the object.")]
             public bool addTriggerVolume;
         }
-        
+
         [Serializable]
         public class ObjectType : BaseObjectType
         {
@@ -48,12 +46,15 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
 
         [Tooltip("The root parent object to use for the generated objects.")]
-        [SerializeField] private Transform parent;
+        [SerializeField]
+        private Transform parent;
         [Tooltip("Object type templates.")]
-        [SerializeField] private ObjectType[] objectTypes;
+        [SerializeField]
+        private ObjectType[] objectTypes;
         [SerializeField] private bool detectOtherObjects;
-        [ShowIf(nameof(detectOtherObjects))]
-        [SerializeField] private BaseObjectType baseObjectType = new ObjectType
+
+        [ShowIf(nameof(detectOtherObjects))] [SerializeField]
+        private BaseObjectType baseObjectType = new ObjectType
         {
             color = Color.white,
             maxDistance = 0,
@@ -62,41 +63,378 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             positionTrackingOnly = false,
             addTriggerVolume = true,
         };
-        [Tooltip("The minimum size of the voxels when at their nearest to the camera.")]
-        [Min(0)] [SerializeField] private float minVoxelSize = 0.001f;
-        [Tooltip("The maximum size of the voxels when at their furthest from the camera.")]
-        [Min(0)] [SerializeField] private float maxVoxelSize = 0.5f;
+
+        [Tooltip("The minimum size of the voxels when at their nearest to the camera.")] [Min(0)] [SerializeField]
+        private float minVoxelSize = 0.001f;
+
+        [Tooltip("The maximum size of the voxels when at their furthest from the camera.")] [Min(0)] [SerializeField]
+        private float maxVoxelSize = 0.5f;
+
         [Tooltip("The larger this value, the longer an object will stay in memory when it is no longer tracked.")]
-        [Min(1)] [SerializeField] private int trackingBuffer = 15;
+        [Min(1)]
+        [SerializeField]
+        private int trackingBuffer = 15;
+
         [Range(0, 1f)] [SerializeField] private float trackingThreshold = 45f;
         [Range(0, 1f)] [SerializeField] private float highThreshold = 0.65f;
-        [Range(0, 1f)] [SerializeField] private float matchThreshold = 0.8f; 
+        [Range(0, 1f)] [SerializeField] private float matchThreshold = 0.8f;
         [SerializeField] private bool backgroundEnabled = true;
 
-        private ByteTracker _tracker;
-        private IObjectDetectionPipeline _pipeline;
-        private List<IObjectDetectionPipeline.DetectedObject> _lastFrameObjects;
-        private Dictionary<string, BaseObjectType> _labelToPrefabs;
-        private readonly List<ObjectInstance> _spawnedObjects = new();
-        private readonly Dictionary<GameObject, List<GameObject>> _voxelObjectMap = new();
-        private readonly List<int> _trackedObjectIds = new();
-        private bool _frameDirty;
+        private Dictionary<IObjectDetectionPipeline, VoxelizationData> _voxelizations;
         private ObjectInstance _background;
+
+        private class VoxelizationData
+        {
+            private readonly DepthBasedEnvironmentVoxelizationEngine _engine;
+
+            public VoxelizationData(DepthBasedEnvironmentVoxelizationEngine engine, IObjectDetectionPipeline pipeline)
+            {
+                _engine = engine;
+                _pipeline = pipeline;
+            }
+
+            private ByteTracker _tracker;
+            private readonly IObjectDetectionPipeline _pipeline;
+            private List<IObjectDetectionPipeline.DetectedObject> _lastFrameObjects;
+            private Dictionary<string, BaseObjectType> _labelToPrefabs;
+            private readonly List<ObjectInstance> _spawnedObjects = new();
+            private readonly Dictionary<GameObject, List<GameObject>> _voxelObjectMap = new();
+            private readonly List<int> _trackedObjectIds = new();
+            private bool _frameDirty;
+
+            public void Init()
+            {
+                _labelToPrefabs = _engine.objectTypes.ToDictionary(obj => obj.label, obj => (BaseObjectType)obj);
+                InitializeTracker();
+            }
+
+            private void InitializeTracker()
+            {
+                if (!Application.isPlaying)
+                    return;
+                _tracker?.Clear();
+                _tracker = new ByteTracker(
+                    maxRetentionTime: _engine.trackingBuffer,
+                    trackThresh: _engine.trackingThreshold,
+                    highThresh: _engine.highThreshold,
+                    matchThresh: _engine.matchThreshold);
+            }
+
+            public void OnEnable()
+            {
+                _pipeline.DetectableObjectsUpdated += ProcessFrame;
+            }
+
+            public void OnDisable()
+            {
+                _pipeline.DetectableObjectsUpdated -= ProcessFrame;
+            }
+
+            public void DeleteAll()
+            {
+                foreach (var spawnedObject in _spawnedObjects.Where(spawnedObject => spawnedObject.Instance))
+                {
+                    ReleaseVoxelsForInstance(spawnedObject);
+                    Destroy(spawnedObject.Instance);
+                }
+
+                _spawnedObjects.Clear();
+            }
+
+            public void ProcessFrame()
+            {
+                if (!_frameDirty)
+                    return;
+
+                if (_engine.backgroundEnabled && _lastFrameObjects.Count > 0 && _lastFrameObjects[0].IsBackground)
+                {
+                    var envInstance = _engine.GetBackgroundObjectInstance();
+                    var lastFrameObject = _lastFrameObjects[0];
+                    if (lastFrameObject.Vertices.Count > 0)
+                        ReleaseVoxelsForInstance(envInstance);
+
+                    for (var vertexIndex = 0; vertexIndex < lastFrameObject.Vertices.Count; vertexIndex++)
+                    {
+                        AddVoxel(
+                            lastFrameObject,
+                            vertexIndex,
+                            envInstance,
+                            envInstance.Instance.transform,
+                            Vector3.zero,
+                            envInstance.Instance);
+                    }
+                }
+
+                var trackedResults = _tracker.Update(
+                    _lastFrameObjects
+                        .Where(data => !data.IsBackground)
+                        .Select(data =>
+                        {
+                            var width = data.Rect.z - data.Rect.x;
+                            var height = data.Rect.w - data.Rect.y;
+                            var rect = new TlwhRect(data.Rect.y, data.Rect.x, width, height);
+                            return (Detection)new Detection<IObjectDetectionPipeline.DetectedObject>(
+                                data, 
+                                rect,
+                                data.Score);
+                        })
+                        .ToList());
+
+                _trackedObjectIds.Clear();
+
+                for (var objectIndex = trackedResults.Count - 1; objectIndex >= 0; objectIndex--)
+                {
+                    var trackedResult = trackedResults[objectIndex];
+                    var detectionInfo = (Detection<IObjectDetectionPipeline.DetectedObject>)trackedResult.Detection;
+                    var detectedObjectReference = detectionInfo.Ref;
+                    TrackAndDetectObject(detectionInfo, trackedResult, detectedObjectReference);
+                }
+
+                for (var index = _spawnedObjects.Count - 1; index >= 0; index--)
+                {
+                    var instance = _spawnedObjects[index];
+                    if (_trackedObjectIds.Contains(instance.Track.TrackId) &&
+                        instance.Track.DetectionState != TrackState.Removed)
+                        continue;
+                    _spawnedObjects.Remove(instance);
+                    ReleaseVoxelsForInstance(instance);
+                    Destroy(instance.Instance);
+                }
+
+                if (_engine.parent)
+                {
+                    var ordered = _spawnedObjects.OrderBy(x => x.Track.TrackId);
+                    var idx = 0;
+                    foreach (var spawnedObj in ordered)
+                    {
+                        spawnedObj.Instance.transform.SetSiblingIndex(idx);
+                        idx++;
+                    }
+                }
+
+                _lastFrameObjects = null;
+                _frameDirty = false;
+            }
+
+            private void ProcessFrame(List<IObjectDetectionPipeline.DetectedObject> results)
+            {
+                _lastFrameObjects = results.ToList();
+                _frameDirty = true;
+            }
+
+            private void ReleaseVoxelsForInstance(ObjectInstance spawnedObject)
+            {
+                if (!_voxelObjectMap.ContainsKey(spawnedObject.Instance))
+                    return;
+
+                for (var index = _voxelObjectMap[spawnedObject.Instance].Count - 1; index >= 0; index--)
+                {
+                    var voxel = _voxelObjectMap[spawnedObject.Instance][index];
+                    _engine._voxelPool.Release(voxel);
+                }
+
+                _voxelObjectMap.Remove(spawnedObject.Instance);
+            }
+
+            private void TrackAndDetectObject(Detection<IObjectDetectionPipeline.DetectedObject> detectionInfo,
+                Track trackedResult, IObjectDetectionPipeline.DetectedObject detectedObjectReference)
+            {
+                if (detectionInfo.Ref.Vertices.Count == 0)
+                    return;
+
+                if (trackedResult.DetectionState != TrackState.Tracked)
+                {
+                    _trackedObjectIds.Add(trackedResult.TrackId);
+                    return;
+                }
+
+                if (!TryTrackObject(detectionInfo.Ref.Label, trackedResult, detectionInfo, out var instance))
+                    return;
+
+                var objectInstance = instance.Instance;
+
+                if (detectionInfo.Ref.Vertices.Count < instance.Type.minVertices)
+                {
+                    _trackedObjectIds.Add(trackedResult.TrackId);
+                    instance.RevertReplacement();
+                    return;
+                }
+
+                Bounds bounds = default;
+                var vertexCount = 0;
+                for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
+                {
+                    var vertex = detectedObjectReference.Vertices[vertexIndex];
+                    if (instance.Type.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ >
+                        instance.Type.expectedObjectRadius) continue;
+                    if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) continue;
+                    if (vertexCount == 0) bounds = new Bounds(vertex, Vector3.zero);
+                    else bounds.Encapsulate(vertex);
+                    vertexCount++;
+                }
+
+                if (vertexCount < instance.Type.minVertices)
+                {
+                    _trackedObjectIds.Add(trackedResult.TrackId);
+                    instance.RevertReplacement();
+                    return;
+                }
+
+                ReleaseVoxelsForInstance(instance);
+
+                var objectOrigin = bounds.center;
+                var instanceTransform = objectInstance.transform;
+                instanceTransform.parent = _engine.parent;
+                instanceTransform.localPosition = objectOrigin;
+                if (instance.Type.addTriggerVolume)
+                {
+                    instance.Trigger.size = bounds.size;
+                    instance.Trigger.enabled = true;
+                }
+
+                instance.FinalizeReplacement();
+                instance.Instance.SetActive(true);
+
+                if ((_engine.minVoxelSize > 0 || _engine.maxVoxelSize > 0) && !instance.Type.positionTrackingOnly)
+                {
+                    for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
+                        AddVoxel(detectedObjectReference, vertexIndex, instance, instanceTransform, objectOrigin,
+                            objectInstance);
+                }
+
+                _trackedObjectIds.Add(trackedResult.TrackId);
+            }
+
+            private void AddVoxel(
+                IObjectDetectionPipeline.DetectedObject detectedObjectReference,
+                int vertexIndex,
+                ObjectInstance instance,
+                Transform instanceTransform,
+                Vector3 objectOrigin,
+                GameObject objectInstance)
+            {
+                if (!Application.isPlaying)
+                    return;
+
+                var vertex = detectedObjectReference.Vertices[vertexIndex];
+                if (instance.Type.expectedObjectRadius > 0 &&
+                    vertex.z - detectedObjectReference.NearestZ > instance.Type.expectedObjectRadius) return;
+                if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) return;
+                var voxel = _engine._voxelPool.Get();
+                var inverseLerpSize = Mathf.InverseLerp(0.01f, 10f, vertex.z);
+                var voxelSize = Mathf.Lerp(_engine.minVoxelSize, _engine.maxVoxelSize, inverseLerpSize);
+                voxel.transform.parent = instanceTransform;
+                voxel.transform.localPosition = vertex - objectOrigin;
+                voxel.transform.localScale = Vector3.one * voxelSize;
+                if (voxel.TryGetComponent<MeshRenderer>(out var ren))
+                {
+                    if (instance.Type.color.a > 0)
+                    {
+                        ren.enabled = true;
+                        ren.material.color = instance.Type.color;
+                    }
+                    else ren.enabled = false;
+                }
+
+                if (!_voxelObjectMap.TryGetValue(objectInstance, out var voxels))
+                    voxels = _voxelObjectMap[objectInstance] = new List<GameObject>();
+                voxels.Add(voxel);
+            }
+
+            private bool TryTrackObject(
+                string label, Track track, Detection<IObjectDetectionPipeline.DetectedObject> detection,
+                out ObjectInstance instance)
+            {
+                instance = null;
+
+                if (track.DetectionState != TrackState.Tracked)
+                    return false;
+
+                if (!_labelToPrefabs.TryGetValue(detection.Ref.Label, out var type) && !_engine.detectOtherObjects)
+                    return false;
+
+                var isNewType = type == null;
+                type ??= _engine.baseObjectType;
+
+                if (!isNewType && !type.prefab)
+                {
+                    type.prefab = new GameObject(detection.Ref.Label) { hideFlags = HideFlags.HideInHierarchy };
+                    type.prefab.SetActive(false);
+                }
+
+                var existing = FindBestOriginalObjectSource(track, detection, ref instance);
+                if (existing)
+                    return true;
+
+                var newObj = isNewType && !type.prefab
+                    ? new GameObject
+                    {
+                        transform = { parent = _engine.parent }
+                    }
+                    : Instantiate(type.prefab, _engine.parent);
+                newObj.name = $"{detection.Ref.Label}_{track.TrackId}";
+                newObj.hideFlags = HideFlags.None;
+                newObj.SetActive(false);
+                instance = new ObjectInstance
+                {
+                    Track = track,
+                    Instance = newObj,
+                    Type = type,
+                    Label = label,
+                };
+                if (type.addTriggerVolume)
+                {
+                    var bc = instance.Instance.AddComponent<BoxCollider>();
+                    bc.isTrigger = true;
+                    bc.enabled = false;
+                    instance.Trigger = bc;
+                }
+
+                _spawnedObjects.Add(instance);
+                return true;
+            }
+
+            private GameObject FindBestOriginalObjectSource(
+                Track newTrack,
+                Detection<IObjectDetectionPipeline.DetectedObject> detection,
+                ref ObjectInstance instance)
+            {
+                var match = _spawnedObjects.FirstOrDefault(x =>
+                    x.Label == detection.Ref.Label && x.Track.TrackId == newTrack.TrackId);
+
+                if (match == null)
+                {
+                    match = _spawnedObjects.FirstOrDefault(x =>
+                        x.Label == detection.Ref.Label &&
+                        x.Track.DetectionState == TrackState.Lost &&
+                        NearCoordinates(x, detection));
+
+                    if (match == null)
+                        return null;
+                }
+
+                var existingObj = match.Instance;
+                instance = match;
+                if (match.Track.TrackId != newTrack.TrackId)
+                    match.ReplaceWith(newTrack);
+                return existingObj;
+            }
+        }
 
         private readonly ObjectPool<GameObject> _voxelPool = new(() =>
             {
                 if (!Application.isPlaying)
                     return null;
-                
+
                 var voxel = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 voxel.hideFlags = HideFlags.HideInHierarchy;
                 return voxel;
             },
-            go =>
+            actionOnGet: go =>
             {
                 if (go) go.SetActive(true);
             },
-            go =>
+            actionOnRelease: go =>
             {
                 if (!go) return;
                 go.SetActive(false);
@@ -132,7 +470,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             {
                 if (_previousTrack is null)
                     return;
-                
+
                 Track.MarkAsRemoved();
                 Track = _previousTrack;
                 Track.DetectionState = TrackState.Tracked;
@@ -141,41 +479,26 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void Awake()
         {
-            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => (BaseObjectType)obj);
-            _pipeline = GetComponent<IObjectDetectionPipeline>();
-            InitializeTracker();
-        }
-
-        private void InitializeTracker()
-        {
-            if (!Application.isPlaying)
-                return;
-            _tracker?.Clear();
-            _tracker = new ByteTracker(
-                maxRetentionTime: trackingBuffer, 
-                trackThresh: trackingThreshold,
-                highThresh: highThreshold,
-                matchThresh: matchThreshold);
+            _voxelizations = GetComponents<IObjectDetectionPipeline>()
+                .ToDictionary(x => x, y => new VoxelizationData(this, y).Do(x => x.Init()));
         }
 
         private void OnValidate()
         {
-            _labelToPrefabs = objectTypes.ToDictionary(obj => obj.label, obj => (BaseObjectType)obj);
             DeleteAll();
-            InitializeTracker();
+            InitializeTrackers();
         }
 
         private void OnEnable()
         {
-            InitializeTracker();
-            _pipeline.DetectableObjectsUpdated += ProcessFrame;
+            InitializeTrackers();
+            EnableAll();
         }
 
         private void OnDisable()
         {
             DeleteAll();
-            _tracker.Clear();
-            _pipeline.DetectableObjectsUpdated -= ProcessFrame;
+            DisableAll();
         }
 
         private void OnDestroy()
@@ -185,116 +508,43 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void FixedUpdate()
         {
-            ProcessFrame();
+            ProcessFrames();
         }
 
-        private void ReleaseVoxelsForInstance(ObjectInstance spawnedObject)
+        private void EnableAll()
         {
-            if (!_voxelObjectMap.ContainsKey(spawnedObject.Instance))
-                return;
+            foreach (var o in _voxelizations)
+                o.Value.OnEnable();
+        }
 
-            for (var index = _voxelObjectMap[spawnedObject.Instance].Count - 1; index >= 0; index--)
-            {
-                var voxel = _voxelObjectMap[spawnedObject.Instance][index];
-                _voxelPool.Release(voxel);
-            }
-
-            _voxelObjectMap.Remove(spawnedObject.Instance);
+        private void DisableAll()
+        {
+            foreach (var o in _voxelizations)
+                o.Value.OnDisable();
         }
 
         private void DeleteAll()
         {
             if (_background != null)
             {
-                ReleaseVoxelsForInstance(_background);
                 Destroy(_background.Instance);
                 _background = null;
             }
             
-            foreach (var spawnedObject in _spawnedObjects.Where(spawnedObject => spawnedObject.Instance))
-            {
-                ReleaseVoxelsForInstance(spawnedObject);
-                Destroy(spawnedObject.Instance);
-            }
-            
-            _spawnedObjects.Clear();
+            foreach (var o in _voxelizations)
+                o.Value.DeleteAll();
         }
 
-        private void ProcessFrame(List<IObjectDetectionPipeline.DetectedObject> results)
+        private void InitializeTrackers()
         {
-            _lastFrameObjects = results.ToList();
-            _frameDirty = true;
+            foreach (var o in _voxelizations)
+                o.Value.Init();
         }
 
-        private void ProcessFrame()
+        private void ProcessFrames()
         {
-            if (!_frameDirty)
-                return;
-
-            if (backgroundEnabled && _lastFrameObjects.Count > 0 && _lastFrameObjects[0].IsBackground)
-            {
-                var envInstance = GetBackgroundObjectInstance();
-                var lastFrameObject = _lastFrameObjects[0];
-                if (lastFrameObject.Vertices.Count > 0)
-                    ReleaseVoxelsForInstance(envInstance);
-                
-                for (var vertexIndex = 0; vertexIndex < lastFrameObject.Vertices.Count; vertexIndex++)
-                {
-                    AddVoxel(
-                        lastFrameObject, 
-                        vertexIndex, 
-                        envInstance, 
-                        envInstance.Instance.transform,
-                        Vector3.zero, 
-                        envInstance.Instance);
-                }
-            }
-
-            var trackedResults = _tracker.Update(
-                _lastFrameObjects
-                    .Where(data => !data.IsBackground)
-                    .Select(data =>
-                    {
-                        var width = data.Rect.z - data.Rect.x;
-                        var height = data.Rect.w - data.Rect.y;
-                        var rect = new TlwhRect(data.Rect.y, data.Rect.x, width, height);
-                        return (Detection)new Detection<IObjectDetectionPipeline.DetectedObject>(data, rect, data.Score);
-                    })
-                    .ToList());
-
-            _trackedObjectIds.Clear();
-
-            for (var objectIndex = trackedResults.Count - 1; objectIndex >= 0; objectIndex--)
-            {
-                var trackedResult = trackedResults[objectIndex];
-                var detectionInfo = (Detection<IObjectDetectionPipeline.DetectedObject>)trackedResult.Detection;
-                var detectedObjectReference = detectionInfo.Ref;
-                TrackAndDetectObject(detectionInfo, trackedResult, detectedObjectReference);
-            }
-
-            for (var index = _spawnedObjects.Count - 1; index >= 0; index--)
-            {
-                var instance = _spawnedObjects[index];
-                if (_trackedObjectIds.Contains(instance.Track.TrackId) && instance.Track.DetectionState != TrackState.Removed) 
-                    continue;
-                _spawnedObjects.Remove(instance);
-                ReleaseVoxelsForInstance(instance);
-                Destroy(instance.Instance);
-            }
-
-            if (parent)
-            {
-                var ordered = _spawnedObjects.OrderBy(x => x.Track.TrackId);
-                var idx = 0;
-                foreach (var spawnedObj in ordered)
-                {
-                    spawnedObj.Instance.transform.SetSiblingIndex(idx);
-                    idx++;
-                }
-            }
-
-            _lastFrameObjects = null;
-            _frameDirty = false;
+            foreach (var o in _voxelizations)
+                o.Value.ProcessFrame();
         }
 
         private ObjectInstance GetBackgroundObjectInstance()
@@ -304,7 +554,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 Instance = new GameObject("background")
                 {
                     transform = { parent = parent }
-                    
                 }.Do(x => x.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity)),
                 Type = new ObjectType
                 {
@@ -315,183 +564,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             return _background;
         }
 
-        private void TrackAndDetectObject(Detection<IObjectDetectionPipeline.DetectedObject> detectionInfo, Track trackedResult, IObjectDetectionPipeline.DetectedObject detectedObjectReference)
-        {
-            if (detectionInfo.Ref.Vertices.Count == 0)
-                return;
-                
-            if (trackedResult.DetectionState != TrackState.Tracked)
-            {
-                _trackedObjectIds.Add(trackedResult.TrackId);
-                return;
-            }
-
-            if (!TryTrackObject(detectionInfo.Ref.Label, trackedResult, detectionInfo, out var instance))
-                return;
-                
-            var objectInstance = instance.Instance;
-                
-            if (detectionInfo.Ref.Vertices.Count < instance.Type.minVertices)
-            {
-                _trackedObjectIds.Add(trackedResult.TrackId);
-                instance.RevertReplacement();
-                return;
-            }
-
-            Bounds bounds = default;
-            var vertexCount = 0;
-            for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
-            {
-                var vertex = detectedObjectReference.Vertices[vertexIndex];
-                if (instance.Type.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.Type.expectedObjectRadius) continue;
-                if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) continue;
-                if (vertexCount == 0) bounds = new Bounds(vertex, Vector3.zero);
-                else bounds.Encapsulate(vertex);
-                vertexCount++;
-            }
-
-            if (vertexCount < instance.Type.minVertices)
-            {
-                _trackedObjectIds.Add(trackedResult.TrackId);
-                instance.RevertReplacement();
-                return;
-            }
-
-            ReleaseVoxelsForInstance(instance);
-
-            var objectOrigin = bounds.center;
-            var instanceTransform = objectInstance.transform;
-            instanceTransform.parent = parent;
-            instanceTransform.localPosition = objectOrigin;
-            if (instance.Type.addTriggerVolume)
-            {
-                instance.Trigger.size = bounds.size;
-                instance.Trigger.enabled = true;
-            }
-            instance.FinalizeReplacement();
-            instance.Instance.SetActive(true);
-
-            if ((minVoxelSize > 0 || maxVoxelSize > 0) && !instance.Type.positionTrackingOnly)
-            {
-                for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
-                    AddVoxel(detectedObjectReference, vertexIndex, instance, instanceTransform, objectOrigin, objectInstance);
-            }
-
-            _trackedObjectIds.Add(trackedResult.TrackId);
-        }
-
-        private void AddVoxel(
-            IObjectDetectionPipeline.DetectedObject detectedObjectReference, 
-            int vertexIndex, 
-            ObjectInstance instance,
-            Transform instanceTransform,
-            Vector3 objectOrigin,
-            GameObject objectInstance)
-        {
-            if (!Application.isPlaying)
-                return;
-            
-            var vertex = detectedObjectReference.Vertices[vertexIndex];
-            if (instance.Type.expectedObjectRadius > 0 && vertex.z - detectedObjectReference.NearestZ > instance.Type.expectedObjectRadius) return;
-            if (instance.Type.maxDistance > 0 && vertex.z > instance.Type.maxDistance) return;
-            var voxel = _voxelPool.Get();
-            var inverseLerpSize = Mathf.InverseLerp(0.01f, 10f, vertex.z);
-            var voxelSize = Mathf.Lerp(minVoxelSize, maxVoxelSize, inverseLerpSize);
-            voxel.transform.parent = instanceTransform;
-            voxel.transform.localPosition = vertex - objectOrigin;
-            voxel.transform.localScale = Vector3.one * voxelSize;
-            if (voxel.TryGetComponent<MeshRenderer>(out var ren))
-            {
-                if (instance.Type.color.a > 0)
-                {
-                    ren.enabled = true;
-                    ren.material.color = instance.Type.color;
-                }
-                else ren.enabled = false;
-            }
-
-            if (!_voxelObjectMap.TryGetValue(objectInstance, out var voxels))
-                voxels = _voxelObjectMap[objectInstance] = new List<GameObject>();
-            voxels.Add(voxel);
-        }
-
-        private bool TryTrackObject(
-            string label, Track track, Detection<IObjectDetectionPipeline.DetectedObject> detection, out ObjectInstance instance)
-        {
-            instance = null;
-
-            if (track.DetectionState != TrackState.Tracked)
-                return false;
-
-            if (!_labelToPrefabs.TryGetValue(detection.Ref.Label, out var type) && !detectOtherObjects)
-                return false;
-
-            var isNewType = type == null;
-            type ??= baseObjectType;
-
-            if (!isNewType && !type.prefab)
-            {
-                type.prefab = new GameObject(detection.Ref.Label) { hideFlags = HideFlags.HideInHierarchy };
-                type.prefab.SetActive(false);
-            }
-
-            var existing = FindBestOriginalObjectSource(track, detection, ref instance);
-            if (existing)
-                return true;
-
-            var newObj = isNewType && !type.prefab ? new GameObject
-            {
-                transform = { parent = parent }
-            }: Instantiate(type.prefab, parent);
-            newObj.name = $"{detection.Ref.Label}_{track.TrackId}";
-            newObj.hideFlags = HideFlags.None;
-            newObj.SetActive(false);
-            instance = new ObjectInstance
-            {
-                Track = track,
-                Instance = newObj,
-                Type = type,
-                Label = label,
-            };
-            if (type.addTriggerVolume)
-            {
-                var bc = instance.Instance.AddComponent<BoxCollider>();
-                bc.isTrigger = true;
-                bc.enabled = false;
-                instance.Trigger = bc;
-            }
-            
-            _spawnedObjects.Add(instance);
-            return true;
-        }
-
-        private GameObject FindBestOriginalObjectSource(
-            Track newTrack,
-            Detection<IObjectDetectionPipeline.DetectedObject> detection,
-            ref ObjectInstance instance)
-        {
-            var match = _spawnedObjects.FirstOrDefault(x => 
-                x.Label == detection.Ref.Label && x.Track.TrackId == newTrack.TrackId);
-            
-            if (match == null)
-            {
-                match = _spawnedObjects.FirstOrDefault(x =>
-                    x.Label == detection.Ref.Label &&
-                    x.Track.DetectionState == TrackState.Lost &&
-                    NearCoordinates(x, detection));
-
-                if (match == null)
-                    return null;
-            }
-            
-            var existingObj = match.Instance;
-            instance = match;
-            if (match.Track.TrackId != newTrack.TrackId)
-                match.ReplaceWith(newTrack);
-            return existingObj;
-        }
-
-        private static bool NearCoordinates(ObjectInstance source, Detection<IObjectDetectionPipeline.DetectedObject> detection)
+        private static bool NearCoordinates(ObjectInstance source,
+            Detection<IObjectDetectionPipeline.DetectedObject> detection)
         {
             var distance = Vector2.Distance(detection.Ref.Origin, source.Instance.transform.localPosition);
             return distance <= source.Type.expectedObjectRadius * 2f;
