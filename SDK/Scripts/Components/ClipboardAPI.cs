@@ -37,7 +37,7 @@ namespace MetaverseCloudEngine.Unity.Components
         /// Copies the text from the <paramref name="text"/> component.
         /// </summary>
         /// <param name="text">The text component to copy from.</param>
-        public void CopyTmpText(TMP_Text text)
+        public void Copy(TMP_Text text)
         {
             if (text != null && !string.IsNullOrWhiteSpace(text.text))
                 Copy(text.text);
@@ -47,7 +47,7 @@ namespace MetaverseCloudEngine.Unity.Components
         /// Copies the text from the <paramref name="inputField"/> component.
         /// </summary>
         /// <param name="inputField">The input field to copy from.</param>
-        public void CopyTmpInputField(TMP_InputField inputField)
+        public void Copy(TMP_InputField inputField)
         {
             if (inputField != null && !string.IsNullOrWhiteSpace(inputField.text))
                 Copy(inputField.text);
@@ -69,7 +69,7 @@ namespace MetaverseCloudEngine.Unity.Components
         /// Paste the clipboard text into the given <paramref name="inputField"/>.
         /// </summary>
         /// <param name="inputField">The input field to paste the text into.</param>
-        public void PasteTmpInputField(TMP_InputField inputField)
+        public void Paste(TMP_InputField inputField)
         {
             if (!MetaverseProgram.IsCoreApp)
                 inputField.text = GUIUtility.systemCopyBuffer;
@@ -80,7 +80,7 @@ namespace MetaverseCloudEngine.Unity.Components
         /// Paste the clipboard text into the given <paramref name="text"/>.
         /// </summary>
         /// <param name="text">The text object to paste the clipboard text into.</param>
-        public void PasteTmpText(TMP_Text text)
+        public void Paste(TMP_Text text)
         {
             if (!MetaverseProgram.IsCoreApp)
                 text.text = GUIUtility.systemCopyBuffer;
