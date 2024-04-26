@@ -363,8 +363,8 @@ public class UnityEventCompactDrawer : PropertyDrawer
         var isOff = callStateEnum == UnityEventCallState.Off;
         EditorGUI.BeginDisabledGroup(isOff);
 
-        var argTypeNamePath = pListener.FindPropertyRelative(kTargetAssemblyTypeName).stringValue;
-        if (argTypeNamePath.Contains("{"))
+        var targetTypeNamePath = pListener.FindPropertyRelative(kTargetAssemblyTypeName).stringValue;
+        if (targetTypeNamePath.Contains("{"))
         {
             Debug.Log("Unity has corrupted the serialized data. Please report this bug.");
         }
@@ -379,8 +379,8 @@ public class UnityEventCompactDrawer : PropertyDrawer
                 {
                     var clearMethodName = true;
                     var newTarget = listenerTarget.objectReferenceValue;
-                    var type = Type.GetType(argTypeNamePath, false);
-                    if (!string.IsNullOrEmpty(argTypeNamePath) && type != null)
+                    var type = Type.GetType(targetTypeNamePath, false);
+                    if (!string.IsNullOrEmpty(targetTypeNamePath) && type != null)
                     {
                         switch (newTarget)
                         {
@@ -441,7 +441,7 @@ public class UnityEventCompactDrawer : PropertyDrawer
                 break;
         }
 
-        var desiredArgTypeName = argTypeNamePath;
+        var desiredArgTypeName = arguments.FindPropertyRelative(kObjectArgumentAssemblyTypeName).stringValue;
         var desiredType = typeof(Object);
         if (!string.IsNullOrEmpty(desiredArgTypeName))
             desiredType = Type.GetType(desiredArgTypeName, false) ?? typeof(Object);
