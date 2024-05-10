@@ -58,9 +58,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             return true;
         }
 
-        protected override (IInferenceOutputData, Mat) PerformInference(IFrameMatrix frame)
+        protected override (IInferenceOutputData, Mat) PerformInference(ICameraFrame cameraFrame)
         {
-            using var frameMat = frame.GetMat(); 
+            using var frameMat = cameraFrame.GetMat(); 
             Imgproc.cvtColor(frameMat, frameMat, Imgproc.COLOR_RGBA2BGR);
             _results.Clear();
             _poseEstimation.infer(frameMat, _results);

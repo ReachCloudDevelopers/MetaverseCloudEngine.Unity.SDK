@@ -616,8 +616,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
             EnsurePoolContainer(scene);
 
             GameObject outputObject;
-            var pooledPrefab = outputObject =
-                UnityEngine.Object.Instantiate(downloadedObject, _objectPoolContainers[scene].transform);
+            var pooledPrefab = outputObject = UnityEngine.Object.Instantiate(downloadedObject, _objectPoolContainers[scene].transform);
 
             ConfigureDownloadedObjectForCurrentRenderPipeline(
                 pooledPrefab,

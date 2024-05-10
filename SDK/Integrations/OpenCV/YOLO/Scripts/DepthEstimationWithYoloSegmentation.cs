@@ -88,7 +88,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             return true;
         }
 
-        protected override (IInferenceOutputData, Mat) PerformInference(IFrameMatrix frame)
+        protected override (IInferenceOutputData, Mat) PerformInference(ICameraFrame cameraFrame)
         {
             lock (_lock)
                 try
@@ -96,7 +96,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                     if (_destroyed)
                         return default;
 
-                    using var frameMat = frame.GetMat();
+                    using var frameMat = cameraFrame.GetMat();
                     using var inferenceMat = new Mat();
                     
                     Imgproc.cvtColor(frameMat, inferenceMat, Imgproc.COLOR_RGBA2BGR);
@@ -151,7 +151,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                 if (blocked)
                                     continue;
 
-                                if (!frame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
+                                if (!cameraFrame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
                                     continue;
                             
                                 environment.Vertices.Add(point);
@@ -192,7 +192,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
                                 if (AreAnyAdjacentPixelsOutOfMask(masks, visualFrameX, visualFrameY, visualFrameWidth, visualFrameHeight, objectIndex, objectBoundaryMargin))
                                     continue;
 
-                                if (!frame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
+                                if (!cameraFrame.TryGetCameraRelativePoint(visualFrameX, visualFrameY, out var point))
                                     continue;
 
                                 if (point.z < nearestZ)

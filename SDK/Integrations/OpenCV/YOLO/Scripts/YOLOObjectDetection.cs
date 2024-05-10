@@ -13,7 +13,7 @@ using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 {
-    [RequireComponent(typeof(DefaultTextureToMatrix))]
+    [RequireComponent(typeof(WebCameraFrameProvider))]
     [HideMonoScript]
     public class YOLOObjectDetection : ImageInferenceNet
     {
@@ -66,9 +66,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
             return true;
         }
 
-        protected override (IInferenceOutputData, Mat) PerformInference(IFrameMatrix frame)
+        protected override (IInferenceOutputData, Mat) PerformInference(ICameraFrame cameraFrame)
         {
-            using var frameMat = frame.GetMat();
+            using var frameMat = cameraFrame.GetMat();
             Imgproc.cvtColor(frameMat, frameMat, Imgproc.COLOR_RGBA2BGR);
             var results = _objectDetector.infer(frameMat);
             Imgproc.cvtColor(frameMat, frameMat, Imgproc.COLOR_BGR2RGBA);

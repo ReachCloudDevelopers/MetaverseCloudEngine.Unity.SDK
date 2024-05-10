@@ -7,22 +7,33 @@ using OpenCVForUnity.ImgprocModule;
 using System;
 using System.Collections;
 using OpenCVForUnity.UnityUtils;
+using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.Common
 {
-    public class DefaultTextureToMatrix : MonoBehaviour, ITextureToMatrixProvider
+    [HideMonoScript]
+    [DeclareFoldoutGroup("Webcam Texture Creation Options")]
+    [DeclareFoldoutGroup("Additional Metadata")]
+    public class WebCameraFrameProvider : TriInspectorMonoBehaviour, ICameraFrameProvider
     {
+        [Tooltip("If true, initializes the webcam on start.")] [SerializeField]
+        private bool initOnStart;
+
+        [Group("Additional Metadata")]
+        [Min(0)] [SerializeField] private float fieldOfView = 60;
+
         [Tooltip("Set this to false if you will be supplying the WebCamTexture via the 'SetWebCamTexture' method.")]
         [SerializeField]
+        [Group("Webcam Texture Creation Options")]
         private bool createWebCamTexture = true;
 
         /// <summary>
         /// Set the name of the camera device to use. (or device index number)
         /// </summary>
-        [Header("TEXTURE CREATE OPTIONS")]
+        [Group("Webcam Texture Creation Options")]
         [SerializeField, FormerlySerializedAs("requestedDeviceName"),
          TooltipAttribute("Set the name of the device to use. (or device index number)")]
         protected string _requestedDeviceName = null;
@@ -44,6 +55,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// <summary>
         /// Set the width of camera.
         /// </summary>
+        [Group("Webcam Texture Creation Options")]
         [SerializeField, FormerlySerializedAs("requestedWidth"), TooltipAttribute("Set the width of camera.")]
         protected int _requestedWidth = 640;
 
@@ -66,6 +78,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Set the height of camera.
         /// </summary>
         [SerializeField, FormerlySerializedAs("requestedHeight"), TooltipAttribute("Set the height of camera.")]
+        [Group("Webcam Texture Creation Options")]
         protected int _requestedHeight = 480;
 
         public virtual int requestedHeight
@@ -88,6 +101,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// </summary>
         [SerializeField, FormerlySerializedAs("requestedIsFrontFacing"),
          TooltipAttribute("Set whether to use the front facing camera.")]
+        [Group("Webcam Texture Creation Options")]
         protected bool _requestedIsFrontFacing = false;
 
         public virtual bool RequestedIsFrontFacing
@@ -108,6 +122,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Set the frame rate of camera.
         /// </summary>
         [SerializeField, FormerlySerializedAs("requestedFPS"), TooltipAttribute("Set the frame rate of camera.")]
+        [Group("Webcam Texture Creation Options")]
         protected float _requestedFPS = 30f;
 
         public virtual float requestedFPS
@@ -137,6 +152,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// </summary>
         [SerializeField, FormerlySerializedAs("rotate90Degree"),
          TooltipAttribute("Sets whether to rotate camera frame 90 degrees. (clockwise)")]
+        [Group("Webcam Texture Creation Options")]
         protected bool _rotate90Degree = false;
 
         public virtual bool rotate90Degree
@@ -157,6 +173,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Determines if flips vertically.
         /// </summary>
         [SerializeField, FormerlySerializedAs("flipVertical"), TooltipAttribute("Determines if flips vertically.")]
+        [Group("Webcam Texture Creation Options")]
         protected bool _flipVertical = false;
 
         public virtual bool flipVertical
@@ -169,6 +186,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Determines if flips horizontal.
         /// </summary>
         [SerializeField, FormerlySerializedAs("flipHorizontal"), TooltipAttribute("Determines if flips horizontal.")]
+        [Group("Webcam Texture Creation Options")]
         protected bool _flipHorizontal = false;
 
         public virtual bool flipHorizontal
@@ -181,6 +199,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Select the output color format.
         /// </summary>
         [SerializeField, FormerlySerializedAs("outputColorFormat"), TooltipAttribute("Select the output color format.")]
+        [Group("Webcam Texture Creation Options")]
         protected ColorFormat _outputColorFormat = ColorFormat.RGBA;
 
         public virtual ColorFormat outputColorFormat
@@ -202,6 +221,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// </summary>
         [SerializeField, FormerlySerializedAs("timeoutFrameCount"),
          TooltipAttribute("The number of frames before the initialization process times out.")]
+        [Group("Webcam Texture Creation Options")]
         protected int _timeoutFrameCount = 1500;
 
         public virtual int timeoutFrameCount
@@ -323,6 +343,14 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 #if !UNITY_EDITOR && !UNITY_ANDROID
         protected bool isScreenSizeChangeWaiting = false;
 #endif
+
+        private void Start()
+        {
+            if (initOnStart)
+            {
+                Initialize();
+            }
+        }
 
         // Update is called once per frame
         protected virtual void Update()
@@ -589,7 +617,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                             {
                                 webCamDevice = devices[cameraIndex];
 
-                                if (Application.platform == RuntimePlatform.Android && webCamDevice.isFrontFacing == true)
+                                if (Application.platform == RuntimePlatform.Android &&
+                                    webCamDevice.isFrontFacing == true)
                                     requestedFPS = 15f;
 
                                 if (requestedFPS < 0)
@@ -706,7 +735,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     if (webCamTexture is WebCamTexture t)
                     {
                         Debug.Log("WebCamTextureToMatHelper:: " + "devicename:" + t.deviceName + " name:" +
-                                  webCamTexture.name + " width:" + webCamTexture.width + " height:" + webCamTexture.height +
+                                  webCamTexture.name + " width:" + webCamTexture.width + " height:" +
+                                  webCamTexture.height +
                                   " fps:" + t.requestedFPS
                                   + " videoRotationAngle:" + t.videoRotationAngle +
                                   " videoVerticallyMirrored:" + t.videoVerticallyMirrored + " isFrongFacing:" +
@@ -772,7 +802,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     ((WebCamTexture)webCamTexture).Stop();
                     webCamTexture = null;
                 }
-                
+
                 isInitWaiting = false;
                 initCoroutine = null;
 
@@ -799,6 +829,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             {
                 yield return RequestUserPermission(permission);
             }
+
             yield return UnityEngine.Android.Permission.HasUserAuthorizedPermission(permission);
 #else
             yield return true;
@@ -843,10 +874,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     isUserRequestingPermission = false;
                     yield break;
                 }
+
                 timeElapsed += Time.deltaTime;
 
                 yield return null;
             }
+
             yield break;
         }
 #endif
@@ -859,7 +892,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         {
             return hasInitDone;
         }
-        
+
         public virtual bool IsInitializing()
         {
             return isInitWaiting;
@@ -873,7 +906,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (hasInitDone && createWebCamTexture)
                 ((WebCamTexture)webCamTexture).Play();
             else if (!createWebCamTexture)
-                Debug.LogWarning("WebCamTextureToMatHelper::Play() is not supported when autoFetchWebCamTexture is false.");
+                Debug.LogWarning(
+                    "WebCamTextureToMatHelper::Play() is not supported when autoFetchWebCamTexture is false.");
         }
 
         /// <summary>
@@ -893,9 +927,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (hasInitDone && createWebCamTexture)
                 ((WebCamTexture)webCamTexture).Stop();
             else if (!createWebCamTexture)
-                Debug.LogWarning("WebCamTextureToMatHelper::Stop() is not supported when autoFetchWebCamTexture is false.");
+                Debug.LogWarning(
+                    "WebCamTextureToMatHelper::Stop() is not supported when autoFetchWebCamTexture is false.");
         }
-        
+
         public void SetWebCamTexture(Texture tex)
         {
             this.webCamTexture = tex;
@@ -908,130 +943,57 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// <returns><c>true</c>, if the active camera is playing, <c>false</c> otherwise.</returns>
         public virtual bool IsStreaming()
         {
-            if (!hasInitDone) 
+            if (!hasInitDone)
                 return false;
             if (webCamTexture is WebCamTexture t)
                 return t.isPlaying;
             return true;
         }
 
-        /// <summary>
-        /// Indicates whether the active camera device is currently front facng.
-        /// </summary>
-        /// <returns><c>true</c>, if the active camera device is front facng, <c>false</c> otherwise.</returns>
-        public virtual bool IsFrontFacing()
-        {
-            return hasInitDone && createWebCamTexture ? webCamDevice.isFrontFacing : false;
-        }
-
-        /// <summary>
-        /// Returns the active camera device name.
-        /// </summary>
-        /// <returns>The active camera device name.</returns>
-        public virtual string GetDeviceName()
-        {
-            return hasInitDone && createWebCamTexture ? ((WebCamTexture)webCamTexture).deviceName : "";
-        }
-
-        /// <summary>
-        /// Returns the active camera width.
-        /// </summary>
-        /// <returns>The active camera width.</returns>
-        public virtual int GetWidth()
-        {
-            if (!hasInitDone)
-                return -1;
-            return (rotatedFrameMat != null) ? frameMat.height() : frameMat.width();
-        }
-
-        /// <summary>
-        /// Returns the active camera height.
-        /// </summary>
-        /// <returns>The active camera height.</returns>
-        public virtual int GetHeight()
-        {
-            if (!hasInitDone)
-                return -1;
-            return (rotatedFrameMat != null) ? frameMat.width() : frameMat.height();
-        }
-
-        /// <summary>
-        /// Returns the active camera framerate.
-        /// </summary>
-        /// <returns>The active camera framerate.</returns>
-        public virtual float GetFPS()
-        {
-            return hasInitDone && createWebCamTexture ? ((WebCamTexture)webCamTexture).requestedFPS : -1f;
-        }
-
-        /// <summary>
-        /// Returns the active WebcamTexture.
-        /// </summary>
-        /// <returns>The active WebcamTexture.</returns>
-        public virtual WebCamTexture GetWebCamTexture()
-        {
-            return hasInitDone && createWebCamTexture ? ((WebCamTexture)webCamTexture) : null;
-        }
-
-        /// <summary>
-        /// Returns the active WebcamDevice.
-        /// </summary>
-        /// <returns>The active WebcamDevice.</returns>
-        public virtual WebCamDevice GetWebCamDevice()
-        {
-            return webCamDevice;
-        }
-
-        /// <summary>
-        /// Returns the camera to world matrix.
-        /// </summary>
-        /// <returns>The camera to world matrix.</returns>
-        public virtual Matrix4x4 GetCameraToWorldMatrix()
-        {
-            return Camera.main.cameraToWorldMatrix;
-        }
-
-        /// <summary>
-        /// Returns the projection matrix matrix.
-        /// </summary>
-        /// <returns>The projection matrix.</returns>
-        public virtual Matrix4x4 GetProjectionMatrix()
-        {
-            return Camera.main.projectionMatrix;
-        }
-
-        /// <summary>
-        /// Indicates whether the video buffer of the frame has been updated.
-        /// </summary>
-        /// <returns><c>true</c>, if the video buffer has been updated <c>false</c> otherwise.</returns>
-        public virtual bool DidUpdateThisFrame()
-        {
-            if (!hasInitDone)
-                return false;
-
-            if (webCamTexture is WebCamTexture t)
-                return t.didUpdateThisFrame;
-
-            return true;
-        }
-
-        private readonly struct SimpleFrameMat : IFrameMatrix
+        private readonly struct SimpleCameraFrameMat : ICameraFrame
         {
             private readonly Mat _m;
+            private readonly float _fov;
 
-            public SimpleFrameMat(Mat m)
+            public SimpleCameraFrameMat(Mat m, float fov)
             {
                 _m = m;
+                _fov = fov;
             }
-            
+
             public void Dispose()
             {
-                _m?.Dispose();
             }
 
             public Mat GetMat()
             {
                 return _m;
+            }
+
+            public ReadOnlySpan<Color32> GetColors32()
+            {
+                if (_m is null || _m.IsDisposed)
+                    return Array.Empty<Color32>();
+                var tex = new Texture2D(_m.cols(), _m.rows(), TextureFormat.RGB24, false);
+                try
+                {
+                    Utils.matToTexture2D(_m, tex);
+                    return tex.GetPixels32();
+                }
+                finally
+                {
+                    Destroy(tex);
+                }
+            }
+
+            public Vector2Int GetSize()
+            {
+                return new Vector2Int(_m.cols(), _m.rows());
+            }
+
+            public float GetFOV(int index)
+            {
+                return _fov;
             }
 
             public bool ProvidesDepthData()
@@ -1057,38 +1019,45 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// Please do not dispose of the returned mat as it will be reused.
         /// </summary>
         /// <returns>The mat of the current frame.</returns>
-        public virtual IFrameMatrix DequeueNextFrame()
+        public virtual ICameraFrame DequeueNextFrame()
         {
             if (!hasInitDone || !IsStreaming())
             {
-                return new SimpleFrameMat(rotatedFrameMat ?? frameMat);
+                return null;
             }
 
-            if (baseColorFormat == outputColorFormat)
+            if (frameMat is null)
             {
-                if (webCamTexture is Texture2D t2d)
-                {
-                    Utils.texture2DToMat(t2d, frameMat, false);
-                }
-                else if (webCamTexture is WebCamTexture wct)
-                {
-                    Utils.webCamTextureToMat(wct, frameMat, colors, false);
-                }
+                return null;
             }
-            else
+
+            try
             {
-                if (webCamTexture is Texture2D t2d)
+                if (baseColorFormat == outputColorFormat)
                 {
-                    Utils.texture2DToMat(t2d, baseMat, false);
+                    if (webCamTexture is Texture2D t2d)
+                    {
+                        Utils.texture2DToMat(t2d, frameMat, false);
+                    }
+                    else if (webCamTexture is WebCamTexture wct)
+                    {
+                        Utils.webCamTextureToMat(wct, frameMat, colors, false);
+                    }
+                }
+                else
+                {
+                    if (webCamTexture is Texture2D t2d)
+                    {
+                        Utils.texture2DToMat(t2d, baseMat, false);
+                        Imgproc.cvtColor(baseMat, frameMat, ColorConversionCodes(baseColorFormat, outputColorFormat));
+                    }
+                    else if (webCamTexture is WebCamTexture wct)
+                    {
+                        Utils.webCamTextureToMat(wct, baseMat, colors, false);
+                    }
+
                     Imgproc.cvtColor(baseMat, frameMat, ColorConversionCodes(baseColorFormat, outputColorFormat));
                 }
-                else if (webCamTexture is WebCamTexture wct)
-                {
-                    Utils.webCamTextureToMat(wct, baseMat, colors, false);
-                }
-
-                Imgproc.cvtColor(baseMat, frameMat, ColorConversionCodes(baseColorFormat, outputColorFormat));
-            }
 
 #if !UNITY_EDITOR && !(UNITY_STANDALONE || UNITY_WEBGL)
             if (rotatedFrameMat != null)
@@ -1111,7 +1080,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     FlipMat(frameMat, flipVertical, flipHorizontal);
                 }
                 Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-                return new SimpleFrameMat(rotatedFrameMat);
+                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView);
             }
             else
             {
@@ -1132,28 +1101,22 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     // (Orientation is Landscape, rotate90Degree is false)
                     FlipMat(frameMat, flipVertical, flipHorizontal);
                 }
-                return new SimpleFrameMat(frameMat);
+                return new SimpleCameraFrameMat(frameMat, fieldOfView);
             }
 #else
-            FlipMat(frameMat, flipVertical, flipHorizontal);
-            
-            if (rotatedFrameMat == null) 
-                return new SimpleFrameMat(frameMat);
-            
-            Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-            return new SimpleFrameMat(rotatedFrameMat);
+                FlipMat(frameMat, flipVertical, flipHorizontal);
+
+                if (rotatedFrameMat == null)
+                    return new SimpleCameraFrameMat(frameMat, fieldOfView);
+
+                Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
+                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView);
 
 #endif
-        }
-
-        public virtual bool ProvidesDepthData()
-        {
-            return false;
-        }
-
-        public float SampleDepth(int x, int y, int imageWidth, int imageHeight)
-        {
-            throw new NotImplementedException();
+            }
+            finally
+            {
+            }
         }
 
         /// <summary>

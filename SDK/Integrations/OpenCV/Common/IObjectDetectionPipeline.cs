@@ -37,6 +37,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             /// </summary>
             public Vector3 Origin;
             /// <summary>
+            /// The rotation of the object, if any.
+            /// </summary>
+            public Quaternion Rotation;
+            /// <summary>
             /// The nearest Z value of all vertices.
             /// </summary>
             public float NearestZ;

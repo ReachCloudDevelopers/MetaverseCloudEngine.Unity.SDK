@@ -146,7 +146,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 if (!_frameDirty)
                     return;
 
-                if (_engine.backgroundEnabled && _lastFrameObjects.Count > 0 && _lastFrameObjects[0].IsBackground)
+                if (_engine.backgroundEnabled && 
+                    _lastFrameObjects.Count > 0 && 
+                    _lastFrameObjects[0].IsBackground)
                 {
                     var envInstance = _engine.GetBackgroundObjectInstance();
                     var lastFrameObject = _lastFrameObjects[0];
@@ -159,9 +161,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                             lastFrameObject,
                             vertexIndex,
                             envInstance,
-                            envInstance.Instance.transform,
-                            Vector3.zero,
-                            envInstance.Instance);
+                            Vector3.zero);
                     }
                 }
 
@@ -236,8 +236,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 _voxelObjectMap.Remove(spawnedObject.Instance);
             }
 
-            private void TrackAndDetectObject(Detection<IObjectDetectionPipeline.DetectedObject> detectionInfo,
-                Track trackedResult, IObjectDetectionPipeline.DetectedObject detectedObjectReference)
+            private void TrackAndDetectObject(
+                Detection<IObjectDetectionPipeline.DetectedObject> detectionInfo,
+                Track trackedResult, 
+                IObjectDetectionPipeline.DetectedObject detectedObjectReference)
             {
                 if (detectionInfo.Ref.Vertices.Count == 0)
                     return;
@@ -286,6 +288,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 var instanceTransform = objectInstance.transform;
                 instanceTransform.parent = _engine.parent;
                 instanceTransform.localPosition = objectOrigin;
+                instanceTransform.localRotation = detectionInfo.Ref.Rotation;
+                
                 if (instance.Type.addTriggerVolume)
                 {
                     instance.Trigger.size = bounds.size;
@@ -298,20 +302,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 if ((_engine.minVoxelSize > 0 || _engine.maxVoxelSize > 0) && !instance.Type.positionTrackingOnly)
                 {
                     for (var vertexIndex = detectedObjectReference.Vertices.Count - 1; vertexIndex >= 0; vertexIndex--)
-                        AddVoxel(detectedObjectReference, vertexIndex, instance, instanceTransform, objectOrigin,
-                            objectInstance);
+                        AddVoxel(detectedObjectReference, vertexIndex, instance, objectOrigin);
                 }
 
                 _trackedObjectIds.Add(trackedResult.TrackId);
             }
 
-            private void AddVoxel(
-                IObjectDetectionPipeline.DetectedObject detectedObjectReference,
+            private void AddVoxel(IObjectDetectionPipeline.DetectedObject detectedObjectReference,
                 int vertexIndex,
                 ObjectInstance instance,
-                Transform instanceTransform,
-                Vector3 objectOrigin,
-                GameObject objectInstance)
+                Vector3 objectOrigin)
             {
                 if (!Application.isPlaying)
                     return;
@@ -323,8 +323,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 var voxel = _engine._voxelPool.Get();
                 var inverseLerpSize = Mathf.InverseLerp(0.01f, 10f, vertex.z);
                 var voxelSize = Mathf.Lerp(_engine.minVoxelSize, _engine.maxVoxelSize, inverseLerpSize);
-                voxel.transform.parent = instanceTransform;
-                voxel.transform.localPosition = vertex - objectOrigin;
+                voxel.transform.parent = instance.Instance.transform;
+                voxel.transform.localPosition = Quaternion.Inverse(instance.Instance.transform.localRotation) * (vertex - objectOrigin);
                 voxel.transform.localScale = Vector3.one * voxelSize;
                 if (voxel.TryGetComponent<MeshRenderer>(out var ren))
                 {
@@ -336,8 +336,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     else ren.enabled = false;
                 }
 
-                if (!_voxelObjectMap.TryGetValue(objectInstance, out var voxels))
-                    voxels = _voxelObjectMap[objectInstance] = new List<GameObject>();
+                if (!_voxelObjectMap.TryGetValue(instance.Instance, out var voxels))
+                    voxels = _voxelObjectMap[instance.Instance] = new List<GameObject>();
                 voxels.Add(voxel);
             }
 
@@ -369,7 +369,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 var newObj = isNewType && !type.prefab
                     ? new GameObject
                     {
-                        transform = { parent = _engine.parent }
+                        transform =
+                        {
+                            parent = _engine.parent,
+                            rotation = detection.Ref.Rotation,
+                        }
                     }
                     : Instantiate(type.prefab, _engine.parent);
                 newObj.name = $"{detection.Ref.Label}_{track.TrackId}";
@@ -513,12 +517,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void EnableAll()
         {
+            if (_voxelizations is null)
+                return;
             foreach (var o in _voxelizations)
                 o.Value.OnEnable();
         }
 
         private void DisableAll()
         {
+            if (_voxelizations is null)
+                return;
             foreach (var o in _voxelizations)
                 o.Value.OnDisable();
         }
@@ -530,19 +538,24 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 Destroy(_background.Instance);
                 _background = null;
             }
-            
+
+            if (_voxelizations is null) return;
             foreach (var o in _voxelizations)
                 o.Value.DeleteAll();
         }
 
         private void InitializeTrackers()
         {
+            if (_voxelizations is null)
+                return;
             foreach (var o in _voxelizations)
                 o.Value.Init();
         }
 
         private void ProcessFrames()
         {
+            if (_voxelizations is null)
+                return;
             foreach (var o in _voxelizations)
                 o.Value.ProcessFrame();
         }

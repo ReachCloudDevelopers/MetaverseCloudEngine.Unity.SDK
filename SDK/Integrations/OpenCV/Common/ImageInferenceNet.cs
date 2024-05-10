@@ -18,7 +18,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
     /// <summary>
     /// A base class for image inference networks.
     /// </summary>
-    [RequireComponent(typeof(ITextureToMatrixProvider))]
+    [RequireComponent(typeof(ICameraFrameProvider))]
     public abstract class ImageInferenceNet : TriInspectorMonoBehaviour
     {
         protected interface IInferenceOutputData : IDisposable
@@ -37,13 +37,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// <summary>
         /// Helps convert the texture to a matrix.
         /// </summary>
-        protected ITextureToMatrixProvider TextureProvider;
+        protected ICameraFrameProvider TextureProvider;
 
         private readonly ConcurrentQueue<(IInferenceOutputData, Mat)> _outputDataQueue = new();
 
         private void Start()
         {
-            TextureProvider = GetComponent<ITextureToMatrixProvider>();
+            TextureProvider = GetComponent<ICameraFrameProvider>();
             if (TextureProvider == null)
             {
                 Debug.LogError("TextureToMatrix component not found.");
@@ -127,8 +127,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// <summary>
         /// Do the inference. Warning: This method is called on a separate thread.
         /// </summary>
-        /// <param name="frame">The frame that is modified and will be visualized.</param>
-        protected abstract (IInferenceOutputData, Mat) PerformInference(IFrameMatrix frame);
+        /// <param name="cameraFrame">The frame that is modified and will be visualized.</param>
+        protected abstract (IInferenceOutputData, Mat) PerformInference(ICameraFrame cameraFrame);
 
         /// <summary>
         /// Called before the initialization.

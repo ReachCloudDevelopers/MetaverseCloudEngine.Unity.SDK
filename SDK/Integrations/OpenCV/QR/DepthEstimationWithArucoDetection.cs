@@ -10,11 +10,11 @@ using UnityEngine;
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
     [HideMonoScript]
-    [RequireComponent(typeof(ITextureToMatrixProvider))]
+    [RequireComponent(typeof(ICameraFrameProvider))]
     public class DepthEstimationWithArucoDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
     {
         private ArucoDetector _detector;
-        private ITextureToMatrixProvider _textureProvider;
+        private ICameraFrameProvider _textureProvider;
         private readonly Mat _ids = new();
         private readonly List<Mat> _corners = new();
 
@@ -23,7 +23,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         private void Awake()
         {
             _detector = new ArucoDetector();
-            _textureProvider = GetComponent<ITextureToMatrixProvider>();
+            _textureProvider = GetComponent<ICameraFrameProvider>();
         }
 
         private void Update()

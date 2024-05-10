@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Intel.RealSense;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
@@ -12,7 +13,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
 {
     [HideMonoScript]
     [DefaultExecutionOrder(-int.MaxValue)]
-    public class IntelRealSenseTextureSource : TriInspectorMonoBehaviour, ITextureToMatrixProvider
+    public class IntelRealSenseTextureSource : TriInspectorMonoBehaviour, ICameraFrameProvider
     {
         [Required]
         [Tooltip("The RS frame provider that will feed the color and depth frames to this texture source.")]
@@ -31,9 +32,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
         private bool _gotFrame;
         private readonly object _destroyLock = new();
         private Align _align;
-        private readonly ConcurrentQueue<RealSenseFrameData> _frames = new();
+        private readonly ConcurrentQueue<RealSenseCameraFrameData> _frames = new();
 
-        private readonly struct RealSenseFrameData : IFrameMatrix
+        private readonly struct RealSenseCameraFrameData : ICameraFrame
         {
             private readonly Vector3Int _colorSize;
             private readonly IntPtr _colorBuffer;
@@ -43,7 +44,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             private readonly IntPtr _depthBuffer;
             private readonly float _depthUnits;
 
-            public RealSenseFrameData(
+            public RealSenseCameraFrameData(
                 Vector3Int colorSize, 
                 IntPtr colorBuffer, 
                 Vector3Int depthSize, 
@@ -65,6 +66,42 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             {
                 var mat = new Mat(_colorSize.y, _colorSize.x, CvType.CV_8UC3, _colorBuffer);
                 return mat;
+            }
+
+            public ReadOnlySpan<Color32> GetColors32()
+            {
+                var originalTex = new Texture2D(_colorSize.x, _colorSize.y, TextureFormat.RGB24, false);
+                var flip = new Texture2D(_colorSize.x, _colorSize.y, TextureFormat.RGB24, false);
+                try
+                {
+                    originalTex.LoadRawTextureData(_colorBuffer, _colorSize.z * _colorSize.y);
+                    var texWidth = _colorSize.x;
+                    var texHeight = _colorSize.y;
+                    for (var y = texHeight - 1; y >= 0; y--)
+                    for (var x = texWidth - 1; x >= 0; x--)
+                    {
+                        var c = originalTex.GetPixel(x, y);
+                        flip.SetPixel(x, texHeight - y, c);
+                    }
+                    
+                    flip.Apply();
+                    
+                    return flip.GetPixels32();
+                }
+                finally
+                {
+                    Destroy(originalTex);
+                }
+            }
+
+            public Vector2Int GetSize()
+            {
+                return new Vector2Int(_colorSize.x, _colorSize.y);
+            }
+
+            public float GetFOV(int index)
+            {
+                return _intrinsics.FOV[index];
             }
 
             public bool ProvidesDepthData()
@@ -267,7 +304,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
 
                 ClearFrames();
                 
-                _frames.Enqueue(new RealSenseFrameData(
+                _frames.Enqueue(new RealSenseCameraFrameData(
                     cSize,
                     cBuffer,
                     dSize,
@@ -315,7 +352,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             return _isInitialized && !_disposed && frameProvider;
         }
 
-        public IFrameMatrix DequeueNextFrame()
+        public ICameraFrame DequeueNextFrame()
         {
             if (!_frames.TryDequeue(out var frame))
                 return null;
