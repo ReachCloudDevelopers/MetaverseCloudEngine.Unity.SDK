@@ -116,6 +116,11 @@
             "name": "com.unity.render-pipelines.universal",
             "expression": "",
             "define": "MV_URP"
+        },
+        {
+            "name": "com.reachcloud.apriltag",
+            "expression": "",
+            "define": "MV_APRIL_TAG"
         }
     ],
     "noEngineReferences": false

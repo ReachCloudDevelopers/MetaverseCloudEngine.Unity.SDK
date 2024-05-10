@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if METAVERSE_CLOUD_ENGINE && MV_APRIL_TAG
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
@@ -85,3 +86,4 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         }
     }
 }
+#endif
