@@ -33,6 +33,11 @@
             "name": "com.cysharp.unitask",
             "expression": "",
             "define": "MV_UNITASK"
+        },
+        {
+            "name": "com.reachcloud.apriltag",
+            "expression": "",
+            "define": "MV_APRIL_TAG"
         }
     ],
     "noEngineReferences": false
