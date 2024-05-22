@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
-
 using UnityEngine.XR.ARFoundation;
 
 namespace MetaverseCloudEngine.Unity.XR.Components
@@ -33,16 +32,15 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private void OnPlanesChanged(ARPlanesChangedEventArgs args)
         {
-            foreach (ARPlane arg in args.added)
+            foreach (var arg in args.added)
                 onTracking?.Invoke(arg);
-
-            foreach (ARPlane arg in args.removed)
+            
+            foreach (var arg in args.removed)
                 onNotTracking?.Invoke(arg);
 
             if (manager.trackables.count > 0)
                 onTrackingAny?.Invoke();
-            else
-                onNotTrackingAny?.Invoke();
+            else onNotTrackingAny?.Invoke();
         }
     }
 }
