@@ -23,8 +23,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
 
         public struct RayHitInformation
         {
-            public bool hit;
-            public Vector3 hitPoint;
+            public bool Hit;
+            public Vector3 HitPoint;
         }
 
         private void Awake()
@@ -46,7 +46,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
             {
                 Debug.LogError("Projection source is null. Please make sure that the projection source is assigned.");
                 return hitInfo;
-            }
+            } 
 
             var frame = _textureSource.DequeueNextFrame();
             if (frame == null)
