@@ -78,5 +78,9 @@
         SetScale,
         
         RequestLoadAvatar = 70,
+        
+        ARPlaneAdded = 80,
+        ARPlaneUpdated,
+        ARPlaneRemoved,
     }
 }

@@ -236,5 +236,10 @@ namespace MetaverseCloudEngine.Unity
             /// </summary>
             public static readonly Vector3 DefaultGravity = new(0, -9.81f, 0);
         }
+
+        public class Sizes
+        {
+            public const int InstanceUidLength = 16;
+        }
     }
 }

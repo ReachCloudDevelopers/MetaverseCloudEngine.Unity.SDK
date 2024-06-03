@@ -88,7 +88,7 @@ namespace MetaverseCloudEngine.Unity
 #endif
 
         /// <summary>
-        /// Whether or not the application currently allows interaction with
+        /// Whether the application currently allows interaction with
         /// Crypto Currency and blockchain content.
         /// </summary>
         public static bool AllowsCrypto {
