@@ -26,10 +26,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         [SerializeField] private float tagSize = 1f;
         [SerializeField] private bool flipX;
         [SerializeField] private bool flipY;
+        [SerializeField] private bool spawnObjects;
+        [SerializeField] private Transform spawnParent;
         
         private AprilTag.TagDetector _detector;
         private ICameraFrameProvider _textureProvider;
         private Texture2D _t2d;
+        private readonly Dictionary<string, GameObject> _spawnedObjects = new();
 
         public event Action<List<IObjectDetectionPipeline.DetectedObject>> DetectableObjectsUpdated;
 
@@ -83,6 +86,42 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             .ToList();
             
             DetectableObjectsUpdated?.Invoke(detectedObjects);
+
+            if (!spawnObjects) 
+                return;
+
+            foreach (var obj in _spawnedObjects)
+            {
+                if (detectedObjects.All(d => d.Label != obj.Key))
+                {
+                    Destroy(obj.Value);
+                    _spawnedObjects.Remove(obj.Key);
+                }
+            }
+            
+            foreach (var detectedObject in detectedObjects)
+            {
+                if (_spawnedObjects.TryGetValue(detectedObject.Label, out var go))
+                {
+                    go.transform.position = detectedObject.Origin;
+                    go.transform.rotation = detectedObject.Rotation;
+                    go.transform.parent = spawnParent;
+                }
+                else
+                {
+                    go = new GameObject
+                    {
+                        name = detectedObject.Label,
+                        transform =
+                        {
+                            position = detectedObject.Origin,
+                            rotation = detectedObject.Rotation,
+                            parent = spawnParent
+                        }
+                    };
+                    _spawnedObjects[detectedObject.Label] = go;
+                }
+            }
         }
     }
 }
