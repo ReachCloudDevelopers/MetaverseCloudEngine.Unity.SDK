@@ -7,6 +7,7 @@ using OpenCVForUnity.Calib3dModule;
 using OpenCVForUnity.CoreModule;
 using TriInspectorMVCE;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
@@ -24,8 +25,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         [Min(0.001f)]
         [ShowIf(nameof(distanceCalculation), TagDistanceCalculationMode.FixedSize)]
         [SerializeField] private float tagSize = 1f;
-        [SerializeField] private bool flipX;
-        [SerializeField] private bool flipY;
+        [FormerlySerializedAs("flipX")] [SerializeField] private bool flipXPosition;
+        [FormerlySerializedAs("flipY")] [SerializeField] private bool flipYPosition;
+        [FormerlySerializedAs("flipX")] [SerializeField] private bool flipXRotation;
+        [FormerlySerializedAs("flipY")] [SerializeField] private bool flipYRotation;
         [SerializeField] private bool spawnObjects;
         [SerializeField] private Transform spawnParent;
         
@@ -71,17 +74,20 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 Debug.DrawLine(v3, v0, Color.cyan);
 
                 var position = t.Position;
-                if (flipX) position.x = size.x - position.x;
-                if (flipY) position.y = size.y - position.y;
+                var rotation = t.Rotation;
+                if (flipXPosition) position.x = size.x - position.x;
+                if (flipYPosition) position.y = size.y - position.y;
+                if (flipXRotation) rotation *= Quaternion.Euler(0, 0, 180);
+                if (flipYRotation) rotation *= Quaternion.Euler(0, 180, 0);
                 
                 var o = new IObjectDetectionPipeline.DetectedObject
                 {
                     Label = t.Detection.ID.ToString(),
                     Score = t.Detection.DecisionMargin / 100f,
-                    Vertices = new List<Vector3> { t.Position },
-                    Origin = t.Position,
-                    Rotation = t.Rotation,
-                    NearestZ = t.Position.z,
+                    Vertices = new List<Vector3> { position },
+                    Origin = position,
+                    Rotation = rotation,
+                    NearestZ = position.z,
                     Rect = new Vector4(v0.x, v0.y, v2.x, v2.y),
                     IsBackground = false,
                 };
