@@ -3,8 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
-using OpenCVForUnity.Calib3dModule;
-using OpenCVForUnity.CoreModule;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -31,7 +29,52 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         [FormerlySerializedAs("flipY")] [SerializeField] private bool flipYRotation;
         [SerializeField] private bool spawnObjects;
         [SerializeField] private Transform spawnParent;
+        [SerializeField] private GameObject defaultPrefab;
+        [SerializeField] private List<TagPrefab> tagPrefabs = new();
+
+        [Serializable]
+        public class TagPrefab
+        {
+            [Required] public string targetTag;
+            [Required] public GameObject prefab;
+        }
         
+        /// <summary>
+        /// If true, will flip the X axis of the detected object's position.
+        /// </summary>
+        public bool FlipXPosition
+        {
+            get => flipXPosition;
+            set => flipXPosition = value;
+        }
+        
+        /// <summary>
+        /// If true, will flip the Y axis of the detected object's position.
+        /// </summary>
+        public bool FlipYPosition
+        {
+            get => flipYPosition;
+            set => flipYPosition = value;
+        }
+        
+        /// <summary>
+        /// If true, will flip the X axis of the detected object's rotation.
+        /// </summary>
+        public bool FlipXRotation
+        {
+            get => flipXRotation;
+            set => flipXRotation = value;
+        }
+        
+        /// <summary>
+        /// If true, will flip the Y axis of the detected object's rotation.
+        /// </summary>
+        public bool FlipYRotation
+        {
+            get => flipYRotation;
+            set => flipYRotation = value;
+        }
+
         private AprilTag.TagDetector _detector;
         private ICameraFrameProvider _textureProvider;
         private Texture2D _t2d;
@@ -135,16 +178,24 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 }
                 else
                 {
-                    go = new GameObject
-                    {
-                        name = detectedObject.Label,
-                        transform =
+                    var prefab = tagPrefabs.FirstOrDefault(p => p.targetTag == detectedObject.Label)?.prefab ?? defaultPrefab;
+                    if (!prefab)
+                        go = new GameObject
                         {
-                            localPosition = detectedObject.Origin,
-                            localRotation = detectedObject.Rotation,
-                            parent = spawnParent
-                        }
-                    };
+                            name = detectedObject.Label,
+                            transform =
+                            {
+                                localPosition = detectedObject.Origin,
+                                localRotation = detectedObject.Rotation,
+                                parent = spawnParent
+                            }
+                        };
+                    else
+                    {
+                        go = Instantiate(prefab, detectedObject.Origin, detectedObject.Rotation, spawnParent);
+                        go.name = detectedObject.Label;
+                    }
+                    
                     _spawnedObjects[detectedObject.Label] = go;
                 }
             }
