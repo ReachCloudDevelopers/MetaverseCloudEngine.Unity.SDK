@@ -69,6 +69,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 Debug.DrawLine(v1, v2, Color.green);
                 Debug.DrawLine(v2, v3, Color.blue);
                 Debug.DrawLine(v3, v0, Color.cyan);
+
+                var position = t.Position;
+                if (flipX) position.x = size.x - position.x;
+                if (flipY) position.y = size.y - position.y;
                 
                 var o = new IObjectDetectionPipeline.DetectedObject
                 {
@@ -90,13 +94,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             if (!spawnObjects) 
                 return;
 
-            foreach (var obj in _spawnedObjects)
+            foreach (var obj in _spawnedObjects.Where(obj => detectedObjects.All(d => d.Label != obj.Key)))
             {
-                if (detectedObjects.All(d => d.Label != obj.Key))
-                {
-                    Destroy(obj.Value);
-                    _spawnedObjects.Remove(obj.Key);
-                }
+                Destroy(obj.Value);
+                _spawnedObjects.Remove(obj.Key);
             }
             
             foreach (var detectedObject in detectedObjects)

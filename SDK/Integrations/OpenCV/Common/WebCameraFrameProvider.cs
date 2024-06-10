@@ -29,7 +29,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         [SerializeField]
         [Group("Webcam Texture Creation Options")]
         private bool createWebCamTexture = true;
-
+        
         /// <summary>
         /// Set the name of the camera device to use. (or device index number)
         /// </summary>
@@ -229,7 +229,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             get { return _timeoutFrameCount; }
             set { _timeoutFrameCount = (int)Mathf.Clamp(value, 0f, float.MaxValue); }
         }
-
+        
         /// <summary>
         /// UnityEvent that is triggered when this instance is initialized.
         /// </summary>
@@ -239,6 +239,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         /// UnityEvent that is triggered when this instance is disposed.
         /// </summary>
         public event Action Disposed;
+
+        /// <summary>
+        /// UnityEvent that is triggered when the webcam texture is started.
+        /// </summary>
+        public UnityEvent<Texture> onFrameReceived;
 
         /// <summary>
         /// UnityEvent that is triggered when this instance is error Occurred.
@@ -598,42 +603,36 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                             if (Application.platform == RuntimePlatform.Android && webCamDevice.isFrontFacing == true)
                                 requestedFPS = 15f;
 
-                            if (requestedFPS < 0)
-                            {
-                                webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight);
-                            }
-                            else
-                            {
-                                webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight,
+                            webCamTexture = requestedFPS < 0
+                                ? new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight)
+                                : new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight,
                                     (int)requestedFPS);
-                            }
+                            
+                            onFrameReceived?.Invoke(webCamTexture);
                         }
                     }
                     else
                     {
                         for (int cameraIndex = 0; cameraIndex < devices.Length; cameraIndex++)
                         {
-                            if (devices[cameraIndex].name == requestedDeviceName)
-                            {
-                                webCamDevice = devices[cameraIndex];
+                            if (devices[cameraIndex].name != requestedDeviceName) 
+                                continue;
+                            
+                            webCamDevice = devices[cameraIndex];
 
-                                if (Application.platform == RuntimePlatform.Android &&
-                                    webCamDevice.isFrontFacing == true)
-                                    requestedFPS = 15f;
+                            if (Application.platform == RuntimePlatform.Android &&
+                                webCamDevice.isFrontFacing == true)
+                                requestedFPS = 15f;
 
-                                if (requestedFPS < 0)
-                                {
-                                    webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth,
-                                        requestedHeight);
-                                }
-                                else
-                                {
-                                    webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth,
-                                        requestedHeight, (int)requestedFPS);
-                                }
+                            webCamTexture = requestedFPS < 0
+                                ? new WebCamTexture(webCamDevice.name, requestedWidth,
+                                    requestedHeight)
+                                : new WebCamTexture(webCamDevice.name, requestedWidth,
+                                    requestedHeight, (int)requestedFPS);
 
-                                break;
-                            }
+                            onFrameReceived?.Invoke(webCamTexture);
+
+                            break;
                         }
                     }
 
@@ -658,16 +657,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                             if (Application.platform == RuntimePlatform.Android && webCamDevice.isFrontFacing == true)
                                 requestedFPS = 15f;
 
-                            if (requestedFPS < 0)
-                            {
-                                webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight);
-                            }
-                            else
-                            {
-                                webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight,
+                            webCamTexture = requestedFPS < 0
+                                ? new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight)
+                                : new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight,
                                     (int)requestedFPS);
-                            }
 
+                            onFrameReceived?.Invoke(webCamTexture);
                             break;
                         }
                     }
@@ -682,24 +677,17 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         if (Application.platform == RuntimePlatform.Android && webCamDevice.isFrontFacing == true)
                             requestedFPS = 15f;
 
-                        if (requestedFPS < 0)
-                        {
-                            webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight);
-                        }
-                        else
-                        {
-                            webCamTexture = new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight,
-                                (int)requestedFPS);
-                        }
+                        webCamTexture = requestedFPS < 0
+                            ? new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight)
+                            : new WebCamTexture(webCamDevice.name, requestedWidth, requestedHeight, (int)requestedFPS);
+
+                        onFrameReceived?.Invoke(webCamTexture);
                     }
                     else
                     {
                         isInitWaiting = false;
                         initCoroutine = null;
-
-                        if (onErrorOccurred != null)
-                            onErrorOccurred.Invoke(ErrorCode.CAMERA_DEVICE_NOT_EXIST);
-
+                        onErrorOccurred?.Invoke(ErrorCode.CAMERA_DEVICE_NOT_EXIST);
                         yield break;
                     }
                 }
