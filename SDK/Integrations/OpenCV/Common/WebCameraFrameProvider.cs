@@ -979,7 +979,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 return new Vector2Int(_m.cols(), _m.rows());
             }
 
-            public float GetFOV(int index)
+            public float GetFOV(ICameraFrame.FOVType type)
             {
                 return _fov;
             }

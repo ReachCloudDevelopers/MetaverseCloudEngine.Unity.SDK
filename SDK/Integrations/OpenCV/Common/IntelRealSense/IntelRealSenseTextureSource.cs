@@ -97,9 +97,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.YOLO.RealSense
                 return new Vector2Int(_colorSize.x, _colorSize.y);
             }
 
-            public float GetFOV(int index)
+            public float GetFOV(ICameraFrame.FOVType index)
             {
-                return _intrinsics.FOV[index];
+                return _intrinsics.FOV[(int)index];
             }
 
             public bool ProvidesDepthData()

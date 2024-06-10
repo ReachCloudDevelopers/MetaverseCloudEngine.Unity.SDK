@@ -59,7 +59,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             var size = frame.GetSize();
             
             _detector ??= new AprilTag.TagDetector(size.x, size.y);
-            _detector.ProcessImage(colors, frame.GetFOV(1), tagSize);
+            _detector.ProcessImage(colors, frame.GetFOV(ICameraFrame.FOVType.Vertical), tagSize);
             
             var detectedObjects = _detector.DetectedTags.Select(t =>
             {
@@ -67,6 +67,24 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 var v1 = new Vector2(size.x - (float)t.Detection.Corner2.x, size.y - (float)t.Detection.Corner2.y); // br
                 var v2 = new Vector2(size.x - (float)t.Detection.Corner3.x, size.y - (float)t.Detection.Corner3.y); // tr
                 var v3 = new Vector2(size.x - (float)t.Detection.Corner4.x, size.y - (float)t.Detection.Corner4.y); // tl
+
+                var distance = 0f;
+                switch (distanceCalculation)
+                {
+                    case TagDistanceCalculationMode.FixedSize:
+                        var fov = frame.GetFOV(ICameraFrame.FOVType.Vertical);
+                        var focalLength = size.x / (2 * Mathf.Tan(fov * Mathf.Deg2Rad / 2));
+                        distance = tagSize * focalLength / (v1 - v0).magnitude;
+                        break;
+                    case TagDistanceCalculationMode.DepthSensor:
+                    {
+                        var center = (v0 + v1 + v2 + v3) / 4;
+                        var depth = frame.SampleDepth((int)center.x, (int)center.y);
+                        if (depth > 0)
+                            distance = depth;
+                        break;
+                    }
+                }
                 
                 Debug.DrawLine(v0, v1, Color.red);
                 Debug.DrawLine(v1, v2, Color.green);
@@ -75,15 +93,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV
 
                 var position = t.Position;
                 var rotation = t.Rotation;
-                if (flipXPosition) position.x = size.x - position.x;
-                if (flipYPosition) position.y = size.y - position.y;
+                position.z = distance;
+                if (flipXPosition) position.x = -position.x;
+                if (flipYPosition) position.y = -position.y;
                 if (flipXRotation) rotation *= Quaternion.Euler(0, 0, 180);
                 if (flipYRotation) rotation *= Quaternion.Euler(0, 180, 0);
                 
                 var o = new IObjectDetectionPipeline.DetectedObject
                 {
                     Label = t.Detection.ID.ToString(),
-                    Score = t.Detection.DecisionMargin / 100f,
+                    Score = 1,
                     Vertices = new List<Vector3> { position },
                     Origin = position,
                     Rotation = rotation,
@@ -110,8 +129,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             {
                 if (_spawnedObjects.TryGetValue(detectedObject.Label, out var go))
                 {
-                    go.transform.position = detectedObject.Origin;
-                    go.transform.rotation = detectedObject.Rotation;
+                    go.transform.localPosition = detectedObject.Origin;
+                    go.transform.localRotation = detectedObject.Rotation;
                     go.transform.parent = spawnParent;
                 }
                 else
@@ -121,8 +140,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                         name = detectedObject.Label,
                         transform =
                         {
-                            position = detectedObject.Origin,
-                            rotation = detectedObject.Rotation,
+                            localPosition = detectedObject.Origin,
+                            localRotation = detectedObject.Rotation,
                             parent = spawnParent
                         }
                     };
