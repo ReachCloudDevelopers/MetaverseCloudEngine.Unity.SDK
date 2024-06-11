@@ -1,4 +1,5 @@
-﻿#if METAVERSE_CLOUD_ENGINE && MV_APRIL_TAG
+﻿#if (METAVERSE_CLOUD_ENGINE && MV_APRIL_TAG) || METAVERSE_CLOUD_ENGINE_INTERNAL
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,6 @@ using UnityEngine.Serialization;
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
     [HideMonoScript]
-    [RequireComponent(typeof(ICameraFrameProvider))]
     public class DepthEstimationWithAprilDetection : TriInspectorMonoBehaviour, IObjectDetectionPipeline
     {
         public enum TagDistanceCalculationMode
@@ -96,7 +96,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         {
             using var frame = _textureProvider.DequeueNextFrame();
             if (frame is null)
+            {
+                MetaverseProgram.Logger.Log("No frames.");
                 return;
+            }
             
             var colors = frame.GetColors32();
             var size = frame.GetSize();
@@ -141,22 +144,22 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 if (flipYPosition) position.y = -position.y;
                 if (flipXRotation) rotation *= Quaternion.Euler(0, 0, 180);
                 if (flipYRotation) rotation *= Quaternion.Euler(0, 180, 0);
-                
+
                 var o = new IObjectDetectionPipeline.DetectedObject
                 {
                     Label = t.Detection.ID.ToString(),
                     Score = 1,
                     Vertices = new List<Vector3> { position },
                     Origin = position,
-                    Rotation = rotation,
                     NearestZ = position.z,
+                    Rotation = rotation,
                     Rect = new Vector4(v0.x, v0.y, v2.x, v2.y),
                     IsBackground = false,
                 };
                 return o;
             })
             .ToList();
-            
+
             DetectableObjectsUpdated?.Invoke(detectedObjects);
 
             if (!spawnObjects) 
@@ -167,6 +170,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                 Destroy(obj.Value);
                 _spawnedObjects.Remove(obj.Key);
             }
+            
+            MetaverseProgram.Logger.Log("Detected Objects: " + string.Join(", ", detectedObjects.Select(d => d.Label)));
             
             foreach (var detectedObject in detectedObjects)
             {
