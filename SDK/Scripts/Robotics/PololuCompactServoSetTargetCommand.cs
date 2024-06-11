@@ -43,6 +43,7 @@ namespace MetaverseCloudEngine.Unity.Robotics
             public float maxSpeed = 0.5f;
             [Min(0)]
             public float smoothTime = 0.5f;
+            public float initialValue;
             
             [NonSerialized] public float CurrentVelocity;
             [NonSerialized] public float CurrentValue;
@@ -126,7 +127,7 @@ namespace MetaverseCloudEngine.Unity.Robotics
             if (!smoothDampSettings.IsInitialized)
             {
                 smoothDampSettings.IsInitialized = true;
-                return inputValue;
+                smoothDampSettings.CurrentValue = smoothDampSettings.initialValue;
             }
 
             if (smoothDampSettings.angle)
