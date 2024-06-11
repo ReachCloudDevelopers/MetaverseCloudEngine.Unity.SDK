@@ -7,16 +7,7 @@
         "GUID:cef0e9dabbfe59a4790acbf31c21f33e",
         "GUID:a70490b4692f1674a9403edee9881494"
     ],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "iOS",
-        "LinuxStandalone64",
-        "CloudRendering",
-        "macOSStandalone",
-        "WebGL",
-        "WindowsStandalone64"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

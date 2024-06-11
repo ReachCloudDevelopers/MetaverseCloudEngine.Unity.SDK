@@ -96,10 +96,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         {
             using var frame = _textureProvider.DequeueNextFrame();
             if (frame is null)
-            {
-                MetaverseProgram.Logger.Log("No frames.");
                 return;
-            }
             
             var colors = frame.GetColors32();
             var size = frame.GetSize();
@@ -165,13 +162,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             if (!spawnObjects) 
                 return;
 
-            foreach (var obj in _spawnedObjects.Where(obj => detectedObjects.All(d => d.Label != obj.Key)))
+            foreach (var obj in _spawnedObjects.Where(obj => detectedObjects.All(d => d.Label != obj.Key)).ToArray())
             {
                 Destroy(obj.Value);
                 _spawnedObjects.Remove(obj.Key);
             }
-            
-            MetaverseProgram.Logger.Log("Detected Objects: " + string.Join(", ", detectedObjects.Select(d => d.Label)));
             
             foreach (var detectedObject in detectedObjects)
             {
