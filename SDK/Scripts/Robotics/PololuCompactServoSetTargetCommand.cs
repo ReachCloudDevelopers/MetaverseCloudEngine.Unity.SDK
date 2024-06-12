@@ -45,9 +45,9 @@ namespace MetaverseCloudEngine.Unity.Robotics
             public float smoothTime = 0.5f;
             public float initialValue;
             
-            [NonSerialized] public float CurrentVelocity;
-            [NonSerialized] public float CurrentValue;
-            [NonSerialized] public bool IsInitialized;
+            [ReadOnly] public float CurrentVelocity;
+            [ReadOnly] public float CurrentValue;
+            [ReadOnly] public bool IsInitialized;
         }
 
         public float RawValue
@@ -132,14 +132,14 @@ namespace MetaverseCloudEngine.Unity.Robotics
 
             if (smoothDampSettings.angle)
             {
-                return Mathf.SmoothDampAngle(
+                return smoothDampSettings.CurrentValue = Mathf.SmoothDampAngle(
                     smoothDampSettings.CurrentValue,
                     rawValue,
                     ref smoothDampSettings.CurrentVelocity, smoothDampSettings.smoothTime,
                     smoothDampSettings.maxSpeed, Time.fixedDeltaTime);
             }
 
-            return Mathf.SmoothDamp(
+            return smoothDampSettings.CurrentValue = Mathf.SmoothDamp(
                 smoothDampSettings.CurrentValue,
                 rawValue,
                 ref smoothDampSettings.CurrentVelocity, smoothDampSettings.smoothTime,

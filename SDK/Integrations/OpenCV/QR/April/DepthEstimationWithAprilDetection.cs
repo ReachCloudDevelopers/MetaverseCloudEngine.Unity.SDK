@@ -3,10 +3,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AprilTag.Interop;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
+using OpenCVForUnity.Calib3dModule;
+using OpenCVForUnity.CoreModule;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Rect = UnityEngine.Rect;
 
 namespace MetaverseCloudEngine.Unity.OpenCV
 {
@@ -129,14 +133,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV
                     }
                 }
                 
-                Debug.DrawLine(v0, v1, Color.red);
-                Debug.DrawLine(v1, v2, Color.green);
-                Debug.DrawLine(v2, v3, Color.blue);
-                Debug.DrawLine(v3, v0, Color.cyan);
-
                 var position = t.Position;
-                var rotation = t.Rotation;
                 position.z = distance;
+                var rotation = t.Rotation; // Use normal to compute rotation
                 if (flipXPosition) position.x = -position.x;
                 if (flipYPosition) position.y = -position.y;
                 if (flipXRotation) rotation *= Quaternion.Euler(0, 0, 180);
