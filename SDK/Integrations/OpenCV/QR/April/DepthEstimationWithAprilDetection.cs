@@ -110,31 +110,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             
             var detectedObjects = _detector.DetectedTags.Select(t =>
             {
-                var v0 = new Vector2(size.x - (float)t.Detection.Corner1.x, size.y - (float)t.Detection.Corner1.y); // bl
-                var v1 = new Vector2(size.x - (float)t.Detection.Corner2.x, size.y - (float)t.Detection.Corner2.y); // br
-                var v2 = new Vector2(size.x - (float)t.Detection.Corner3.x, size.y - (float)t.Detection.Corner3.y); // tr
-                var v3 = new Vector2(size.x - (float)t.Detection.Corner4.x, size.y - (float)t.Detection.Corner4.y); // tl
-
-                var distance = 0f;
-                switch (distanceCalculation)
-                {
-                    case TagDistanceCalculationMode.FixedSize:
-                        var fov = frame.GetFOV(ICameraFrame.FOVType.Vertical);
-                        var focalLength = size.x / (2 * Mathf.Tan(fov * Mathf.Deg2Rad / 2));
-                        distance = tagSize * focalLength / (v1 - v0).magnitude;
-                        break;
-                    case TagDistanceCalculationMode.DepthSensor:
-                    {
-                        var center = (v0 + v1 + v2 + v3) / 4;
-                        var depth = frame.SampleDepth((int)center.x, (int)center.y);
-                        if (depth > 0)
-                            distance = depth;
-                        break;
-                    }
-                }
-                
                 var position = t.Position;
-                position.z = distance;
                 var rotation = t.Rotation; // Use normal to compute rotation
                 if (flipXPosition) position.x = -position.x;
                 if (flipYPosition) position.y = -position.y;
@@ -143,13 +119,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV
 
                 var o = new IObjectDetectionPipeline.DetectedObject
                 {
-                    Label = t.Detection.ID.ToString(),
+                    Label = t.ID.ToString(),
                     Score = 1,
                     Vertices = new List<Vector3> { position },
                     Origin = position,
                     NearestZ = position.z,
                     Rotation = rotation,
-                    Rect = new Vector4(v0.x, v0.y, v2.x, v2.y),
                     IsBackground = false,
                 };
                 return o;
