@@ -137,11 +137,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV
 
         private void InitTagPrefabs()
         {
+            _tagPrefabs ??= new Dictionary<int, TagPrefab>();
             foreach (var prefab in tagPrefabs)
-            {
-                _tagPrefabs ??= new Dictionary<int, TagPrefab>();
                 _tagPrefabs[prefab.targetTag] = prefab;
-            }
         }
 
         private void DisposeDetector()
