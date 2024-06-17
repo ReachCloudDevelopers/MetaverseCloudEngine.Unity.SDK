@@ -25,7 +25,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
 
         private void Update()
         {
-            onAcceleration.Invoke(Input.acceleration);
+            onAcceleration.Invoke(Input.gyro.userAcceleration);
             onRotation.Invoke(Input.gyro.attitude.eulerAngles);
             onRotationQ.Invoke(Input.gyro.attitude);
         }

@@ -106,12 +106,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             {
                 if (_spawnedObjects.TryGetValue(t.ID, out var go))
                 {
-                    go.transform.localPosition = t.Position;
-                    go.transform.localRotation = t.Rotation;
-                    go.transform.parent = spawnParent;
+                    var tr = go.transform;
+                    tr.localPosition = t.Position;
+                    tr.localRotation = t.Rotation;
+                    tr.parent = spawnParent;
                     continue;
                 }
-
+                
                 var tagPreset = _tagPrefabs.GetValueOrDefault(t.ID);
                 var prefab = tagPreset?.prefab ?? defaultPrefab;
                 if (!prefab)
