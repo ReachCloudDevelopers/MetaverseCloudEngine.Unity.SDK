@@ -2,6 +2,8 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
 using OpenCVForUnity.CoreModule;
@@ -11,6 +13,7 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.XR;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
