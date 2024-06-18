@@ -2,11 +2,13 @@
 
 using System;
 using System.Collections.Concurrent;
+using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.OpenCV.Common;
 using OpenCVForUnity.CoreModule;
 using OpenCVForUnity.UnityUtils;
 using TriInspectorMVCE;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.XR.ARFoundation;
@@ -20,9 +22,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
         [Required]
         [SerializeField] private ARCameraManager arCameraManager;
         [SerializeField, Range(1, 180)] private float fieldOfView = 60;
+        [SerializeField] private XRCpuImage.Transformation imageTransformation = XRCpuImage.Transformation.MirrorY;
         [SerializeField] private UnityEvent<Texture2D> frameReceivedEvent;
 
         private readonly ConcurrentQueue<ICameraFrame> _frameQueue = new();
+        private Texture2D _frame;
 
         public event Action Initialized;
         public event Action Disposed;
@@ -53,10 +57,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
 
         private void ClearAllFrames(int frames = 0)
         {
-            while (_frameQueue.Count > 0)
+            while (_frameQueue.Count > frames)
             {
                 if (_frameQueue.TryDequeue(out var f))
-                    f.Dispose();
+                    f?.Dispose();
             }
         }
 
@@ -89,40 +93,45 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
             return _frameQueue.TryDequeue(out var frame) ? frame : null;
         }
 
-        private void OnFrameReceived(ARCameraFrameEventArgs args)
+        private unsafe void OnFrameReceived(ARCameraFrameEventArgs args)
         {
-            if (!arCameraManager.TryAcquireLatestCpuImage(out var image))
+            if (!arCameraManager.TryAcquireLatestCpuImage(out XRCpuImage image))
                 return;
 
+            if (!arCameraManager.permissionGranted)
+            {
+                Debug.Log("Permissions denied.");
+                return;
+            }
+            
+            const TextureFormat format = TextureFormat.RGBA32;
+
+            if (_frame == null || _frame.width != image.width || _frame.height != image.height)
+            {
+                _frame = new Texture2D(image.width, image.height, TextureFormat.RGBA32, false);
+                
+                MetaverseDispatcher.AtEndOfFrame(() => frameReceivedEvent?.Invoke(_frame));
+            }
+
+            var conversionParams = new XRCpuImage.ConversionParams(image, format, XRCpuImage.Transformation.MirrorY);
+
+            var rawTextureData = _frame.GetRawTextureData<byte>();
             try
             {
-                var conversionParams = new XRCpuImage.ConversionParams
-                {
-                    inputRect = new RectInt(0, 0, image.width, image.height),
-                    outputDimensions = new Vector2Int(image.width, image.height),
-                    outputFormat = TextureFormat.RGBA32,
-                    transformation = XRCpuImage.Transformation.None
-                };
-
-                var frame = new Texture2D(image.width, image.height, TextureFormat.RGBA32, false);
-                var rawTextureData = frame.GetRawTextureData<byte>();
-                image.Convert(conversionParams, new NativeArray<byte>(rawTextureData, Allocator.Temp));
-                
-                frame.Apply();
-                frameReceivedEvent?.Invoke(frame);
-
-                while (_frameQueue.Count > 5)
-                {
-                    if (_frameQueue.TryDequeue(out var f))
-                        f.Dispose();
-                }
-                
-                _frameQueue.Enqueue(new ArTexture2dFrame(frame, this));
+                image.Convert(
+                    conversionParams, 
+                    new IntPtr(rawTextureData.GetUnsafePtr()), 
+                    rawTextureData.Length);
             }
             finally
             {
                 image.Dispose();
             }
+            
+            _frame.Apply();
+            
+            // ClearAllFrames(5);
+            // _frameQueue.Enqueue(new ArTexture2dFrame(_frame, this));
         }
 
         private class ArTexture2dFrame : ICameraFrame
@@ -140,8 +149,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
             
             public void Dispose()
             {
-                if (_texture)
-                    Destroy(_texture);
                 if (_frameMat is not null)
                 {
                     _frameMat.Dispose();
@@ -151,14 +158,18 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
 
             public Mat GetMat()
             {
-                if (_frameMat is null)
-                    Utils.texture2DToMat(_texture, _frameMat, false);
+                if (_frameMat is not null) 
+                    return _frameMat;
+                
+                _frameMat = new Mat();
+                Utils.texture2DToMat(_texture, _frameMat, false);
+                
                 return _frameMat;
             }
 
             public ReadOnlySpan<Color32> GetColors32()
             {
-                return _texture.GetRawTextureData<Color32>();
+                return _texture.GetPixels32();
             }
 
             public Vector2Int GetSize()
