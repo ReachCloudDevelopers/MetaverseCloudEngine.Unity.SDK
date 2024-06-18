@@ -8,24 +8,26 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
 {
     public class ExtractVector2Input : TriInspectorMonoBehaviour
     {
-        [InputControl(layout = nameof(Vector2))] [SerializeField]
-        private InputActionReference inputAction;
+        [InputControl(layout = nameof(Vector2))]
+        [SerializeField] private string inputAction;
         [SerializeField] private UnityEvent<Vector2> onGetValue;
 
+        private InputAction _inputAction;
+        public InputAction Action => _inputAction ??= new InputAction(inputAction);
         public UnityEvent<Vector2> OnGetValue => onGetValue;
         
         private void OnEnable()
         {
-            if (!inputAction) return;
-            inputAction.action.Enable();
-            inputAction.action.performed += OnPerformed;
+            if (Action is null) return;
+            Action.Enable();
+            Action.performed += OnPerformed;
         }
 
         private void OnDisable()
         {
-            if (!inputAction) return;
-            inputAction.action.Disable();
-            inputAction.action.performed -= OnPerformed;
+            if (Action is null) return;
+            Action.Disable();
+            Action.performed -= OnPerformed;
         }
 
         private void OnPerformed(InputAction.CallbackContext ctx)
