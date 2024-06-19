@@ -61,11 +61,18 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         private ICameraFrameProvider _textureProvider;
         private Texture2D _t2d;
         private readonly Dictionary<int, GameObject> _spawnedObjects = new();
-        private Dictionary<int, TagPrefab> _tagPrefabs;
+        private Dictionary<int, TagPrefab> _tagPrefabs = new();
 
         private void Awake()
         {
             _textureProvider = GetComponent<ICameraFrameProvider>();
+            if (_textureProvider is null)
+            {
+                enabled = false;
+                MetaverseProgram.Logger.LogError("No ICameraFrameProvider found. Disabling AprilTagDetection.");
+                return;
+            }
+            
             InitTagPrefabs();
         }
 
@@ -83,22 +90,26 @@ namespace MetaverseCloudEngine.Unity.OpenCV
         {
             using var frame = _textureProvider.DequeueNextFrame();
             if (frame is null)
-            {
-                DisposeDetector();
                 return;
-            }
             
             var colors = frame.GetColors32();
+            if (colors is { Length: 0 })
+                return;
+            
             var size = frame.GetSize();
             
             _detector ??= new AprilTag.TagDetector(size.x, size.y, decimation: 4);
             _detector.ProcessImage(colors, frame.GetFOV(ICameraFrame.FOVType.Horizontal) * Mathf.Deg2Rad, tagRealWorldSize);
+
+            if (_detector.DetectedTags is null)
+                return;
             
             foreach (var obj in _spawnedObjects
                          .Where(obj => _detector.DetectedTags.All(d => d.ID != obj.Key))
                          .ToArray())
             {
-                Destroy(obj.Value);
+                if (obj.Value)
+                    Destroy(obj.Value);
                 _spawnedObjects.Remove(obj.Key);
             }
 
@@ -106,10 +117,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV
             {
                 if (_spawnedObjects.TryGetValue(t.ID, out var go))
                 {
-                    var tr = go.transform;
-                    tr.localPosition = t.Position;
-                    tr.localRotation = t.Rotation;
-                    tr.parent = spawnParent;
+                    if (go)
+                    {
+                        var tr = go.transform;
+                        tr.localPosition = t.Position;
+                        tr.localRotation = t.Rotation;
+                        tr.parent = spawnParent;   
+                    }
                     continue;
                 }
                 

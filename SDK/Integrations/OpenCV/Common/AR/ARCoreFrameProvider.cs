@@ -172,12 +172,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
 
             public ReadOnlySpan<Color32> GetColors32()
             {
-                return _texture.GetPixels32();
+                return _texture ? _texture.GetPixels32() : ReadOnlySpan<Color32>.Empty;
             }
 
             public Vector2Int GetSize()
             {
-                return new Vector2Int(_texture.width, _texture.height);
+                return _texture ? new Vector2Int(_texture.width, _texture.height) : Vector2Int.one;
             }
 
             public float GetFOV(ICameraFrame.FOVType type)

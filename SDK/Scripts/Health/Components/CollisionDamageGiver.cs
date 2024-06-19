@@ -12,7 +12,6 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         [Header("Hit Points")]
         [SerializeField] private bool randomDamage = true;
         [SerializeField, Min(0)] private int minHitpoints = 1;
-        [ShowIf(nameof(randomDamage))]
         [SerializeField, Min(0)] private int maxHitpoints = 5;
         [HideIf(nameof(randomDamage))]
         [SerializeField, Min(0)] private float minImpactForce = 5;
@@ -63,7 +62,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
                     return false;
 
                 var d = Mathf.InverseLerp(minImpactForce, maxImpactForce, impactForce.magnitude);
-                damage = (int)Mathf.Lerp(d, minHitpoints, maxHitpoints);
+                damage = (int)Mathf.Lerp(minHitpoints, maxHitpoints, d);
             }
             else
             {
