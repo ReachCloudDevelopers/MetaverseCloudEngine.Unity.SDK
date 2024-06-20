@@ -56,7 +56,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         public uint CurrentHitPoints { get; private set; }
 
         /// <summary>
-        /// Gets a value indicating whether or not the object is "dead" (i.e. out of hitpoints).
+        /// Gets a value indicating whether the object is "dead" (i.e. out of hitpoints).
         /// </summary>
         public bool IsDead { get; private set; }
 
@@ -108,14 +108,14 @@ namespace MetaverseCloudEngine.Unity.Health.Components
                 return;
 
             var isNetworked = networked && networkObject;
-            if (isNetworked && !networkObject.IsStateAuthority)
+            if (isNetworked && !networkObject.IsInputAuthority)
             {
                 if (giver.NetworkID < 0 || giver.DamagerID < 0 || !giver.IsLocalAuthority)
                     return;
 
                 networkObject.InvokeRPC(
                     (short)NetworkRpcType.HitpointsRequestApplyDamage,
-                    networkObject.Networking.HostID,
+                    networkObject.InputAuthorityID,
                     new object[]
                     {
                         hitPointsIndex,
@@ -171,10 +171,15 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
             var delta = hitPoints - (int)CurrentHitPoints;
             CurrentHitPoints = (uint)hitPoints;
-            if (delta < 0)
-                onTakeDamage?.Invoke(delta);
-            else
-                onHealed?.Invoke(delta);
+            switch (delta)
+            {
+                case < 0:
+                    onTakeDamage?.Invoke(delta);
+                    break;
+                case > 0:
+                    onHealed?.Invoke(delta);
+                    break;
+            }
 
             OnValueChanged();
         }
@@ -192,7 +197,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         private void RPC_SetHitPoints(short procedureID, int senderID, object content)
         {
-            if (!networkObject.Networking.IsHostPlayer(senderID))
+            if (networkObject.InputAuthorityID != senderID)
                 return;
 
             if (content is not object[] { Length: 2 } args)
@@ -204,12 +209,24 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             if (args[1] is not int newHp || newHp < 0)
                 return;
 
+            var delta = newHp - (int)CurrentHitPoints;
             CurrentHitPoints = (uint)newHp;
+            switch (delta)
+            {
+                case < 0:
+                    onTakeDamage?.Invoke(delta);
+                    break;
+                case > 0:
+                    onHealed?.Invoke(delta);
+                    break;
+            }
+            
+            OnValueChanged();
         }
 
         private void RPC_ApplyDamage(short procedureID, int sendingPlayer, object content)
         {
-            if (!networkObject.Networking.IsHost)
+            if (!networkObject.IsInputAuthority)
                 return;
 
             if (content is not object[] { Length: 4 } args)

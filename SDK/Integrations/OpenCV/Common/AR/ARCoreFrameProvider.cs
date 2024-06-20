@@ -133,8 +133,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.AR
             
             _frame.Apply();
             
-            // ClearAllFrames(5);
-            // _frameQueue.Enqueue(new ArTexture2dFrame(_frame, this));
+            ClearAllFrames(3);
+            
+            _frameQueue.Enqueue(new ArTexture2dFrame(_frame, this));
         }
 
         private class ArTexture2dFrame : ICameraFrame
