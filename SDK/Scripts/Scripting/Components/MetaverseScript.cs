@@ -636,6 +636,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(AudioSource).Assembly, /* UnityEngine.AudioModule */
                     typeof(Canvas).Assembly, /* UnityEngine.UIModule */
                     typeof(NavMesh).Assembly, /* UnityEngine.AIModule */
+                    typeof(NavMeshAgent).Assembly, /* UnityEngine.AIModule */
 #if MV_UNITY_AI_NAV
                     typeof(NavMeshSurface).Assembly, /* Unity.AI.Navigation */
 #endif

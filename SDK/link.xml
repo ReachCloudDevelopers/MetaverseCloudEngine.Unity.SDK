@@ -3,6 +3,7 @@
 	<assembly fullname="agora_gaming_rtc" preserve="all"/>
 	<assembly fullname="UnityEngine" preserve="all"/>
 	<assembly fullname="UnityEngine.TerrainModule" preserve="all"/>
+	<assembly fullname="UnityEngine.AIModule" preserve="all"/>
 	<assembly fullname="Unity" preserve="all"/>
 	<assembly fullname="Unity.AI" preserve="all"/>
 	<assembly fullname="Unity.InputSystem" preserve="all"/>
