@@ -126,7 +126,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
                 return;
             }
-
+ 
             DamageHitPointsInternal(damage);
 
             if (!isNetworked) return;

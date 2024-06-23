@@ -21,6 +21,7 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
+using Unity.AI.Navigation;
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
@@ -634,6 +635,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(AudioSource).Assembly, /* UnityEngine.AudioModule */
                     typeof(Canvas).Assembly, /* UnityEngine.UIModule */
                     typeof(NavMesh).Assembly, /* UnityEngine.AIModule */
+                    typeof(NavMeshSurface).Assembly, /* Unity.AI.Navigation */
                     typeof(Input).Assembly, /* UnityEngine.InputModule */
                     typeof(MetaverseProgram).Assembly /* MetaverseCloudEngine */,
                     typeof(MetaverseClient).Assembly /* MetaverseCloudEngine.ApiClient */,
