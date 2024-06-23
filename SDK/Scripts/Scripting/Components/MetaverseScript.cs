@@ -13,7 +13,6 @@ using TMPro;
 using Cinemachine;
 using TriInspectorMVCE;
 using System.Reflection;
-using Jint.Native.Object;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -21,7 +20,9 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
+#if MV_UNITY_AI_NAV
 using Unity.AI.Navigation;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
@@ -635,7 +636,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(AudioSource).Assembly, /* UnityEngine.AudioModule */
                     typeof(Canvas).Assembly, /* UnityEngine.UIModule */
                     typeof(NavMesh).Assembly, /* UnityEngine.AIModule */
+#if MV_UNITY_AI_NAV
                     typeof(NavMeshSurface).Assembly, /* Unity.AI.Navigation */
+#endif
                     typeof(Input).Assembly, /* UnityEngine.InputModule */
                     typeof(MetaverseProgram).Assembly /* MetaverseCloudEngine */,
                     typeof(MetaverseClient).Assembly /* MetaverseCloudEngine.ApiClient */,

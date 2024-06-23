@@ -119,7 +119,7 @@
             "define": "MV_URP"
         },
         {
-            "name": "com.reachcloud.apriltag",
+            "name": "com.unity.ai.navigation",
             "expression": "",
             "define": "MV_APRIL_TAG"
         }
