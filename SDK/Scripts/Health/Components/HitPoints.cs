@@ -198,8 +198,14 @@ namespace MetaverseCloudEngine.Unity.Health.Components
                 OnValueChanged();
                 return;
             }
+            
+            if (hitPoints >= hitPointsValue)
+                hitPoints = (int)hitPointsValue;
 
             var delta = hitPoints - (int)CurrentHitPoints;
+            if (delta == 0)
+                return;
+            
             CurrentHitPoints = (uint)hitPoints;
             switch (delta)
             {
