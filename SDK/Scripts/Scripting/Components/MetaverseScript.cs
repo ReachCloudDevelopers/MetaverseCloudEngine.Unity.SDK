@@ -20,6 +20,7 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
+using Vuforia;
 #if MV_UNITY_AI_NAV
 using Unity.AI.Navigation;
 #endif
@@ -134,7 +135,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string PlayerRPCFunction = "PlayerRPC";
         private const string GetHostIDFunction = "GetHostID";
         private const string SpawnNetworkPrefabFunction = "SpawnNetworkPrefab";
-        private const string ImportCoreModuleFunction = "importCoreModule";
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
@@ -213,24 +213,27 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             void OnReady()
             {
-                if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
-                    _engine.Invoke(method);
-
-                if (enabled)
+                MetaverseDispatcher.AtEndOfFrame(() => // At end of frame to ensure everything is initialized first.
                 {
-                    if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
+                    if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
                         _engine.Invoke(method);
-                }
-                else
-                {
-                    if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
+
+                    if (enabled)
+                    {
+                        if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
+                            _engine.Invoke(method);
+                    }
+                    else
+                    {
+                        if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
+                            _engine.Invoke(method);
+                    }
+
+                    if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
                         _engine.Invoke(method);
-                }
 
-                if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
-                    _engine.Invoke(method);
-
-                _ready = true;
+                    _ready = true;
+                });
             }
         }
 

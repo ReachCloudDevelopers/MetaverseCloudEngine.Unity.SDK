@@ -77,8 +77,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
             if (networked && networkObject)
             {
-                networkObject.RegisterRPC((short)NetworkRpcType.HitpointsRequestApplyDamage, RPC_ApplyDamage,
-                    @override: false);
+                networkObject.RegisterRPC((short)NetworkRpcType.HitpointsRequestApplyDamage, RPC_ApplyDamage, @override: false);
                 networkObject.RegisterRPC((short)NetworkRpcType.HitpointsValue, RPC_SetHitPoints, @override: false);
             }
         }
@@ -96,6 +95,37 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         #region PUBLIC METHODS
 
+        public void Heal(int amount)
+        {
+            if (IsDead)
+                return;
+            
+            if (amount <= 0)
+                return;
+            
+            var isNetworked = networked && networkObject;
+            if (isNetworked)
+            {
+                if (!networkObject.IsInputAuthority)
+                    return;
+                
+                ChangeHitPointsInternal(-amount);
+                
+                networkObject.InvokeRPC(
+                    (short)NetworkRpcType.HitpointsValue,
+                    NetworkMessageReceivers.Others,
+                    new object[]
+                    {
+                        hitPointsIndex,
+                        (int)CurrentHitPoints
+                    });
+
+                return;
+            }
+            
+            ChangeHitPointsInternal(-amount);
+        }
+
         public void ApplyDamage(DamageGiver giver, object[] args)
         {
             if (IsDead)
@@ -104,7 +134,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             if (!giver.TryGetDamage(this, args, out var damage))
                 return;
 
-            if (damage == 0)
+            if (damage <= 0)
                 return;
 
             var isNetworked = networked && networkObject;
@@ -127,7 +157,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
                 return;
             }
  
-            DamageHitPointsInternal(damage);
+            ChangeHitPointsInternal(damage);
 
             if (!isNetworked) return;
             if (IsDead)
@@ -150,7 +180,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         #region PRIVATE METHODS
 
-        private void DamageHitPointsInternal(int value)
+        private void ChangeHitPointsInternal(int value)
         {
             if (networkObject && !networkObject.IsStateAuthority)
                 return;
@@ -194,6 +224,23 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         #endregion
 
         #region RPCs
+
+        private void RPC_Heal(short procedureID, int senderID, object content)
+        {
+            if (networkObject.InputAuthorityID != senderID)
+                return;
+
+            if (content is not object[] { Length: 2 } args)
+                return;
+
+            if (args[0] is not int index || index != hitPointsIndex)
+                return;
+
+            if (args[1] is not int amount || amount <= 0)
+                return;
+            
+            
+        }
 
         private void RPC_SetHitPoints(short procedureID, int senderID, object content)
         {
