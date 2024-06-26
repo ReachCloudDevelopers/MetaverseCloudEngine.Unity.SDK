@@ -20,7 +20,6 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
-using Vuforia;
 #if MV_UNITY_AI_NAV
 using Unity.AI.Navigation;
 #endif
