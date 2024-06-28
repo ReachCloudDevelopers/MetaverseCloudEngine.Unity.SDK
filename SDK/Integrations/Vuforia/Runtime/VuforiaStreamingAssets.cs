@@ -91,7 +91,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                     continue; // Skip unknown file types
                 }
                 
-                System.IO.File.WriteAllBytes(System.IO.Path.Combine(Application.streamingAssetsPath, file.name), file.data);
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(Application.streamingAssetsPath, "Vuforia", file.name), file.data);
             }
         }
 
