@@ -22,7 +22,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
             if (!metaSpace)
                 throw new System.Exception("No MetaSpace found in scene.");
 
-            metaSpace.gameObject.AddComponent<VuforiaStreamingAssetsLoader>();
+            var streamingAssetsLoader = metaSpace.gameObject.GetOrAddComponent<VuforiaStreamingAssetsLoader>();
+            streamingAssetsLoader.vuforiaStreamingAssets = VuforiaStreamingAssets.Instance;
         }
 
         public void OnPostProcessBuild(GameObject prefab)
