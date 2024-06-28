@@ -127,6 +127,11 @@
             "name": "com.unity.ai.navigation",
             "expression": "",
             "define": "MV_UNITY_AI_NAV"
+        },
+        {
+            "name": "com.ptc.vuforia.engine",
+            "expression": "",
+            "define": "MV_PTC_VUFORIA"
         }
     ],
     "noEngineReferences": false
