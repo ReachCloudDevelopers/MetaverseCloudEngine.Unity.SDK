@@ -105,9 +105,9 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             UnityEditor.AssetDatabase.SaveAssets();
             
             // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
-            var vuforiaDatabaseXmlFiles = System.IO.Directory.GetFiles(Application.streamingAssetsPath, "*.xml", System.IO.SearchOption.AllDirectories);
-            var vuforiaDatabaseFiles = System.IO.Directory.GetFiles(Application.streamingAssetsPath, "*.dat", System.IO.SearchOption.AllDirectories);
-            var vuforia3dtFiles = System.IO.Directory.GetFiles(Application.streamingAssetsPath, "*.3dt", System.IO.SearchOption.AllDirectories);
+            var vuforiaDatabaseXmlFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.xml", System.IO.SearchOption.TopDirectoryOnly);
+            var vuforiaDatabaseFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.dat", System.IO.SearchOption.TopDirectoryOnly);
+            var vuforia3dtFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.3dt", System.IO.SearchOption.TopDirectoryOnly);
             
             vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforia3dtFiles.Length];
             var index = 0;
