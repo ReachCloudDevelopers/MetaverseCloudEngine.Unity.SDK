@@ -62,16 +62,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         }
 #endif
         
-        public static void Dump()
-        {
-            if (!Instance)
-                return;
-            
-            Instance.DumpInternal();
-        }
-        
         [Button("Dump Files")]
-        private void DumpInternal()
+        public void Dump()
         {
             if (vuforiaFiles == null || vuforiaFiles.Length == 0)
                 return;
@@ -108,6 +100,9 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         private void CollectInternal()
         {
             vuforiaFiles = Array.Empty<VuforiaFile>();
+            
+            UnityEditor.EditorUtility.SetDirty(this);
+            UnityEditor.AssetDatabase.SaveAssets();
             
             // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
             var vuforiaDatabaseXmlFiles = System.IO.Directory.GetFiles(Application.streamingAssetsPath, "*.xml", System.IO.SearchOption.AllDirectories);

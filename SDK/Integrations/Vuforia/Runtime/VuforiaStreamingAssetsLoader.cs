@@ -14,7 +14,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         
         private void Awake()
         {
-            VuforiaStreamingAssets.Dump();
+            if (vuforiaStreamingAssets)
+                vuforiaStreamingAssets.Dump();
         }
     }
 }
