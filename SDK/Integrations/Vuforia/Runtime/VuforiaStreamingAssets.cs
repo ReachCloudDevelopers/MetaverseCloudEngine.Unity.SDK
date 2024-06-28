@@ -100,7 +100,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 System.IO.File.WriteAllBytes(System.IO.Path.Combine(Application.streamingAssetsPath, file.name), file.data);
             }
         }
-        
+
+#if UNITY_EDITOR
         [Button("Detect Files")]
         private void CollectInternal()
         {
@@ -142,6 +143,10 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 };
                 vuforiaFiles[index++] = file;
             }
+            
+            UnityEditor.EditorUtility.SetDirty(this);
+            UnityEditor.AssetDatabase.SaveAssets();
         }
+#endif
     }
 }
