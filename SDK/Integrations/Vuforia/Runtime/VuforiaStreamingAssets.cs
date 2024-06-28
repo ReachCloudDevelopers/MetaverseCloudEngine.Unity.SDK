@@ -52,6 +52,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             }
         }
 
+#if UNITY_EDITOR
         public static void Collect()
         {
             if (!Instance)
@@ -59,6 +60,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             
             Instance.CollectInternal();
         }
+#endif
         
         public static void Dump()
         {
