@@ -100,6 +100,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 File.WriteAllBytes(Path.Combine(VuforiaPath, file.name), file.data);
             }
         }
+#endif
 
 #if UNITY_EDITOR
         [Button("Detect Files")]
@@ -157,6 +158,5 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             if (Directory.Exists(VuforiaPath))
                 Directory.Delete(VuforiaPath, true);
         }
-#endif
     }
 }
