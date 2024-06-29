@@ -61,7 +61,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             Instance.CollectInternal();
         }
 #endif
-        
+
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
         [Button("Dump Files")]
         public void Dump()
         {
@@ -143,6 +144,14 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             
             UnityEditor.EditorUtility.SetDirty(this);
             UnityEditor.AssetDatabase.SaveAssets();
+        }
+#endif
+        
+        public static void Clear()
+        {
+            var vuforiaFolder = System.IO.Path.Combine(Application.streamingAssetsPath, "Vuforia");
+            if (System.IO.Directory.Exists(vuforiaFolder))
+                System.IO.Directory.Delete(vuforiaFolder, true);
         }
 #endif
     }

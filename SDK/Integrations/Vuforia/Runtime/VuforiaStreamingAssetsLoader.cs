@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -14,8 +15,18 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         
         private void Awake()
         {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
             if (vuforiaStreamingAssets)
                 vuforiaStreamingAssets.Dump();
+#endif
+        }
+
+        private void OnDestroy()
+        {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            // Clean out the StreamingAssets folder
+            VuforiaStreamingAssets.Clear();
+#endif
         }
     }
 }
