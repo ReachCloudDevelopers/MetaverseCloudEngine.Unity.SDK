@@ -44,16 +44,26 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 var vuforiaPath = $"{VuforiaStreamingAssets.VuforiaPath}{Path.DirectorySeparatorChar}{Path.GetFileName(dataSetPath)}";
                 if (!File.Exists(vuforiaPath))
                     throw new FileNotFoundException("Vuforia dataset not found at " + vuforiaPath);
+                MetaverseProgram.Logger.Log("VuforiaAreaTargetConfigurationHelper: Setting dataset path to " + vuforiaPath);
                 dataSetPathField.SetValue(areaTargetBehavior, vuforiaPath);
             }
-            
-            var occlusionModelPath = (string)occlusionModelPathField!.GetValue(areaTargetBehavior);
-            if (!string.IsNullOrEmpty(occlusionModelPath))
+
+            if (!Application.isEditor)
             {
-                var vuforiaPath = $"{VuforiaStreamingAssets.VuforiaPath}{Path.DirectorySeparatorChar}{Path.GetFileName(occlusionModelPath)}";
-                if (!File.Exists(vuforiaPath))
-                    throw new FileNotFoundException("Vuforia occlusion model not found at " + vuforiaPath);
-                occlusionModelPathField.SetValue(areaTargetBehavior, vuforiaPath);
+                var occlusionModelPath = (string)occlusionModelPathField!.GetValue(areaTargetBehavior);
+                if (!string.IsNullOrEmpty(occlusionModelPath))
+                {
+                    var vuforiaPath = $"{VuforiaStreamingAssets.VuforiaPath}{Path.DirectorySeparatorChar}{Path.GetFileName(occlusionModelPath)}";
+                    if (!File.Exists(vuforiaPath))
+                        MetaverseProgram.Logger.LogWarning("VuforiaAreaTargetConfigurationHelper: Vuforia occlusion model not found at " + vuforiaPath);
+                    else
+                        MetaverseProgram.Logger.Log("VuforiaAreaTargetConfigurationHelper: Setting occlusion model path to " + vuforiaPath);
+                    occlusionModelPathField.SetValue(areaTargetBehavior, vuforiaPath);
+                }
+            }
+            else
+            {
+                MetaverseProgram.Logger.Log("VuforiaAreaTargetConfigurationHelper: Ignoring occlusion model path in editor.");
             }
             
             MetaverseProgram.Logger.Log("VuforiaAreaTargetConfigurationHelper: Awake() completed on " + areaTargetBehavior.name);

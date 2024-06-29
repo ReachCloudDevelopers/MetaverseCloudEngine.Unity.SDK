@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using TriInspectorMVCE;
 using UnityEngine;
 
@@ -14,8 +15,20 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         private const string DatMagik = "PK\u0003\u0004\u0014";
         private const string ThreeDTMagik = "PK\u0003\u0004\u0014";
 
+        [ReadOnly]
+        [ShowInInspector]
+        public float TotalSizeMB
+        {
+            get
+            {
+                var totalSize = vuforiaFiles.Sum(file => file.Size);
+                return (float)(totalSize / 1024.0 / 1024.0);
+            }
+        }
+        
         public static string VuforiaPath => Path.Combine(Application.temporaryCachePath, "VuforiaStreamingAssets");
-        private static string VuforiaEditorAssetsPath => Path.Combine(Application.streamingAssetsPath, "Vuforia");
+        private static string VuforiaEditorDatabaseAssetsPath => Path.Combine(Application.streamingAssetsPath, "Vuforia");
+        private static string VuforiaEditorOcclusionAssetsPath => Path.Combine("Assets", "Editor", "Vuforia");
         
         [Serializable]
         public class VuforiaFile
@@ -112,11 +125,11 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             UnityEditor.AssetDatabase.SaveAssets();
             
             // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
-            var vuforiaDatabaseXmlFiles = Directory.GetFiles(VuforiaEditorAssetsPath, "*.xml", SearchOption.TopDirectoryOnly);
-            var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaEditorAssetsPath, "*.dat", SearchOption.TopDirectoryOnly);
-            var vuforia3dtFiles = Directory.GetFiles(VuforiaEditorAssetsPath, "*.3dt", SearchOption.TopDirectoryOnly);
+            var vuforiaDatabaseXmlFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.xml", SearchOption.TopDirectoryOnly);
+            var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.dat", SearchOption.TopDirectoryOnly);
+            var vuforiaOcclusion3dtFiles = Directory.GetFiles(VuforiaEditorOcclusionAssetsPath, "*.3dt", SearchOption.AllDirectories);
             
-            vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforia3dtFiles.Length];
+            vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforiaOcclusion3dtFiles.Length];
             var index = 0;
             for (var i = 0; i < vuforiaDatabaseXmlFiles.Length; i++)
             {
@@ -138,12 +151,12 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 vuforiaFiles[index++] = file;
             }
             
-            for (var i = 0; i < vuforia3dtFiles.Length; i++)
+            for (var i = 0; i < vuforiaOcclusion3dtFiles.Length; i++)
             {
                 var file = new VuforiaFile
                 {
-                    name = Path.GetFileName(vuforia3dtFiles[i]),
-                    data = File.ReadAllBytes(vuforia3dtFiles[i])
+                    name = Path.GetFileName(vuforiaOcclusion3dtFiles[i]),
+                    data = File.ReadAllBytes(vuforiaOcclusion3dtFiles[i])
                 };
                 vuforiaFiles[index++] = file;
             }
