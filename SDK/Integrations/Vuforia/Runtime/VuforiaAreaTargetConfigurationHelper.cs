@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 using Vuforia;
@@ -7,6 +8,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 {
     [AddComponentMenu("")]
     [DefaultExecutionOrder(-int.MaxValue)]
+    [DisallowMultipleComponent]
     public class VuforiaAreaTargetConfigurationHelper : MonoBehaviour
     {
         private void Awake()
@@ -14,6 +16,12 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             var areaTargetBehavior = GetComponent<AreaTargetBehaviour>();
             if (!areaTargetBehavior)
                 return;
+
+            var loader = FindObjectOfType<VuforiaStreamingAssetsLoader>(true);
+            if (loader == null)
+                throw new Exception("No VuforiaStreamingAssetsLoader found in scene.");
+
+            loader.RunOnAwake();
             
             // Use reflection to modify:
             // 1. DataSetPath to absolute path
@@ -23,25 +31,29 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             var areaTargetBehaviorType = areaTargetBehavior.GetType();
             const BindingFlags internalPropertyFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetProperty | BindingFlags.SetProperty;
             const BindingFlags internalFieldFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.GetField | BindingFlags.SetField;
-            var dataSetPathField = areaTargetBehaviorType.GetProperty("DataSetPath", internalPropertyFlags);
-            var occlusionModelStorageTypeField = areaTargetBehaviorType.GetField("OcclusionModelStorageType", internalFieldFlags);
-            var occlusionModelPathField = areaTargetBehaviorType.GetField("OcclusionModelPath", internalFieldFlags);
             
-            if (occlusionModelStorageTypeField != null)
-                occlusionModelStorageTypeField.SetValue(areaTargetBehavior, StorageType.ABSOLUTE);
+            var dataSetPathField = areaTargetBehaviorType.GetProperty("DataSetPath", internalPropertyFlags) ?? throw new MissingFieldException("DataSetPath");
+            var occlusionModelStorageTypeField = areaTargetBehaviorType.GetField("OcclusionModelStorageType", internalFieldFlags) ?? throw new MissingFieldException("OcclusionModelStorageType");
+            var occlusionModelPathField = areaTargetBehaviorType.GetField("OcclusionModelPath", internalFieldFlags) ?? throw new MissingFieldException("OcclusionModelPath");
+            
+            occlusionModelStorageTypeField!.SetValue(areaTargetBehavior, StorageType.ABSOLUTE);
 
-            if (dataSetPathField != null)
+            var dataSetPath = (string)dataSetPathField!.GetValue(areaTargetBehavior);
+            if (!string.IsNullOrEmpty(dataSetPath))
             {
-                var dataSetPath = (string)dataSetPathField.GetValue(areaTargetBehavior);
-                if (!string.IsNullOrEmpty(dataSetPath))
-                    dataSetPathField.SetValue(areaTargetBehavior, VuforiaStreamingAssets.VuforiaPath + "/" + dataSetPath);
+                var vuforiaPath = $"{VuforiaStreamingAssets.VuforiaPath}{Path.DirectorySeparatorChar}{Path.GetFileName(dataSetPath)}";
+                if (!File.Exists(vuforiaPath))
+                    throw new FileNotFoundException("Vuforia dataset not found at " + vuforiaPath);
+                dataSetPathField.SetValue(areaTargetBehavior, vuforiaPath);
             }
             
-            if (occlusionModelPathField != null)
+            var occlusionModelPath = (string)occlusionModelPathField!.GetValue(areaTargetBehavior);
+            if (!string.IsNullOrEmpty(occlusionModelPath))
             {
-                var occlusionModelPath = (string)occlusionModelPathField.GetValue(areaTargetBehavior);
-                if (!string.IsNullOrEmpty(occlusionModelPath))
-                    occlusionModelPathField.SetValue(areaTargetBehavior, VuforiaStreamingAssets.VuforiaPath + "/" + occlusionModelPath);
+                var vuforiaPath = $"{VuforiaStreamingAssets.VuforiaPath}{Path.DirectorySeparatorChar}{Path.GetFileName(occlusionModelPath)}";
+                if (!File.Exists(vuforiaPath))
+                    throw new FileNotFoundException("Vuforia occlusion model not found at " + vuforiaPath);
+                occlusionModelPathField.SetValue(areaTargetBehavior, vuforiaPath);
             }
             
             MetaverseProgram.Logger.Log("VuforiaAreaTargetConfigurationHelper: Awake() completed on " + areaTargetBehavior.name);

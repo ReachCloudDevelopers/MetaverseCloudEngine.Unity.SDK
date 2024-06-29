@@ -13,12 +13,21 @@ namespace MetaverseCloudEngine.Unity.Vuforia
     {
         [UsedImplicitly]
         public VuforiaStreamingAssets vuforiaStreamingAssets;
+
+        private bool _initialized;
         
         private void Awake()
         {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
+            if (_initialized)
+                return;
+            
             if (vuforiaStreamingAssets)
                 vuforiaStreamingAssets.Dump();
+            
+            MetaverseProgram.Logger.Log("VuforiaStreamingAssetsLoader: Awake()");
+
+            _initialized = true;
 #endif
         }
 
@@ -28,6 +37,11 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             // Clean out the StreamingAssets folder
             VuforiaStreamingAssets.Clear();
 #endif
+        }
+
+        public void RunOnAwake()
+        {
+            Awake();
         }
     }
 }

@@ -44,9 +44,9 @@ namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
             var existingHelpers = Resources.FindObjectsOfTypeAll<VuforiaAreaTargetConfigurationHelper>();
             foreach (var helper in existingHelpers)
             {
-                if (!helper.TryGetComponent(out AreaTargetBehaviour areaTargetBehaviour))
+                if (!helper.TryGetComponent(out AreaTargetBehaviour _))
                     continue;
-                Object.DestroyImmediate(helper);
+                Object.DestroyImmediate(helper, true);
             }
             
             var allBehaviours = Resources.FindObjectsOfTypeAll<AreaTargetBehaviour>();
