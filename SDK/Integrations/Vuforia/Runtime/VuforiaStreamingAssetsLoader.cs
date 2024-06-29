@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -6,6 +7,7 @@ using UnityEngine.Scripting;
 
 namespace MetaverseCloudEngine.Unity.Vuforia
 {
+    [AddComponentMenu("")]
     [DefaultExecutionOrder(-int.MaxValue)]
     public class VuforiaStreamingAssetsLoader : MonoBehaviour
     {

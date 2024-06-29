@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using TriInspectorMVCE;
 using UnityEngine;
 using Vuforia;
@@ -13,6 +14,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         private const string XmlMagik = "<?xml";
         private const string DatMagik = "PK\u0003\u0004\u0014";
         private const string ThreeDTMagik = "PK\u0003\u0004\u0014";
+
+        public static string VuforiaPath => Path.Combine(Application.temporaryCachePath, "VuforiaStreamingAssets");
         
         [Serializable]
         public class VuforiaFile
@@ -91,8 +94,10 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 {
                     continue; // Skip unknown file types
                 }
-                
-                System.IO.File.WriteAllBytes(System.IO.Path.Combine(Application.streamingAssetsPath, "Vuforia", file.name), file.data);
+
+                if (!Directory.Exists(VuforiaPath))
+                    Directory.CreateDirectory(VuforiaPath);
+                File.WriteAllBytes(Path.Combine(VuforiaPath, file.name), file.data);
             }
         }
 
@@ -106,9 +111,9 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             UnityEditor.AssetDatabase.SaveAssets();
             
             // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
-            var vuforiaDatabaseXmlFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.xml", System.IO.SearchOption.TopDirectoryOnly);
-            var vuforiaDatabaseFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.dat", System.IO.SearchOption.TopDirectoryOnly);
-            var vuforia3dtFiles = System.IO.Directory.GetFiles($"{Application.streamingAssetsPath}/Vuforia", "*.3dt", System.IO.SearchOption.TopDirectoryOnly);
+            var vuforiaDatabaseXmlFiles = Directory.GetFiles(VuforiaPath, "*.xml", SearchOption.TopDirectoryOnly);
+            var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaPath, "*.dat", SearchOption.TopDirectoryOnly);
+            var vuforia3dtFiles = Directory.GetFiles(VuforiaPath, "*.3dt", SearchOption.TopDirectoryOnly);
             
             vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforia3dtFiles.Length];
             var index = 0;
@@ -116,8 +121,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             {
                 var file = new VuforiaFile
                 {
-                    name = System.IO.Path.GetFileName(vuforiaDatabaseXmlFiles[i]),
-                    data = System.IO.File.ReadAllBytes(vuforiaDatabaseXmlFiles[i])
+                    name = Path.GetFileName(vuforiaDatabaseXmlFiles[i]),
+                    data = File.ReadAllBytes(vuforiaDatabaseXmlFiles[i])
                 };
                 vuforiaFiles[index++] = file;
             }
@@ -126,8 +131,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             {
                 var file = new VuforiaFile
                 {
-                    name = System.IO.Path.GetFileName(vuforiaDatabaseFiles[i]),
-                    data = System.IO.File.ReadAllBytes(vuforiaDatabaseFiles[i])
+                    name = Path.GetFileName(vuforiaDatabaseFiles[i]),
+                    data = File.ReadAllBytes(vuforiaDatabaseFiles[i])
                 };
                 vuforiaFiles[index++] = file;
             }
@@ -136,8 +141,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             {
                 var file = new VuforiaFile
                 {
-                    name = System.IO.Path.GetFileName(vuforia3dtFiles[i]),
-                    data = System.IO.File.ReadAllBytes(vuforia3dtFiles[i])
+                    name = Path.GetFileName(vuforia3dtFiles[i]),
+                    data = File.ReadAllBytes(vuforia3dtFiles[i])
                 };
                 vuforiaFiles[index++] = file;
             }
@@ -149,9 +154,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         
         public static void Clear()
         {
-            var vuforiaFolder = System.IO.Path.Combine(Application.streamingAssetsPath, "Vuforia");
-            if (System.IO.Directory.Exists(vuforiaFolder))
-                System.IO.Directory.Delete(vuforiaFolder, true);
+            if (Directory.Exists(VuforiaPath))
+                Directory.Delete(VuforiaPath, true);
         }
 #endif
     }

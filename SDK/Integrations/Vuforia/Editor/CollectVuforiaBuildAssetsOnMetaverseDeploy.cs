@@ -2,6 +2,7 @@
 using MetaverseCloudEngine.Unity.Editors;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Vuforia;
 
 namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
 {
@@ -12,6 +13,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
         public void OnPreProcessBuild(GameObject prefab)
         {
             VuforiaStreamingAssets.Collect();
+            
+            AddVuforiaAreaTargetConfigurationHelper();
         }
 
         public void OnPreProcessBuild(Scene scene)
@@ -24,6 +27,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
 
             var streamingAssetsLoader = metaSpace.gameObject.GetOrAddComponent<VuforiaStreamingAssetsLoader>();
             streamingAssetsLoader.vuforiaStreamingAssets = VuforiaStreamingAssets.Instance;
+
+            AddVuforiaAreaTargetConfigurationHelper();
         }
 
         public void OnPostProcessBuild(GameObject prefab)
@@ -32,6 +37,21 @@ namespace MetaverseCloudEngine.Unity.Vuforia.SDK.Integrations.Vuforia.Editor
 
         public void OnPostProcessBuild(Scene scene)
         {
+        }
+
+        private static void AddVuforiaAreaTargetConfigurationHelper()
+        {
+            var existingHelpers = Resources.FindObjectsOfTypeAll<VuforiaAreaTargetConfigurationHelper>();
+            foreach (var helper in existingHelpers)
+            {
+                if (!helper.TryGetComponent(out AreaTargetBehaviour areaTargetBehaviour))
+                    continue;
+                Object.DestroyImmediate(helper);
+            }
+            
+            var allBehaviours = Resources.FindObjectsOfTypeAll<AreaTargetBehaviour>();
+            foreach (var behaviour in allBehaviours)
+                behaviour.gameObject.GetOrAddComponent<VuforiaAreaTargetConfigurationHelper>();
         }
     }
 }
