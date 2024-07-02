@@ -37,7 +37,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             hp.ApplyDamage(this, Array.Empty<object>());
         }
 
-        public override bool TryGetDamage(HitPoints hp, object[] arguments, out int damage)
+        public override bool TryGetDamage(object[] arguments, out int damage)
         {
             damage = randomDamage ? UnityEngine.Random.Range(minHitpoints, maxHitpoints) : minHitpoints;
             return true;

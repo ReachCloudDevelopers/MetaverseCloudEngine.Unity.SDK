@@ -11,11 +11,12 @@ namespace MetaverseCloudEngine.Unity.Health.Components
     {
         [InfoBox("(Optional) Specify network object to sync damage on the network.")]
         [SerializeField] private NetworkObject networkObject;
+        [Tooltip("If true, the owner of the network object will be used as the source of the damage when reporting death or damage on HitPoints.")]
         [SerializeField, ReadOnly] private int networkDamagerID;
 
         private static readonly Dictionary<(int n, int d), DamageGiver> DamageGiverLookup = new();
 
-        private NetworkObject NetworkObject {
+        public NetworkObject NetworkObject {
             get {
                 if (!networkObject)
                     networkObject = GetComponentInParent<NetworkObject>();
@@ -25,7 +26,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         public int DamagerID => networkDamagerID;
         public int NetworkID => NetworkObject != null ? NetworkObject.NetworkID : -1;
-        public bool IsLocalAuthority => NetworkObject != null && NetworkObject.IsStateAuthority;
+        public bool IsLocalAuthority => NetworkObject != null && NetworkObject.IsInputAuthority;
 
         protected virtual void Awake()
         {
@@ -47,7 +48,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             networkDamagerID = NetworkObject.GetNetworkObjectBehaviorID(this);
         }
 
-        public abstract bool TryGetDamage(HitPoints hp, object[] arguments, out int damage);
+        public abstract bool TryGetDamage(object[] arguments, out int damage);
 
         private void OnNetworkObjectInit()
         {
@@ -57,7 +58,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         public static DamageGiver FindNetworkDamageGiver(int networkID, int giverID)
         {
-            return DamageGiverLookup.TryGetValue((networkID, giverID), out var value) ? value : null;
+            return DamageGiverLookup.GetValueOrDefault((networkID, giverID));
         }
     }
 }

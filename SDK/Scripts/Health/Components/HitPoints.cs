@@ -18,6 +18,9 @@ namespace MetaverseCloudEngine.Unity.Health.Components
     [Experimental]
     public class HitPoints : TriInspectorMonoBehaviour
     {
+        public delegate void HitPointsKilledDelegate(int killerPlayerID, DamageGiver giverSource);
+        public delegate void DamageGiverKilledHitPointsDelegate(int killerPlayerID, DamageGiver giverSource, HitPoints killed);
+        
         #region INSPECTOR
 
         [Tooltip("The starting hitpoints value.")] 
@@ -34,6 +37,9 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         [Group("On Damage")] [SerializeField] private UnityEvent<int> onTakeDamage;
         [Group("On Damage")] [SerializeField] private UnityEvent<int> onHealed;
         [Group("On Damage")] [SerializeField] private UnityEvent onDied;
+        [Group("On Damage")] [SerializeField] private UnityEvent onDiedWithoutKiller;
+        [Group("On Damage")] [SerializeField] private UnityEvent onKilled;
+        [Group("On Damage")] [SerializeField] private UnityEvent<GameObject> onKilledByGameObject;
 
         [Space] 
         [Group("Networking")]
@@ -59,6 +65,16 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         /// Gets a value indicating whether the object is "dead" (i.e. out of hitpoints).
         /// </summary>
         public bool IsDead { get; private set; }
+
+        /// <summary>
+        /// Invoked when the object's hitpoints value is killed (i.e. reaches 0).
+        /// </summary>
+        public event HitPointsKilledDelegate Killed;
+        
+        /// <summary>
+        /// Invoked globally when a damage giver kills a hitpoints object.
+        /// </summary>
+        public static event DamageGiverKilledHitPointsDelegate DamageGiverKilledHitPoints;
 
         #endregion
 
@@ -131,7 +147,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             if (IsDead)
                 return;
 
-            if (!giver.TryGetDamage(this, args, out var damage))
+            if (!giver.TryGetDamage(args, out var damage))
                 return;
 
             if (damage <= 0)
@@ -157,7 +173,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
                 return;
             }
  
-            ChangeHitPointsInternal(damage);
+            ChangeHitPointsInternal(giver, damage);
 
             if (!isNetworked) return;
             if (IsDead)
@@ -180,9 +196,14 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         #region PRIVATE METHODS
 
-        private void ChangeHitPointsInternal(int value)
+        private void ChangeHitPointsInternal(int value) => ChangeHitPointsInternal(null, value);
+
+        private void ChangeHitPointsInternal(DamageGiver giver, int value)
         {
-            if (networkObject && !networkObject.IsStateAuthority)
+            if (value == 0)
+                return;
+
+            if (networkObject && !networkObject.IsInputAuthority)
                 return;
 
             var hitPoints = (int)CurrentHitPoints;
@@ -191,11 +212,26 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             if (hitPoints <= 0)
             {
                 CurrentHitPoints = 0;
-
                 IsDead = true;
-                onDied?.Invoke();
+
+                if (giver)
+                {
+                    var killerNetworkID = giver.NetworkObject ? giver.NetworkObject.InputAuthorityID : -1;
+                    Killed?.Invoke(killerNetworkID, giver);
+                    DamageGiverKilledHitPoints?.Invoke(killerNetworkID, giver, this);
+
+                    onKilled?.Invoke();
+                    onKilledByGameObject?.Invoke(giver.gameObject);
+                    onDied?.Invoke();
+                }
+                else
+                {
+                    onDiedWithoutKiller?.Invoke();
+                    onDied?.Invoke();
+                }
 
                 OnValueChanged();
+
                 return;
             }
             
@@ -230,23 +266,6 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         #endregion
 
         #region RPCs
-
-        private void RPC_Heal(short procedureID, int senderID, object content)
-        {
-            if (networkObject.InputAuthorityID != senderID)
-                return;
-
-            if (content is not object[] { Length: 2 } args)
-                return;
-
-            if (args[0] is not int index || index != hitPointsIndex)
-                return;
-
-            if (args[1] is not int amount || amount <= 0)
-                return;
-            
-            
-        }
 
         private void RPC_SetHitPoints(short procedureID, int senderID, object content)
         {

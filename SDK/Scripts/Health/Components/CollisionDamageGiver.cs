@@ -47,7 +47,7 @@ namespace MetaverseCloudEngine.Unity.Health.Components
             hp.ApplyDamage(this, DamageArgs);
         }
 
-        public override bool TryGetDamage(HitPoints hp, object[] arguments, out int damage)
+        public override bool TryGetDamage(object[] arguments, out int damage)
         {
             // TODO: May want to do a lot more to check the authenticity of the collision
             // event in the future.
