@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -150,8 +151,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                 var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.dat", SearchOption.TopDirectoryOnly);
                 var vuforiaOcclusion3dtFiles = Directory.GetFiles(VuforiaEditorOcclusionAssetsPath, "*.3dt", SearchOption.AllDirectories);
                 
-                vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforiaOcclusion3dtFiles.Length];
-                var index = 0;
+                var vuforiaFilesList = new List<VuforiaFile>();
                 for (var i = 0; i < vuforiaDatabaseXmlFiles.Length; i++)
                 {
                     // Usually in the format of <TargetName>.xml
@@ -165,7 +165,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                         name = Path.GetFileName(vuforiaDatabaseXmlFile),
                         data = File.ReadAllBytes(vuforiaDatabaseXmlFile)
                     };
-                    vuforiaFiles[index++] = file;
+                    vuforiaFilesList.Add(file);
                 }
                 
                 for (var i = 0; i < vuforiaDatabaseFiles.Length; i++)
@@ -181,7 +181,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                         name = Path.GetFileName(vuforiaDatabaseFile),
                         data = File.ReadAllBytes(vuforiaDatabaseFile)
                     };
-                    vuforiaFiles[index++] = file;
+                    vuforiaFilesList.Add(file);
                 }
 
                 if (areaTargets.Count > 0)
@@ -196,9 +196,11 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                             name = Path.GetFileName(vuforiaOcclusion3dtFile),
                             data = File.ReadAllBytes(vuforiaOcclusion3dtFile)
                         };
-                        vuforiaFiles[index++] = file;
+                        vuforiaFilesList.Add(file);
                     }
                 }
+                
+                vuforiaFiles = vuforiaFilesList.ToArray();
                 
                 UnityEditor.EditorUtility.SetDirty(this);
                 UnityEditor.AssetDatabase.SaveAssets();
