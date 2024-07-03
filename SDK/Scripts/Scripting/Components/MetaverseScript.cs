@@ -11,8 +11,10 @@ using UnityEngine;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using TMPro;
 using Cinemachine;
+using Cysharp.Threading.Tasks;
 using TriInspectorMVCE;
 using System.Reflection;
+using System.Threading.Tasks;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -650,14 +652,17 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(InputSystem).Assembly /* New Input System */,
                     typeof(CinemachineCore).Assembly /* Cinema-chine */,
                     typeof(Variables).Assembly /* Visual Scripting */,
-                    typeof(ActionBasedController).Assembly /* XR Interaction Toolkit */)
+                    typeof(ActionBasedController).Assembly /* XR Interaction Toolkit */,
+                    typeof(Task).Assembly /* System.Threading.Tasks */,
+                    typeof(UniTask).Assembly /* UniTask */
+                    )
                 .AllowClrWrite()
                 .AllowOperatorOverloading()
                 .SetTypeResolver(new Jint.Runtime.Interop.TypeResolver
                 {
                     MemberFilter = IsMemberAllowed
                 })
-                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils))
+                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions))
                 .CatchClrExceptions();
 
             if (strict)

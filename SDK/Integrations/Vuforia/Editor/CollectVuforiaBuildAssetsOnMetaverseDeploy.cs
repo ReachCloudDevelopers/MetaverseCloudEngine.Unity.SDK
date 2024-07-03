@@ -1,5 +1,6 @@
 ﻿using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Unity.Editors;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Vuforia;
@@ -12,7 +13,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia.Editors
         
         public void OnPreProcessBuild(GameObject prefab)
         {
-            VuforiaStreamingAssets.Collect();
+            VuforiaStreamingAssets.Collect(prefab);
             
             var streamingAssetsLoader = prefab.GetOrAddComponent<VuforiaStreamingAssetsLoader>();
             streamingAssetsLoader.vuforiaStreamingAssets = VuforiaStreamingAssets.Instance;
@@ -22,7 +23,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia.Editors
 
         public void OnPreProcessBuild(Scene scene)
         {
-            VuforiaStreamingAssets.Collect();
+            VuforiaStreamingAssets.Collect(AssetDatabase.LoadAssetAtPath<SceneAsset>(scene.path));
 
             var metaSpace = Object.FindObjectOfType<MetaSpace>(true);
             if (!metaSpace)
