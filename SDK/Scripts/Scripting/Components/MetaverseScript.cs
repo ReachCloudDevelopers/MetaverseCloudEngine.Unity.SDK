@@ -654,8 +654,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(Variables).Assembly /* Visual Scripting */,
                     typeof(ActionBasedController).Assembly /* XR Interaction Toolkit */,
                     typeof(Task).Assembly /* System.Threading.Tasks */,
-                    typeof(UniTask).Assembly, /* UniTask */
+                    typeof(UniTask).Assembly /* UniTask */
 #if MV_PTC_VUFORIA && !UNITY_WEBGL
+                    ,
                     typeof(Vuforia.VuforiaApplication).Assembly, /* Vuforia */
                     typeof(Vuforia.VuforiaConfiguration).Assembly /* Vuforia */
 #endif
