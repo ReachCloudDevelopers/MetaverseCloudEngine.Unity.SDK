@@ -121,12 +121,17 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 #if UNITY_EDITOR
         private void CollectInternal(UnityEngine.Object sourceAsset)
         {
+            vuforiaFiles = Array.Empty<VuforiaFile>();
+            
+            UnityEditor.EditorUtility.SetDirty(this);
+            UnityEditor.AssetDatabase.SaveAssets();
+
             var dependencies = UnityEditor.AssetDatabase
                 .GetDependencies(UnityEditor.AssetDatabase.GetAssetPath(sourceAsset))
                 .Select(UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Object>)
                 .ToArray();
 
-            var targets = dependencies
+            var trackables = dependencies
                 .Where(x => x is GameObject)
                 .SelectMany(x => ((GameObject)x).GetComponentsInChildren<DataSetTrackableBehaviour>(true))
                 .ToDictionary(x => x.TargetName, y => y);
@@ -138,68 +143,66 @@ namespace MetaverseCloudEngine.Unity.Vuforia
                     x.GetType().GetField("OcclusionModelPath", BindingFlags.Instance | BindingFlags.GetField)!.GetValue(x), 
                     y => y);
             
-            vuforiaFiles = Array.Empty<VuforiaFile>();
-            
-            UnityEditor.EditorUtility.SetDirty(this);
-            UnityEditor.AssetDatabase.SaveAssets();
-            
-            // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
-            var vuforiaDatabaseXmlFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.xml", SearchOption.TopDirectoryOnly);
-            var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.dat", SearchOption.TopDirectoryOnly);
-            var vuforiaOcclusion3dtFiles = Directory.GetFiles(VuforiaEditorOcclusionAssetsPath, "*.3dt", SearchOption.AllDirectories);
-            
-            vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforiaOcclusion3dtFiles.Length];
-            var index = 0;
-            for (var i = 0; i < vuforiaDatabaseXmlFiles.Length; i++)
+            if (trackables.Count > 0 || areaTargets.Count > 0)
             {
-                // Usually in the format of <TargetName>.xml
+                // Scan the StreamingAssets/Vuforia folder for .xml, .dat, and .3dt files
+                var vuforiaDatabaseXmlFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.xml", SearchOption.TopDirectoryOnly);
+                var vuforiaDatabaseFiles = Directory.GetFiles(VuforiaEditorDatabaseAssetsPath, "*.dat", SearchOption.TopDirectoryOnly);
+                var vuforiaOcclusion3dtFiles = Directory.GetFiles(VuforiaEditorOcclusionAssetsPath, "*.3dt", SearchOption.AllDirectories);
                 
-                var vuforiaDatabaseXmlFile = vuforiaDatabaseXmlFiles[i];
-                if (!targets.ContainsKey(Path.GetFileNameWithoutExtension(vuforiaDatabaseXmlFile)))
-                    continue;
-                
-                var file = new VuforiaFile
+                vuforiaFiles = new VuforiaFile[vuforiaDatabaseXmlFiles.Length + vuforiaDatabaseFiles.Length + vuforiaOcclusion3dtFiles.Length];
+                var index = 0;
+                for (var i = 0; i < vuforiaDatabaseXmlFiles.Length; i++)
                 {
-                    name = Path.GetFileName(vuforiaDatabaseXmlFile),
-                    data = File.ReadAllBytes(vuforiaDatabaseXmlFile)
-                };
-                vuforiaFiles[index++] = file;
-            }
-            
-            for (var i = 0; i < vuforiaDatabaseFiles.Length; i++)
-            {
-                // Usually in the format of <TargetName>.dat
-                
-                var vuforiaDatabaseFile = vuforiaDatabaseFiles[i];
-                if (!targets.ContainsKey(Path.GetFileNameWithoutExtension(vuforiaDatabaseFile)))
-                    continue;
-                
-                var file = new VuforiaFile
-                {
-                    name = Path.GetFileName(vuforiaDatabaseFile),
-                    data = File.ReadAllBytes(vuforiaDatabaseFile)
-                };
-                vuforiaFiles[index++] = file;
-            }
-
-            if (areaTargets.Count > 0)
-            {
-                for (var i = 0; i < vuforiaOcclusion3dtFiles.Length; i++)
-                {
-                    // Usually in the format of <OcclusionModel>.3dt
+                    // Usually in the format of <TargetName>.xml
                     
-                    var vuforiaOcclusion3dtFile = vuforiaOcclusion3dtFiles[i];
+                    var vuforiaDatabaseXmlFile = vuforiaDatabaseXmlFiles[i];
+                    if (!trackables.ContainsKey(Path.GetFileNameWithoutExtension(vuforiaDatabaseXmlFile)))
+                        continue;
+                    
                     var file = new VuforiaFile
                     {
-                        name = Path.GetFileName(vuforiaOcclusion3dtFile),
-                        data = File.ReadAllBytes(vuforiaOcclusion3dtFile)
+                        name = Path.GetFileName(vuforiaDatabaseXmlFile),
+                        data = File.ReadAllBytes(vuforiaDatabaseXmlFile)
                     };
                     vuforiaFiles[index++] = file;
                 }
+                
+                for (var i = 0; i < vuforiaDatabaseFiles.Length; i++)
+                {
+                    // Usually in the format of <TargetName>.dat
+                    
+                    var vuforiaDatabaseFile = vuforiaDatabaseFiles[i];
+                    if (!trackables.ContainsKey(Path.GetFileNameWithoutExtension(vuforiaDatabaseFile)))
+                        continue;
+                    
+                    var file = new VuforiaFile
+                    {
+                        name = Path.GetFileName(vuforiaDatabaseFile),
+                        data = File.ReadAllBytes(vuforiaDatabaseFile)
+                    };
+                    vuforiaFiles[index++] = file;
+                }
+
+                if (areaTargets.Count > 0)
+                {
+                    for (var i = 0; i < vuforiaOcclusion3dtFiles.Length; i++)
+                    {
+                        // Usually in the format of <OcclusionModel>.3dt
+                        
+                        var vuforiaOcclusion3dtFile = vuforiaOcclusion3dtFiles[i];
+                        var file = new VuforiaFile
+                        {
+                            name = Path.GetFileName(vuforiaOcclusion3dtFile),
+                            data = File.ReadAllBytes(vuforiaOcclusion3dtFile)
+                        };
+                        vuforiaFiles[index++] = file;
+                    }
+                }
+                
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.AssetDatabase.SaveAssets();
             }
-            
-            UnityEditor.EditorUtility.SetDirty(this);
-            UnityEditor.AssetDatabase.SaveAssets();
         }
 #endif
         
