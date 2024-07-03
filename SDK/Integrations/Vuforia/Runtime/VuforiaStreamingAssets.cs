@@ -119,7 +119,6 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 #endif
 
 #if UNITY_EDITOR
-        [Button("Detect Files")]
         private void CollectInternal(UnityEngine.Object sourceAsset)
         {
             var dependencies = UnityEditor.AssetDatabase
