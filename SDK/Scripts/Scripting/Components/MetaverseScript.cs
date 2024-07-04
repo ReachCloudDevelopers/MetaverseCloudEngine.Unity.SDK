@@ -616,6 +616,32 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             callback?.Invoke(spawned.GameObject);
                             
                         }, pos, rot, false);
+                    }))
+                    .SetValue("await", (Action<object, Action<object>>)((t, action) =>
+                    {
+                        if (t is not Task task) return;
+                        if (task.GetType().GenericTypeArguments.Length == 0)
+                        {
+                            task.AsUniTask().ContinueWith(() => action);
+                            return;
+                        }
+                        
+                        var asUniTask = task.GetType().GetExtensionMethods()
+                            .FirstOrDefault(x => x.Name == "AsUniTask" && x.GetParameters().Length == 0 && x.IsGenericMethod);
+                        if (asUniTask == null) 
+                            return;
+                        
+                        var uniTask = asUniTask.Invoke(task, null);
+                        var continueWith = uniTask.GetType().GetMethod("ContinueWith");
+                        if (continueWith == null) 
+                            return;
+                        
+                        continueWith.Invoke(uniTask, new object[] { action });
+                    }))
+                    .SetValue("await", (Action<object, Action>)((t, action) =>
+                    {
+                        if (t is not Task task) return;
+                        task.AsUniTask().ContinueWith(action);
                     }));
             
             ApplyStaticEngineFunctions(_engine);
