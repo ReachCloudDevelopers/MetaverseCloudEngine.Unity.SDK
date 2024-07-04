@@ -31,9 +31,6 @@ namespace MetaverseCloudEngine.Unity.Async
             CancellationToken cancellationToken = default) =>
             response.GetErrorAsync().Always(onError, cancellationToken);
         
-        public static void ResponseThen(this Task<ApiResponse> task, Action onSuccess) =>
-            ResponseThen(task, onSuccess, null);
-
         public static void ResponseThen(this Task<ApiResponse> task, Action onSuccess, Action<object> onError,
             CancellationToken cancellationToken = default)
         {
@@ -44,9 +41,6 @@ namespace MetaverseCloudEngine.Unity.Async
             }, onError, cancellationToken: cancellationToken);
         }
         
-        public static void ResponseThen<T>(this Task<ApiResponse<T>> task, Action<T> onSuccess) =>
-            ResponseThen(task, onSuccess, null);
-
         public static void ResponseThen<T>(this Task<ApiResponse<T>> task, Action<T> onSuccess,
             Action<object> onError, CancellationToken cancellationToken = default)
         {
