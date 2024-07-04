@@ -667,7 +667,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 {
                     MemberFilter = IsMemberAllowed
                 })
-                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions))
+                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions))
                 .CatchClrExceptions();
 
             if (strict)
