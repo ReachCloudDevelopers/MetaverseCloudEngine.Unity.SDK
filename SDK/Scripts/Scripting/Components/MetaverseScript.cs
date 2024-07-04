@@ -637,11 +637,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             return;
                         
                         continueWith.Invoke(uniTask, new object[] { action });
-                    }))
-                    .SetValue("await", (Action<object, Action>)((t, action) =>
-                    {
-                        if (t is not Task task) return;
-                        task.AsUniTask().ContinueWith(action);
                     }));
             
             ApplyStaticEngineFunctions(_engine);
