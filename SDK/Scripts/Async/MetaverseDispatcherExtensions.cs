@@ -30,8 +30,11 @@ namespace MetaverseCloudEngine.Unity.Async
         public static void GetErrorAsync(this ApiResponse response, Action<object> onError = null,
             CancellationToken cancellationToken = default) =>
             response.GetErrorAsync().Always(onError, cancellationToken);
+        
+        public static void ResponseThen(this Task<ApiResponse> task, Action onSuccess) =>
+            ResponseThen(task, onSuccess, null);
 
-        public static void ResponseThen(this Task<ApiResponse> task, Action onSuccess, Action<object> onError = null,
+        public static void ResponseThen(this Task<ApiResponse> task, Action onSuccess, Action<object> onError,
             CancellationToken cancellationToken = default)
         {
             task.Then(response =>
@@ -40,9 +43,12 @@ namespace MetaverseCloudEngine.Unity.Async
                 else response.GetErrorAsync(onError, cancellationToken);
             }, onError, cancellationToken: cancellationToken);
         }
+        
+        public static void ResponseThen<T>(this Task<ApiResponse<T>> task, Action<T> onSuccess) =>
+            ResponseThen(task, onSuccess, null);
 
         public static void ResponseThen<T>(this Task<ApiResponse<T>> task, Action<T> onSuccess,
-            Action<object> onError = null, CancellationToken cancellationToken = default)
+            Action<object> onError, CancellationToken cancellationToken = default)
         {
             task.Then(response =>
             {
