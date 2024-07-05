@@ -27,7 +27,10 @@ namespace TriInspectorMVCE.Elements
         public TriBoxGroupElement(Props props = default)
         {
             _props = props;
-            _expanded = _props.expandedByDefault;
+            
+            var expandedProp = $"TriInspector.expanded.box.{_props.title}";
+            _expanded = SessionState.GetBool(expandedProp, _props.expandedByDefault);
+            SessionState.SetBool(expandedProp, _expanded);
         }
 
         protected override void AddPropertyChild(TriElement element, TriProperty property)
@@ -80,7 +83,12 @@ namespace TriInspectorMVCE.Elements
             if (_props.titleMode == TitleMode.Foldout)
             {
                 headerLabelRect.x += 10;
-                _expanded = EditorGUI.Foldout(headerLabelRect, _expanded, headerContent, true);
+                var expanded = EditorGUI.Foldout(headerLabelRect, _expanded, headerContent, true);
+                if (expanded != _expanded)
+                {
+                    _expanded = expanded;
+                    SessionState.SetBool($"TriInspector.expanded.box.{_props.title}", _expanded);
+                }
             }
             else
             {
