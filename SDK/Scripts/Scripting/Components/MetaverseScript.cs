@@ -136,6 +136,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string PlayerRPCFunction = "PlayerRPC";
         private const string GetHostIDFunction = "GetHostID";
         private const string SpawnNetworkPrefabFunction = "SpawnNetworkPrefab";
+        private const string AwaitFunction = "await";
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
@@ -617,7 +618,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             
                         }, pos, rot, false);
                     }))
-                    .SetValue("await", (Action<object, Action<object>>)((t, action) =>
+                    .SetValue(AwaitFunction, (Action<object, Action<object>>)((t, action) =>
                     {
                         if (t is not Task task) return;
                         if (task.GetType().GenericTypeArguments.Length == 0)
@@ -626,18 +627,24 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             return;
                         }
                         
-                        var asUniTask = task.GetType().GetExtensionMethods()
-                            .FirstOrDefault(x => x.Name == "AsUniTask" && x.GetParameters().Length == 2 && x.IsGenericMethod && x.ReturnType == typeof(UniTask));
-                        if (asUniTask == null) 
+                        const string asUniTaskFunctionName = "AsUniTask";
+                        var asUniTask = task.GetType()
+                            .GetExtensionMethods()
+                            .FirstOrDefault(x => x.Name == asUniTaskFunctionName && x.GetParameters().Length == 2 && x.IsGenericMethod && x.ReturnType == typeof(UniTask));
+                        if (asUniTask is null) 
                             return;
                         
-                        var uniTask = asUniTask.Invoke(null, new object [] { t, true });
-                        var continueWith = uniTask.GetType()
-                            .GetExtensionMethods().FirstOrDefault(x => x.Name == "ContinueWith" && x.ReturnType == typeof(UniTask));
-                        if (continueWith == null) 
+                        const string continueWithFunctionName = "ContinueWith";
+                        var uniTask = asUniTask.Invoke(null, new [] { t, true });
+                        var continueWith = uniTask
+                            .GetType()
+                            .GetExtensionMethods()
+                            .FirstOrDefault(x => x.Name == continueWithFunctionName && x.ReturnType == typeof(UniTask));
+                        
+                        if (continueWith is null) 
                             return;
                         
-                        continueWith.Invoke(uniTask, new object[] { uniTask, action });
+                        continueWith.Invoke(uniTask, new [] { uniTask, action });
                     }));
             
             ApplyStaticEngineFunctions(_engine);
