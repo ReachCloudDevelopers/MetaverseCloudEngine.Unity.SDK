@@ -627,7 +627,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         }
                         
                         var asUniTask = task.GetType().GetExtensionMethods()
-                            .FirstOrDefault(x => x.Name == "AsUniTask" && x.GetParameters().Length == 2 && x.IsGenericMethod);
+                            .FirstOrDefault(x => x.Name == "AsUniTask" && x.GetParameters().Length == 2 && x.IsGenericMethod && x.ReturnType == typeof(UniTask));
                         if (asUniTask == null) 
                             return;
                         
