@@ -633,7 +633,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         
                         var uniTask = asUniTask.Invoke(null, new object [] { t, true });
                         var continueWith = uniTask.GetType()
-                            .GetExtensionMethods().FirstOrDefault(x => x.Name == "ContinueWith" && x.ReturnType == typeof(void));
+                            .GetExtensionMethods().FirstOrDefault(x => x.Name == "ContinueWith" && x.ReturnType == typeof(UniTask));
                         if (continueWith == null) 
                             return;
                         
