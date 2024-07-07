@@ -93,8 +93,10 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
             if (networked && networkObject)
             {
+                networkObject.Initialized += OnNetworkObjectInitialized;
                 networkObject.RegisterRPC((short)NetworkRpcType.HitpointsRequestApplyDamage, RPC_ApplyDamage, @override: false);
                 networkObject.RegisterRPC((short)NetworkRpcType.HitpointsValue, RPC_SetHitPoints, @override: false);
+                networkObject.RegisterRPC((short)NetworkRpcType.RequestHitpointsValue, RPC_RequestHitPoints, @override: false);
             }
         }
 
@@ -102,8 +104,10 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         {
             if (networked && networkObject)
             {
+                networkObject.Initialized -= OnNetworkObjectInitialized;
                 networkObject.UnregisterRPC((short)NetworkRpcType.HitpointsRequestApplyDamage, RPC_ApplyDamage);
                 networkObject.UnregisterRPC((short)NetworkRpcType.HitpointsValue, RPC_SetHitPoints);
+                networkObject.UnregisterRPC((short)NetworkRpcType.RequestHitpointsValue, RPC_RequestHitPoints);
             }
         }
 
@@ -196,6 +200,17 @@ namespace MetaverseCloudEngine.Unity.Health.Components
 
         #region PRIVATE METHODS
 
+        private void OnNetworkObjectInitialized()
+        {
+            if (networkObject.IsInputAuthority)
+                return;
+            
+            networkObject.InvokeRPC(
+                (short)NetworkRpcType.RequestHitpointsValue,
+                NetworkMessageReceivers.Others,
+                hitPointsIndex);
+        }
+
         private void ChangeHitPointsInternal(int value) => ChangeHitPointsInternal(null, value);
 
         private void ChangeHitPointsInternal(DamageGiver giver, int value)
@@ -266,6 +281,24 @@ namespace MetaverseCloudEngine.Unity.Health.Components
         #endregion
 
         #region RPCs
+
+        private void RPC_RequestHitPoints(short procedureID, int senderID, object content)
+        {
+            if (!networkObject.IsInputAuthority)
+                return;
+
+            if (content is not int index || index != hitPointsIndex)
+                return;
+            
+            networkObject.InvokeRPC(
+                (short)NetworkRpcType.HitpointsValue,
+                senderID,
+                new object[]
+                {
+                    hitPointsIndex,
+                    (int)CurrentHitPoints
+                });
+        }
 
         private void RPC_SetHitPoints(short procedureID, int senderID, object content)
         {

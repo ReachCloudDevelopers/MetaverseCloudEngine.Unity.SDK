@@ -72,6 +72,7 @@
         HitpointsRequestApplyDamage = 50,
         HitpointsDied,
         HitpointsValue,
+        RequestHitpointsValue,
         
         SetPosition = 60,
         SetRotation,
