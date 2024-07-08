@@ -46,7 +46,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 if (spupComponent.GetType().Name != "SerialPortUtilityPro")
                 {
-                    spupComponent = null;
+	                spupComponent = spupComponent.gameObject.GetComponents<Component>()
+		                .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
                 }
             }
         }
