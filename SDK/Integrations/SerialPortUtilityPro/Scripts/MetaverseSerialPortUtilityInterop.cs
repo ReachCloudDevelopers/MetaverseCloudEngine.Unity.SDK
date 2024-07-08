@@ -52,6 +52,33 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
         }
         
+        public static void SubscribeToEvent(Component spupComponent, ref EventInfo eventInfo, string eventName, Delegate handler)
+		{
+			if (!spupComponent) 
+				return;
+			
+			eventInfo ??= spupComponent
+				.GetType()
+				.GetEvents()
+				.FirstOrDefault(x => x.Name == eventName);
+				
+			eventInfo?.AddEventHandler(spupComponent, handler);
+		}
+
+		public static void UnsubscribeFromEvent(Component spupComponent, ref EventInfo eventInfo, string eventName,
+			Delegate handler)
+		{
+			if (!spupComponent) 
+				return;
+			
+			eventInfo ??= spupComponent
+				.GetType()
+				.GetEvents()
+				.FirstOrDefault(x => x.Name == eventName);
+				
+			eventInfo?.RemoveEventHandler(spupComponent, handler);
+		}
+		
         public static T CallStaticMethod<T>(ref MethodInfo method, string methodName, params object[] parameters)
         {
             method ??= GetSerialPortUtilityProType()

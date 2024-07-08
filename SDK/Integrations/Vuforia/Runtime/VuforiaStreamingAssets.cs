@@ -188,7 +188,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             if (areaTargets.Count > 0)
             {
                 vuforiaFilesList.AddRange(from vuforiaOcclusion3dtFile in vuforiaOcclusion3dtFiles
-                    where areaTargets.ContainsKey(Path.GetFileNameWithoutExtension(vuforiaOcclusion3dtFile))
+                    where areaTargets.ContainsKey(Path.GetFileName(vuforiaOcclusion3dtFile))
                     select new VuforiaFile
                     {
                         name = Path.GetFileName(vuforiaOcclusion3dtFile),
