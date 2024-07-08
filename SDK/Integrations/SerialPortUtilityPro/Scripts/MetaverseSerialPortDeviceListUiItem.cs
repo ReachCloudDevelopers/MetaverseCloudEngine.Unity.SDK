@@ -18,8 +18,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private MetaverseSerialPortUtilityInterop.OpenSystem _openSystem;
 
         private static bool _opening;
-        private static FieldInfo _deviceNameField;
         private static FieldInfo _openMethodField;
+        private static PropertyInfo _deviceNameProperty;
         private static PropertyInfo _vendorIdProperty;
         private static PropertyInfo _productIdProperty;
         private static PropertyInfo _serialNumberProperty;
@@ -39,7 +39,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             _openSystem = openSystem;
             
             onDeviceName?.Invoke(device);
-            if (MetaverseSerialPortUtilityInterop.GetField<string>(_spup, ref _deviceNameField, "DeviceName") == device)
+            if (MetaverseSerialPortUtilityInterop.GetProperty<string>(_spup, ref _deviceNameProperty, "DeviceName") == device)
                 onDeviceOpen?.Invoke();
             else onDeviceClosed?.Invoke();
         }
@@ -95,7 +95,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (!IsHexString(_data.Vendor)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", "");
                 }
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, "SerialNumber", _data.SerialNumber);
-                MetaverseSerialPortUtilityInterop.SetField(_spup, ref _deviceNameField, "DeviceName", string.IsNullOrEmpty(_data.SerialNumber) 
+                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _deviceNameProperty, "DeviceName", string.IsNullOrEmpty(_data.SerialNumber) 
                     ? _data.Vendor
                     : _data.SerialNumber);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, "Port", _data.PortName ?? "");
