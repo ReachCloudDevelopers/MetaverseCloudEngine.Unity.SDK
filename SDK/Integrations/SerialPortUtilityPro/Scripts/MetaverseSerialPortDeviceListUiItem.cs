@@ -83,9 +83,29 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             try
             {
-                MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, "OpenMethod", _openSystem);
+                static bool IsHexString(string s)
+                {
+                    if (string.IsNullOrEmpty(s))
+                        return false;
+
+                    foreach (char c in s)
+                        if (!System.Uri.IsHexDigit(c))
+                            return false;
+                    return true;
+                }
+
+                
+                MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, "OpenMethod", (int)_openSystem);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", _data.Vendor);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", _data.Product);
+                if (_openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb or MetaverseSerialPortUtilityInterop.OpenSystem.Pci)
+                {
+                    if (!IsHexString(_data.Product))
+                        MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", "");
+                    if (!IsHexString(_data.Vendor))
+                        MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", "");
+                }
+                
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, "SerialNumber", _data.SerialNumber);
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _deviceNameField, "DeviceName", string.IsNullOrEmpty(_data.SerialNumber) 
                     ? _data.Vendor
@@ -100,7 +120,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             MetaverseProgram.Logger.Log("Specified device to open: VID:" + _data.Vendor + " PID:" + _data.Product + " SER:" + _data.SerialNumber + " PORT:" + _data.PortName);
 
-            var timeout = DateTime.UtcNow.AddSeconds(5);
+            var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
                 () => !this || !_spup || 
                       //!_spu.IsOpenProcessing()

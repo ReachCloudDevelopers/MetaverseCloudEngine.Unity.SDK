@@ -46,7 +46,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 if (spupComponent.GetType().Name != "SerialPortUtilityPro")
                 {
-	                spupComponent = spupComponent.gameObject.GetComponents<Component>()
+	                spupComponent = gameObject.GetComponents<Component>()
 		                .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
                 }
             }
@@ -205,7 +205,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
 			switch (deviceFormat)
 			{
-				case OpenSystem.USB:
+				case OpenSystem.Usb:
 				{
 					var spLibClass = new AndroidJavaClass("com.wizapply.libspap.spap");
 					// Get Context(Activity) Object
@@ -232,7 +232,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
 					break;
 				}
-				case OpenSystem.PCI:
+				case OpenSystem.Pci:
 				{
 					var spLibClass = new AndroidJavaClass("com.wizapply.libspap.spap");
 					// Get Context(Activity) Object
@@ -258,7 +258,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
 					break;
 				}
-				case OpenSystem.BluetoothSSP:
+				case OpenSystem.BluetoothSsp:
 				{
 					var androidPlugin = new AndroidJavaClass("com.wizapply.libspap.spap");
 					// Get Context(Activity) Object
