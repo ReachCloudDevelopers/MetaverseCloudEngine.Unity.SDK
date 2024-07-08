@@ -3,6 +3,7 @@ using System.Globalization;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.Robotics
 {
@@ -45,9 +46,12 @@ namespace MetaverseCloudEngine.Unity.Robotics
             public float smoothTime = 0.5f;
             public float initialValue;
             
-            [ReadOnly] public float CurrentVelocity;
-            [ReadOnly] public float CurrentValue;
-            [ReadOnly] public bool IsInitialized;
+            [FormerlySerializedAs("CurrentVelocity")]
+            [ReadOnly] public float currentVelocity;
+            [FormerlySerializedAs("CurrentValue")] 
+            [ReadOnly] public float currentValue;
+            [FormerlySerializedAs("IsInitialized")] 
+            [ReadOnly] public bool isInitialized;
         }
 
         public float RawValue
@@ -86,6 +90,9 @@ namespace MetaverseCloudEngine.Unity.Robotics
                 WriteCommand();
         }
 
+        /// <summary>
+        /// Writes the command to the serial port. The channel is specified in the inspector.
+        /// </summary>
         public void WriteCommand()
         {
             WriteCommand(channel);
@@ -94,7 +101,8 @@ namespace MetaverseCloudEngine.Unity.Robotics
         /// <summary>
         /// Writes the command to the serial port.
         /// </summary>
-        public void WriteCommand(int channel)
+        /// <param name="c">The channel to send the command to.</param>
+        public void WriteCommand(int c)
         {
             if (!isActiveAndEnabled)
                 return;
@@ -102,7 +110,7 @@ namespace MetaverseCloudEngine.Unity.Robotics
             var servoValue = GetServoValue();
             var command = new byte[4];
             command[0] = 0x84; // Set Target
-            command[1] = (byte)channel;
+            command[1] = (byte)c;
             command[2] = (byte)(servoValue & 0x7F); // low bits
             command[3] = (byte)((servoValue >> 7) & 0x7F); // high bits
             onWriteBytes?.Invoke(command);
@@ -124,25 +132,25 @@ namespace MetaverseCloudEngine.Unity.Robotics
             if (smoothDampSettings?.enabled != true) 
                 return inputValue;
             
-            if (!smoothDampSettings.IsInitialized)
+            if (!smoothDampSettings.isInitialized)
             {
-                smoothDampSettings.IsInitialized = true;
-                smoothDampSettings.CurrentValue = smoothDampSettings.initialValue;
+                smoothDampSettings.isInitialized = true;
+                smoothDampSettings.currentValue = smoothDampSettings.initialValue;
             }
 
             if (smoothDampSettings.angle)
             {
-                return smoothDampSettings.CurrentValue = Mathf.SmoothDampAngle(
-                    smoothDampSettings.CurrentValue,
+                return smoothDampSettings.currentValue = Mathf.SmoothDampAngle(
+                    smoothDampSettings.currentValue,
                     rawValue,
-                    ref smoothDampSettings.CurrentVelocity, smoothDampSettings.smoothTime,
+                    ref smoothDampSettings.currentVelocity, smoothDampSettings.smoothTime,
                     smoothDampSettings.maxSpeed, Time.fixedDeltaTime);
             }
 
-            return smoothDampSettings.CurrentValue = Mathf.SmoothDamp(
-                smoothDampSettings.CurrentValue,
+            return smoothDampSettings.currentValue = Mathf.SmoothDamp(
+                smoothDampSettings.currentValue,
                 rawValue,
-                ref smoothDampSettings.CurrentVelocity, smoothDampSettings.smoothTime,
+                ref smoothDampSettings.currentVelocity, smoothDampSettings.smoothTime,
                 smoothDampSettings.maxSpeed, Time.fixedDeltaTime);
         }
 
