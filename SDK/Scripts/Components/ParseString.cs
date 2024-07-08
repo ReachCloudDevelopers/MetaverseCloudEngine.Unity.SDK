@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Text.RegularExpressions;
+using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
 
 namespace MetaverseCloudEngine.Unity.Components
 {
-    public class ParseString : MonoBehaviour
+    [HideMonoScript]
+    public class ParseString : TriInspectorMonoBehaviour
     {
         [Serializable]
         public class ParseMatch
@@ -14,6 +16,8 @@ namespace MetaverseCloudEngine.Unity.Components
             public string matchExpression;
             public string replaceExpression;
             public UnityEvent<string> onResult;
+            public UnityEvent<float> onResultFloat;
+            public UnityEvent<int> onResultInt;
             public UnityEvent onMatchFailed;
         }
 
@@ -42,6 +46,12 @@ namespace MetaverseCloudEngine.Unity.Components
             if (parseOnStart)
                 Parse();
         }
+        
+        public void Parse(string value)
+        {
+            stringValue = value;
+            Parse();
+        }
 
         public void Parse()
         {
@@ -51,12 +61,24 @@ namespace MetaverseCloudEngine.Unity.Components
             if (!isActiveAndEnabled)
                 return;
 
-            foreach (ParseMatch match in matches)
+            foreach (var match in matches)
             {
                 if (Regex.Match(stringValue, match.matchExpression).Success)
                 {
-                    string value = Regex.Replace(stringValue, match.matchExpression, match.replaceExpression);
+                    var value = Regex.Replace(stringValue, match.matchExpression, match.replaceExpression);
                     match.onResult?.Invoke(value);
+                    
+                    if (match.onResultFloat?.GetPersistentEventCount() > 0)
+                    {
+                        if (float.TryParse(value, out var floatValue))
+                            match.onResultFloat.Invoke(floatValue);
+                    }
+                    
+                    if (match.onResultInt?.GetPersistentEventCount() > 0)
+                    {
+                        if (int.TryParse(value, out var intValue))
+                            match.onResultInt.Invoke(intValue);
+                    }
                 }
                 else
                     match.onMatchFailed?.Invoke();

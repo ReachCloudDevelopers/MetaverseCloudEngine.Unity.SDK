@@ -17,7 +17,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [SerializeField]
         private Component spupComponent;
         
-        [Title("Events")]
+        [Title("Read Data")]
         [SerializeField] private UnityEvent<string> onMessageReceived;
         
         private MethodInfo _writeMethod;
@@ -59,7 +59,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
             var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
-            addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnMessageReceived });
+            addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
         }
 
         private void RemoveListener()
@@ -69,9 +69,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
             removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall });
         }
 
-        private void OnMessageReceived(object message)
+        private void OnStream(object message)
         {
-            
+            onMessageReceived?.Invoke(message.ToString());
         }
     }
 }
