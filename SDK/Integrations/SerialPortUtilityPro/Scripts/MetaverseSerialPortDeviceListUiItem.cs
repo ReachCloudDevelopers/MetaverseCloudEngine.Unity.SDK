@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using MetaverseCloudEngine.Unity.Async;
 using UnityEngine;
@@ -83,29 +84,16 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             try
             {
-                static bool IsHexString(string s)
-                {
-                    if (string.IsNullOrEmpty(s))
-                        return false;
+                static bool IsHexString(string s) => !string.IsNullOrEmpty(s) && s.All(Uri.IsHexDigit);
 
-                    foreach (char c in s)
-                        if (!System.Uri.IsHexDigit(c))
-                            return false;
-                    return true;
-                }
-
-                
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, "OpenMethod", (int)_openSystem);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", _data.Vendor);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", _data.Product);
                 if (_openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb or MetaverseSerialPortUtilityInterop.OpenSystem.Pci)
                 {
-                    if (!IsHexString(_data.Product))
-                        MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", "");
-                    if (!IsHexString(_data.Vendor))
-                        MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", "");
+                    if (!IsHexString(_data.Product)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", "");
+                    if (!IsHexString(_data.Vendor)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", "");
                 }
-                
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, "SerialNumber", _data.SerialNumber);
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _deviceNameField, "DeviceName", string.IsNullOrEmpty(_data.SerialNumber) 
                     ? _data.Vendor
