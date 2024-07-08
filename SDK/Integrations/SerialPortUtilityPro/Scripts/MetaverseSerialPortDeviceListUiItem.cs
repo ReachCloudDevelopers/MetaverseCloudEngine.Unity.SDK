@@ -111,8 +111,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
                 () => !this || !_spup || 
-                      //!_spu.IsOpenProcessing()
-                      MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(_spup, ref _isOpenProcessingMethod, "IsOpenProcessing")
+                      !MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(_spup, ref _isOpenProcessingMethod, "IsOpenProcessing")
                       || !_opening || DateTime.UtcNow > timeout, 
                 () =>
                 {
