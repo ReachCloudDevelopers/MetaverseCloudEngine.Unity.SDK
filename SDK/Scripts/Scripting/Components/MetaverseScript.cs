@@ -620,7 +620,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }))
                     .SetValue(AwaitFunction, (Action<object, Action<object>>)((t, action) =>
                     {
-                        if (t is not Task task) return;
+                        if (t is not Task task)
+                            return;
+                        
                         if (task.GetType().GenericTypeArguments.Length == 0)
                         {
                             task.AsUniTask().ContinueWith(() => action);
@@ -640,7 +642,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             .GetType()
                             .GetExtensionMethods()
                             .FirstOrDefault(x => x.Name == continueWithFunctionName && x.ReturnType == typeof(UniTask));
-                        
                         if (continueWith is null) 
                             return;
                         

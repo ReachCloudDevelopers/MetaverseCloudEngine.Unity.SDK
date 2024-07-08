@@ -1242,6 +1242,50 @@ namespace MetaverseCloudEngine.Unity
         #endregion
 
         #region Compatibility
+        
+        private static AndroidJavaObject _usbManager;
+
+        private static List<AndroidJavaObject> GetConnectedUsbDevices()
+        {
+            if (_usbManager is null)
+                return new List<AndroidJavaObject>();
+            
+            var deviceList = _usbManager.Call<AndroidJavaObject>("getDeviceList"); // HashMap<String, UsbDevice>
+            var deviceListValues = deviceList.Call<AndroidJavaObject>("values"); // Collection<UsbDevice>
+            var deviceListIterator = deviceListValues.Call<AndroidJavaObject>("iterator"); // Iterator<UsbDevice>
+            var devices = new List<AndroidJavaObject>();
+            while (deviceListIterator.Call<bool>("hasNext"))
+            {
+                var device = deviceListIterator.Call<AndroidJavaObject>("next");
+                devices.Add(device);
+            }
+            return devices;
+        }
+
+        public static void RequestUsbPermissions()
+        {
+            if (Application.platform != RuntimePlatform.Android)
+                return;
+            
+            using var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            var unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            _usbManager = unityActivity.Call<AndroidJavaObject>("getSystemService", "usb");
+            var intent = new AndroidJavaObject("android.content.Intent", "com.ReachCloud.REACHExplorer.USB_PERMISSION");
+            var flagImmutable = new AndroidJavaClass("android.app.PendingIntent").GetStatic<int>("FLAG_IMMUTABLE");
+            var permissionIntent = new AndroidJavaObject("android.app.PendingIntent").CallStatic<AndroidJavaObject>("getBroadcast", unityActivity, 0, intent, flagImmutable);
+
+            var connectedUsbDevices = GetConnectedUsbDevices();
+            MetaverseProgram.Logger.Log("Found " + connectedUsbDevices.Count + " connected USB devices");
+            foreach (var device in connectedUsbDevices)
+            {
+                var hasPermission = _usbManager.Call<bool>("hasPermission", device);
+                if (hasPermission) 
+                    continue;
+
+                MetaverseProgram.Logger.Log("Requesting permission for USB device");
+                _usbManager.Call("requestPermission", device, permissionIntent);
+            }
+        }
 
         public static bool IsVRCompatible()
         {
