@@ -57,6 +57,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void AddListener()
         {
+            if (_delegateCall is not null)
+            {
+                RemoveListener();
+            }
+            
             var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
             var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
             addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
@@ -64,9 +69,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void RemoveListener()
         {
+            if (_delegateCall is null)
+                return;
+            
             var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
             var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
-            removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall });
+            removeListenerCallFunction?.Invoke(readCompleteEvent, new object[] { _delegateCall });
         }
 
         private void OnStream(object message)
