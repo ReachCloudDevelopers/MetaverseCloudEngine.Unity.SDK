@@ -30,6 +30,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             if (inputAction.action is null) return;
             inputAction.action.Enable();
             inputAction.action.performed += OnPerformed;
+            inputAction.action.canceled += OnCanceled;
         }
 
         protected virtual void OnDisable()
@@ -37,11 +38,17 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             if (inputAction.action is null) return;
             inputAction.action.Disable();
             inputAction.action.performed -= OnPerformed;
+            inputAction.action.canceled -= OnCanceled;
         }
 
         protected virtual void OnPerformed(InputAction.CallbackContext ctx)
         {
             onGetValue?.Invoke(ctx.ReadValue<T>());
+        }
+
+        private void OnCanceled(InputAction.CallbackContext obj)
+        {
+            onGetValue?.Invoke(default);
         }
     }
 }
