@@ -395,6 +395,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
         
+        [MenuItem(MetaverseConstants.MenuItems.InternalMenuRootPath + "Update Editor Icons")]
         public static void UpdateEditorIcons()
         {
             var editorIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GetAssetPath(MetaverseEditorUtils.EditorIcon));
