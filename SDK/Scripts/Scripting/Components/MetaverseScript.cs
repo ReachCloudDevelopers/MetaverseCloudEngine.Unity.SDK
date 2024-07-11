@@ -693,7 +693,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #endif
 #if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
                     ,
-                    typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
+                    typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
 #if MV_UNITY_AR_CORE && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
                     ,
