@@ -39,16 +39,12 @@ namespace MetaverseCloudEngine.Unity
             if (!origin)
             {
                 if (transform.position.magnitude > maxMagnitude)
-                {
                     transform.position = transform.position.normalized * maxMagnitude;
-                }
             }
             else
             {
                 if ((transform.position - origin.position).magnitude > maxMagnitude)
-                {
                     transform.position = origin.position + (transform.position - origin.position).normalized * maxMagnitude;
-                }
             }
         }
     }

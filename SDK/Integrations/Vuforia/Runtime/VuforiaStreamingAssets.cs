@@ -12,6 +12,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
     [CreateAssetMenu(menuName = "Internal/" + nameof(VuforiaStreamingAssets))]
 #endif
+    [HideMonoScript]
     public class VuforiaStreamingAssets : TriInspectorScriptableObject
     {
         private const string XmlMagik = "<?xml";
@@ -32,9 +33,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 
         public static string VuforiaPath => Path.Combine(Application.temporaryCachePath, "VuforiaStreamingAssets");
 
-        private static string VuforiaEditorDatabaseAssetsPath =>
-            Path.Combine(Application.streamingAssetsPath, "Vuforia");
-
+        private static string VuforiaEditorDatabaseAssetsPath => Path.Combine(Application.streamingAssetsPath, "Vuforia");
         private static string VuforiaEditorOcclusionAssetsPath => Path.Combine("Assets", "Editor", "Vuforia");
 
         [Serializable]

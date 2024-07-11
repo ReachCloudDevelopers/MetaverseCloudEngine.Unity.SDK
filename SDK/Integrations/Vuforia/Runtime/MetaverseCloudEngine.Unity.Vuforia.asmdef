@@ -6,6 +6,9 @@
     ],
     "includePlatforms": [],
     "excludePlatforms": [
+        "EmbeddedLinux",
+        "LinuxStandalone64",
+        "CloudRendering",
         "WebGL"
     ],
     "allowUnsafeCode": false,

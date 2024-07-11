@@ -686,10 +686,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(Task).Assembly /* System.Threading.Tasks */,
                     typeof(UniTask).Assembly, /* UniTask */
                     typeof(UniTaskExtensions).Assembly /* UniTask */
-#if MV_PTC_VUFORIA && !UNITY_WEBGL
+#if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                     ,
                     typeof(Vuforia.VuforiaApplication).Assembly, /* Vuforia */
                     typeof(Vuforia.VuforiaConfiguration).Assembly /* Vuforia */
+#endif
+#if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
+                    ,
+                    typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
+#endif
+#if MV_UNITY_AR_CORE && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
+                    ,
+                    typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
                     )
                 .AllowClrWrite()
