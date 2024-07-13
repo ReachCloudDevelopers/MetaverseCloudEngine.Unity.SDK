@@ -696,7 +696,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly,
                     typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
-#if MV_UNITY_AR_CORE && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
+#if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
                     ,
                     typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
@@ -719,7 +719,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private static IEnumerator CoroutineUpdate(Func<object> foo)
         {
             object val;
-            void Next() => val = foo?.Invoke();
 
             Next();
             while (val is not bool b || b)
@@ -736,6 +735,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 yield return retVal;
                 Next();
             }
+
+            yield break;
+
+            void Next() => val = foo?.Invoke();
         }
 
         private void CacheMethod(ScriptFunctions method)
