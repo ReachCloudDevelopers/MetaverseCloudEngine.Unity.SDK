@@ -1,6 +1,6 @@
-﻿#if MV_UNITY_AI_NAV
-using System;
+﻿using System;
 using System.Collections.Generic;
+using TriInspectorMVCE;
 using Unity.AI.Navigation;
 using UnityEngine;
 using UnityEngine.AI;
@@ -10,7 +10,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-int.MaxValue)]
     [RequireComponent(typeof(NavMeshSurface))]
-    public class NavMeshRuntimeGenerationAPI : MonoBehaviour
+    public class NavMeshRuntimeGenerationAPI : TriInspectorMonoBehaviour
     {
         [Serializable]
         public class AgentSettings
@@ -44,6 +44,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary>
         /// Builds and instantiates this NavMesh surface.
         /// </summary>
+        [Button("Build Nav Mesh")]
         public void BuildNavMesh()
         {
             if (Application.isEditor)
@@ -72,7 +73,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     agentSlope = agentSettings.maxSlope,
                     agentClimb = agentSettings.maxStepHeight,
                     ledgeDropHeight = agentSettings.dropHeight,
-                    maxJumpAcrossDistance = agentSettings.jumpDistance
+                    maxJumpAcrossDistance = agentSettings.jumpDistance,
+                    tileSize = Surface.tileSize,
+                    overrideTileSize = Surface.overrideTileSize,
+                    minRegionArea = Surface.minRegionArea,
+                    buildHeightMesh = Surface.buildHeightMesh,
+                    voxelSize = Surface.voxelSize,
+                    overrideVoxelSize = Surface.overrideVoxelSize,
                 },
                 sources, 
                 surfaceBounds, 
@@ -110,4 +117,3 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
     }
 }
-#endif
