@@ -1,0 +1,31 @@
+{
+    "name": "MetaverseCloudEngine.Unity.AI",
+    "rootNamespace": "MetaverseCloudEngine.Unity.AI",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:8c4dd21966739024fbd72155091d199e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "MetaverseCloudEngine.ApiClient.dll",
+        "MetaverseCloudEngine.Common.dll",
+        "Newtonsoft.Json.dll",
+        "Mono.Cecil.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "UNITY_AI_NAVIGATION"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.ai.navigation",
+            "expression": "",
+            "define": "UNITY_AI_NAVIGATION"
+        }
+    ],
+    "noEngineReferences": false
+}

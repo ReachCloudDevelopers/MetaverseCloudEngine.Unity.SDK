@@ -207,5 +207,10 @@ namespace MetaverseCloudEngine.Unity.Vuforia
             if (Directory.Exists(VuforiaPath))
                 Directory.Delete(VuforiaPath, true);
         }
+
+        public bool HasData()
+        {
+            return vuforiaFiles is { Length: > 0 } && vuforiaFiles.Any(file => file.data is { Length: > 0 });
+        }
     }
 }

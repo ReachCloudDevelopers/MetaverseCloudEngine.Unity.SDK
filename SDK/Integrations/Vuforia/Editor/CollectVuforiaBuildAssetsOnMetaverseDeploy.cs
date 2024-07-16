@@ -14,6 +14,8 @@ namespace MetaverseCloudEngine.Unity.Vuforia.Editors
         public void OnPreProcessBuild(GameObject prefab)
         {
             VuforiaStreamingAssets.Collect(prefab);
+            if (!VuforiaStreamingAssets.Instance.HasData()) 
+                return;
             
             var streamingAssetsLoader = prefab.GetOrAddComponent<VuforiaStreamingAssetsLoader>();
             streamingAssetsLoader.vuforiaStreamingAssets = VuforiaStreamingAssets.Instance;
@@ -24,7 +26,9 @@ namespace MetaverseCloudEngine.Unity.Vuforia.Editors
         public void OnPreProcessBuild(Scene scene)
         {
             VuforiaStreamingAssets.Collect(AssetDatabase.LoadAssetAtPath<SceneAsset>(scene.path));
-
+            if (!VuforiaStreamingAssets.Instance.HasData())
+                return;
+            
             var metaSpace = Object.FindObjectOfType<MetaSpace>(true);
             if (!metaSpace)
                 throw new System.Exception("No MetaSpace found in scene.");
@@ -48,7 +52,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia.Editors
             var existingHelpers = Resources.FindObjectsOfTypeAll<VuforiaAreaTargetConfigurationHelper>();
             foreach (var helper in existingHelpers)
             {
-                if (!helper.TryGetComponent(out AreaTargetBehaviour areaTargetBehaviour))
+                if (!helper.TryGetComponent(out AreaTargetBehaviour _))
                     continue;
                 Object.DestroyImmediate(helper);
             }

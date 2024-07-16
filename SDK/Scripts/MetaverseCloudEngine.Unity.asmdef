@@ -39,7 +39,8 @@
         "GUID:b4318b6f3695442c4983c360248781db",
         "GUID:4d1d8df5021c48d98561b50ca850d1dc",
         "GUID:69ab3f10cf42d0b42a6cd1353c374377",
-        "GUID:8c4dd21966739024fbd72155091d199e"
+        "GUID:8c4dd21966739024fbd72155091d199e",
+        "GUID:b35d8248e1a04478bb2d70fe76652ddf"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -142,6 +143,11 @@
             "name": "com.unity.xr.arcore",
             "expression": "",
             "define": "MV_UNITY_AR_CORE"
+        },
+        {
+            "name": "com.google.ar.core.arfoundation.extensions",
+            "expression": "",
+            "define": "MV_AR_CORE_EXTENSIONS"
         }
     ],
     "noEngineReferences": false

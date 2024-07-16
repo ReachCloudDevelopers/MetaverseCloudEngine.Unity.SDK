@@ -688,8 +688,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(UniTaskExtensions).Assembly /* UniTask */
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                     ,
-                    typeof(Vuforia.VuforiaApplication).Assembly, /* Vuforia */
-                    typeof(Vuforia.VuforiaConfiguration).Assembly /* Vuforia */
+                    typeof(Vuforia.VuforiaApplication).Assembly,
+                    typeof(Vuforia.VuforiaConfiguration).Assembly
 #endif
 #if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
                     ,
@@ -700,6 +700,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,
                     typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR)
+                    ,
+                    typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
+#endif
                     )
                 .AllowClrWrite()
                 .AllowOperatorOverloading()
@@ -707,7 +711,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 {
                     MemberFilter = IsMemberAllowed
                 })
-                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions))
+                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
+#if MV_AR_CORE_EXTENSIONS
+                    ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
+#endif
+                )
                 .CatchClrExceptions();
 
             if (strict)

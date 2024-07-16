@@ -438,6 +438,20 @@ MonoBehaviour:
       onDisabled:
         m_PersistentCalls:
           m_Calls: []
+  - name: MVCE_DEFAULT_UI_CHAT_ENABLED
+    aliases: []
+    enabled: 1
+    setOnStart: 1
+    events:
+      onEnabledValue:
+        m_PersistentCalls:
+          m_Calls: []
+      onEnabled:
+        m_PersistentCalls:
+          m_Calls: []
+      onDisabled:
+        m_PersistentCalls:
+          m_Calls: []
 --- !u!1 &2932334941670631138
 GameObject:
   m_ObjectHideFlags: 0
@@ -771,12 +785,12 @@ MonoBehaviour:
   m_RequiresColorTexture: 0
   m_Version: 2
   m_TaaSettings:
-    quality: 3
-    frameInfluence: 0.1
-    jitterScale: 1
-    mipBias: 0
-    varianceClampScale: 0.9
-    contrastAdaptiveSharpening: 0
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
 --- !u!1 &5028295712789713256
 GameObject:
   m_ObjectHideFlags: 0
@@ -1962,6 +1976,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   supportedPlatforms: -1
+  publish: 0
   id: 
   blockchainSource: 
   blockchainType: 0
