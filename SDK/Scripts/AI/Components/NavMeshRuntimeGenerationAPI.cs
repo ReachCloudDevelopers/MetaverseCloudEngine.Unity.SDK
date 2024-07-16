@@ -26,6 +26,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             public float jumpDistance;
         }
         
+        [InfoBox("This component is required in order to preserve custom settings for Agent Types when building the NavMesh at runtime.")]
         [Tooltip("The agent settings to use for building the NavMesh.")]
         [ReadOnly]
         [SerializeField] private AgentSettings agentSettings = new();
