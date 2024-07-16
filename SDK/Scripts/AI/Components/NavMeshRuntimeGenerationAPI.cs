@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if MV_UNITY_AI_NAV
+using System;
 using System.Collections.Generic;
 using Unity.AI.Navigation;
 using UnityEngine;
@@ -109,3 +110,4 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
     }
 }
+#endif
