@@ -6,7 +6,6 @@ using UnityEngine.AI;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
-    [AddComponentMenu("")]
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-int.MaxValue)]
     [RequireComponent(typeof(NavMeshSurface))]
