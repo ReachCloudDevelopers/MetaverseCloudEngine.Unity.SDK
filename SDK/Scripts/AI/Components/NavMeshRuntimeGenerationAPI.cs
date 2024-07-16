@@ -86,7 +86,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 transform.position, 
                 transform.rotation);
 
-            if (data != null)
+            if (data)
             {
                 data.name = gameObject.name;
                 Surface.RemoveData();
