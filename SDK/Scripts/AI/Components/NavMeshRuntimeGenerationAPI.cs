@@ -11,6 +11,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-int.MaxValue)]
     [RequireComponent(typeof(NavMeshSurface))]
+    [HideMonoScript]
     public class NavMeshRuntimeGenerationAPI : TriInspectorMonoBehaviour
     {
         [Serializable]
