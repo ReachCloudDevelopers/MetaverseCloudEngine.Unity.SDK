@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using TriInspectorMVCE;
 using Unity.AI.Navigation;
 using UnityEngine;
@@ -26,7 +27,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
         
         [Tooltip("The agent settings to use for building the NavMesh.")]
-        [HideInInspector]
+        [ReadOnly]
         [SerializeField] private AgentSettings agentSettings = new();
 
         /// <summary>
@@ -45,6 +46,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// Builds and instantiates this NavMesh surface.
         /// </summary>
         [Button("Build Nav Mesh")]
+        [UsedImplicitly]
         public void BuildNavMesh()
         {
             if (Application.isEditor)
@@ -64,29 +66,23 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 surfaceBounds = (Bounds)Surface.GetType().GetMethod("CalculateWorldBounds", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(Surface, new object[] { sources });
             }
 
+            var buildSettings = Surface.GetBuildSettings();
+            buildSettings.agentTypeID = agentSettings.id;
+            buildSettings.agentRadius = agentSettings.radius;
+            buildSettings.agentHeight = agentSettings.height;
+            buildSettings.agentSlope = agentSettings.maxSlope;
+            buildSettings.agentClimb = agentSettings.maxStepHeight;
+            buildSettings.ledgeDropHeight = agentSettings.dropHeight;
+            buildSettings.maxJumpAcrossDistance = agentSettings.jumpDistance;
+
             var data = NavMeshBuilder.BuildNavMeshData(
-                new NavMeshBuildSettings
-                {
-                    agentTypeID = agentSettings.id,
-                    agentRadius = agentSettings.radius,
-                    agentHeight = agentSettings.height,
-                    agentSlope = agentSettings.maxSlope,
-                    agentClimb = agentSettings.maxStepHeight,
-                    ledgeDropHeight = agentSettings.dropHeight,
-                    maxJumpAcrossDistance = agentSettings.jumpDistance,
-                    tileSize = Surface.tileSize,
-                    overrideTileSize = Surface.overrideTileSize,
-                    minRegionArea = Surface.minRegionArea,
-                    buildHeightMesh = Surface.buildHeightMesh,
-                    voxelSize = Surface.voxelSize,
-                    overrideVoxelSize = Surface.overrideVoxelSize,
-                },
+                buildSettings,
                 sources, 
                 surfaceBounds, 
-                transform.position, 
-                transform.rotation);
+                Surface.transform.position, 
+                Surface.transform.rotation);
 
-            if (!data) 
+            if (data == null) 
                 return;
             
             data.name = gameObject.name;
