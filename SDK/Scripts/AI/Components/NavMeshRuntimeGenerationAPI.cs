@@ -86,14 +86,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 transform.position, 
                 transform.rotation);
 
-            if (data)
-            {
-                data.name = gameObject.name;
-                Surface.RemoveData();
-                Surface.navMeshData = data;
-                if (isActiveAndEnabled)
-                    Surface.AddData();
-            }
+            if (!data) 
+                return;
+            
+            data.name = gameObject.name;
+            Surface.RemoveData();
+            Surface.navMeshData = data;
+            if (isActiveAndEnabled)
+                Surface.AddData();
         }
 
         private static Vector3 Abs(Vector3 v)
