@@ -16,7 +16,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Serializable]
         public class AgentSettings
         {
-            public string name;
             public int id;
             public float radius;
             public float height;
