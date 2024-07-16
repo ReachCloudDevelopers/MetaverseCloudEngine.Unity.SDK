@@ -25,6 +25,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             public float jumpDistance;
         }
         
+        [Tooltip("The agent settings to use for building the NavMesh.")]
         [HideInInspector]
         [SerializeField] private AgentSettings agentSettings = new();
 
@@ -36,17 +37,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (!Surface)
-                return;
-
-            var settings = Surface.GetBuildSettings();
-            agentSettings.id = settings.agentTypeID;
-            agentSettings.radius = settings.agentRadius;
-            agentSettings.height = settings.agentHeight;
-            agentSettings.maxSlope = settings.agentSlope;
-            agentSettings.maxStepHeight = settings.agentClimb;
-            agentSettings.dropHeight = settings.ledgeDropHeight;
-            agentSettings.jumpDistance = settings.maxJumpAcrossDistance;
+            if (!Application.isPlaying) CollectAgentInfo();
         }
 #endif
 
@@ -55,6 +46,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         public void BuildNavMesh()
         {
+            if (Application.isEditor)
+            {
+                CollectAgentInfo();
+            }
+            
             //var sources = Surface.CollectSources();
             var sources = Surface.GetType().GetMethod("CollectSources", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(Surface, null) as List<NavMeshBuildSource>;
 
@@ -96,6 +92,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private static Vector3 Abs(Vector3 v)
         {
             return new Vector3(Mathf.Abs(v.x), Mathf.Abs(v.y), Mathf.Abs(v.z));
+        }
+
+        private void CollectAgentInfo()
+        {
+            if (!Surface)
+                return;
+
+            var settings = Surface.GetBuildSettings();
+            agentSettings.id = settings.agentTypeID;
+            agentSettings.radius = settings.agentRadius;
+            agentSettings.height = settings.agentHeight;
+            agentSettings.maxSlope = settings.agentSlope;
+            agentSettings.maxStepHeight = settings.agentClimb;
+            agentSettings.dropHeight = settings.ledgeDropHeight;
+            agentSettings.jumpDistance = settings.maxJumpAcrossDistance;
         }
     }
 }
