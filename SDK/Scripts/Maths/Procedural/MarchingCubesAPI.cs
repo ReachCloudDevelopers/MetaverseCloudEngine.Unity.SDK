@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Maths.Procedural
@@ -13,8 +14,9 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             float gridScale = 1f)
         {
             mesh ??= new Mesh();
-            
-            var scalarField = CreateScalarField(gridSize, gridScale, points);
+
+            var min = points.Aggregate(Vector3.positiveInfinity, Vector3.Min);
+            var scalarField = CreateScalarField(gridSize, gridScale, points, min);
             var vertices = new List<Vector3>();
             var triangles = new List<int>();
 
@@ -33,7 +35,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
                             var zi = z + VertexOffset[i, 2];
                             cube[i] = scalarField[xi, yi, zi];
                         }
-                        MarchCube(new Vector3(x, y, z), cube, vertices, triangles, isoLevel, gridScale);
+                        MarchCube(new Vector3(x, y, z), cube, vertices, triangles, isoLevel, gridScale, min);
                     }
                 }
             }
@@ -46,13 +48,14 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             return mesh;
         }
     
-        private static float[,,] CreateScalarField(int gridSize, float gridScale, ICollection<Vector3> points)
+        private static float[,,] CreateScalarField(int gridSize, float gridScale, ICollection<Vector3> points, Vector3 min)
         {
             var field = new float[gridSize, gridSize, gridSize];
 
             foreach (var point in points)
             {
-                var gridPoint = point / gridScale;
+	            var absPoint = point - min;
+                var gridPoint = absPoint / gridScale;
                 var x = Mathf.Clamp(Mathf.RoundToInt(gridPoint.x), 0, gridSize - 1);
                 var y = Mathf.Clamp(Mathf.RoundToInt(gridPoint.y), 0, gridSize - 1);
                 var z = Mathf.Clamp(Mathf.RoundToInt(gridPoint.z), 0, gridSize - 1);
@@ -62,7 +65,8 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             return field;
         }
 
-        private static void MarchCube(Vector3 position, float[] cube, List<Vector3> vertices, List<int> triangles, float isoLevel, float gridScale)
+        private static void MarchCube(Vector3 position, float[] cube, List<Vector3> vertices, List<int> triangles,
+	        float isoLevel, float gridScale, Vector3 min)
         {
 	        var cubeIndex = 0;
 	        for (var i = 0; i < 8; i++)
@@ -103,7 +107,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 		        {
 			        var vert = TriTable[cubeIndex, 3 * i + j];
 			        triangles.Add(vertices.Count);
-			        vertices.Add(vertList[vert]);
+			        vertices.Add(vertList[vert] + min);
 		        }
 	        }
         }
