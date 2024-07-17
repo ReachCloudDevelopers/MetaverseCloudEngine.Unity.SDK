@@ -11,7 +11,8 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             Mesh mesh = null, 
             int gridSize = 32, 
             float isoLevel = 0.5f,
-            float gridScale = 1f)
+            float gridScale = 1f,
+            float heightScale = 1f)
         {
             mesh ??= new Mesh();
 
@@ -35,7 +36,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
                             var zi = z + VertexOffset[i, 2];
                             cube[i] = scalarField[xi, yi, zi];
                         }
-                        MarchCube(new Vector3(x, y, z), cube, vertices, triangles, isoLevel, gridScale, min);
+                        MarchCube(new Vector3(x, y, z), cube, vertices, triangles, isoLevel, gridScale, min, heightScale);
                     }
                 }
             }
@@ -66,7 +67,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
         }
 
         private static void MarchCube(Vector3 position, float[] cube, List<Vector3> vertices, List<int> triangles,
-	        float isoLevel, float gridScale, Vector3 min)
+	        float isoLevel, float gridScale, Vector3 min, float heightScale)
         {
 	        var cubeIndex = 0;
 	        for (var i = 0; i < 8; i++)
@@ -87,12 +88,12 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 		        
 		        var v1 = position + new Vector3(
 			        VertexOffset[EdgeConnection[i, 0], 0], 
-			        VertexOffset[EdgeConnection[i, 0], 1], 
+			        VertexOffset[EdgeConnection[i, 0], 1] * heightScale, 
 			        VertexOffset[EdgeConnection[i, 0], 2]);
 			        
 		        var v2 = position + new Vector3(
 			        VertexOffset[EdgeConnection[i, 1], 0], 
-			        VertexOffset[EdgeConnection[i, 1], 1], 
+			        VertexOffset[EdgeConnection[i, 1], 1] * heightScale, 
 			        VertexOffset[EdgeConnection[i, 1], 2]);
 			        
 		        vertList[i] = VertexInterp(isoLevel, v1 * gridScale, v2 * gridScale, cube[EdgeConnection[i, 0]], cube[EdgeConnection[i, 1]]);
