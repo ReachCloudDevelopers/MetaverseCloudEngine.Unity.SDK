@@ -88,14 +88,14 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 		        var v1 = position + new Vector3(
 			        VertexOffset[EdgeConnection[i, 0], 0], 
 			        VertexOffset[EdgeConnection[i, 0], 1], 
-			        VertexOffset[EdgeConnection[i, 0], 2]) * gridScale;
+			        VertexOffset[EdgeConnection[i, 0], 2]);
 			        
 		        var v2 = position + new Vector3(
 			        VertexOffset[EdgeConnection[i, 1], 0], 
 			        VertexOffset[EdgeConnection[i, 1], 1], 
-			        VertexOffset[EdgeConnection[i, 1], 2]) * gridScale;
+			        VertexOffset[EdgeConnection[i, 1], 2]);
 			        
-		        vertList[i] = VertexInterp(isoLevel, v1, v2, cube[EdgeConnection[i, 0]], cube[EdgeConnection[i, 1]]);
+		        vertList[i] = VertexInterp(isoLevel, v1 * gridScale, v2 * gridScale, cube[EdgeConnection[i, 0]], cube[EdgeConnection[i, 1]]);
 	        }
 
 	        for (var i = 0; i < 5; i++)
