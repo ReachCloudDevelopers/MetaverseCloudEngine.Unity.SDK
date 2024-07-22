@@ -712,7 +712,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     MemberFilter = IsMemberAllowed
                 })
                 .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
-#if MV_AR_CORE_EXTENSIONS
+#if MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR) 
                     ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
                 )

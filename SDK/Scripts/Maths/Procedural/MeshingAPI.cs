@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MIConvexHull;
@@ -8,7 +9,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 {
     public static class MeshingAPI
     {
-        public static Mesh GenerateConcaveMesh(ICollection<Vector3> points, float maxEdgeLength = 1.0f, float planeDistanceTolerance = 1.0f, Mesh mesh = null)
+        public static Mesh GenerateConcaveMesh(ICollection<Vector3> points, float planeDistanceTolerance = 1.0f, Mesh mesh = null)
         {
             mesh ??= new Mesh();
             
@@ -22,36 +23,25 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             var triangulation = DelaunayTriangulation<DefaultVertex, DefaultTriangulationCell<DefaultVertex>>.Create(miconvexHullPoints, planeDistanceTolerance);
 
             // Add triangles
-            var vertex = 0;
-            var vertices = new List<Vector3>();
-            foreach (var cell in triangulation.Cells)
+            // Extract triangles from the convex hull and apply alpha shape filtering
+            foreach (var face in triangulation.Cells)
             {
-                var v0 = cell.Vertices[0];
-                var v1 = cell.Vertices[1];
-                var v2 = cell.Vertices[2];
-                vertices.Add(new Vector3((float)v0.Position[0], (float)v0.Position[1], (float)v0.Position[2]));
-                vertices.Add(new Vector3((float)v1.Position[0], (float)v1.Position[1], (float)v1.Position[2]));
-                vertices.Add(new Vector3((float)v2.Position[0], (float)v2.Position[1], (float)v2.Position[2]));
-
-                triangles.Add(vertex++);
-                triangles.Add(vertex++);
-                triangles.Add(vertex++);
+                var v0 = face.Vertices[0];
+                var v1 = face.Vertices[1];
+                var v2 = face.Vertices[2];
+                triangles.Add(miconvexHullPoints.IndexOf(v0));
+                triangles.Add(miconvexHullPoints.IndexOf(v1));
+                triangles.Add(miconvexHullPoints.IndexOf(v2));
             }
 
-            mesh.SetVertices(vertices);
+            mesh.SetVertices(points.ToList());
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
 
             return mesh;
         }
 
-        private static bool IsEdgeLengthValid(DefaultVertex v0, DefaultVertex v1, float maxEdgeLength)
-        {
-            var edge = new Vector3((float)(v1.Position[0] - v0.Position[0]), (float)(v1.Position[1] - v0.Position[1]), (float)(v1.Position[2] - v0.Position[2]));
-            return edge.magnitude <= maxEdgeLength;
-        }
-
-        public static Mesh GenerateConvexHull(ICollection<Vector3> points, float alpha, Mesh mesh = null)
+        public static Mesh GenerateConvexHull(ICollection<Vector3> points, Mesh mesh = null)
         {
             mesh ??= new Mesh();
 
@@ -82,14 +72,12 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
                 var v1 = face.Vertices[1];
                 var v2 = face.Vertices[2];
 
-                //if (!IsTriangleValid(v0, v1, v2, alpha)) 
-                //    continue;
-
                 triangles.Add(vertexMap[v0]);
                 triangles.Add(vertexMap[v1]);
                 triangles.Add(vertexMap[v2]);
             }
 
+            mesh.Clear();
             mesh.SetVertices(vertices);
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
@@ -97,26 +85,11 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             return mesh;
         }
 
-        private static bool IsTriangleValid(DefaultVertex v0, DefaultVertex v1, DefaultVertex v2, float alpha)
-        {
-            // Check if the triangle satisfies the alpha condition
-            var edge1 = new Vector3((float)(v1.Position[0] - v0.Position[0]), (float)(v1.Position[1] - v0.Position[1]),
-                (float)(v1.Position[2] - v0.Position[2]));
-            var edge2 = new Vector3((float)(v2.Position[0] - v1.Position[0]), (float)(v2.Position[1] - v1.Position[1]),
-                (float)(v2.Position[2] - v1.Position[2]));
-            var edge3 = new Vector3((float)(v0.Position[0] - v2.Position[0]), (float)(v0.Position[1] - v2.Position[1]),
-                (float)(v0.Position[2] - v2.Position[2]));
-
-            var length1 = edge1.magnitude;
-            var length2 = edge2.magnitude;
-            var length3 = edge3.magnitude;
-
-            return length1 < alpha && length2 < alpha && length3 < alpha;
-        }
-
-        public static Mesh GenerateMarchingCubes(
+        public static IEnumerator GenerateMarchingCubes(
             ICollection<Vector3> points,
+            Action<Mesh> onMeshGenerated,
             Mesh mesh = null,
+            int maxIterationsPerFrame = 100,
             int gridSize = 32,
             float isoLevel = 0.5f,
             float gridScale = 1f)
@@ -129,6 +102,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             var triangles = new List<int>();
 
             // Loop through each cell in the grid
+            var iterations = 0;
             for (var x = 0; x < gridSize - 1; x++)
             {
                 for (var y = 0; y < gridSize - 1; y++)
@@ -142,19 +116,27 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
                             var yi = y + VertexOffset[i, 1];
                             var zi = z + VertexOffset[i, 2];
                             cube[i] = scalarField[xi, yi, zi];
+                            iterations++;
+                            
+                            if (iterations >= maxIterationsPerFrame)
+                            {
+                                iterations = 0;
+                                yield return null;
+                            }
                         }
 
-                        MarchCube(new Vector3(x, y, z), cube, vertices, triangles, isoLevel, gridScale, min);
+                        var position = new Vector3(x, y, z);
+                        MarchCube(position, cube, vertices, triangles, isoLevel, gridScale, min);
                     }
                 }
             }
 
             mesh.Clear();
-            mesh.vertices = vertices.ToArray();
-            mesh.triangles = triangles.ToArray();
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
 
-            return mesh;
+            onMeshGenerated?.Invoke(mesh);
         }
 
         private static float[,,] CreateScalarField(int gridSize, float gridScale, ICollection<Vector3> points,
