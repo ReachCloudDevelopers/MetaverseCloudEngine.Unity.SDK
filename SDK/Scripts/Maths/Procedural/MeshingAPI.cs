@@ -89,7 +89,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             ICollection<Vector3> points,
             Action<Mesh> onMeshGenerated,
             Mesh mesh = null,
-            int maxIterationsPerFrame = 100,
+            int maxIterationsPerFrame = 5000,
             int gridSize = 32,
             float isoLevel = 0.5f,
             float gridScale = 1f)
