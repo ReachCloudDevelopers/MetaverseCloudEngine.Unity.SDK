@@ -9,6 +9,95 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 {
     public static class MeshingAPI
     {
+        public static Mesh EarClipPoints(ICollection<Vector3> points, Mesh mesh = null)
+        {
+            mesh ??= new Mesh();
+            
+            var pointList = points.ToList();
+            var indices = new List<int>();
+            var tris = new List<int>();
+            for (var i = 0; i < pointList.Count; i++)
+                tris.Add(i);
+
+            var nv = pointList.Count;
+            var count = 2 * nv;
+
+            for (var v = nv - 1; nv > 2;)
+            {
+                if ((count--) <= 0)
+                    return mesh;
+
+                var u = v;
+                if (nv <= u)
+                    u = 0;
+                v = u + 1;
+                if (nv <= v)
+                    v = 0;
+                var w = v + 1;
+                if (nv <= w)
+                    w = 0;
+
+                if (!Snip(pointList, u, v, w, nv, tris)) 
+                    continue;
+                
+                int s, t;
+                var a = tris[u];
+                var b = tris[v];
+                var c = tris[w];
+
+                indices.Add(a);
+                indices.Add(b);
+                indices.Add(c);
+
+                for (s = v, t = v + 1; t < nv; s++, t++)
+                    tris[s] = tris[t];
+                nv--;
+                count = 2 * nv;
+            }
+
+            indices.Reverse();
+            mesh.SetVertices(pointList);
+            mesh.SetTriangles(indices, 0);
+            mesh.RecalculateNormals();
+            
+            return mesh;
+        }
+
+        private static bool Snip(IList<Vector3> vertices, int u, int v, int w, int n, List<int> tris)
+        {
+            int p;
+            var a = vertices[tris[u]];
+            var b = vertices[tris[v]];
+            var c = vertices[tris[w]];
+            if (Mathf.Epsilon > (((b.x - a.x) * (c.z - a.z)) - ((b.z - a.z) * (c.x - a.x))))
+                return false;
+            for (p = 0; p < n; p++)
+            {
+                if ((p == u) || (p == v) || (p == w))
+                    continue;
+                var vertex = vertices[tris[p]];
+                if (InsideTriangle(a, b, c, vertex))
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool InsideTriangle(Vector3 a, Vector3 b, Vector3 c, Vector3 p)
+        {
+            var ax = c.x - b.x; var ay = c.z - b.z;
+            var bx = a.x - c.x; var by = a.z - c.z;
+            var cx = b.x - a.x; var cy = b.z - a.z;
+            var apx = p.x - a.x; var apy = p.z - a.z;
+            var bpx = p.x - b.x; var bpy = p.z - b.z;
+            var cpx = p.x - c.x; var cpy = p.z - c.z;
+
+            var aCrosSbp = ax * bpy - ay * bpx;
+            var cCrosSap = cx * apy - cy * apx;
+            var bCrosScp = bx * cpy - by * cpx;
+
+            return ((aCrosSbp >= 0.0) && (bCrosScp >= 0.0) && (cCrosSap >= 0.0));
+        }
+        
         public static Mesh GenerateConcaveMesh(ICollection<Vector3> points, float planeDistanceTolerance = 1.0f, Mesh mesh = null)
         {
             mesh ??= new Mesh();
