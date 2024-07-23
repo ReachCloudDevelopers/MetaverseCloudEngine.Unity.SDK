@@ -37,7 +37,7 @@ namespace MetaverseCloudEngine.Unity
             _operation = MeshingAPI.GenerateMarchingCubes(
                 GetComponentsInChildren<Transform>()
                     .Where(x => x.transform != transform)
-                    .Select(x => x.position) 
+                    .Select(x => x.localPosition) 
                     .ToArray(),
                 m =>
                 {

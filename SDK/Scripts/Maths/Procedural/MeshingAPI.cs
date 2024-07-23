@@ -25,7 +25,13 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             for (var v = nv - 1; nv > 2;)
             {
                 if ((count--) <= 0)
+                {
+                    mesh.SetVertices(pointList);
+                    mesh.SetTriangles(indices, 0);
+                    mesh.RecalculateNormals();
+
                     return mesh;
+                }
 
                 var u = v;
                 if (nv <= u)
