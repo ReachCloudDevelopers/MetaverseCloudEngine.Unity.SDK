@@ -422,7 +422,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaversePsrogram.Logger.Log("The MetaSpace has not fully initialized yet. Call to '" + fn + "' ignored.");
+                MetaverseProgram.Logger.Log("The MetaSpace has not fully initialized yet. Call to '" + fn + "' ignored.");
                 return;
             }
 
@@ -626,7 +626,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             {
                                 e.ToUniTask().ContinueWith(() =>
                                 {
-                                    action?.Invoke(null);
+                                    action?.Invoke(t);
                                 });
                             }
                             
