@@ -12,10 +12,10 @@ namespace MetaverseCloudEngine.Unity
         private void Update()
         {
             var mesh = MeshingAPI.EarClipPoints(
-                GetComponentsInChildren<Transform>()
+                MeshingAPI.RdpsSimplify(GetComponentsInChildren<Transform>()
                     .Where(x => x.transform != transform)
                     .Select(x => x.localPosition) 
-                    .ToArray(),
+                    .ToArray(), 1),
                 mesh: GetComponent<MeshFilter>().sharedMesh);
             
             GetComponent<MeshFilter>().sharedMesh = mesh;

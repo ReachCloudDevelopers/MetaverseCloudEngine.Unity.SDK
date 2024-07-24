@@ -9,6 +9,66 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
 {
     public static class MeshingAPI
     {
+        public static ICollection<Vector3> RdpsSimplify(ICollection<Vector3> v, float tolerance)
+        {
+            var vertices = v.ToList();
+            
+            if (vertices.Count < 3)
+                return vertices;
+
+            bool[] marked = new bool[vertices.Count];
+            for (int i = 0; i < vertices.Count; i++)
+                marked[i] = false;
+
+            marked[0] = marked[vertices.Count - 1] = true;
+            RDP(vertices, 0, vertices.Count - 1, tolerance, marked);
+
+            List<Vector3> result = new List<Vector3>();
+            for (int i = 0; i < vertices.Count; i++)
+            {
+                if (marked[i])
+                    result.Add(vertices[i]);
+            }
+
+            return result;
+        }
+
+        private static void RDP(List<Vector3> vertices, int start, int end, float tolerance, bool[] marked)
+        {
+            if (end <= start + 1)
+                return;
+
+            float maxDist = 0;
+            int index = 0;
+
+            Vector3 a = vertices[start];
+            Vector3 b = vertices[end];
+
+            for (int i = start + 1; i < end; i++)
+            {
+                float dist = PerpendicularDistance(vertices[i], a, b);
+                if (dist > maxDist)
+                {
+                    maxDist = dist;
+                    index = i;
+                }
+            }
+
+            if (maxDist > tolerance)
+            {
+                marked[index] = true;
+                RDP(vertices, start, index, tolerance, marked);
+                RDP(vertices, index, end, tolerance, marked);
+            }
+        }
+
+        private static float PerpendicularDistance(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
+        {
+            float num = Mathf.Abs((lineEnd.x - lineStart.x) * (lineStart.z - point.z) - (lineStart.x - point.x) * (lineEnd.z - lineStart.z));
+            float den = Mathf.Sqrt(Mathf.Pow(lineEnd.x - lineStart.x, 2) + Mathf.Pow(lineEnd.z - lineStart.z, 2));
+            return num / den;
+        }
+        
         public static Mesh EarClipPoints(ICollection<Vector3> points, Mesh mesh = null)
         {
             mesh ??= new Mesh();
@@ -26,6 +86,8 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
             {
                 if ((count--) <= 0)
                 {
+                    indices.Reverse();
+                    
                     mesh.SetVertices(pointList);
                     mesh.SetTriangles(indices, 0);
                     mesh.RecalculateNormals();
@@ -60,7 +122,7 @@ namespace MetaverseCloudEngine.Unity.Maths.Procedural
                 nv--;
                 count = 2 * nv;
             }
-
+            
             indices.Reverse();
             mesh.SetVertices(pointList);
             mesh.SetTriangles(indices, 0);
