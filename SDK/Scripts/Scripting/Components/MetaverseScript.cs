@@ -672,6 +672,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private static void DefaultEngineOptions(Options options, bool strict)
         {
             options.AllowClr(
+                    typeof(DateTime).Assembly,
                     typeof(Transform).Assembly,
                     typeof(GameObject).Assembly,
                     typeof(Component).Assembly, /* UnityEngine.CoreModule */
