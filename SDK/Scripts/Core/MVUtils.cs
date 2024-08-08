@@ -24,6 +24,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Unity.VisualScripting;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using Bounds = UnityEngine.Bounds;
 using MethodAttributes = System.Reflection.MethodAttributes;
@@ -293,6 +294,16 @@ namespace MetaverseCloudEngine.Unity
                 RenderTexture.active = previous;
                 RenderTexture.ReleaseTemporary(renderTex);
             }
+        }
+
+        #endregion
+
+        #region NavMesh
+
+        public static NavMeshHit FindClosestNavMeshEdge(this NavMeshAgent agent)
+        {
+            agent.FindClosestEdge(out var hit);
+            return hit;
         }
 
         #endregion
