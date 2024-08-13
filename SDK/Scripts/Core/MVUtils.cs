@@ -306,6 +306,12 @@ namespace MetaverseCloudEngine.Unity
             return hit;
         }
 
+        public static NavMeshHit FindClosestNavMeshEdge(this Vector3 position)
+        {
+            NavMesh.FindClosestEdge(position, out var hit, -1);
+            return hit;
+        }
+
         #endregion
 
         #region Behaviour
