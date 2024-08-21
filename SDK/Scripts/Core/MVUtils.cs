@@ -308,7 +308,21 @@ namespace MetaverseCloudEngine.Unity
 
         public static NavMeshHit FindClosestNavMeshEdge(this Vector3 position)
         {
-            NavMesh.FindClosestEdge(position, out var hit, -1);
+            NavMesh.FindClosestEdge(position, out var hit, NavMesh.AllAreas);
+            if (Application.isEditor)
+            {
+                // IL2CPP to prevent stripping
+                var pos = hit.position;
+                var normal = hit.normal;
+                var distance = hit.distance;
+                var mask = hit.mask;
+                var isHit = hit.hit;
+                hit.position = pos;
+                hit.normal = normal;
+                hit.distance = distance;
+                hit.mask = mask;
+                hit.hit = isHit;
+            }
             return hit;
         }
 
