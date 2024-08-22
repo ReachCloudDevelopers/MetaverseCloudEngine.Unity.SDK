@@ -22,6 +22,7 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
+using UnityEngine.EventSystems;
 #if MV_UNITY_AI_NAV
 using Unity.AI.Navigation;
 #endif
@@ -121,6 +122,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string GetGlobalFunction = "GetStaticReference";
         private const string SetGlobalFunction = "SetStaticReference";
         private const string MetaSpaceProperty = "MetaSpace";
+        private const string GetNetworkObjectFunction = "GetNetworkObject";
+        private const string IsInputAuthorityProperty = "GetIsInputAuthority";
+        private const string IsStateAuthorityProperty = "GetIsStateAuthority";
         private const string GetEnabledFunction = "GetEnabled";
         private const string SetEnabledFunction = "SetEnabled";
         private const string SetTimeoutFunction = "setTimeout";
@@ -559,6 +563,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 .SetValue(nameof(GetVar), (Func<string, object>)GetVar)
                 .SetValue(nameof(TryGetVar), (Func<string, object, object>)TryGetVar)
                 .SetValue(nameof(SetVar), (Action<string, object>)SetVar)
+                .SetValue(GetNetworkObjectFunction, (Func<NetworkObject>)(() => NetworkObject.uNull()))
+                .SetValue(IsInputAuthorityProperty, (Func<bool>)(() => NetworkObject.uNull()?.IsInputAuthority ?? false))
+                .SetValue(IsStateAuthorityProperty, (Func<bool>)(() => NetworkObject.uNull()?.IsStateAuthority ?? false))
                 .SetValue(SetTimeoutFunction, (Func<Action, int, int>)((action, time) =>
                 {
                     var timeoutHandle = ++_timeoutHandleIndex;
@@ -682,6 +689,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(Canvas).Assembly, /* UnityEngine.UIModule */
                     typeof(NavMesh).Assembly, /* UnityEngine.AIModule */
                     typeof(NavMeshAgent).Assembly, /* UnityEngine.AIModule */
+                    typeof(RaycastResult).Assembly, /* UnityEngine.UI */
 #if MV_UNITY_AI_NAV
                     typeof(NavMeshSurface).Assembly, /* Unity.AI.Navigation */
 #endif
