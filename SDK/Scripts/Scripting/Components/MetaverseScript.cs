@@ -682,18 +682,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(DateTime).Assembly,
                     typeof(Transform).Assembly,
                     typeof(GameObject).Assembly,
-                    typeof(Component).Assembly, /* UnityEngine.CoreModule */
-                    typeof(Rigidbody).Assembly, /* UnityEngine.PhysicsModule */
-                    typeof(Terrain).Assembly, /* UnityEngine.TerrainModule */
-                    typeof(AudioSource).Assembly, /* UnityEngine.AudioModule */
-                    typeof(Canvas).Assembly, /* UnityEngine.UIModule */
-                    typeof(NavMesh).Assembly, /* UnityEngine.AIModule */
-                    typeof(NavMeshAgent).Assembly, /* UnityEngine.AIModule */
-                    typeof(RaycastResult).Assembly, /* UnityEngine.UI */
+                    typeof(Component).Assembly /* UnityEngine.CoreModule */,
+                    typeof(Rigidbody).Assembly /* UnityEngine.PhysicsModule */,
+                    typeof(Terrain).Assembly /* UnityEngine.TerrainModule */,
+                    typeof(AudioSource).Assembly /* UnityEngine.AudioModule */,
+                    typeof(Canvas).Assembly /* UnityEngine.UIModule */,
+                    typeof(NavMesh).Assembly /* UnityEngine.AIModule */,
+                    typeof(NavMeshAgent).Assembly /* UnityEngine.AIModule */,
+                    typeof(RaycastResult).Assembly /* UnityEngine.UI */,
 #if MV_UNITY_AI_NAV
-                    typeof(NavMeshSurface).Assembly, /* Unity.AI.Navigation */
+                    typeof(NavMeshSurface).Assembly /* Unity.AI.Navigation */,
 #endif
-                    typeof(Input).Assembly, /* UnityEngine.InputModule */
+                    typeof(Input).Assembly /* UnityEngine.InputModule */,
                     typeof(MetaverseProgram).Assembly /* MetaverseCloudEngine */,
                     typeof(MetaverseClient).Assembly /* MetaverseCloudEngine.ApiClient */,
                     typeof(MetaSpaceDto).Assembly /* MetaverseCloudEngine.Common */,
@@ -703,7 +703,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(Variables).Assembly /* Visual Scripting */,
                     typeof(ActionBasedController).Assembly /* XR Interaction Toolkit */,
                     typeof(Task).Assembly /* System.Threading.Tasks */,
-                    typeof(UniTask).Assembly, /* UniTask */
+                    typeof(UniTask).Assembly /* UniTask */,
                     typeof(UniTaskExtensions).Assembly /* UniTask */
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                     ,
