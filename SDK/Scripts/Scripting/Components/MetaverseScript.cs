@@ -202,12 +202,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 return;
             }
 
-            if (!InitializeEngine())
-            {
-                enabled = false;
-                return;
-            }
-
             if (MetaSpace.Instance)
             {
                 MetaSpace.OnReady(() => OnReady());
@@ -221,6 +215,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 MetaverseDispatcher.AtEndOfFrame(() => // At end of frame to ensure everything is initialized first.
                 {
+                    if (!InitializeEngine())
+                    {
+                        enabled = false;
+                        return;
+                    }
+
                     if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
                         _engine.Invoke(method);
 
