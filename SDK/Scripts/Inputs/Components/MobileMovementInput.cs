@@ -21,8 +21,8 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
         private Vector2 _movementTouchStart;
         private Vector2 _lookTouchStart;
         
-        private int _movementTouch;
-        private int _lookTouch;
+        private int _movementTouch = -1;
+        private int _lookTouch = -1;
 
         private void Awake()
         {
@@ -38,49 +38,53 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             for (var i = 0; i < Input.touchCount; i++)
             {
                 var touch = Input.GetTouch(i);
-                if (touch.phase == TouchPhase.Began && IgnoreInput())
-                    return;
-
-                if (touch.phase == TouchPhase.Ended)
-                {
-                    if (touch.fingerId == _movementTouch)
-                    {
-                        movementControl.SendValueToControlPublic(Vector2.zero);
-                        _movementTouch = -1;
-                    }
-                    else if (touch.fingerId == _lookTouch)
-                    {
-                        lookControl.SendValueToControlPublic(Vector2.zero);
-                        _lookTouch = -1;
-                    }
-                    continue;
-                }
-                
                 switch (touch.phase)
                 {
-                    case TouchPhase.Began when touch.position.x < Screen.width / 2f:
-                        _movementTouchStart = touch.position;
-                        _movementTouch = touch.fingerId;
-                        break;
-                    case TouchPhase.Began when touch.position.x >= Screen.width / 2f:
-                        _lookTouchStart = touch.position;
-                        _lookTouch = touch.fingerId;
-                        break;
-                    case TouchPhase.Moved:
+                    case TouchPhase.Began when IgnoreInput():
+                        return;
+                    case TouchPhase.Ended:
                     {
-                        if (touch.fingerId == _lookTouch)
+                        if (touch.fingerId == _movementTouch)
                         {
-                            var delta = touch.position - _lookTouchStart;
-                            lookControl.SendValueToControlPublic(delta * lookSensitivity);
-                            _lookTouchStart = touch.position;   
+                            movementControl.SendValueToControlPublic(Vector2.zero);
+                            _movementTouch = -1;
                         }
-                        else if (touch.fingerId == _movementTouch)
+                        else if (touch.fingerId == _lookTouch)
                         {
-                            var delta = touch.position - _movementTouchStart;
-                            movementControl.SendValueToControlPublic(delta * movementSensitivity);
+                            lookControl.SendValueToControlPublic(Vector2.zero);
+                            _lookTouch = -1;
                         }
-                        break;
+                        continue;
                     }
+                    default:
+                        switch (touch.phase)
+                        {
+                            case TouchPhase.Began when touch.position.x < Screen.width / 2f:
+                                _movementTouchStart = touch.position;
+                                _movementTouch = touch.fingerId;
+                                break;
+                            case TouchPhase.Began when touch.position.x >= Screen.width / 2f:
+                                _lookTouchStart = touch.position;
+                                _lookTouch = touch.fingerId;
+                                break;
+                            case TouchPhase.Moved:
+                            {
+                                if (touch.fingerId == _lookTouch)
+                                {
+                                    var delta = touch.position - _lookTouchStart;
+                                    lookControl.SendValueToControlPublic(delta * lookSensitivity);
+                                    _lookTouchStart = touch.position;   
+                                }
+                                else if (touch.fingerId == _movementTouch)
+                                {
+                                    var delta = touch.position - _movementTouchStart;
+                                    movementControl.SendValueToControlPublic(delta * movementSensitivity);
+                                }
+                                break;
+                            }
+                        }
+
+                        break;
                 }
             }
         }

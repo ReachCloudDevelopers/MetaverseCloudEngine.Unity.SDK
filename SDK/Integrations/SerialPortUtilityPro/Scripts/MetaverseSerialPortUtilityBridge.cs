@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 namespace MetaverseCloudEngine.Unity.SPUP
 {
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(-int.MaxValue)]
     public class MetaverseSerialPortUtilityBridge : TriInspectorMonoBehaviour
     {
         [Required]
@@ -48,6 +49,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void OnDestroy()
         {
             RemoveListener();
+            WriteZero();
+        }
+
+        private void WriteZero()
+        {
+            Write(new byte[] {0});
         }
 
         public void Write(byte[] data)

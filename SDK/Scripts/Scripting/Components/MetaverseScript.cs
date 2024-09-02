@@ -108,6 +108,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             OnCollisionEnter2D = 524288,
             OnCollisionExit2D = 1048576,
             OnCollisionStay2D = 2097152,
+            
+            OnMetaSpaceBehaviourInitialize = 4194304,
+            OnMetaSpaceBehaviourDestroyed = 8388608,
+            OnMetaSpaceServicesRegistered = 16777216,
+            
+            OnNetworkReady = 33554432,
+            RegisterNetworkRPCs = 67108864,
+            UnRegisterNetworkRPCs = 134217728,
         }
 
         private const string ThisProperty = "_this";
@@ -413,6 +421,54 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionStay2D, out var method))
                 _engine.Invoke(method, collision);
+        }
+
+        public override void OnNetworkReady(bool offline)
+        {
+            base.OnNetworkReady(offline);
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.OnNetworkReady, out var method))
+                _engine.Invoke(method, offline);
+        }
+
+        protected override void RegisterNetworkRPCs()
+        {
+            base.RegisterNetworkRPCs();
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out var method))
+                _engine.Invoke(method);
+        }
+
+        protected override void UnRegisterNetworkRPCs()
+        {
+            base.UnRegisterNetworkRPCs();
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out var method))
+                _engine.Invoke(method);
+        }
+
+        protected override void OnMetaSpaceBehaviourInitialize()
+        {
+            base.OnMetaSpaceBehaviourInitialize();
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out var method))
+                _engine.Invoke(method);
+        }
+
+        protected override void OnMetaSpaceServicesRegistered()
+        {
+            base.OnMetaSpaceServicesRegistered();
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out var method))
+                _engine.Invoke(method);
+        }
+
+        protected override void OnMetaSpaceBehaviourDestroyed()
+        {
+            base.OnMetaSpaceBehaviourDestroyed();
+            if (!_ready) return;
+            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out var method))
+                _engine.Invoke(method);
         }
 
         /// <summary>
