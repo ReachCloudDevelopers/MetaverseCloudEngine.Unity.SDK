@@ -131,8 +131,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     x.Name == methodName &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
-                
-            method?.Invoke(spupComponent, parameters);
         }
         
         public static T GetField<T>(Component spupComponent, ref FieldInfo field, string fieldName)
@@ -360,9 +358,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			return deviceInfo;
 		}
     
+	#if UNITY_EDITOR_WIN || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX 
 		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		private static extern int spapDeviceListAvailable();
 		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		private static extern int spapDeviceList(int deviceNum, [MarshalAs(UnmanagedType.LPStr)] System.Text.StringBuilder deviceInfo, int bufferSize);
+#else
+		private static int spapDeviceListAvailable() => 0;
+		private static int spapDeviceList(int deviceNum, System.Text.StringBuilder deviceInfo, int bufferSize) => 0;
+#endif
     }
 }

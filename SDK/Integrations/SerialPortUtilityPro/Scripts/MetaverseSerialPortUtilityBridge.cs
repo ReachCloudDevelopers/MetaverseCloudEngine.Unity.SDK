@@ -49,17 +49,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void OnDestroy()
         {
             RemoveListener();
-            WriteZero();
-        }
-
-        private void WriteZero()
-        {
-            Write(new byte[] {0});
         }
 
         public void Write(byte[] data)
         {
-            MetaverseSerialPortUtilityInterop.CallInstanceMethod(spupComponent, ref _writeMethod, "Write", data);
+            try
+            {
+                MetaverseSerialPortUtilityInterop.CallInstanceMethod(spupComponent, ref _writeMethod, "Write", data);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // ignored
+            }
         }
 
         private void AddListener()

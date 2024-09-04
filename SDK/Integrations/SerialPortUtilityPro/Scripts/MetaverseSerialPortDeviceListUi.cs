@@ -14,6 +14,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [Required] [SerializeField] private RectTransform contentRect;
         
         private readonly List<MetaverseSerialPortDeviceListUiItem> _items = new();
+        private static bool _ignoreEvents;
 
         private void Awake()
         {
@@ -63,12 +64,43 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             var item = Instantiate(itemPrefab, contentRect);
             item.Repaint(serialPortUtilityPro, device, data, openSystem);
-            item.onDeviceOpen.AddListener(() =>
-            {
-                foreach (var x in _items.Where(y => y != item))
-                    x.onDeviceClosed?.Invoke();
-            });
+
+            item.onDeviceOpen.AddListener(OnDeviceOpened);
+            item.onDeviceClosed.AddListener(OnDeviceClosed);
             _items.Add(item);
+            return;
+
+            void OnDeviceOpened()
+            {
+                if (_ignoreEvents)
+                    return;
+                _ignoreEvents = true;
+                try
+                {
+                    foreach (var x in _items.Where(y => y != item))
+                        x.RepaintOpenedState();
+                }
+                finally
+                {
+                    _ignoreEvents = false;
+                }
+            }
+
+            void OnDeviceClosed()
+            {
+                if (_ignoreEvents)
+                    return;
+                _ignoreEvents = true;
+                try
+                {
+                    foreach (var x in _items.Where(y => y != item))
+                        x.RepaintOpenedState();
+                }
+                finally
+                {
+                    _ignoreEvents = false;
+                }
+            }
         }
 
         private void ClearAllDeviceUis()

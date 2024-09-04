@@ -10,6 +10,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
     public class MetaverseSerialPortDeviceListUiItem : MonoBehaviour
     {
         public UnityEvent<string> onDeviceName;
+        public UnityEvent onStartedOpening;
+        public UnityEvent onStoppedOpening;
         public UnityEvent onDeviceOpen;
         public UnityEvent onDeviceClosed;
         
@@ -27,7 +29,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private static MethodInfo _openMethod;
         private static MethodInfo _closeMethod;
         private static MethodInfo _isOpenProcessingMethod;
-        
+
+        private static MethodInfo _isOpenedMethod;
+
         public void Repaint(
             Component spu,
             string device, 
@@ -37,40 +41,92 @@ namespace MetaverseCloudEngine.Unity.SPUP
             _spup = spu;
             _data = data;
             _openSystem = openSystem;
-            
             onDeviceName?.Invoke(device);
-            if (MetaverseSerialPortUtilityInterop.GetProperty<string>(_spup, ref _deviceNameProperty, "DeviceName") == device)
+            RepaintOpenedState();
+        }
+
+        public void RepaintOpenedState()
+        {
+            if (!this)
+                return;
+            
+            if (_data == null)
+            {
+                onDeviceClosed?.Invoke();
+                return;
+            }
+
+            if (GetSerialNumber() == _data.SerialNumber && IsOpened())
                 onDeviceOpen?.Invoke();
             else onDeviceClosed?.Invoke();
         }
 
         public void Open()
         {
-            if (!_spup)
-                return;
-
             if (!this)
                 return;
-            
+
             if (_opening)
+            {
+                AlreadyOpening();
                 return;
-            
+            }
+
+            if (!_spup)
+            {
+                SpupDestroyed();
+                return;
+            }
+
             _opening = true;
+            onStartedOpening?.Invoke();
 
             try
             {
-                MetaverseSerialPortUtilityInterop.CallInstanceMethod(_spup, ref _closeMethod, "Close");
+                CloseSerial();
                 MetaverseProgram.Logger.Log("Closing device...");
+                RepaintOpenedState();
                 MetaverseDispatcher.WaitForSeconds(1f, () =>
                 {
+                    if (!this || !_spup || !_opening)
+                    {
+                        if (this && _opening)
+                            OpenFailed();
+                        _opening = false;
+                        return;
+                    }
+                    
                     MetaverseProgram.Logger.Log("Device closed");
                     OpenInternal();
                 });
             }
-            catch
+            catch (Exception e)
             {
+                if (this && _opening)
+                    OpenFailed();
                 _opening = false;
+                MetaverseProgram.Logger.Log("Device close error: " + e.Message);
             }
+        }
+
+        private static void SpupDestroyed()
+        {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+                "Device Open Error", 
+                "The device serial communication was destroyed.", 
+                "OK");
+#endif
+        }
+
+        private static void AlreadyOpening()
+        {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+                "Device Open Error", 
+                "A device serial communication is already being opened.", 
+                "OK");
+#endif
         }
 
         private void OpenInternal()
@@ -78,6 +134,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (!this || !_spup || !_opening)
             {
                 MetaverseProgram.Logger.Log("Device open cancelled");
+                if (this && _opening)
+                    OpenFailed();
                 _opening = false;
                 return;
             }
@@ -88,6 +146,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, "OpenMethod", (int)_openSystem);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, "VendorID", _data.Vendor);
+                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, "Port", _data.PortName ?? "");
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, "ProductID", _data.Product);
                 if (_openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb or MetaverseSerialPortUtilityInterop.OpenSystem.Pci)
                 {
@@ -98,12 +157,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _deviceNameProperty, "DeviceName", string.IsNullOrEmpty(_data.SerialNumber) 
                     ? _data.Vendor
                     : _data.SerialNumber);
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, "Port", _data.PortName ?? "");
             }
             catch (Exception e)
             {
-                _opening = false;
                 MetaverseProgram.Logger.Log("Device open error: " + e.Message);
+                OpenFailed();
+                return;
             }
 
             MetaverseProgram.Logger.Log("Specified device to open: VID:" + _data.Vendor + " PID:" + _data.Product + " SER:" + _data.SerialNumber + " PORT:" + _data.PortName);
@@ -111,25 +170,122 @@ namespace MetaverseCloudEngine.Unity.SPUP
             var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
                 () => !this || !_spup || 
-                      !MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(_spup, ref _isOpenProcessingMethod, "IsOpenProcessing")
+                      !IsOpenProcessing()
                       || !_opening || DateTime.UtcNow > timeout, 
                 () =>
                 {
-                    if (!_opening) return;
-                    _opening = false;
-                
-                    if (DateTime.UtcNow > timeout)
+                    if (!this)
                     {
-                        MetaverseProgram.Logger.Log("Device open timeout");
+                        _opening = false;
+                        return;
+                    }
+
+                    if (!_opening)
+                    {
+                        OpenFailed(false);
                         return;
                     }
                 
-                    if (!this) return;
+                    if (DateTime.UtcNow > timeout)
+                    {
+                        OpenFailed();
+                        return;
+                    }
+
                     MetaverseProgram.Logger.Log("Opening device");
+
+                    OpenSerial();
+                    if (!IsOpenProcessing())
+                    {
+                        OpenFailed();
+                        return;
+                    }
+
+                    timeout = DateTime.UtcNow.AddSeconds(15);
+                    MetaverseDispatcher.WaitUntil(
+                        () => !this || 
+                              !_spup ||
+                              !IsOpenProcessing() || 
+                              !_opening ||
+                              DateTime.UtcNow > timeout ||
+                              (GetSerialNumber() == _data.SerialNumber && IsOpened()),
+                        () =>
+                        {
+                            if (!this)
+                            {
+                                _opening = false;
+                                return;
+                            }
+
+                            if (!_opening)
+                            {
+                                OpenFailed(false);
+                                return;
+                            }
                 
-                    MetaverseSerialPortUtilityInterop.CallInstanceMethod(_spup, ref _openMethod, "Open");
-                    onDeviceOpen?.Invoke();
+                            if (DateTime.UtcNow > timeout)
+                            {
+                                MetaverseProgram.Logger.Log("Device open timeout");
+                                OpenFailed();
+                                return;
+                            }
+
+                            if (GetSerialNumber() == _data.SerialNumber && IsOpened())
+                            {
+                                onStoppedOpening?.Invoke();
+                                onDeviceOpen?.Invoke();
+                                _opening = false;
+                            }
+                            else
+                                OpenFailed();
+                        });
                 });
+        }
+
+        private void OpenSerial()
+        {
+            MetaverseSerialPortUtilityInterop.CallInstanceMethod(_spup, ref _openMethod, "Open");
+        }
+
+        private void CloseSerial()
+        {
+            MetaverseSerialPortUtilityInterop.CallInstanceMethod(_spup, ref _closeMethod, "Close");
+        }
+
+        private void OpenFailed(bool showDialog = true)
+        {
+            if (this && _opening)
+                onStoppedOpening?.Invoke();
+            RepaintOpenedState();
+            _opening = false;
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+            if (showDialog)
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+                    "Device Open Error", 
+                    "Failed to open device", 
+                    "OK");
+#endif
+        }
+
+        private bool IsOpenProcessing()
+        {
+            return _spup &&
+                   MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(_spup, ref _isOpenProcessingMethod,
+                       "IsOpenProcessing");
+        }
+
+        private string GetSerialNumber()
+        {
+            return !_spup
+                ? null
+                : MetaverseSerialPortUtilityInterop.GetProperty<string>(_spup, ref _serialNumberProperty,
+                    "SerialNumber");
+        }
+
+        private bool IsOpened()
+        {
+            return _spup &&
+                   MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(_spup, ref _isOpenedMethod, "IsOpened");
         }
     }
 }

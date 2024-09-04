@@ -52,11 +52,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [UsedImplicitly]
         public void BuildNavMesh()
         {
-            if (Application.isEditor)
-            {
-                CollectAgentInfo();
-            }
-            
             //var sources = Surface.CollectSources();
             var sources = Surface.GetType().GetMethod("CollectSources", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!.Invoke(Surface, null) as List<NavMeshBuildSource>;
 
