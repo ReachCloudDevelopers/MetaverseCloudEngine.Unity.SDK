@@ -205,55 +205,80 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseProgram.Logger.Log("Opening device");
 
                     OpenSerial();
-                    if (!IsOpenProcessing())
-                    {
-                        MetaverseProgram.Logger.Log("Device open error: Open processing failed");
-                        OpenFailed();
-                        return;
-                    }
-
+                    
                     timeout = DateTime.UtcNow.AddSeconds(15);
-                    MetaverseDispatcher.WaitUntil(
-                        () => !this || 
-                              !_spup ||
-                              !IsOpenProcessing() || 
-                              !_opening ||
-                              DateTime.UtcNow > timeout ||
-                              IsThisDeviceOpened(),
-                        () =>
+                    MetaverseDispatcher.WaitUntil(() =>
+                        !this ||
+                        !_spup ||
+                        IsThisDeviceOpened() ||
+                        IsOpenProcessing() ||
+                        !_opening ||
+                        DateTime.UtcNow > timeout, () =>
+                    {
+                        if (!this)
                         {
-                            if (!this)
+                            _opening = false;
+                            return;
+                        }
+                        
+                        if (!_opening)
+                        {
+                            OpenFailed(false);
+                            return;
+                        }
+                        
+                        if (DateTime.UtcNow > timeout)
+                        {
+                            MetaverseProgram.Logger.Log("Device open timeout");
+                            OpenFailed();
+                            return;
+                        }
+                        
+                        MetaverseProgram.Logger.Log("Device processing finished");
+                        
+                        timeout = DateTime.UtcNow.AddSeconds(15);
+                        MetaverseDispatcher.WaitUntil(
+                            () => !this || 
+                                  !_spup ||
+                                  !IsOpenProcessing() || 
+                                  !_opening ||
+                                  DateTime.UtcNow > timeout ||
+                                  IsThisDeviceOpened(),
+                            () =>
                             {
-                                _opening = false;
-                                return;
-                            }
+                                if (!this)
+                                {
+                                    _opening = false;
+                                    return;
+                                }
 
-                            if (!_opening)
-                            {
-                                OpenFailed(false);
-                                return;
-                            }
-                
-                            if (DateTime.UtcNow > timeout)
-                            {
-                                MetaverseProgram.Logger.Log("Device open timeout");
-                                OpenFailed();
-                                return;
-                            }
+                                if (!_opening)
+                                {
+                                    OpenFailed(false);
+                                    return;
+                                }
+                    
+                                if (DateTime.UtcNow > timeout)
+                                {
+                                    MetaverseProgram.Logger.Log("Device open timeout");
+                                    OpenFailed();
+                                    return;
+                                }
 
-                            if (IsThisDeviceOpened())
-                            {
-                                onStoppedOpening?.Invoke();
-                                onDeviceOpen?.Invoke();
-                                MetaverseProgram.Logger.Log("Device opened.");
-                                _opening = false;
-                            }
-                            else
-                            {
-                                MetaverseProgram.Logger.Log("Serial Number: " + GetSerialNumber() + " Expected Serial Number: " + _data.SerialNumber + " Opened: " + IsOpened());
-                                OpenFailed();
-                            }
-                        });
+                                if (IsThisDeviceOpened())
+                                {
+                                    onStoppedOpening?.Invoke();
+                                    onDeviceOpen?.Invoke();
+                                    MetaverseProgram.Logger.Log("Device opened.");
+                                    _opening = false;
+                                }
+                                else
+                                {
+                                    MetaverseProgram.Logger.Log("Serial Number: " + GetSerialNumber() + " Expected Serial Number: " + _data.SerialNumber + " Opened: " + IsOpened());
+                                    OpenFailed();
+                                }
+                            });
+                    });
                 });
         }
 
