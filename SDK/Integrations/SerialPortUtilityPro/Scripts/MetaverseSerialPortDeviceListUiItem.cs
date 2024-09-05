@@ -85,7 +85,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 CloseSerial();
                 MetaverseProgram.Logger.Log("Closing device...");
-                RepaintOpenedState();
                 
                 var timeout = DateTime.UtcNow.AddSeconds(15);
                 MetaverseDispatcher.WaitUntil(() => !this || !_spup || !_opening || DateTime.UtcNow > timeout || (!IsOpened() && !IsThisDeviceOpened()), () =>
@@ -105,7 +104,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         return;
                     }
                     
-                    RepaintOpenedState();
                     MetaverseProgram.Logger.Log("Device closed");
                     OpenInternal();
                 });
@@ -236,7 +234,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         
                         MetaverseProgram.Logger.Log("Device processing finished");
                         
-                        timeout = DateTime.UtcNow.AddSeconds(15);
+                        timeout = DateTime.UtcNow.AddSeconds(5);
                         MetaverseDispatcher.WaitUntil(
                             () => !this || 
                                   !_spup ||
@@ -296,7 +294,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (this && _opening)
                 onStoppedOpening?.Invoke();
-            RepaintOpenedState();
             _opening = false;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
             if (showDialog && !IsThisDeviceOpened())
@@ -309,7 +306,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private bool IsThisDeviceOpened()
         {
-            return GetSerialNumber()?.ToLower() == _data.SerialNumber?.ToLower() && IsOpened();
+            var serNum = _data.SerialNumber;
+            if (string.IsNullOrEmpty(serNum))
+                serNum = _data.Vendor;
+            return GetSerialNumber() == serNum && IsOpened();
         }
 
         private bool IsOpenProcessing()

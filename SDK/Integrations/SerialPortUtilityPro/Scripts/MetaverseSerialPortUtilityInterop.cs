@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace MetaverseCloudEngine.Unity.SPUP
 {
@@ -369,5 +370,66 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		private static int spapDeviceListAvailable() => 0;
 		private static int spapDeviceList(int deviceNum, System.Text.StringBuilder deviceInfo, int bufferSize) => 0;
 #endif
+	    public static void AddSystemEventCallback(
+		    Component serialPortUtilityPro,
+		    ref FieldInfo systemEventObjectField,
+		    UnityAction<object, string> callback,
+		    ref UnityAction<object, string> callbackCache) =>
+		    AddSystemListener(ref callbackCache, ref systemEventObjectField, serialPortUtilityPro, callback);
+
+	    public static void RemoveSystemEventCallback(
+		    Component serialPortUtilityPro,
+		    ref FieldInfo onSystemEventField,
+		    UnityAction<object, string> onSystemEventCallback) => 
+		    RemoveSystemListener(onSystemEventCallback, ref onSystemEventField, serialPortUtilityPro);
+
+		private static void AddSystemListener(
+		    ref UnityAction<object, string> delegateCall,
+		    ref FieldInfo systemEventObjectField,
+		    Component spupComponent,
+		    UnityAction<object, string> callback)
+		{
+		    if (delegateCall is not null)
+		        RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
+
+		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
+
+		    // Get the event type, which should be UnityEvent<SerialPortUtilityPro, string>
+		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0]; // Get SerialPortUtilityPro type
+		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
+
+		    // Create the UnityAction<SerialPortUtilityPro, string> dynamically
+		    var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
+
+		    // Dynamically create the correct delegate
+		    var dynamicDelegate = Delegate.CreateDelegate(
+		        typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
+		        callback.Target,
+		        callback.Method
+		    );
+
+		    addListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
+		    delegateCall = callback;
+		}
+
+		private static void RemoveSystemListener(UnityAction<object, string> delegateCall, ref FieldInfo systemEventObjectField, Component spupComponent)
+		{
+		    if (delegateCall is null) return;
+
+		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
+		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
+		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
+
+		    var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
+
+		    // Dynamically create the correct delegate for removal
+		    var dynamicDelegate = Delegate.CreateDelegate(
+		        typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
+		        delegateCall.Target,
+		        delegateCall.Method
+		    );
+
+		    removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
+		}
     }
 }

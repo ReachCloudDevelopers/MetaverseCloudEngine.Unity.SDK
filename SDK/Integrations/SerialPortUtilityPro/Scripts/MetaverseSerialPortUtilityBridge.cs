@@ -66,9 +66,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void AddListener()
         {
             if (_delegateCall is not null)
-            {
                 RemoveListener();
-            }
             
             var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
             var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;

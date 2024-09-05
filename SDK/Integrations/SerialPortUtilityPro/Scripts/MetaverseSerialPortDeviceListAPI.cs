@@ -16,14 +16,35 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [SerializeField] private bool detectDevicesOnStart;
         public UnityEvent onAnyDeviceFound;
         public UnityEvent onNoDevicesFound;
+        public UnityEvent onSerialPortClosed;
+        public UnityEvent onSerialPortOpened;
         public UnityEvent<string, MetaverseSerialPortUtilityInterop.DeviceInfo, MetaverseSerialPortUtilityInterop.OpenSystem> onDeviceFound;
 
         private bool _listAfterPermissionsGranted;
         private MethodInfo _isOpenProcessingMethod;
+        private UnityAction<object, string> _onSystemEventCallback;
+        private FieldInfo _onSystemEventField;
 
         private void OnValidate()
         {
             MetaverseSerialPortUtilityInterop.EnsureComponent(ref serialPortUtilityPro, gameObject);
+        }
+
+        private void OnEventCallback(object spup, string eventType)
+        {
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (!this || !isActiveAndEnabled) return;
+                switch (eventType)
+                {
+                    case "OPENED":
+                        onSerialPortOpened?.Invoke();
+                        break;
+                    case "CLOSED":
+                        onSerialPortClosed?.Invoke();
+                        break;
+                }
+            });
         }
 
         private void Reset()
@@ -33,8 +54,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void Start()
         {
+            if (serialPortUtilityPro)
+                MetaverseSerialPortUtilityInterop.AddSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, OnEventCallback, ref _onSystemEventCallback);
+
             if (detectDevicesOnStart)
                 ListDevices();
+        }
+
+        private void OnDestroy()
+        {
+            if (serialPortUtilityPro)
+                MetaverseSerialPortUtilityInterop.RemoveSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, _onSystemEventCallback);
         }
 
         public void ListDevices()

@@ -21,6 +21,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             listApi.onAnyDeviceFound.AddListener(OnAnyDevices);
             listApi.onNoDevicesFound.AddListener(OnNoDevices);
             listApi.onDeviceFound.AddListener(OnDeviceFound);
+            listApi.onSerialPortOpened.AddListener(OnSerialPortOpened);
+            listApi.onSerialPortClosed.AddListener(OnSerialPortClosed);
 
             MetaverseSerialPortUtilityInterop.EnsureComponent(ref serialPortUtilityPro, gameObject);
         }
@@ -46,6 +48,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             listApi.onAnyDeviceFound.RemoveListener(OnAnyDevices);
             listApi.onNoDevicesFound.RemoveListener(OnNoDevices);
             listApi.onDeviceFound.RemoveListener(OnDeviceFound);
+            listApi.onSerialPortOpened.RemoveListener(OnSerialPortOpened);
+            listApi.onSerialPortClosed.RemoveListener(OnSerialPortClosed);
             
             ClearAllDeviceUis();
         }
@@ -106,6 +110,22 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void ClearAllDeviceUis()
         {
             foreach (var item in _items.Where(item => item)) Destroy(item.gameObject);
+        }
+
+        private void OnSerialPortOpened()
+        {
+            if (_ignoreEvents)
+                return;
+            foreach (var item in _items)
+                item.RepaintOpenedState();
+        }
+
+        private void OnSerialPortClosed()
+        {
+            if (_ignoreEvents)
+                return;
+            foreach (var item in _items)
+                item.RepaintOpenedState();
         }
     }
 }
