@@ -131,6 +131,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     x.Name == methodName &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
+            
+            method?.Invoke(spupComponent, parameters);
         }
         
         public static T GetField<T>(Component spupComponent, ref FieldInfo field, string fieldName)

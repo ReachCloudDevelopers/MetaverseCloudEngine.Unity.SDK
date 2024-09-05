@@ -56,7 +56,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 return;
             }
 
-            if (GetSerialNumber() == _data.SerialNumber && IsOpened())
+            if (IsThisDeviceOpened())
                 onDeviceOpen?.Invoke();
             else onDeviceClosed?.Invoke();
         }
@@ -86,7 +86,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 CloseSerial();
                 MetaverseProgram.Logger.Log("Closing device...");
                 RepaintOpenedState();
-                MetaverseDispatcher.WaitForSeconds(1f, () =>
+                
+                var timeout = DateTime.UtcNow.AddSeconds(15);
+                MetaverseDispatcher.WaitUntil(() => !this || !_spup || !_opening || DateTime.UtcNow > timeout || (!IsOpened() && !IsThisDeviceOpened()), () =>
                 {
                     if (!this || !_spup || !_opening)
                     {
@@ -96,6 +98,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         return;
                     }
                     
+                    if (DateTime.UtcNow > timeout)
+                    {
+                        MetaverseProgram.Logger.Log("Device close timeout");
+                        OpenFailed();
+                        return;
+                    }
+                    
+                    RepaintOpenedState();
                     MetaverseProgram.Logger.Log("Device closed");
                     OpenInternal();
                 });
@@ -197,6 +207,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     OpenSerial();
                     if (!IsOpenProcessing())
                     {
+                        MetaverseProgram.Logger.Log("Device open error: Open processing failed");
                         OpenFailed();
                         return;
                     }
@@ -208,7 +219,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                               !IsOpenProcessing() || 
                               !_opening ||
                               DateTime.UtcNow > timeout ||
-                              (GetSerialNumber() == _data.SerialNumber && IsOpened()),
+                              IsThisDeviceOpened(),
                         () =>
                         {
                             if (!this)
@@ -230,14 +241,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 return;
                             }
 
-                            if (GetSerialNumber() == _data.SerialNumber && IsOpened())
+                            if (IsThisDeviceOpened())
                             {
                                 onStoppedOpening?.Invoke();
                                 onDeviceOpen?.Invoke();
+                                MetaverseProgram.Logger.Log("Device opened.");
                                 _opening = false;
                             }
                             else
+                            {
+                                MetaverseProgram.Logger.Log("Serial Number: " + GetSerialNumber() + " Expected Serial Number: " + _data.SerialNumber + " Opened: " + IsOpened());
                                 OpenFailed();
+                            }
                         });
                 });
         }
@@ -259,12 +274,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
             RepaintOpenedState();
             _opening = false;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-            if (showDialog)
+            if (showDialog && !IsThisDeviceOpened())
                 MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
                     "Device Open Error", 
                     "Failed to open device", 
                     "OK");
 #endif
+        }
+
+        private bool IsThisDeviceOpened()
+        {
+            return GetSerialNumber()?.ToLower() == _data.SerialNumber?.ToLower() && IsOpened();
         }
 
         private bool IsOpenProcessing()
