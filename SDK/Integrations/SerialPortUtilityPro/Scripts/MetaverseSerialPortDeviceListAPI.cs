@@ -41,6 +41,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         onSerialPortOpened?.Invoke();
                         break;
                     case "CLOSED":
+                    case "OPEN_ERROR":
+                    case "BT_DISCONNECT_TO_SERVERMODE":
                         onSerialPortClosed?.Invoke();
                         break;
                 }
@@ -147,7 +149,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             if (!string.IsNullOrEmpty(device.PortName))
                                 deviceNameText += $", PORT: {device.PortName}";
 
-                            if (!Application.isMobilePlatform && int.TryParse(device.Product, out var productId))
+                            if (/*!Application.isMobilePlatform && */!string.IsNullOrEmpty(device.Product) && int.TryParse(device.Product, out var productId))
                                 device.Product = productId.ToString("X");
 
                             onDeviceFound?.Invoke(deviceNameText, device, type);

@@ -125,7 +125,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_ignoreEvents)
                 return;
             foreach (var item in _items)
-                item.RepaintOpenedState();
+                item.RepaintOpenedState(true);
         }
     }
 }

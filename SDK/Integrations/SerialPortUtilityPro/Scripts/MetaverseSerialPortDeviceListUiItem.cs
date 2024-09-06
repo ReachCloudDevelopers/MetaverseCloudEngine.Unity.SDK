@@ -45,7 +45,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             RepaintOpenedState();
         }
 
-        public void RepaintOpenedState()
+        public void RepaintOpenedState(bool closed = false)
         {
             if (!this)
                 return;
@@ -56,7 +56,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 return;
             }
 
-            if (IsThisDeviceOpened())
+            if (IsThisDeviceOpened() && !closed)
                 onDeviceOpen?.Invoke();
             else onDeviceClosed?.Invoke();
         }
