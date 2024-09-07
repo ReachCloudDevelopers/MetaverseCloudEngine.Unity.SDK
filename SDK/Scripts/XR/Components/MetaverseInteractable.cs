@@ -49,7 +49,6 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         public class NonVRAnimation
         {
             [Required]
-            [Title("$" + nameof(name))]
             [Tooltip("The name of the non VR animation.")]
             public string name;
             [Tooltip("A cooldown time used to prevent another animation from begin played until this time passes.")]
@@ -61,8 +60,6 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             public AvatarPlayableAnimationPreset preset;
             [Tooltip("Can this animation be selected using the " + nameof(PlayNextNonVRAnimation) + " method?")]
             public bool isSequencable = true;
-
-            [Header("Callbacks")]
             public UnityEvent onStarted;
             public UnityEvent onStopped;
 
@@ -80,6 +77,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private const float VelocityDamping = 1;
         private const float VelocityScale = 1;
         private const float GlobalInteractionCooldown = 0.25f;
+        private const int MaxVelocityFrames = 5;
 
         #endregion
 
@@ -141,6 +139,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private Transform _player;
         private Vector3 _lastPlayerPos;
         private Quaternion _lastPlayerRot;
+        private Vector3[] _velocityFrames;
+        private Vector3[] _angularVelocityFrames;
+        private int _velocityFrame;
 
         private PlayerAvatarContainer _playerAvatar;
         private float _currentNonVRAnimationCooldown;
@@ -485,9 +486,13 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         /// <returns>The final world position that this interactor should be at.</returns>
         public Vector3 GetInteractPosition(Transform interactableAttachPoint, Transform interactorAttachPoint, bool nonXR)
         {
-            var worldPos = (interactableAttachPoint || nonXR) ? interactorAttachPoint.position : (interactorAttachPoint.position + (_transform.rotation * _currentInteractOffset));
+            var worldPos = interactableAttachPoint || nonXR 
+                ? interactorAttachPoint.position 
+                : interactorAttachPoint.position + _transform.rotation * _currentInteractOffset;
+            
             if (!interactableAttachPoint) 
                 return worldPos;
+            
             var offset = _transform.rotation * _transform.InverseTransformPointUnscaled(interactableAttachPoint.position);
             worldPos -= offset;
             return worldPos;
@@ -1072,6 +1077,8 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 _rootRigidbody.maxAngularVelocity = _defaultAngularSpeed;
                 if (_isNonVrInteractor)
                     FreezeRootRigidbody();
+                else
+                    ApplyReleaseVelocity();
             }
 
             _isNonVrInteractor = false;
@@ -1098,6 +1105,48 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             }
             
             _hand2AttachPoint = null;
+        }
+
+        private void ApplyReleaseVelocity()
+        {
+            try
+            {
+                if (_velocityFrames == null || _velocityFrames.Length == 0)
+                    return;
+                
+                var frames = Mathf.Min(MaxVelocityFrames, _velocityFrame);
+                var velocity = Vector3.zero;
+                var angularVelocity = Vector3.zero;
+                for (var i = 0; i < frames; i++)
+                {
+                    velocity += _velocityFrames[i];
+                    angularVelocity += _angularVelocityFrames[i];
+                }
+                
+                velocity /= frames;
+                angularVelocity /= frames;
+                
+                _rootRigidbody.velocity = velocity;
+                _rootRigidbody.angularVelocity = angularVelocity;
+                
+            }
+            finally
+            {
+                _velocityFrames = null;
+                _angularVelocityFrames = null;
+                _velocityFrame = 0;
+            }
+        }
+
+        private void TrackVelocity()
+        {
+            if (!_rootRigidbody)
+                return;
+            _velocityFrames ??= new Vector3[MaxVelocityFrames];
+            _angularVelocityFrames ??= new Vector3[MaxVelocityFrames];
+            _velocityFrames[_velocityFrame % MaxVelocityFrames] = _rootRigidbody.velocity;
+            _angularVelocityFrames[_velocityFrame % MaxVelocityFrames] = _rootRigidbody.angularVelocity;
+            _velocityFrame++;
         }
 
         private bool HandleSocketInteractions(SelectEnterEventArgs args)
