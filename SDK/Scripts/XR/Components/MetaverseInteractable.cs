@@ -1167,7 +1167,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             var velocity = (_targetPosition - _lastPosition) / Time.fixedDeltaTime;
             _lastPosition = _targetPosition;
             
-            var deltaRotation = Quaternion.Inverse(_lastRotation) * _targetRotation;
+            var deltaRotation = _targetRotation * Quaternion.Inverse(_lastRotation);
             var angularVelocity = new Vector3(
                 Mathf.DeltaAngle(0, Mathf.Round(deltaRotation.eulerAngles.x)),
                 Mathf.DeltaAngle(0, Mathf.Round(deltaRotation.eulerAngles.y)),
@@ -1432,7 +1432,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private void UpdatePosition(bool isFixedUpdate)
         {
             _targetPosition = GetInteractPosition(_hand1AttachPoint?.transform, _interactors[0].GetAttachTransform(this), _isNonVrInteractor);
-            if (isFixedUpdate)
+            if (isFixedUpdate || _currentInterpToTargetTime > InterpToTargetPositionDuration)
             {
                 if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
                     _interpPosition = _targetPosition;
@@ -1525,7 +1525,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             }
             finally
             {
-                if (isFixedUpdate)
+                if (isFixedUpdate || _currentInterpToTargetTime > InterpToTargetPositionDuration)
                 {
                     if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
                         _interpRotation = _targetRotation;

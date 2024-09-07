@@ -352,7 +352,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                         var ovrPose = OVRManager.GetOpenVRControllerOffset(
                             isLHand ? XRNode.LeftHand : XRNode.RightHand);
                         return new Pose(
-                            oculusTouchController.devicePosition.value + ovrPose.position + GetControllerPositionOffset(oculusTouchController.deviceRotation.value, ovrPose.orientation, isLHand, new Vector3(0, 0, 0.0425f)),
+                            oculusTouchController.devicePosition.value + ovrPose.position + GetControllerPositionOffset(oculusTouchController.deviceRotation.value, ovrPose.orientation, isLHand, new Vector3(0, 0, 0.045f)),
                             oculusTouchController.deviceRotation.value * ovrPose.orientation * GetControllerRotationOffset(isLHand));
                     }
 #endif
