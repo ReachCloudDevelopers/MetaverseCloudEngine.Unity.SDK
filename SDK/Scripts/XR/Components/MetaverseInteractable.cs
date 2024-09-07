@@ -252,14 +252,17 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
 #if UNITY_EDITOR
             var interactableLayer = LayerMask.NameToLayer("Interactable");
-            if (gameObject.layer != interactableLayer && UnityEditor.EditorUtility.DisplayDialog("Update Layer", "Would you like to change this object's layer to 'Interactable'?", "Yes", "No"))
+            if (interactableLayer != -1)
             {
-                gameObject.layer = interactableLayer;
+                if (gameObject.layer != interactableLayer && UnityEditor.EditorUtility.DisplayDialog("Update Layer", "Would you like to change this object's layer to 'Interactable'?", "Yes", "No"))
+                {
+                    gameObject.layer = interactableLayer;
 
-                var defaultLayer = LayerMask.NameToLayer("Default");
-                var children = gameObject.GetComponentsInChildren<Transform>().Where(x => x.gameObject.layer != defaultLayer).ToArray();
-                foreach (var child in children)
-                    child.gameObject.layer = interactableLayer;
+                    var defaultLayer = LayerMask.NameToLayer("Default");
+                    var children = gameObject.GetComponentsInChildren<Transform>().Where(x => x.gameObject.layer != defaultLayer).ToArray();
+                    foreach (var child in children)
+                        child.gameObject.layer = interactableLayer;
+                }
             }
 #endif
 
