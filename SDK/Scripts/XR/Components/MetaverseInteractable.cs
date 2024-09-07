@@ -18,11 +18,12 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 {
     /// <summary>
     /// Allows players to interact with objects on VR and non-VR platforms. This class utilizes the 
-    /// Unity XR Interaction Toolkit and derives from <see cref="XRSimpleInteractable"/>.
+    /// Unity XR Interaction Toolkit and derives from <see cref="XRBaseInteractable"/>.
     /// </summary>
     [DefaultExecutionOrder(int.MaxValue - 2)]
     [DeclareFoldoutGroup("Metaverse Interactions")]
     [HideMonoScript]
+    [HelpURL("https://reach-cloud.gitbook.io/reach-explorer-documentation/metaverse-cloud-engine-sdk/unity-engine-sdk/components/interactions/metaverse-interactable")]
     public class MetaverseInteractable : XRBaseInteractable
     {
         #region Classes & Structs
@@ -78,6 +79,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private const float VelocityScale = 1;
         private const float GlobalInteractionCooldown = 0.25f;
         private const int MaxVelocityFrames = 5;
+        private const float InterpToTargetPositionDuration = 0.25f;
 
         #endregion
 
@@ -134,11 +136,16 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private Quaternion _initialRotation;
         private Quaternion _initialRotationOffset;
         private Vector3 _targetPosition;
-        private Quaternion _interactableRot;
+        private Quaternion _targetRotation;
+        private Vector3 _interpPosition;
+        private Quaternion _interpRotation;
+        private float _currentInterpToTargetTime;
         private Rigidbody _rootRigidbody;
         private Transform _player;
         private Vector3 _lastPlayerPos;
         private Quaternion _lastPlayerRot;
+        private Vector3 _lastPosition;
+        private Quaternion _lastRotation;
         private Vector3[] _velocityFrames;
         private Vector3[] _angularVelocityFrames;
         private int _velocityFrame;
@@ -308,6 +315,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (_interactors.Count <= 0) return;
             UpdateGrab(true);
             ArtificialBreaking();
+            TrackVelocity();
         }
 
         private void OnTransformParentChanged()
@@ -833,6 +841,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private void OnInitialSelectEnter(SelectEnterEventArgs args)
         {
+            _currentInterpToTargetTime = 0;
+            _interpPosition = _transform.position;
+            _interpRotation = _transform.rotation;
+            
             _isInSocket = args.interactorObject is XRSocketInteractor;
 
             DetectIfChildInteractable();
@@ -856,7 +868,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (!_rootRigidbody) return;
 
             var currentPosition = _targetPosition;
-            var currentRotation = _interactableRot;
+            var currentRotation = _targetRotation;
 
             Freeze();
             
@@ -1112,6 +1124,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private void ApplyReleaseVelocity()
         {
+            if (_isNonVrInteractor || _isPhysicsAttachment)
+                return;
+            if (!_rootRigidbody || _rootRigidbody.isKinematic)
+                return;
             try
             {
                 if (_velocityFrames == null || _velocityFrames.Length == 0)
@@ -1143,12 +1159,25 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private void TrackVelocity()
         {
-            if (!_rootRigidbody)
+            if (_isNonVrInteractor || _isPhysicsAttachment)
                 return;
+            if (!_rootRigidbody || _rootRigidbody.isKinematic)
+                return;
+            
+            var velocity = (_targetPosition - _lastPosition) / Time.fixedDeltaTime;
+            _lastPosition = _targetPosition;
+            
+            var deltaRotation = Quaternion.Inverse(_lastRotation) * _targetRotation;
+            var angularVelocity = new Vector3(
+                Mathf.DeltaAngle(0, Mathf.Round(deltaRotation.eulerAngles.x)),
+                Mathf.DeltaAngle(0, Mathf.Round(deltaRotation.eulerAngles.y)),
+                Mathf.DeltaAngle(0, Mathf.Round(deltaRotation.eulerAngles.z))) / Time.fixedDeltaTime * Mathf.Deg2Rad;
+            _lastRotation = _targetRotation;
+            
             _velocityFrames ??= new Vector3[MaxVelocityFrames];
+            _velocityFrames[_velocityFrame % MaxVelocityFrames] = velocity;
             _angularVelocityFrames ??= new Vector3[MaxVelocityFrames];
-            _velocityFrames[_velocityFrame % MaxVelocityFrames] = _rootRigidbody.velocity;
-            _angularVelocityFrames[_velocityFrame % MaxVelocityFrames] = _rootRigidbody.angularVelocity;
+            _angularVelocityFrames[_velocityFrame % MaxVelocityFrames] = angularVelocity;
             _velocityFrame++;
         }
 
@@ -1176,14 +1205,17 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         {
             if (!isFixedUpdate && !IsClimbable)
                 MoveWithPlayer();
-            
+
             if (isFixedUpdate)
+            {
+                _currentInterpToTargetTime += Time.fixedDeltaTime;
                 UpdateAvatarAnimation();
+            }
 
             if (!_isPhysicsAttachment)
             {
                 UpdatePosition(isFixedUpdate);
-                UpdateRotationAndScale(isFixedUpdate);
+                UpdateRotation(isFixedUpdate);
             }
 
             _initialGrab = false;
@@ -1400,26 +1432,36 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private void UpdatePosition(bool isFixedUpdate)
         {
             _targetPosition = GetInteractPosition(_hand1AttachPoint?.transform, _interactors[0].GetAttachTransform(this), _isNonVrInteractor);
+            if (isFixedUpdate)
+            {
+                if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
+                    _interpPosition = _targetPosition;
+                else
+                {
+                    var t = _currentInterpToTargetTime / InterpToTargetPositionDuration;
+                    _interpPosition = Vector3.Lerp(_interpPosition, _targetPosition, t);
+                }
+            }
 
             switch (usePhysicsTracking)
             {
                 case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
-                    VelocityTrackPosition(_targetPosition);
+                    VelocityTrackPosition(_interpPosition);
                     break;
                 case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic:
-                    _rootRigidbody.position = _targetPosition;
+                    _rootRigidbody.position = _interpPosition;
                     break;
                 default:
                 {
                     if (isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic)
-                        VelocityTrackPosition(_targetPosition);
-                    _transform.position = _targetPosition;
+                        VelocityTrackPosition(_interpPosition);
+                    _transform.position = _interpPosition;
                     break;
                 }
             }
         }
 
-        private void UpdateRotationAndScale(bool isFixedUpdate)
+        private void UpdateRotation(bool isFixedUpdate)
         {
             if (_interactors.Count == 0)
                 return;
@@ -1434,49 +1476,63 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 var posB = _interactors[1].GetAttachTransform(this).position;
                 currentDelta = posB - posA;
             }
-
-            if (!enableRotation) return;
-            if (_interactors.Count == 1)
+            try
             {
-                _interactableRot = _interactors[0].GetAttachTransform(this).rotation * _initialRotationOffset;
-                switch (usePhysicsTracking)
+                if (_interactors.Count == 1)
                 {
-                    case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
-                        VelocityTrackRotation(_interactableRot);
-                        break;
-                    default:
+                    _targetRotation = _interactors[0].GetAttachTransform(this).rotation * _initialRotationOffset;
+                    switch (usePhysicsTracking)
                     {
-                        if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
-                            VelocityTrackRotation(_interactableRot);
-                        _transform.rotation = _interactableRot;
-                        break;
+                        case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                            VelocityTrackRotation(_interpRotation);
+                            break;
+                        default:
+                        {
+                            if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
+                                VelocityTrackRotation(_interpRotation);
+                            _transform.rotation = _interpRotation;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    if (_hand2AttachPoint == null)
+                    {
+                        var rotationDelta = Quaternion.FromToRotation(_initialDelta.normalized, currentDelta.normalized);
+                        _targetRotation = rotationDelta * _initialRotation;
+                    }
+                    else
+                        _targetRotation = Quaternion.LookRotation(currentDelta.normalized, _interactors[0].transform.up) * _initialRotationOffset;
+
+                    switch (usePhysicsTracking)
+                    {
+                        case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                            VelocityTrackRotation(_interpRotation);
+                            break;
+                        case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic:
+                            _rootRigidbody.rotation = _interpRotation;
+                            break;
+                        default:
+                        {
+                            if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
+                                VelocityTrackRotation(_interpRotation);
+                            _transform.rotation = _interpRotation;
+                            break;
+                        }
                     }
                 }
             }
-            else
+            finally
             {
-                if (_hand2AttachPoint == null)
+                if (isFixedUpdate)
                 {
-                    var rotationDelta = Quaternion.FromToRotation(_initialDelta.normalized, currentDelta.normalized);
-                    _interactableRot = rotationDelta * _initialRotation;
-                }
-                else
-                    _interactableRot = Quaternion.LookRotation(currentDelta.normalized, _interactors[0].transform.up) * _initialRotationOffset;
-
-                switch (usePhysicsTracking)
-                {
-                    case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
-                        VelocityTrackRotation(_interactableRot);
-                        break;
-                    case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic:
-                        _rootRigidbody.rotation = _interactableRot;
-                        break;
-                    default:
+                    if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
+                        _interpRotation = _targetRotation;
+                    else
                     {
-                        if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
-                            VelocityTrackRotation(_interactableRot);
-                        _transform.rotation = _interactableRot;
-                        break;
+                        var t = _currentInterpToTargetTime / InterpToTargetPositionDuration;
+                        _interpRotation = Quaternion.Slerp(_interpRotation, _targetRotation, t);
                     }
                 }
             }
