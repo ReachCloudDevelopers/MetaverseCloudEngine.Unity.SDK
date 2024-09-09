@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     {
                         if (_directInteractor.hasSelection)
                         {
-                            if (!allowHoverWhileSelected && _directInteractor.interactablesHovered.Count > 0)
+                            if (allowHoverWhileSelected && _directInteractor.interactablesHovered.Count > 0)
                             {
                                 var potentialTarget =
                                     _directInteractor.interactablesHovered.FirstOrDefault(x =>
@@ -84,7 +84,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                             _target = newTarget;
                             _hasTarget = _target;
                             if (_hasTarget)
+                            {
+                                _enabledIndicator = false;
                                 onTargetChanged?.Invoke(_target);
+                            }
                             else
                                 onTargetLost?.Invoke();
                         }
