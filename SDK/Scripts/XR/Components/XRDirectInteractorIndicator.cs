@@ -15,7 +15,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         
         [Required]
         [SerializeField] private GameObject indicator;
-        [FormerlySerializedAs("hideWhenSelectionActive")] [SerializeField] private bool allowHoverWhileSelected;
+        [SerializeField] private bool allowHoverWhileSelected;
         [SerializeField] private UnityEvent<string> onInteractionText;
         [SerializeField] private string defaultInteractionText = "Interact";
         [SerializeField] private UnityEvent<Transform> onTargetChanged;
@@ -95,7 +95,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 {
                     if (!_enabledIndicator)
                     {
-                        _indicatorRelativePos = _target!.gameObject.GetLocalTangibleBounds().center;
+                        _indicatorRelativePos = CalculateTargetRelativeBounds();
                         if (indicator)
                             indicator.SetActive(true);
                         _enabledIndicator = true;
@@ -118,6 +118,22 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             {
                 _hasTarget = false;
             }
+        }
+
+        private Vector3 CalculateTargetRelativeBounds()
+        {
+            if (!_target.TryGetComponent(out IXRInteractable interactable))
+                return Vector3.zero;
+
+            var colliders = interactable.colliders;
+            if (colliders == null || colliders.Count == 0)
+                return Vector3.zero;
+            
+            var bounds = new Bounds(colliders[0].transform.position, Vector3.zero);
+            foreach (var col in colliders)
+                bounds.Encapsulate(col.bounds);
+            
+            return _target.InverseTransformPoint(bounds.center);
         }
     }
 }
