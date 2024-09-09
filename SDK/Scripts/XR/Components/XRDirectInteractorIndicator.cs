@@ -1,6 +1,8 @@
-﻿using TMPro;
+﻿using System.Linq;
 using TriInspectorMVCE;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Serialization;
 using UnityEngine.XR.Interaction.Toolkit;
 
 namespace MetaverseCloudEngine.Unity.XR.Components
@@ -13,21 +15,34 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         
         [Required]
         [SerializeField] private GameObject indicator;
-        [Header("UI (Optional)")]
-        [SerializeField] private TMP_Text interactionText;
+        [FormerlySerializedAs("hideWhenSelectionActive")] [SerializeField] private bool allowHoverWhileSelected;
+        [SerializeField] private UnityEvent<string> onInteractionText;
         [SerializeField] private string defaultInteractionText = "Interact";
-        
+        [SerializeField] private UnityEvent<Transform> onTargetChanged;
+        [SerializeField] private UnityEvent onTargetLost;
+
         private XRDirectInteractor _directInteractor;
         private Transform _target;
         private bool _hasTarget;
         private bool _enabledIndicator;
         private float _nextUpdateTime;
+        private Vector3 _indicatorRelativePos;
 
         private void Awake()
         {
             _directInteractor = GetComponent<XRDirectInteractor>();
             if (!_directInteractor)
                 enabled = false;
+            onInteractionText ??= new UnityEvent<string>();
+            onInteractionText?.Invoke("");
+        }
+
+        private void OnDisable()
+        {
+            if (indicator)
+                indicator.SetActive(false);
+            _enabledIndicator = false;
+            onInteractionText?.Invoke("");
         }
 
         private void LateUpdate()
@@ -37,43 +52,58 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 if (MVUtils.CachedTime >= _nextUpdateTime)
                 {
                     _nextUpdateTime += UpdateInterval;
-                    _target = null;
-                    if (_directInteractor.hasSelection)
+                    Transform newTarget = null;
+                    try
                     {
-                        if (_directInteractor.interactablesHovered.Count > 0)
-                            _target = _directInteractor.interactablesHovered[0].transform;
-                    }
-                    else
-                    {
-                        for (var i = 0; i < _directInteractor.targetsForSelection.Count; i++)
+                        if (_directInteractor.hasSelection)
                         {
-                            var xrSelectInteractable = _directInteractor.targetsForSelection[i];
-                            if (xrSelectInteractable.isSelected) continue;
-                            _target = xrSelectInteractable.transform;
-                            break;
+                            if (!allowHoverWhileSelected && _directInteractor.interactablesHovered.Count > 0)
+                            {
+                                var potentialTarget =
+                                    _directInteractor.interactablesHovered.FirstOrDefault(x =>
+                                        x is IXRSelectInteractable s && s.IsSelectableBy(_directInteractor) && (!s.isSelected || (s.selectMode == InteractableSelectMode.Multiple && s.interactorsSelecting.Count == 1)));
+                                if (potentialTarget != null)
+                                    newTarget = potentialTarget.transform;
+                            }
+                        }
+                        else
+                        {
+                            foreach (var xrSelectInteractable in 
+                                     _directInteractor.targetsForSelection
+                                         .Where(xrSelectInteractable => xrSelectInteractable.IsSelectableBy(_directInteractor) && !xrSelectInteractable.isSelected))
+                            {
+                                newTarget = xrSelectInteractable.transform;
+                                break;
+                            }
                         }
                     }
-                    _hasTarget = _target;
+                    finally
+                    {
+                        if (_target != newTarget)
+                        {
+                            _target = newTarget;
+                            _hasTarget = _target;
+                            if (_hasTarget)
+                                onTargetChanged?.Invoke(_target);
+                            else
+                                onTargetLost?.Invoke();
+                        }
+                    }
                 }
 
                 if (_hasTarget && _directInteractor.allowHover && _directInteractor.hasHover)
                 {
                     if (!_enabledIndicator)
                     {
+                        _indicatorRelativePos = _target!.gameObject.GetLocalTangibleBounds().center;
                         if (indicator)
                             indicator.SetActive(true);
                         _enabledIndicator = true;
                     }
-                    indicator.transform.position = _target!.position;
-                    if (_target.TryGetComponent(out XRInteractionMetadata metadata))
-                    {
-                        if (interactionText)
-                            interactionText.text = metadata.interactionText;
-                    }
-                    else if (interactionText)
-                    {
-                        interactionText.text = defaultInteractionText;
-                    }
+                    indicator.transform.position = _target!.TransformPoint(_indicatorRelativePos);
+                    onInteractionText?.Invoke(_target.TryGetComponent(out XRInteractionMetadata metadata)
+                        ? metadata.interactionText
+                        : defaultInteractionText);
                     _enabledIndicator = true;
                 }
                 else if (_enabledIndicator)
@@ -81,6 +111,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     if (indicator)
                         indicator.SetActive(false);
                     _enabledIndicator = false;
+                    onInteractionText?.Invoke("");
                 }
             }
             catch
