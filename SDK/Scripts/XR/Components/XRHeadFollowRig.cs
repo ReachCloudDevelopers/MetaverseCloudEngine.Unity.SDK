@@ -43,7 +43,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             {
                 Quaternion targetRot = xrHead.rotation;
                 Vector3 targetPos = xrRoot.InverseTransformPoint(xrHead.position);
-                targetPos.y = 0;
+                targetPos.y -= 1;
                 targetPos = xrRoot.TransformPoint(targetPos);
 
                 if (forceUpdate || Mathf.Abs(Quaternion.Angle(_lastRot, targetRot)) > angleThreshold || Vector3.Distance(targetPos, _lastPos) > positionThreshold)

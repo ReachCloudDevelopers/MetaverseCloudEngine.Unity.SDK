@@ -1217,8 +1217,8 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (!_rootRigidbody || _rootRigidbody.isKinematic)
                 return;
             
-            var velocity = (_targetPosition - _lastPosition) / Time.fixedDeltaTime;
-            _lastPosition = _targetPosition;
+            var velocity = (_rootRigidbody.worldCenterOfMass - _lastPosition) / Time.fixedDeltaTime;
+            _lastPosition = _rootRigidbody.worldCenterOfMass;
             
             var deltaRotation = _targetRotation * Quaternion.Inverse(_lastRotation);
             var angularVelocity = new Vector3(
