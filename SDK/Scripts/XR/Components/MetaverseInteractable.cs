@@ -100,7 +100,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         [SerializeField] private MetaverseInteractableAttachPoint[] attachPoints;
         [Tooltip("If greater than -1, will attach this interactable to the first empty socket with the given type whenever this interactable is de-selected completely.")]
         [Group("Metaverse Interactions")]
-        [SerializeField, Min(-1)] private int nonVRDetachSocketType = -1; 
+        [SerializeField, Min(-1)] private int nonVRDetachSocketType = -1;
 
         [Title("Physics")]
         [InfoBox("Define settings to use for physics interaction.")]
@@ -132,7 +132,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private Transform _transform;
         private Vector3 _initialDelta;
-        private Vector3 _currentInteractOffset;
+        private Vector3 _interactor0RelativeAttachPosition;
         private Quaternion _initialRotation;
         private Quaternion _initialRotationOffset;
         private Vector3 _targetPosition;
@@ -173,6 +173,8 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private float _attachmentBreakCheckCooldown;
         private bool _isPhysicsAttachment;
         private static readonly int UpperBodyStyleAnimationHash = Animator.StringToHash(UpperBodyStyleParam);
+        
+        private readonly Dictionary<IXRInteractor, Vector3> _interactorAttachPositionOffsets = new();
 
         #endregion
 
@@ -380,7 +382,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
             if (!_interactors.Remove(args.interactorObject))
                 return;
-
+            
+            _interactorAttachPositionOffsets.Remove(args.interactorObject);
+            
             ExitPhysics(args);
             UpdatePrimaryInteractor();
             OnInteractorsChanged();
@@ -497,9 +501,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         /// <returns>The final world position that this interactor should be at.</returns>
         public Vector3 GetInteractPosition(Transform interactableAttachPoint, Transform interactorAttachPoint, bool nonXR)
         {
+            const float zOffset = -0.1f;
             var worldPos = interactableAttachPoint || nonXR 
-                ? interactorAttachPoint.position 
-                : interactorAttachPoint.position + _transform.rotation * _currentInteractOffset;
+                ? interactorAttachPoint.position + interactorAttachPoint.rotation * new Vector3(0, 0, zOffset) 
+                : interactorAttachPoint.position + _transform.rotation * _interactor0RelativeAttachPosition;
             
             if (!interactableAttachPoint) 
                 return worldPos;
@@ -620,7 +625,51 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             foreach (var interactor in _interactors)
                 if (interactor != null && interactor.transform) interactionManager.SelectExit(interactor, this);
         }
-        
+
+        public bool MoveToSocketOrDeselect()
+        {
+            if (!_player)
+                return false;
+            if (!_isNonVrInteractor)
+                return false;
+
+            if (nonVRDetachSocketType == -1)
+            {
+                ExitAll();
+                return true;
+            }
+            
+            var bestEmptySocket = _player
+                .GetComponentsInChildren<MetaverseSocketIdentifier>()
+                .Where(x => x.socketType == nonVRDetachSocketType)
+                .Select(x => x.GetComponent<XRSocketInteractor>())
+                .FirstOrDefault(x => !x.hasSelection);
+            
+            if (!bestEmptySocket)
+            {
+                ExitAll();
+                return false;
+            }
+
+            ExitAll();
+            
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (!this) return;
+                if (!bestEmptySocket) return;
+                if (!bestEmptySocket.interactionManager) return;
+                bestEmptySocket.interactionManager.SelectEnter(bestEmptySocket, (IXRSelectInteractable)this);
+            });
+
+            return true;
+            
+            void ExitAll()
+            {
+                foreach (var interactor in _interactors.ToArray())
+                    interactionManager.SelectExit(interactor, this);
+            }
+        }
+
         #endregion
 
         #region Private Methods
@@ -1208,7 +1257,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
             if (isFixedUpdate)
             {
-                _currentInterpToTargetTime += Time.fixedDeltaTime;
+                UpdateInterpolationTimer();
                 UpdateAvatarAnimation();
             }
 
@@ -1219,6 +1268,11 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             }
 
             _initialGrab = false;
+        }
+
+        private void UpdateInterpolationTimer()
+        {
+            _currentInterpToTargetTime += Time.fixedDeltaTime;
         }
 
         private void ArtificialBreaking()
@@ -1252,50 +1306,6 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             CalculateInitialInteractionPoint();
         }
 
-        public bool MoveToSocketOrDeselect()
-        {
-            if (!_player)
-                return false;
-            if (!_isNonVrInteractor)
-                return false;
-
-            if (nonVRDetachSocketType == -1)
-            {
-                ExitAll();
-                return true;
-            }
-            
-            var bestEmptySocket = _player
-                .GetComponentsInChildren<MetaverseSocketIdentifier>()
-                .Where(x => x.socketType == nonVRDetachSocketType)
-                .Select(x => x.GetComponent<XRSocketInteractor>())
-                .FirstOrDefault(x => !x.hasSelection);
-            
-            if (!bestEmptySocket)
-            {
-                ExitAll();
-                return false;
-            }
-
-            ExitAll();
-            
-            MetaverseDispatcher.AtEndOfFrame(() =>
-            {
-                if (!this) return;
-                if (!bestEmptySocket) return;
-                if (!bestEmptySocket.interactionManager) return;
-                bestEmptySocket.interactionManager.SelectEnter(bestEmptySocket, (IXRSelectInteractable)this);
-            });
-
-            return true;
-            
-            void ExitAll()
-            {
-                foreach (var interactor in _interactors.ToArray())
-                    interactionManager.SelectExit(interactor, this);
-            }
-        }
-
         private void DetectIfChildInteractable()
         {
             _isChildInteractable = 
@@ -1305,7 +1315,36 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private void CalculateInitialInteractionPoint()
         {
-            _currentInteractOffset = Quaternion.Inverse(_transform.rotation) * (_transform.position - _interactors[0].GetAttachTransform(this).position);
+            _interactor0RelativeAttachPosition = Quaternion.Inverse(_transform.rotation) * (_transform.position - CalculateInteractorAttachPositionInWorldSpace(0));
+        }
+
+        private Vector3 CalculateInteractorAttachPositionInWorldSpace(int interactorIndex, bool useNearestColliderPos = true)
+        {
+            var xrSelectInteractor = _interactors[interactorIndex];
+            if (!useNearestColliderPos)
+                return xrSelectInteractor.GetAttachTransform(this).position;
+            
+            var interactorAttachTransform = xrSelectInteractor.GetAttachTransform(this);
+            if (_interactorAttachPositionOffsets.TryGetValue(xrSelectInteractor, out var offset))
+                return _transform.position + _transform.rotation * offset;
+            
+            Vector3 worldPos;
+            if (colliders.Count == 0)
+                worldPos = interactorAttachTransform.position;
+            else
+            {
+                // First iteration we find the closest point
+                var closestPoint = colliders.Select(x => new
+                {
+                    Collider = x,
+                    ClosestPoint = x.ClosestPoint(interactorAttachTransform.position)
+                }).OrderBy(x => Vector3.Distance(x.ClosestPoint, interactorAttachTransform.position)).First();
+                
+                worldPos = closestPoint.ClosestPoint;
+            }
+            
+            _interactorAttachPositionOffsets[xrSelectInteractor] = Quaternion.Inverse(_transform.rotation) * (worldPos - _transform.position);
+            return worldPos;
         }
 
         private void CalculateRotationOffset()
@@ -1319,24 +1358,19 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     if (!_isNonVrInteractor) _initialRotationOffset = Quaternion.Inverse(_interactors[0].GetAttachTransform(this).rotation) * transform.rotation;
                     else _initialRotationOffset = Quaternion.identity;
                 }
-            }
-            else
-            {
-                if (!enableRotation)
-                    return;
 
-                InitializeDelta();
+                return;
             }
+
+            if (enableRotation) InitializeDelta();
         }
 
         private void InitializeDelta()
         {
-            var interactorA = _interactors[0].GetAttachTransform(this).position;
-            var interactorB = _interactors[1].GetAttachTransform(this).position;
+            var interactorA = CalculateInteractorAttachPositionInWorldSpace(0, false);
+            var interactorB = CalculateInteractorAttachPositionInWorldSpace(1, false);
             _initialDelta = interactorB - interactorA;
-
-            if (enableRotation)
-                InitializeRotation();
+            if (enableRotation) InitializeRotation();
         }
 
         private void InitializeRotation()
@@ -1345,17 +1379,17 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             {
                 _initialRotationOffset = Quaternion.LookRotation(_initialDelta.normalized);
                 _initialRotation = _transform.rotation;
+                return;
             }
-            else
-            {
-                var pos1 = _hand1AttachPoint != null && _hand1AttachPoint.transform ? _hand1AttachPoint.transform.position : _interactors[0].transform.position;
-                var pos2 = _hand2AttachPoint.transform.position;
-                var delta = (pos2 - pos1).normalized;
-                var lookRot = Quaternion.LookRotation(delta.normalized, _interactors[0].transform.up);
-                var rotation = _transform.rotation;
-                _initialRotationOffset = Quaternion.Inverse(lookRot) * rotation;
-                _initialRotation = rotation;
-            }
+
+            var hasAttachPoint1 = _hand1AttachPoint != null && _hand1AttachPoint.transform;
+            var pos1 = hasAttachPoint1 ? _hand1AttachPoint.transform.position : CalculateInteractorAttachPositionInWorldSpace(0, false);
+            var pos2 = _hand2AttachPoint.transform.position;
+            var delta = (pos2 - pos1).normalized;
+            var lookRot = Quaternion.LookRotation(delta.normalized, _interactors[0].transform.up);
+            var rotation = _transform.rotation;
+            _initialRotationOffset = Quaternion.Inverse(lookRot) * rotation;
+            _initialRotation = rotation;
         }
 
         private void MoveWithPlayer()
@@ -1432,9 +1466,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private void UpdatePosition(bool isFixedUpdate)
         {
             _targetPosition = GetInteractPosition(_hand1AttachPoint?.transform, _interactors[0].GetAttachTransform(this), _isNonVrInteractor);
-            if (isFixedUpdate || _currentInterpToTargetTime > InterpToTargetPositionDuration)
+            if (isFixedUpdate || !IsInterpolating())
             {
-                if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
+                if (!IsInterpolating())
                     _interpPosition = _targetPosition;
                 else
                 {
@@ -1461,6 +1495,11 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             }
         }
 
+        private bool IsInterpolating()
+        {
+            return _currentInterpToTargetTime <= InterpToTargetPositionDuration;
+        }
+
         private void UpdateRotation(bool isFixedUpdate)
         {
             if (_interactors.Count == 0)
@@ -1469,71 +1508,71 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (!enableRotation)
                 return;
 
-            Vector3 currentDelta = default;
-            var posA = _interactors[0].GetAttachTransform(this).position;
-            if (_interactors.Count > 1)
+            if (_interactors.Count == 1)
             {
-                var posB = _interactors[1].GetAttachTransform(this).position;
-                currentDelta = posB - posA;
-            }
-            try
-            {
-                if (_interactors.Count == 1)
+                _targetRotation = _interactors[0].GetAttachTransform(this).rotation * _initialRotationOffset;
+                
+                InterpolateRotation(isFixedUpdate);
+                
+                switch (usePhysicsTracking)
                 {
-                    _targetRotation = _interactors[0].GetAttachTransform(this).rotation * _initialRotationOffset;
-                    switch (usePhysicsTracking)
+                    case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                        VelocityTrackRotation(_interpRotation);
+                        break;
+                    default:
                     {
-                        case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                        if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
                             VelocityTrackRotation(_interpRotation);
-                            break;
-                        default:
-                        {
-                            if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
-                                VelocityTrackRotation(_interpRotation);
-                            _transform.rotation = _interpRotation;
-                            break;
-                        }
+                        _transform.rotation = _interpRotation;
+                        break;
                     }
                 }
+                
+                return;
+            }
+
+            var posA = CalculateInteractorAttachPositionInWorldSpace(0, false);
+            var posB = CalculateInteractorAttachPositionInWorldSpace(1, false);
+            var currentDelta = posB - posA;
+
+            if (_hand2AttachPoint == null || !_hand2AttachPoint.transform)
+            {
+                var rotationDelta = Quaternion.FromToRotation(_initialDelta.normalized, currentDelta.normalized);
+                _targetRotation = rotationDelta * _initialRotation;
+            }
+            else
+                _targetRotation = Quaternion.LookRotation(currentDelta.normalized, _interactors[0].transform.up) * _initialRotationOffset;
+
+            InterpolateRotation(isFixedUpdate);
+            
+            switch (usePhysicsTracking)
+            {
+                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                    VelocityTrackRotation(_interpRotation);
+                    break;
+                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic:
+                    _rootRigidbody.rotation = _interpRotation;
+                    break;
+                default:
+                {
+                    if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
+                        VelocityTrackRotation(_interpRotation);
+                    _transform.rotation = _interpRotation;
+                    break;
+                }
+            }
+        }
+        
+        private void InterpolateRotation(bool isFixedUpdate)
+        {
+            if (isFixedUpdate || !IsInterpolating())
+            {
+                if (!IsInterpolating())
+                    _interpRotation = _targetRotation;
                 else
                 {
-                    if (_hand2AttachPoint == null)
-                    {
-                        var rotationDelta = Quaternion.FromToRotation(_initialDelta.normalized, currentDelta.normalized);
-                        _targetRotation = rotationDelta * _initialRotation;
-                    }
-                    else
-                        _targetRotation = Quaternion.LookRotation(currentDelta.normalized, _interactors[0].transform.up) * _initialRotationOffset;
-
-                    switch (usePhysicsTracking)
-                    {
-                        case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
-                            VelocityTrackRotation(_interpRotation);
-                            break;
-                        case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic:
-                            _rootRigidbody.rotation = _interpRotation;
-                            break;
-                        default:
-                        {
-                            if (isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic)
-                                VelocityTrackRotation(_interpRotation);
-                            _transform.rotation = _interpRotation;
-                            break;
-                        }
-                    }
-                }
-            }
-            finally
-            {
-                if (isFixedUpdate || _currentInterpToTargetTime > InterpToTargetPositionDuration)
-                {
-                    if (_currentInterpToTargetTime > InterpToTargetPositionDuration)
-                        _interpRotation = _targetRotation;
-                    else
-                    {
-                        var t = _currentInterpToTargetTime / InterpToTargetPositionDuration;
-                        _interpRotation = Quaternion.Slerp(_interpRotation, _targetRotation, t);
-                    }
+                    var t = _currentInterpToTargetTime / InterpToTargetPositionDuration;
+                    _interpRotation = Quaternion.Slerp(_interpRotation, _targetRotation, t);
                 }
             }
         }

@@ -33,7 +33,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
         [Group("Events")] public UnityEvent onReleased;
 
         private readonly List<InputDevice> _devices = new();
-        private readonly List<IXRInteractor> _interactor = new();
+        private readonly List<IXRInteractor> _interactors = new();
         private bool _pressed;
 
         private void Reset()
@@ -86,10 +86,10 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             
             for (var i = _devices.Count - 1; i >= 0; i--)
             {
-                if (!listenOnHover && _interactor[i] is IXRSelectInteractor selector && !selector.IsSelecting(interactable))
+                if (!listenOnHover && _interactors[i] is IXRSelectInteractor selector && !selector.IsSelecting(interactable))
                 {
                     _devices.Remove(_devices[i]);
-                    _interactor.Remove(selector);
+                    _interactors.Remove(selector);
                     if (_pressed)
                     {
                         onReleased?.Invoke();
@@ -98,10 +98,10 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
                     break;
                 }
                 
-                if (listenOnHover && _interactor[i] is IXRHoverInteractor hover && !hover.IsHovering(interactable))
+                if (listenOnHover && _interactors[i] is IXRHoverInteractor hover && !hover.IsHovering(interactable))
                 {
                     _devices.Remove(_devices[i]);
-                    _interactor.Remove(hover);
+                    _interactors.Remove(hover);
                     if (_pressed)
                     {
                         onReleased?.Invoke();
@@ -162,7 +162,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             var device = InputDevices.GetDeviceAtXRNode(controller.XRNode);
             if (!device.isValid) return;
             _devices.Add(device);
-            _interactor.Add(interactor);
+            _interactors.Add(interactor);
         }
 
         private void RemoveDevice(IXRInteractor interactor)
@@ -170,7 +170,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
             var controller = interactor.transform.GetComponent<MetaverseXRController>();
             if (!controller) return;
             _devices.Remove(InputDevices.GetDeviceAtXRNode(controller.XRNode));
-            _interactor.Remove(interactor);
+            _interactors.Remove(interactor);
         }
 
         private void FindInteractable()
