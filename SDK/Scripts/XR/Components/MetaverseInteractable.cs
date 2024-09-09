@@ -149,6 +149,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private Vector3[] _velocityFrames;
         private Vector3[] _angularVelocityFrames;
         private int _velocityFrame;
+        private LayerMask _originalRigidbodyExcludeLayers;
 
         private PlayerAvatarContainer _playerAvatar;
         private float _currentNonVRAnimationCooldown;
@@ -501,9 +502,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         /// <returns>The final world position that this interactor should be at.</returns>
         public Vector3 GetInteractPosition(Transform interactableAttachPoint, Transform interactorAttachPoint, bool nonXR)
         {
+            const float yOffset = -0.04f;
             const float zOffset = -0.1f;
             var worldPos = interactableAttachPoint || nonXR 
-                ? interactorAttachPoint.position + interactorAttachPoint.rotation * new Vector3(0, 0, zOffset) 
+                ? interactorAttachPoint.position + interactorAttachPoint.rotation * new Vector3(0, yOffset, zOffset) 
                 : interactorAttachPoint.position + _transform.rotation * _interactor0RelativeAttachPosition;
             
             if (!interactableAttachPoint) 
@@ -906,6 +908,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             {
                 _defaultAngularSpeed = _rootRigidbody.maxAngularVelocity;
                 _rootRigidbody.maxAngularVelocity = Mathf.Infinity;
+                _originalRigidbodyExcludeLayers = _rootRigidbody.excludeLayers; 
             }
 
             if (args.interactorObject.transform.TryGetComponent(out MetaverseXRController controller))
@@ -1139,6 +1142,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (_rootRigidbody)
             {
                 _rootRigidbody.maxAngularVelocity = _defaultAngularSpeed;
+                _rootRigidbody.excludeLayers = _originalRigidbodyExcludeLayers;
                 if (_isNonVrInteractor)
                     FreezeRootRigidbody();
                 else
@@ -1263,6 +1267,13 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
             if (!_isPhysicsAttachment)
             {
+                if (isFixedUpdate)
+                {
+                    if (IsInterpolating())
+                        _rootRigidbody.excludeLayers = ~0;
+                    else if (_rootRigidbody.excludeLayers != _originalRigidbodyExcludeLayers)
+                        _rootRigidbody.excludeLayers = _originalRigidbodyExcludeLayers;
+                }
                 UpdatePosition(isFixedUpdate);
                 UpdateRotation(isFixedUpdate);
             }
