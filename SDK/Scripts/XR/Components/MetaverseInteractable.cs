@@ -1274,8 +1274,8 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     else if (_rootRigidbody.excludeLayers != _originalRigidbodyExcludeLayers)
                         _rootRigidbody.excludeLayers = _originalRigidbodyExcludeLayers;
                 }
-                UpdatePosition(isFixedUpdate);
                 UpdateRotation(isFixedUpdate);
+                UpdatePosition(isFixedUpdate);
             }
 
             _initialGrab = false;
