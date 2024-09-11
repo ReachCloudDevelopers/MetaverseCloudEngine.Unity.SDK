@@ -325,6 +325,28 @@ namespace MetaverseCloudEngine.Unity
             }
             return hit;
         }
+        
+        public static bool IsOnNavMesh(this Vector3 position)
+        {
+            return position.IsOnNavMesh(0.1f, false, NavMesh.AllAreas);
+        }
+
+        public static bool IsOnNavMesh(this Vector3 position, float sampleDistance)
+        {
+            return position.IsOnNavMesh(sampleDistance, false, NavMesh.AllAreas);
+        }
+        
+        public static bool IsOnNavMesh(this Vector3 position, float sampleDistance, bool sampleY, int areaMask)
+        {
+            if (sampleY)
+                return NavMesh.SamplePosition(position, out _, sampleDistance, areaMask);
+            
+            var sample = NavMesh.SamplePosition(position, out var hit, Mathf.Infinity, areaMask);
+            if (!sample) return false;
+            var hit2d = new Vector3(hit.position.x, 0, hit.position.z);
+            var pos2d = new Vector3(position.x, 0, position.z);
+            return Vector3.Distance(hit2d, pos2d) < sampleDistance;
+        }
 
         #endregion
 
