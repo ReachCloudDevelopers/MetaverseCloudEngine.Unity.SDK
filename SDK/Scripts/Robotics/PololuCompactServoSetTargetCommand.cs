@@ -19,6 +19,8 @@ namespace MetaverseCloudEngine.Unity.Robotics
         [SerializeField] private float minValue;
         [Tooltip("An max value to apply inverse interpolation to the raw value.")]
         [SerializeField] private float maxValue = 1;
+        [Tooltip("Will set the target value (between 0 and 255) directly. This will ignore any additional math to convert" +
+                 "the value to microseconds.")]
         [SerializeField] private bool setTargetValueDirectly;
         [HideIf(nameof(setTargetValueDirectly))]
         [Min(0)]
@@ -124,10 +126,10 @@ namespace MetaverseCloudEngine.Unity.Robotics
         {
             var inputValue = SmoothDampInput(rawValue);
             if (setTargetValueDirectly)
-                return (int)inputValue;
+                return (int)Mathf.Lerp(0, 255, Mathf.InverseLerp(minValue, maxValue, (int)inputValue));
             
             var value = (int)Mathf.Lerp(
-                pMin * 4, // Convert to quarter microseconds
+                pMin * 4,
                 pMax * 4, 
                 Mathf.InverseLerp(minValue, maxValue, inputValue));
 
