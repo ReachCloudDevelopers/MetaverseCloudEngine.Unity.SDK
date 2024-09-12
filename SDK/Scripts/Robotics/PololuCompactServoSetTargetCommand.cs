@@ -8,6 +8,7 @@ using UnityEngine.Serialization;
 namespace MetaverseCloudEngine.Unity.Robotics
 {
     [HideMonoScript]
+    [AddComponentMenu(MetaverseConstants.ProductName + "/Robotics/Pololu Compact Servo Set Target Command")]
     public class PololuCompactServoSetTargetCommand : TriInspectorMonoBehaviour
     {
         [Tooltip("The channel to send the command to.")]
