@@ -8,7 +8,7 @@ using RootMotion.FinalIK;
 using TriInspectorMVCE;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integrations.FinalIK
+namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integrations.FinalIK // Bad namespace, can't change it though...
 {
     [HideMonoScript]
     public class VRIKTrackerWeightsManager : TriInspectorMonoBehaviour

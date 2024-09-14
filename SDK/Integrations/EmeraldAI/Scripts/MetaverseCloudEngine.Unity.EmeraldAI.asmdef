@@ -1,0 +1,20 @@
+{
+    "name": "MetaverseCloudEngine.Unity.EmeraldAI",
+    "rootNamespace": "MetaverseCloudEngine.Unity.EmeraldAI",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:c55d28459d9c4444ebb4788be912e1f1"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "EMERALD_AI_PRESENT"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

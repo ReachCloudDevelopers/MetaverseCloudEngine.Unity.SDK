@@ -223,30 +223,38 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 MetaverseDispatcher.AtEndOfFrame(() => // At end of frame to ensure everything is initialized first.
                 {
-                    if (!InitializeEngine())
+                    try
                     {
+                        if (!InitializeEngine())
+                        {
+                            enabled = false;
+                            return;
+                        }
+
+                        if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
+                            _engine.Invoke(method);
+
+                        if (enabled)
+                        {
+                            if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
+                                _engine.Invoke(method);
+                        }
+                        else
+                        {
+                            if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
+                                _engine.Invoke(method);
+                        }
+
+                        if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
+                            _engine.Invoke(method);
+
+                        _ready = true;
+                    }
+                    catch (Exception e)
+                    {
+                        MetaverseProgram.Logger.LogError("Failed to initialize MetaverseScript '" + name + "': " + e);
                         enabled = false;
-                        return;
                     }
-
-                    if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
-                        _engine.Invoke(method);
-
-                    if (enabled)
-                    {
-                        if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
-                            _engine.Invoke(method);
-                    }
-                    else
-                    {
-                        if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
-                            _engine.Invoke(method);
-                    }
-
-                    if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
-                        _engine.Invoke(method);
-
-                    _ready = true;
                 });
             }
         }

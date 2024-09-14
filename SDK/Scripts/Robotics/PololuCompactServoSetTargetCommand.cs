@@ -126,7 +126,7 @@ namespace MetaverseCloudEngine.Unity.Robotics
         {
             var inputValue = SmoothDampInput(rawValue);
             if (setTargetValueDirectly)
-                return (int)Mathf.Lerp(0, 255, Mathf.InverseLerp(minValue, maxValue, (int)inputValue));
+                return (int)Mathf.Lerp(0, 255, Mathf.InverseLerp(minValue, maxValue, inputValue));
             
             var value = (int)Mathf.Lerp(
                 pMin * 4,
