@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MetaverseCloudEngine.Unity.Avatar.Components;
 using MetaverseCloudEngine.Unity.Networking.Components;
@@ -11,6 +12,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 using MetaverseCloudEngine.Unity.Async;
+using UnityEngine.XR.Interaction.Toolkit.Filtering;
 using InputDevice = UnityEngine.XR.InputDevice;
 #if MV_CINEMACHINE
 using Cinemachine;
@@ -44,17 +46,17 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
 
         public class SitterInitialState
         {
-            public Transform originalParent;
-            public RuntimeAnimatorController originalAnimatorController;
+            public Transform OriginalParent;
+            public RuntimeAnimatorController OriginalAnimatorController;
 
             public void Capture(Sitter sitter)
             {
                 Clear();
 
                 if (sitter.Root)
-                    originalParent = sitter.Root.parent;
+                    OriginalParent = sitter.Root.parent;
                 if (sitter.Animator)
-                    originalAnimatorController = sitter.Animator.runtimeAnimatorController;
+                    OriginalAnimatorController = sitter.Animator.runtimeAnimatorController;
             }
 
             public void Apply(Sitter sitter, bool setParent = true)
@@ -62,9 +64,9 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
                 if (!sitter.Destroying)
                 {
                     if (sitter.Root && setParent)
-                        sitter.Root.parent = originalParent;
+                        sitter.Root.parent = OriginalParent;
                     if (sitter.Animator)
-                        sitter.Animator.runtimeAnimatorController = originalAnimatorController;
+                        sitter.Animator.runtimeAnimatorController = OriginalAnimatorController;
                 }
 
                 Clear();
@@ -72,8 +74,8 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
 
             public void Clear()
             {
-                originalParent = null;
-                originalAnimatorController = null;
+                OriginalParent = null;
+                OriginalAnimatorController = null;
             }
         }
 
@@ -108,8 +110,23 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         private int _animatorBoolParameterHash = -1;
         private bool _isCurrentSitterInputAuthority;
 
-        public Sitter CurrentSitter { get; private set; }
+        private static readonly List<Seat> LocallyActiveSeats = new();
 
+        /// <summary>
+        /// The currently active <see cref="Sitter"/> that is using this <see cref="Seat"/>.
+        /// </summary>
+        public Sitter CurrentSitter { get; private set; }
+        
+        /// <summary>
+        /// A static flag that indicates whether any local player owned <see cref="Sitter"/> is currently
+        /// sitting in a <see cref="Seat"/>.
+        /// </summary>
+        public static bool IsLocalPlayerSitting => LocallyActiveSeats.Count > 0;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether we are able to exit this <see cref="Seat"/> using
+        /// the defined exit input.
+        /// </summary>
         public bool AllowExitInput
         {
             get => allowExitInput;
@@ -152,6 +169,8 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
             if (MetaverseProgram.IsQuitting) return;
 
             base.OnDestroy();
+
+            LocallyActiveSeats.Remove(this);
 
             XRInputTrackingAPI.HmdConnected -= OnHmdConnected;
             XRInputTrackingAPI.HmdDisconnected -= OnHmdDisconnected;
@@ -270,13 +289,24 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
             
             interactable = gameObject.GetOrAddComponent<XRSimpleInteractable>();
             if (interactable.colliders == null || interactable.colliders.Count == 0)
-            {
                 interactable.colliders?.AddRange(GetComponentsInChildren<Collider>(true));
-            }
-            interactable.distanceCalculationMode = XRBaseInteractable.DistanceCalculationMode.ColliderPosition;
+            interactable.distanceCalculationMode = XRBaseInteractable.DistanceCalculationMode.TransformPosition;
             interactable.selectEntered.AddListener(OnSelectEntered);
+            interactable.selectFilters.Add(new XRSelectFilterDelegate((_, _) => CanInteractWithSeat()));
+            interactable.hoverFilters.Add(new XRHoverFilterDelegate((_, _) => CanInteractWithSeat()));
             interactable.enabled = false;
             interactable.enabled = true;
+        }
+
+        private bool CanInteractWithSeat()
+        {
+            if (CurrentSitter)
+                return false;
+            if (MVUtils.CachedTime < MetaverseInteractable.GlobalInteractionCooldownTime)
+                return false;
+            if (IsLocalPlayerSitting)
+                return false;
+            return true;
         }
 
         private void OnExitInputPerformed(InputAction.CallbackContext ctx)
@@ -329,6 +359,11 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         {
             if (sitter == CurrentSitter)
                 return;
+            
+            if (sitter && sitter.IsInputAuthority)
+                LocallyActiveSeats.Add(this);
+            else if (!sitter)
+                LocallyActiveSeats.Remove(this);
 
             DeConfigureCurrentSitter();
 
