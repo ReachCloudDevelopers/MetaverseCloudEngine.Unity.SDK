@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEditor;
+using System.IO;
 
 namespace MetaverseCloudEngine.Unity.Editors.BugFixes
 {
@@ -10,6 +11,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         private static void PatchCode()
         {
             var path = "Library/PackageCache/com.meta.xr.sdk.core@68.0.2/Editor/OVRProjectSetup/Tasks/Implementations/OVRProjectSetupRenderingTasks.cs";
+            if (!File.Exists(path)) return;
             var text = System.IO.File.ReadAllText(path);
             var brokenLine = "?.Any(cameraData => cameraData.cameraStack?.Any() ?? false) ?? false;";
             if (text.Contains(brokenLine)) {
