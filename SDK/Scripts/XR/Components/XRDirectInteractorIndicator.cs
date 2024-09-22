@@ -62,7 +62,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                                 var potentialTarget =
                                     _directInteractor.interactablesHovered.FirstOrDefault(x =>
                                         x is IXRSelectInteractable s && s.IsSelectableBy(_directInteractor) && (!s.isSelected || (s.selectMode == InteractableSelectMode.Multiple && s.interactorsSelecting.Count == 1)));
-                                if (potentialTarget != null)
+                                if (potentialTarget != null && (potentialTarget is not MetaverseInteractable m || !m.IsClimbable))
                                     newTarget = potentialTarget.transform;
                             }
                         }
@@ -72,6 +72,8 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                                      _directInteractor.targetsForSelection
                                          .Where(xrSelectInteractable => xrSelectInteractable.IsSelectableBy(_directInteractor) && !xrSelectInteractable.isSelected))
                             {
+                                if (xrSelectInteractable is MetaverseInteractable m && m.IsClimbable)
+                                    continue;
                                 newTarget = xrSelectInteractable.transform;
                                 break;
                             }
@@ -128,13 +130,13 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (!_target.TryGetComponent(out IXRInteractable interactable))
                 return Vector3.zero;
 
-            var colliders = interactable.colliders;
-            if (colliders == null || colliders.Count == 0)
+            var renderers = interactable.transform.GetComponentsInChildren<Renderer>();
+            if (renderers == null || renderers.Length == 0)
                 return Vector3.zero;
             
-            var bounds = new Bounds(colliders[0].transform.position, Vector3.zero);
-            foreach (var col in colliders)
-                bounds.Encapsulate(col.bounds);
+            var bounds = new Bounds(renderers[0].bounds.center, Vector3.zero);
+            foreach (var r in renderers)
+                bounds.Encapsulate(r.bounds);
             
             return _target.InverseTransformPoint(bounds.center);
         }

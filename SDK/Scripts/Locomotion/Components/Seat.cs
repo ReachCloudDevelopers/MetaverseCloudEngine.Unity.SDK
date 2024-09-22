@@ -20,6 +20,10 @@ using Cinemachine;
 
 namespace MetaverseCloudEngine.Unity.Locomotion.Components
 {
+    /// <summary>
+    /// A <see cref="Seat"/> allows a <see cref="Sitter"/> to "sit down". This component is used to add sitting
+    /// functionality to your player controllers.
+    /// </summary>
     [DisallowMultipleComponent]
     [DeclareFoldoutGroup("Sitter")]
     [DeclareFoldoutGroup("IK")]
@@ -29,13 +33,25 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
     [AddComponentMenu(MetaverseConstants.ProductName + "/Locomotion/Seat")]
     public class Seat : NetworkObjectBehaviour
     {
+        /// <summary>
+        /// Events that are triggered by this <see cref="Seat"/>. These events can be listened to in order
+        /// to perform actions upon entering/exiting the <see cref="Seat"/>.
+        /// </summary>
         [Serializable]
         public class SeatEvents
         {
+            [Tooltip("Invoked when the seat is entered by a Sitter.")]
             public UnityEvent<Sitter> onEntered;
+            [Tooltip("Invoked when the seat is exited by a Sitter.")]
             public UnityEvent<Sitter> onExited;
+            [Tooltip("Invoked when the seat is exited or entered by a Sitter, with a boolean value indicating whether the sitter has entered or exited the seat.")]
             public UnityEvent<bool> onEnteredValue;
 
+            /// <summary>
+            /// Invokes the <see cref="onEntered"/> or <see cref="onExited"/> events based on the <param name="entered"></param> value.
+            /// </summary>
+            /// <param name="sitter">The <see cref="Sitter"/> that is entering or exiting the seat.</param>
+            /// <param name="entered">The value indicating whether the <see cref="Sitter"/> is entering or exiting.</param>
             public void Invoke(Sitter sitter, bool entered)
             {
                 if (entered) onEntered?.Invoke(sitter);
@@ -44,11 +60,21 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
             }
         }
 
+        /// <summary>
+        /// A class that stores the original state of the <see cref="Sitter"/> before
+        /// sitting in the <see cref="Seat"/>. The <see cref="Sitter"/> will be restored
+        /// to its original state upon exiting the <see cref="Seat"/> using the
+        /// <see cref="SitterInitialState"/>.
+        /// </summary>
         public class SitterInitialState
         {
             public Transform OriginalParent;
             public RuntimeAnimatorController OriginalAnimatorController;
 
+            /// <summary>
+            /// Captures the original state of the <see cref="Sitter"/>.
+            /// </summary>
+            /// <param name="sitter">The <see cref="Sitter"/> to capture the original state from.</param>
             public void Capture(Sitter sitter)
             {
                 Clear();
@@ -59,6 +85,11 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
                     OriginalAnimatorController = sitter.Animator.runtimeAnimatorController;
             }
 
+            /// <summary>
+            /// Re-applies the original state to the specified <see cref="Sitter"/>.
+            /// </summary>
+            /// <param name="sitter">The <see cref="Sitter"/> to apply the original state to.</param>
+            /// <param name="setParent">A flag indicating whether or not to apply the <see cref="OriginalParent"/>.</param>
             public void Apply(Sitter sitter, bool setParent = true)
             {
                 if (!sitter.Destroying)
@@ -72,6 +103,9 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
                 Clear();
             }
 
+            /// <summary>
+            /// Clears the initial state data.
+            /// </summary>
             public void Clear()
             {
                 OriginalParent = null;
@@ -215,7 +249,6 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         }
 
 #if UNITY_EDITOR
-
         [UnityEditor.MenuItem(MetaverseConstants.MenuItems.GameObjectMenuRootPath + "Seat")]
         private static void CreateSeat()
         {

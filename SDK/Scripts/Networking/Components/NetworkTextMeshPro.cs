@@ -83,7 +83,9 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
 
         private void RPC_OnTextMeshProTextRequested(short procedureID, int playerID, object content)
         {
-            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, (int)content, new object[] { text.text ?? string.Empty, ID });
+            if (content is not int identifier)
+                return;
+            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, identifier, new object[] { text.text ?? string.Empty, ID });
         }
 
         private void RPC_OnTextMeshProTextUpdated(short procedureID, int playerID, object content)

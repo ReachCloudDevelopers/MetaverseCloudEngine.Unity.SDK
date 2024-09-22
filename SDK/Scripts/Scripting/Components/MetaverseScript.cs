@@ -205,18 +205,26 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private void Start()
         {
-            if (!Application.isPlaying)
+            try
             {
-                return;
-            }
+                if (!Application.isPlaying)
+                {
+                    return;
+                }
 
-            if (MetaSpace.Instance)
+                if (MetaSpace.Instance)
+                {
+                    MetaSpace.OnReady(() => OnReady());
+                    return;
+                }
+
+                OnReady();
+            }
+            catch(Exception e)
             {
-                MetaSpace.OnReady(() => OnReady());
-                return;
+                MetaverseProgram.Logger.LogError("Failed to initialize Metaverse Script: " + e);
+                enabled = false;
             }
-
-            OnReady();
             return;
 
             void OnReady()
@@ -638,7 +646,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     {
                         if (!_timeoutHandles.Remove(timeoutHandle)) return;
                         if (!this) return;
-                        action?.Invoke();
+                        try
+                        {
+                            action?.Invoke();
+                        }
+                        catch(Exception e)
+                        {
+                            MetaverseProgram.Logger.LogError($"Error occured in timeout ({timeoutHandle}): {e}");
+                        }
                     });
                     return timeoutHandle;
                 }))
@@ -799,12 +814,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
                 )
-                .CatchClrExceptions();
+                .CatchClrExceptions(OnJavaScriptCLRException);
 
             if (strict)
                 options.Strict();
 
             options.Interop.TrackObjectWrapperIdentity = false;
+        }
+
+        private static bool OnJavaScriptCLRException(Exception exception)
+        {
+            MetaverseProgram.Logger.LogError(exception);
+            return true;
         }
 
         private static IEnumerator CoroutineUpdate(Func<object> foo)
@@ -835,6 +856,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private void CacheMethod(ScriptFunctions method)
         {
             if (_methods != null && _methods.TryGetValue(method, out _))
+                return;
+
+            if (_engine == null)
                 return;
 
             _methods ??= new Dictionary<ScriptFunctions, JsValue>();
