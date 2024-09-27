@@ -1490,10 +1490,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
             switch (usePhysicsTracking)
             {
-                case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && !_rootRigidbody.constraints.HasFlag(RigidbodyConstraints.FreezePosition) && (!_initialGrab || _isNonVrInteractor):
                     VelocityTrackPosition(_interpPosition);
                     break;
-                case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic:
+                case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && !_rootRigidbody.constraints.HasFlag(RigidbodyConstraints.FreezePosition):
                     _rootRigidbody.position = _interpPosition;
                     break;
                 default:
@@ -1527,7 +1527,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 
                 switch (usePhysicsTracking)
                 {
-                    case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                    case true when isFixedUpdate && _rootRigidbody && !_rootRigidbody.isKinematic && !_rootRigidbody.constraints.HasFlag(RigidbodyConstraints.FreezeRotation) && (!_initialGrab || _isNonVrInteractor):
                         VelocityTrackRotation(_interpRotation);
                         break;
                     default:
@@ -1558,10 +1558,10 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             
             switch (usePhysicsTracking)
             {
-                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && (!_initialGrab || _isNonVrInteractor):
+                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && !_rootRigidbody.constraints.HasFlag(RigidbodyConstraints.FreezeRotation) && (!_initialGrab || _isNonVrInteractor):
                     VelocityTrackRotation(_interpRotation);
                     break;
-                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic:
+                case true when isFixedUpdate &&_rootRigidbody && !_rootRigidbody.isKinematic && !_rootRigidbody.constraints.HasFlag(RigidbodyConstraints.FreezeRotation):
                     _rootRigidbody.rotation = _interpRotation;
                     break;
                 default:
@@ -1591,7 +1591,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         private void VelocityTrackPosition(Vector3 targetPos)
         {
             // Do velocity tracking
-            if (!_rootRigidbody)
+            if (!_rootRigidbody || _rootRigidbody.isKinematic)
                 return;
 
             // Scale initialized velocity by prediction factor

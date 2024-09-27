@@ -21,17 +21,17 @@ namespace MetaverseCloudEngine.Unity.Components
         public class WaitEvents
         {
             [Tooltip("Invoked when the wait is started.")]
-            public UnityEvent onStarted;
+            public UnityEvent onStarted = new();
             [Tooltip("Invoked when the wait is completed.")]
-            public UnityEvent onFinished;
+            public UnityEvent onFinished = new();
             [Tooltip("Invoked when the wait is finished in a completed state.")]
-            public UnityEvent onCompleted;
+            public UnityEvent onCompleted = new();
             [Tooltip("Invoked when the wait is finished in a cancelled state.")]
-            public UnityEvent onCancelled;
+            public UnityEvent onCancelled = new();
             [Tooltip("Invoked when the progress of the wait is updated.")]
-            public UnityEvent<float> onProgress;
+            public UnityEvent<float> onProgress = new();
             [Tooltip("Invoked with the inverse of the progress of the wait is updated.")]
-            public UnityEvent<float> onInverseProgress;
+            public UnityEvent<float> onInverseProgress = new();
         }
 
         [Tooltip("The time to wait in seconds.")]
@@ -41,7 +41,7 @@ namespace MetaverseCloudEngine.Unity.Components
         [Tooltip("Whether to wait every time this component is re-enabled.")]
         public bool waitOnEnable;
         [Tooltip("Events that this timer will trigger.")]
-        public WaitEvents events;
+        public WaitEvents events = new();
 
         private float _waitEndTime;
         private bool _isStarted;

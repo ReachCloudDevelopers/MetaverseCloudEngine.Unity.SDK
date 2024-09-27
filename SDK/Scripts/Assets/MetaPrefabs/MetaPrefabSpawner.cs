@@ -339,7 +339,8 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                 if (CachedPrefabDtos.TryGetValue(id, out var cachedDto))
                 {
                     CachedDto = cachedDto;
-                    prefab = CachedDto?.Id.ToString();
+                    if (cachedDto?.Id != null)
+                        prefab = CachedDto?.Id.ToString();
                 }
                 else if (MetaSpace && MetaSpace.TryGetCachedValue(MetaPrefabDtoCachePrefix + id, out var cachedDtoObj))
                 {

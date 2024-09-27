@@ -2,7 +2,18 @@
     "name": "MetaverseCloudEngine.Unity.PlayMaker",
     "rootNamespace": "MetaverseCloudEngine.Unity.PlayMaker",
     "references": [
-        "GUID:f19b7182756095a428b94d1459e7491e"
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:3128918e24629064082cc7fb78c41926",
+        "GUID:a3608d6c771df4d5ea920975c31d3a5f",
+        "GUID:b4318b6f3695442c4983c360248781db",
+        "GUID:b649415412a3d4e8a83df256b07478bb",
+        "GUID:4d1d8df5021c48d98561b50ca850d1dc",
+        "GUID:6e5063adab271564ba0098a06a8cebda",
+        "GUID:2ace7ebb826df10459d12b4f3c4a9407",
+        "GUID:5ad926ab5ff9d914ea1f6812dfd6f07a",
+        "GUID:69ab3f10cf42d0b42a6cd1353c374377",
+        "GUID:bd138c7a207f4ee4894d6faa1b365b8c",
+        "GUID:6506d016782ec1d4082f393438028cd1"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

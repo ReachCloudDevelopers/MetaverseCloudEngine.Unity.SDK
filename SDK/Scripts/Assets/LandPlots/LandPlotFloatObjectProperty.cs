@@ -11,6 +11,12 @@ namespace MetaverseCloudEngine.Unity.Assets.LandPlots
         public bool hasMax;
         public float maxValue = 999;
 
+        /// <summary>
+        /// Determines whether this property is a scale property. 
+        /// "Scale" is a special property that is used to scale the object.
+        /// </summary>
+        public bool IsScale => this.DisplayName == "Scale";
+
         protected override bool IsChanged(float oldValue, float newValue)
         {
             return Math.Abs(oldValue - newValue) > Mathf.Epsilon;
