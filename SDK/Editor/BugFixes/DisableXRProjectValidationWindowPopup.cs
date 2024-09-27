@@ -11,7 +11,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
             // Scan all .cs files in the PackageCache directory
             foreach (var file in System.IO.Directory.GetFiles(path, "*.cs", System.IO.SearchOption.AllDirectories))
             {
-                if (!file.StartsWith("./Assets") || !file.StartsWith("./Library/PackageCache"))
+                if (!file.StartsWith("Assets") || !file.StartsWith("Library/PackageCache"))
                     continue;
                 var text = System.IO.File.ReadAllText(file);
                 var regex = new System.Text.RegularExpressions.Regex(@"SettingsService\.OpenProjectSettings\([^)]+\);");
