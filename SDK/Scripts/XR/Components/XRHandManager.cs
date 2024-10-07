@@ -1,13 +1,15 @@
-﻿#if MV_OCULUS_PLUGIN && METAVERSE_CLOUD_ENGINE_INTERNAL && UNITY_ANDROID
+﻿#pragma warning disable IDE0079 // Remove unnecessary suppression
+#pragma warning disable IDE0035
+
+#if MV_OCULUS_PLUGIN && METAVERSE_CLOUD_ENGINE_INTERNAL && UNITY_ANDROID
 #define MV_USING_OCULUS_SDK
 #endif
 
 #if MV_XR_HANDS
-using System;
 using TriInspectorMVCE;
+#pragma warning restore IDE0079 // Remove unnecessary suppression
 using MetaverseCloudEngine.Unity.Async;
 #if MV_USING_OCULUS_SDK
-using MetaverseCloudEngine.Unity.Inputs;
 using Unity.XR.Oculus.Input;
 #endif
 using UnityEngine;
@@ -131,7 +133,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
                 if (usingOpenXR)
                 {
+#pragma warning disable CS0162 // Unreachable code detected
                     lUpdated |= lHandUsePointerPose && UpdateDeviceState_UnityBugWorkaround(MetaAimHand.left, true, lHandUsePointerPose, leftHand);
+#pragma warning restore CS0162 // Unreachable code detected
                     rUpdated |= rHandUsePointerPose && UpdateDeviceState_UnityBugWorkaround(MetaAimHand.right, false, rHandUsePointerPose, rightHand);
 
                     if (HandTracking.subsystem != null)
@@ -267,15 +271,12 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 (lHand
                     ? !HandTracking.subsystem.leftHand.isTracked
                     : !HandTracking.subsystem.rightHand.isTracked))
-            {
                 return false;
-            }
 
             if (deviceGameObject && updateTransforms)
             {
                 var pose = GetControllerPose(device, lHand, usePointerPose);
-                deviceGameObject.transform.position = origin.TransformPoint(pose.position);
-                deviceGameObject.transform.rotation = origin.rotation * pose.rotation;
+                deviceGameObject.transform.SetPositionAndRotation(origin.TransformPoint(pose.position), origin.rotation * pose.rotation);
                 return true;
             }
 
@@ -324,11 +325,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                             meta.pointerPosition.value + GetControllerPositionOffset(meta.deviceRotation.value, Quaternion.identity, isLHand),
                             meta.pointerRotation.value * GetControllerRotationOffset(isLHand));
                     case OculusTouchControllerProfile.OculusTouchController oculus:
-                    {
                         return new Pose(
                             oculus.pointerPosition.value + GetControllerPositionOffset(oculus.deviceRotation.value, Quaternion.identity, isLHand),
                             oculus.pointerRotation.value * GetControllerRotationOffset(isLHand));
-                    }
                     case ValveIndexControllerProfile.ValveIndexController valve:
                         return new Pose(
                             valve.pointerPosition.value + GetControllerPositionOffset(valve.deviceRotation.value, Quaternion.identity, isLHand),
@@ -343,12 +342,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                         OVRPlugin.HandState handState = default;
                         if (OVRPlugin.GetHandState(OVRPlugin.Step.Render,
                                 isLHand ? OVRPlugin.Hand.HandLeft : OVRPlugin.Hand.HandRight, ref handState) && handState.Status == OVRPlugin.HandStatus.HandTracked)
-                        {
                             return new Pose(
                                 oculusTouchController.devicePosition.value + handState.PointerPose.Position.FromFlippedZVector3f() + GetControllerPositionOffset(oculusTouchController.deviceRotation.value, Quaternion.identity, isLHand),
                                 oculusTouchController.deviceRotation.value * handState.PointerPose.Orientation.FromFlippedZQuatf() * GetControllerRotationOffset(isLHand));
-                        }
-                        
                         var ovrPose = OVRManager.GetOpenVRControllerOffset(
                             isLHand ? XRNode.LeftHand : XRNode.RightHand);
                         return new Pose(
@@ -357,12 +353,16 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     }
 #endif
                     default:
+                    {
+                        print("Using Default Pose");   
                         return new Pose(
                             controller.devicePosition.value + GetControllerPositionOffset(controller.deviceRotation.value, Quaternion.identity, isLHand),
                             controller.deviceRotation.value * GetControllerRotationOffset(isLHand));
+                    }
                 }
             }
 
+            print("Using Device Pose: " + controller.name + " | " + controller.GetType().FullName);
             return new Pose(
                 controller.devicePosition.value + GetControllerPositionOffset(controller.deviceRotation.value, Quaternion.identity, isLHand),
                 controller.deviceRotation.value * GetControllerRotationOffset(isLHand));

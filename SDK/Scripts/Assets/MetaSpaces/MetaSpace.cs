@@ -609,6 +609,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 
         protected override void OnMetaverseBehaviourInitialize(MetaverseRuntimeServices services)
         {
+            if (!this) return;
             StartCoroutine(InitializeRoutine());
         }
 
