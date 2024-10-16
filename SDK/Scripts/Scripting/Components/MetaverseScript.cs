@@ -607,24 +607,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return BlackListedNames.Contains(value) || (isType && BlackListedTypes.Contains(value));
         }
 
-        private static void ApplyStaticEngineFunctions(Engine engine)
-        {
-            _ = engine
-                .SetValue(GetGlobalFunction, (Func<string, object>)(key => MetaverseScriptCache.Current.GetStaticReference(key)))
-                .SetValue(SetGlobalFunction, (Action<string, object>)((key, value) => MetaverseScriptCache.Current.SetStaticReference(key, value)))
-                .SetValue(PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)))
-                .SetValue(NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()))
-                .SetValue(MetaSpaceProperty, (object)MetaSpace.Instance)
-                .SetValue(GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) => go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n)));
-        }
-        
         private bool InitializeEngine()
         {
             if (!javascriptFile)
                 return false;
 
             _engine = new Engine(o => DefaultEngineOptions(o, true))
-
+                .SetValue(GetGlobalFunction, (Func<string, object>)(key => MetaverseScriptCache.Current.GetStaticReference(key)))
+                .SetValue(SetGlobalFunction, (Action<string, object>)((key, value) => MetaverseScriptCache.Current.SetStaticReference(key, value)))
+                .SetValue(PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)))
+                .SetValue(NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()))
+                .SetValue(MetaSpaceProperty, (object)MetaSpace.Instance)
+                .SetValue(GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) => go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n)))
                 .SetValue(ThisProperty, (object)gameObject)
                 .SetValue(GameObjectProperty, (object)gameObject)
                 .SetValue(TransformProperty, (object)transform)
@@ -736,7 +730,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         _ = continueWith.Invoke(uniTask, new[] { uniTask, action });
                     }));
             
-            ApplyStaticEngineFunctions(_engine);
             _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
 
             var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
