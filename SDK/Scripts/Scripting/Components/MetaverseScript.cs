@@ -183,7 +183,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (_methods != null && _ready)
             {
                 if (_methods.TryGetValue(ScriptFunctions.OnDestroy, out var method))
-                    _engine.Invoke(method);
+                    _ = _engine.Invoke(method);
             }
 
             _engine?.Dispose();
@@ -193,7 +193,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnEnable, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void OnDisable()
@@ -201,7 +201,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             if (_methods == null) return;
             if (_methods.TryGetValue(ScriptFunctions.OnDisable, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void Start()
@@ -241,21 +241,21 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         }
 
                         if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
-                            _engine.Invoke(method);
+                            _ = _engine.Invoke(method);
 
                         if (enabled)
                         {
                             if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
-                                _engine.Invoke(method);
+                                _ = _engine.Invoke(method);
                         }
                         else
                         {
                             if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
-                                _engine.Invoke(method);
+                                _ = _engine.Invoke(method);
                         }
 
                         if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
-                            _engine.Invoke(method);
+                            _ = _engine.Invoke(method);
 
                         _ready = true;
                     }
@@ -325,119 +325,119 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.Update, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void LateUpdate()
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.LateUpdate, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void FixedUpdate()
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.FixedUpdate, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void OnTriggerEnter(Collider other)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerEnter, out var method))
-                _engine.Invoke(method, other);
+                _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerExit(Collider other)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerExit, out var method))
-                _engine.Invoke(method, other);
+                _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerStay(Collider other)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerStay, out var method))
-                _engine.Invoke(method, other);
+                _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerEnter2D(Collider2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerExit2D(Collider2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerExit2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerStay2D(Collider2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnTriggerStay2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnAnimatorIK(int layer)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnAnimatorIK, out var method))
-                _engine.Invoke(method, layer);
+                _ = _engine.Invoke(method, layer);
         }
 
         private void OnAnimatorMove()
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnAnimatorMove, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         private void OnCollisionEnter(Collision collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionEnter, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit(Collision collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionExit, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay(Collision collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionStay, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit2D(Collision2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionExit2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay2D(Collision2D collision)
         {
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnCollisionStay2D, out var method))
-                _engine.Invoke(method, collision);
+                _ = _engine.Invoke(method, collision);
         }
 
         public override void OnNetworkReady(bool offline)
@@ -445,7 +445,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnNetworkReady(offline);
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnNetworkReady, out var method))
-                _engine.Invoke(method, offline);
+                _ = _engine.Invoke(method, offline);
         }
 
         protected override void RegisterNetworkRPCs()
@@ -453,7 +453,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.RegisterNetworkRPCs();
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         protected override void UnRegisterNetworkRPCs()
@@ -461,7 +461,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.UnRegisterNetworkRPCs();
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         protected override void OnMetaSpaceBehaviourInitialize()
@@ -469,7 +469,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnMetaSpaceBehaviourInitialize();
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         protected override void OnMetaSpaceServicesRegistered()
@@ -477,7 +477,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnMetaSpaceServicesRegistered();
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         protected override void OnMetaSpaceBehaviourDestroyed()
@@ -485,7 +485,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnMetaSpaceBehaviourDestroyed();
             if (!_ready) return;
             if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out var method))
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
 
         /// <summary>
@@ -507,7 +507,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _functionLookup[fn] = method = _engine.GetValue(fn);
 
             if (method != null && !method.IsUndefined())
-                _engine.Invoke(method);
+                _ = _engine.Invoke(method);
         }
         
         /// <summary>
@@ -564,7 +564,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (_engine == null)
                 return false;
 
-            _engine.SetValue(propertyName, value);
+            _ = _engine.SetValue(propertyName, value);
             return true;
         }
 
@@ -609,11 +609,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private static void ApplyStaticEngineFunctions(Engine engine)
         {
-            engine
-                .SetValue(GetGlobalFunction, (Func<string, object>)(key => MetaverseScriptCache.Current.GetStaticReference(key))).SetValue(SetGlobalFunction, (Action<string, object>)((key, value) => MetaverseScriptCache.Current.SetStaticReference(key, value)))
-                .SetValue(IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()))
-                .SetValue(IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()))
-                .SetValue(IsUnityNullFunction, (Func<object, bool>)(o => o.IsUnityNull()))
+            _ = engine
+                .SetValue(GetGlobalFunction, (Func<string, object>)(key => MetaverseScriptCache.Current.GetStaticReference(key)))
+                .SetValue(SetGlobalFunction, (Action<string, object>)((key, value) => MetaverseScriptCache.Current.SetStaticReference(key, value)))
                 .SetValue(PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)))
                 .SetValue(NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()))
                 .SetValue(MetaSpaceProperty, (object)MetaSpace.Instance)
@@ -643,7 +641,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 .SetValue(SetTimeoutFunction, (Func<Action, int, int>)((action, time) =>
                 {
                     var timeoutHandle = ++_timeoutHandleIndex;
-                    _timeoutHandles.Add(timeoutHandle);
+                    _ = _timeoutHandles.Add(timeoutHandle);
                     MetaverseDispatcher.WaitForSeconds(time / 1000f, () =>
                     {
                         if (!_timeoutHandles.Remove(timeoutHandle)) return;
@@ -654,12 +652,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         }
                         catch(Exception e)
                         {
-                            MetaverseProgram.Logger.LogError($"Error occured in timeout ({timeoutHandle}): {e}");
+                            MetaverseProgram.Logger.LogError($"Error ocurred in timeout ({timeoutHandle}): {e}");
                         }
                     });
                     return timeoutHandle;
                 }))
-                .SetValue(ClearTimeoutFunction, (Action<int>)(handle => { _timeoutHandles.Remove(handle); }))
+                .SetValue(ClearTimeoutFunction, (Action<int>)(handle => { _ = _timeoutHandles.Remove(handle); }))
                 .SetValue(RegisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, handler) => { NetworkObject.uNull()?.RegisterRPC(rpc, handler); }))
                 .SetValue(UnregisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, handler) => { NetworkObject.uNull()?.UnregisterRPC(rpc, handler); }))
                 .SetValue(ServerRPCFunction, (Action<short, object>)((rpc, parameters) => { NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, parameters); }))
@@ -695,35 +693,27 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                                 spawned.IsStale = true;
                                 return;
                             }
-
-                            if (parent)
-                                spawned.Transform.parent = parent;
-
-                            spawned.Transform.localPosition = spawnPos;
-                            spawned.Transform.localRotation = spawnRot;
-
+                            if (parent) spawned.Transform.parent = parent;
+                            spawned.Transform.SetLocalPositionAndRotation(spawnPos, spawnRot);
                             callback?.Invoke(spawned.GameObject);
                             
                         }, pos, rot, false);
                     }))
+                    .SetValue(IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()))
+                    .SetValue(IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()))
+                    .SetValue(IsUnityNullFunction, (Func<object, bool>)(o => o.IsUnityNull()))
                     .SetValue(AwaitFunction, (Action<object, Action<object>>)((t, action) =>
                     {
                         if (t is not Task task)
                         {
                             if (t is IEnumerator e)
-                            {
-                                e.ToUniTask().ContinueWith(() =>
-                                {
-                                    action?.Invoke(t);
-                                });
-                            }
-                            
+                                _ = e.ToUniTask().ContinueWith(() => { action?.Invoke(t); });
                             return;
                         }
                         
                         if (task.GetType().GenericTypeArguments.Length == 0)
                         {
-                            task.AsUniTask().ContinueWith(() => action);
+                            _ = task.AsUniTask().ContinueWith(() => action);
                             return;
                         }
                         
@@ -742,13 +732,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             .FirstOrDefault(x => x.Name == continueWithFunctionName && x.ReturnType == typeof(UniTask));
                         if (continueWith is null) 
                             return;
-                        
-                        continueWith.Invoke(uniTask, new [] { uniTask, action });
+
+                        _ = continueWith.Invoke(uniTask, new[] { uniTask, action });
                     }));
             
             ApplyStaticEngineFunctions(_engine);
-
-            _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
+            _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
 
             var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
             foreach (var method in methods)
