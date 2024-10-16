@@ -121,8 +121,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string ThisProperty = "_this";
         private const string GameObjectProperty = "gameObject";
         private const string TransformProperty = "transform";
-        private const string IsUnityNullFunctionOld = "isUnityNull";
-        private const string IsUnityNullFunction = "NULL";
+        private const string IsUnityNullFunctionOld1 = "isUnityNull";
+        private const string IsUnityNullFunctionOld2 = "NULL";
+        private const string IsUnityNullFunction = "null";
         private const string CoroutineFunction = "StartCoroutine";
         private const string GetMetaverseScriptFunction = "GetMetaverseScript";
         private const string PrintFunction = "print";
@@ -610,7 +611,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             engine
                 .SetValue(GetGlobalFunction, (Func<string, object>)(key => MetaverseScriptCache.Current.GetStaticReference(key))).SetValue(SetGlobalFunction, (Action<string, object>)((key, value) => MetaverseScriptCache.Current.SetStaticReference(key, value)))
-                .SetValue(IsUnityNullFunctionOld, (Func<object, bool>)(o => o.IsUnityNull()))
+                .SetValue(IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()))
+                .SetValue(IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()))
                 .SetValue(IsUnityNullFunction, (Func<object, bool>)(o => o.IsUnityNull()))
                 .SetValue(PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)))
                 .SetValue(NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()))
