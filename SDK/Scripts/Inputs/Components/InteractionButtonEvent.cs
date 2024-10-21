@@ -1,6 +1,11 @@
 ﻿using MetaverseCloudEngine.Unity.Attributes;
 using TriInspectorMVCE;
-using UnityEngine.XR.Interaction.Toolkit;
+
+#if MV_XR_TOOLKIT_3
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+#else
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Inputs.Components
 {

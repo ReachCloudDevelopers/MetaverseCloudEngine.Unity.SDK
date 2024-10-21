@@ -6,6 +6,16 @@ using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.XR.Interaction.Toolkit;
 
+#if MV_XR_TOOLKIT_3
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+using IXRHoverInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable;
+using XRDirectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRDirectInteractor;
+#else
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractable;
+using IXRHoverInteractable = UnityEngine.XR.Interaction.Toolkit.IXRHoverInteractable;
+using XRDirectInteractor = UnityEngine.XR.Interaction.Toolkit.XRDirectInteractor;
+#endif
+
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
     public class MetaverseXRDirectInteractor : XRDirectInteractor

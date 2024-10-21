@@ -209,10 +209,10 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 crashing = false;
             }
 
-            localVelocity = tr.InverseTransformDirection(rb.velocity - wheelContactsVelocity);
+            localVelocity = tr.InverseTransformDirection(rb.GetLinearVelocity() - wheelContactsVelocity);
             localAngularVel = tr.InverseTransformDirection(rb.angularVelocity);
-            velMag = rb.velocity.magnitude;
-            sqrVelMag = rb.velocity.sqrMagnitude;
+            velMag = rb.GetLinearVelocity().magnitude;
+            sqrVelMag = rb.GetLinearVelocity().sqrMagnitude;
             forwardDir = tr.forward;
             rightDir = tr.right;
             upDir = tr.up;

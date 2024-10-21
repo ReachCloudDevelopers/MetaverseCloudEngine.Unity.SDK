@@ -13,6 +13,25 @@ using UnityEngine.Events;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 using MetaverseCloudEngine.Unity.Async;
+#if MV_XR_TOOLKIT_3
+using XRSocketInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor;
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor;
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor;
+using IXRInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.Interactables.InteractableSelectMode;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor;
+#else
+using XRSocketInteractor = UnityEngine.XR.Interaction.Toolkit.XRSocketInteractor;
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractor;
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractor;
+using IXRInteractor = UnityEngine.XR.Interaction.Toolkit.IXRInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractable;
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.InteractableSelectMode;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.IXRHoverInteractor;
+#endif
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
@@ -950,7 +969,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 _rootRigidbody.isKinematic = true;
                 _rootRigidbody.isKinematic = false;
                 // ReSharper restore Unity.InefficientPropertyAccess
-                _rootRigidbody.velocity = Vector3.zero;
+                _rootRigidbody.SetLinearVelocity(Vector3.zero);
                 _rootRigidbody.angularVelocity = Vector3.zero;
                 _rootRigidbody.Sleep();
                 _rootRigidbody.WakeUp();
@@ -1198,7 +1217,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 velocity /= frames;
                 angularVelocity /= frames;
                 
-                _rootRigidbody.velocity = velocity;
+                _rootRigidbody.SetLinearVelocity(velocity);
                 _rootRigidbody.angularVelocity = angularVelocity;
                 
             }
@@ -1595,12 +1614,12 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 return;
 
             // Scale initialized velocity by prediction factor
-            _rootRigidbody.velocity *= (1f - VelocityDamping);
+            _rootRigidbody.SetLinearVelocity(_rootRigidbody.GetLinearVelocity() * (1f - VelocityDamping));
             var positionDelta = targetPos - _transform.position;
             var velocity = positionDelta / Time.deltaTime;
 
             if (!float.IsNaN(velocity.x))
-                _rootRigidbody.velocity += (velocity * VelocityScale);
+                _rootRigidbody.SetLinearVelocity(_rootRigidbody.GetLinearVelocity() + (velocity * VelocityScale));
         }
 
         private void VelocityTrackRotation(Quaternion targetRot)

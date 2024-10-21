@@ -50,7 +50,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             yield return new WaitForFixedUpdate();
             transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
             transform.Translate(Vector3.up, Space.World);
-            GetComponent<Rigidbody>().velocity = Vector3.zero;
+            GetComponent<Rigidbody>().SetLinearVelocity(Vector3.zero);
             GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         }
 
@@ -63,7 +63,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             transform.position = FloatingOrigin.OriginToUnity(spawnPos);
             yield return new WaitForFixedUpdate();
             transform.rotation = Quaternion.LookRotation(spawnRot, Vector3.up);
-            GetComponent<Rigidbody>().velocity = Vector3.zero;
+            GetComponent<Rigidbody>().SetLinearVelocity(Vector3.zero);
             GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
         }
 

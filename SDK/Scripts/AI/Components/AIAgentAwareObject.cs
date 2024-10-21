@@ -41,18 +41,25 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnEnable()
         {
-            _supportedActionsLookup ??= supportedActions
-                .Where(x => !string.IsNullOrWhiteSpace(x.id))
-                .ToDictionary(x => x.id, y => y);
+            RefreshSupportedActionsLookup();
 
             foreach (var action in supportedActions)
             {
                 if (action.disabled) action.onDisabled?.Invoke();
                 else action.onEnabled?.Invoke();
             }
-            
+
             ActionableObjects[useGameObjectName ? gameObject.name : id] = this;
             ActiveObjects.Add(this);
+        }
+
+        public void RefreshSupportedActionsLookup(bool force = false)
+        {
+            if (force)
+                _supportedActionsLookup = null;
+            _supportedActionsLookup ??= supportedActions
+                .Where(x => !string.IsNullOrWhiteSpace(x.id))
+                .ToDictionary(x => x.id, y => y);
         }
 
         private void OnDisable()
@@ -66,14 +73,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return ActionableObjects.GetValueOrDefault(targetID);
         }
 
-        public bool IsSupported(string action)
+        public bool IsActionSupported(string action)
         {
             return _supportedActionsLookup.TryGetValue(action, out var a) && !a.disabled;
         }
 
         public static IEnumerable<AIAgentAwareObject> FindAll(string actionID)
         {
-            return ActionableObjects.Select(x => x.Value).Where(x => x&& x.IsSupported(actionID));
+            return ActionableObjects.Select(x => x.Value).Where(x => x&& x.IsActionSupported(actionID));
         }
 
         public void EnableAction(string actionID)
@@ -94,6 +101,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         public void OnPerformedAction(string actionID, AIAgent aiAgent)
         {
+            RefreshSupportedActionsLookup(true);
             if (_supportedActionsLookup.TryGetValue(actionID, out var action))
                 action.onAgentPerformed?.Invoke(aiAgent.gameObject);
         }

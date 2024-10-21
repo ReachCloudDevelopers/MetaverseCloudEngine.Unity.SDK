@@ -17,6 +17,13 @@ using InputDevice = UnityEngine.XR.InputDevice;
 #if MV_CINEMACHINE
 using Cinemachine;
 #endif
+#if MV_XR_TOOLKIT_3
+using XRSimpleInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable;
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+#else
+using XRSimpleInteractable = UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable;
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Locomotion.Components
 {
@@ -117,7 +124,7 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         [SerializeField, HideInInspector] private XRSimpleInteractable interactable;
 
         [Group("Sitter")] [SerializeField] private Transform exitPoint;
-        [Tooltip("A value indicating whether this seat, when destroyed, can also destroy the sitter who's attached to it. Otherwise the sitter will be unparented before this seat is destroyed.")]
+        [Tooltip("A value indicating whether this seat, when destroyed, can also destroy the sitter who's attached to it. Otherwise the sitter will be un-parented before this seat is destroyed.")]
         [Group("Sitter")] [SerializeField] private bool canDestroySitter;
         [Group("Sitter")] [SerializeField] private bool allowExitInput = true;
         [ShowIf(nameof(allowExitInput))]

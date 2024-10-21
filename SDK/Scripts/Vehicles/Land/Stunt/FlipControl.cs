@@ -43,8 +43,8 @@ namespace MetaverseCloudEngine.Unity.Vehicles
 
         void FixedUpdate() {
             if (vp.groundedWheels == 0 && (!vp.crashing || (vp.crashing && !disableDuringCrash))) {
-                if (rb.velocity.sqrMagnitude > 0)
-                    velDir = Quaternion.LookRotation(Vector3.up, rb.velocity);
+                if (rb.GetLinearVelocity().sqrMagnitude > 0)
+                    velDir = Quaternion.LookRotation(Vector3.up, rb.GetLinearVelocity().normalized);
 
                 if (flipPower != Vector3.zero) {
                     ApplyFlip();
@@ -106,7 +106,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             if (groundCheckDistance > 0) {
                 RaycastHit groundHit;
 
-                if (Physics.Raycast(tr.position, (Vector3.down + rb.velocity).normalized, out groundHit, groundCheckDistance, Physics.DefaultRaycastLayers)) {
+                if (Physics.Raycast(tr.position, (Vector3.down + rb.GetLinearVelocity()).normalized, out groundHit, groundCheckDistance, Physics.DefaultRaycastLayers)) {
                     if (Vector3.Dot(groundHit.normal, Vector3.up) >= groundSteepnessLimit) {
                         actualForwardDot = Vector3.Dot(vp.forwardDir, groundHit.normal);
                         actualRightDot = Vector3.Dot(vp.rightDir, groundHit.normal);

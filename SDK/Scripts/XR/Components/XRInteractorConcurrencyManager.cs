@@ -3,8 +3,23 @@ using System.Collections.Generic;
 using System.Linq;
 using TriInspectorMVCE;
 using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Filtering;
+
+#if MV_XR_TOOLKIT_3
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor;
+using XRRayInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRRayInteractor;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+using IXRHoverInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRHoverInteractable;
+#else
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractor;
+using XRRayInteractor = UnityEngine.XR.Interaction.Toolkit.XRRayInteractor;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractor;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.IXRHoverInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractable;
+using IXRHoverInteractable = UnityEngine.XR.Interaction.Toolkit.IXRHoverInteractable;
+#endif
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {

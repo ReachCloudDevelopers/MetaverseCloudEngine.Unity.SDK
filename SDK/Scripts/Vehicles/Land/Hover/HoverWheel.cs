@@ -1,4 +1,9 @@
 ﻿using UnityEngine;
+#if UNITY_6000_0_OR_NEWER
+using PhysicMaterial = UnityEngine.PhysicsMaterial;
+#else
+using PhysicMaterial = UnityEngine.PhysicMaterial;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Vehicles
 {
@@ -217,7 +222,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 detachedCol.sharedMesh = wheelMeshLoose ? wheelMeshLoose : detachFilter.sharedMesh;
 
                 rb.mass -= mass;
-                detachedBody.velocity = rb.GetPointVelocity(visualWheel.position);
+                detachedBody.SetLinearVelocity(rb.GetPointVelocity(visualWheel.position));
                 detachedBody.angularVelocity = rb.angularVelocity;
 
                 visualWheel.gameObject.SetActive(false);

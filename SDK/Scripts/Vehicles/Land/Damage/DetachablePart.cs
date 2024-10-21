@@ -61,12 +61,12 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 tr.parent = null;
                 rb = gameObject.AddComponent<Rigidbody>();
                 rb.mass = mass;
-                rb.drag = drag;
-                rb.angularDrag = angularDrag;
+                rb.SetLinearDamping(drag);
+                rb.SetAngularDamping(angularDrag);
 
                 if (parentBody) {
                     parentBody.mass -= mass;
-                    rb.velocity = parentBody.GetPointVelocity(tr.position);
+                    rb.SetLinearVelocity(parentBody.GetPointVelocity(tr.position));
                     rb.angularVelocity = parentBody.angularVelocity;
 
                     // Pick a random hinge joint to use

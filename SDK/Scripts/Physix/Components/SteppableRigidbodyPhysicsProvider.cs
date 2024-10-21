@@ -82,14 +82,14 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
             if (IsGrounded)
             {
                 var rigidbodyRotation = _rb.rotation;
-                var relativeVelocity = Quaternion.Inverse(rigidbodyRotation) * _rb.velocity;
+                var relativeVelocity = Quaternion.Inverse(rigidbodyRotation) * _rb.GetLinearVelocity();
 
                 if (relativeVelocity.y <= 0.25f)
                 {
                     if (Mathf.Abs(relativeVelocity.x) < 0.25f) relativeVelocity.x = 0;
                     if (Mathf.Abs(relativeVelocity.z) < 0.25f) relativeVelocity.z = 0;
                     relativeVelocity.y *= 1f - GetGroundT();
-                    _rb.velocity = rigidbodyRotation * relativeVelocity;
+                    _rb.SetLinearVelocity(rigidbodyRotation * relativeVelocity);
                 }
             }
         }

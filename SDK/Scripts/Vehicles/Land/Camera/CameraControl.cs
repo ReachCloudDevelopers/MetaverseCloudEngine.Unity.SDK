@@ -92,7 +92,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 lookObj.position = target.position;
                 Vector3 lookDirActual = (lookDir - new Vector3(Mathf.Sin(smoothYRot), 0, Mathf.Cos(smoothYRot)) * Mathf.Abs(smoothYRot) * 0.2f).normalized;
                 Vector3 forwardDir = lookObj.TransformDirection(lookDirActual);
-                Vector3 localOffset = lookObj.TransformPoint(-lookDirActual * distance - lookDirActual * Mathf.Min(targetBody.velocity.magnitude * 0.05f, 2) + Vector3.up * height);
+                Vector3 localOffset = lookObj.TransformPoint(-lookDirActual * distance - lookDirActual * Mathf.Min(targetBody.GetLinearVelocity().magnitude * 0.05f, 2) + Vector3.up * height);
 
                 // Check if there is an object between the camera and target vehicle and move the camera in front of it
                 if (Physics.Linecast(target.position, localOffset, out hit, castMask)) {

@@ -8,16 +8,22 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [Experimental]
     public partial class VoiceTranscriber : TriInspectorMonoBehaviour
     {
-        [SerializeField] private UnityEvent onListeningStarted;
-        [SerializeField] private UnityEvent onListeningFinished;
-        [SerializeField] private UnityEvent<string> onListeningSucceeded;
-        [SerializeField] private UnityEvent onListeningFailed;
-        [SerializeField] private UnityEvent onRecordingStarted;
-        [SerializeField] private UnityEvent onRecordingStopped;
+        [InfoBox(
+            "Using offline transcription does not require AI features to be enabled for this Meta Space but the quality may " + 
+            "suffer as a result.")]
+        [SerializeField] private bool offline;
+        [SerializeField] private UnityEvent onListeningStarted = new();
+        [SerializeField] private UnityEvent onListeningFinished = new();
+        [SerializeField] private UnityEvent<string> onListeningSucceeded = new();
+        [SerializeField] private UnityEvent<string> onRealtimeResult = new();
+        [SerializeField] private UnityEvent onListeningFailed = new();
+        [SerializeField] private UnityEvent onRecordingStarted = new();
+        [SerializeField] private UnityEvent onRecordingStopped = new();
         
         public UnityEvent OnListeningStarted => onListeningStarted;
         public UnityEvent OnListeningFinished => onListeningFinished;
         public UnityEvent<string> OnListeningSucceeded => onListeningSucceeded;
+        public UnityEvent<string> OnRealtimeResult => onRealtimeResult;
         public UnityEvent OnListeningFailed => onListeningFailed;
         public UnityEvent OnRecordingStarted => onRecordingStarted;
 

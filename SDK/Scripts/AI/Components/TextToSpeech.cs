@@ -28,6 +28,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField] private UnityEvent onLoadingStarted = new();
         [SerializeField] private UnityEvent onLoadingFinished = new();
         [SerializeField] private UnityEvent onPlayTts = new();
+        [SerializeField] private UnityEvent onPlayTtsFinished = new();
         [SerializeField] private UnityEvent onPlayTtsFailed = new();
 
         public string Text

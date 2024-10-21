@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: 1d3c612a9616de541824c807e2f3e484
 ModelImporter:
-  serializedVersion: 22103
+  serializedVersion: 22200
   internalIDToNameTable:
   - first:
       74: -203655887218126122
@@ -19,8 +19,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -72,6 +70,7 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
@@ -108,33 +107,7 @@ ModelImporter:
     legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
     blendShapeNormalImportMode: 1
     normalSmoothingSource: 0
-  referencedClips:
-  - 53d3ef4bc716e1541b7883efd986f5e9
-  - 8142653aedca7054a8493d7b30acd17d
-  - 8d0cba6932b23634bbeb60604999a30d
-  - 24511198705caaa418bc075ea426459b
-  - e39a0dcd15e4ae1488aa2a97e764c9f9
-  - 6027e267b570776488b2fdb03d8bfda5
-  - 917c4a6f6b1491d428241a77bff223b6
-  - 00ff1c541c365d743b301bee381c9054
-  - feea91c1c2ac34d478c191dd044cce15
-  - 15371e32fd2f3ea48be22b90d6042c45
-  - e9adef0d34c654544bd05bd686c00123
-  - 90a463eeef98c9240a783bdb8ca99abf
-  - c8885dd1d1f465142a9014e0bc4f9a67
-  - 09f06dbe3d7dbea4a96baaf12a78aff7
-  - da9fa66b9db3ad4459dabf4829c1b44c
-  - dbf78b4553cbed34985219fb0177d12d
-  - 9862daef1e8e459449119610fea86923
-  - 45bbd78ba030b4743947940ba034c5e9
-  - 4f7ddb39fa27cc0448cd730ee81b6424
-  - d44eb61e8b1684340a3876dd0898ef16
-  - bd849db5eebf3414e91b02a1451889d7
-  - 88d41075072c8ce4ea2cdd64ffd76db2
-  - 34862c5d0c917994889ab5bff98c50bc
-  - e59b694811fc05d43a0493a001b8a554
-  - b761bc6b68d81ea45b6eadd011189d31
-  - c2eb8560ccf120c4d909a7efcc746335
+  referencedClips: []
   importAnimation: 1
   humanDescription:
     serializedVersion: 3

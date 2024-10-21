@@ -57,7 +57,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 EditorGUI.LabelField(new Rect(iconRect.xMax - labelXOffset, iconRect.yMin, labelWidth, iconSize), nicifyVariableName);
                             };
                         }
-                        EditorGUI.DrawTextureAlpha(iconRect, iconTexture);
+                        if (iconTexture)
+                            EditorGUI.DrawTextureAlpha(iconRect, iconTexture);
                     }
                     finally
                     {

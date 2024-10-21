@@ -1,5 +1,11 @@
 ﻿using UnityEngine;
 
+#if UNITY_6000_0_OR_NEWER
+using PhysicMaterial = UnityEngine.PhysicsMaterial;
+#else
+using PhysicMaterial = UnityEngine.PhysicMaterial;
+#endif
+
 namespace MetaverseCloudEngine.Unity.Vehicles
 {
     [RequireComponent(typeof(Terrain))]

@@ -1,6 +1,12 @@
 ﻿using TriInspectorMVCE;
 using UnityEngine;
 
+#if MV_XR_TOOLKIT_3
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.Interactables.InteractableSelectMode;
+#else
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.InteractableSelectMode;
+#endif
+
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
     /// <summary>
@@ -37,7 +43,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             interactable.AllowFlatSurfaceClimbing = allowFlatSurfaceGrabs;
             interactable.CollideWithPlayer = enablePlayerCollision;
             interactable.PhysicsAttachmentBreakDistance = grabBreakDistance;
-            interactable.selectMode = UnityEngine.XR.Interaction.Toolkit.InteractableSelectMode.Multiple;
+            interactable.selectMode = InteractableSelectMode.Multiple;
         }
     }
 }

@@ -3,8 +3,17 @@ using MetaverseCloudEngine.Unity.Physix.Abstract;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.Serialization;
-using UnityEngine.XR.Interaction.Toolkit;
+#if UNITY_6000_0_OR_NEWER
+using PhysicMaterial = UnityEngine.PhysicsMaterial;
+#else
+using PhysicMaterial = UnityEngine.PhysicMaterial;
+#endif
+
+#if MV_XR_TOOLKIT_3
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+#else
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Physix.Components
 {
@@ -103,8 +112,8 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
         /// The velocity of the <see cref="Rigidbody"/>.
         /// </summary>
         public Vector3 Velocity {
-            get => Rigidbody.velocity;
-            set => Rigidbody.velocity = value;
+            get => Rigidbody.GetLinearVelocity();
+            set => Rigidbody.SetLinearVelocity(value);
         }
 
         /// <summary>
@@ -260,10 +269,10 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
             {
                 if (rb.isKinematic)
                     continue;
-                var rbVelocity = rb.velocity;
+                var rbVelocity = rb.GetLinearVelocity();
                 rbVelocity = Vector3.ProjectOnPlane(rbVelocity, up);
                 rbVelocity += up * height;
-                rb.velocity = rbVelocity;
+                rb.SetLinearVelocity(rbVelocity);
             }
 
             IsGrounded = false;

@@ -115,7 +115,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
+#if UNITY_6000_0_OR_NEWER
+                    //UnityEditor.QNX.Settings.architecture = EmbeddedArchitecture.Arm64;
+#else
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
+#endif
+                    
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
 
                     var targetBundleId = bundleId + "_" + platform;

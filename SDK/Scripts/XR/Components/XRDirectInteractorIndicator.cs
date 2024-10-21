@@ -3,7 +3,19 @@ using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
-using UnityEngine.XR.Interaction.Toolkit;
+
+#if MV_XR_TOOLKIT_3
+using XRDirectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRDirectInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRSelectInteractable;
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.Interactables.InteractableSelectMode;
+using IXRInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.IXRInteractable;
+#else
+using XRDirectInteractor = UnityEngine.XR.Interaction.Toolkit.XRDirectInteractor;
+using IXRSelectInteractable = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractable;
+using InteractableSelectMode = UnityEngine.XR.Interaction.Toolkit.InteractableSelectMode;
+using IXRInteractable = UnityEngine.XR.Interaction.Toolkit.IXRInteractable;
+#endif
+
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {

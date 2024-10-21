@@ -84,7 +84,7 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
             var gravity = rbRotation * Physics.gravity;
             var cleanupList = false;
 
-            var relativeVelocity = Quaternion.Inverse(rbRotation) * _rigidbody.velocity * Time.deltaTime;
+            var relativeVelocity = Quaternion.Inverse(rbRotation) * _rigidbody.GetLinearVelocity() * Time.deltaTime;
             var angularVelocity = Quaternion.Euler(Mathf.Rad2Deg * Time.deltaTime * _rigidbody.angularVelocity);
             var relativeAngularVelocity = Quaternion.Inverse(rbRotation) * (angularVelocity * rbRotation);
             var projectedRotation = rbRotation * relativeAngularVelocity;

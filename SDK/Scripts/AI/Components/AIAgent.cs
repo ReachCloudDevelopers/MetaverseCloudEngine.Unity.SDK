@@ -69,10 +69,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField] private UnityEvent onThinkingStarted;
         [SerializeField] private UnityEvent onThinkingFinished;
         [SerializeField] private UnityEvent<string> onResponse;
+        [SerializeField] private UnityEvent onVoiceComplete = new();
         [SerializeField] private UnityEvent onResponseFailed;
         [SerializeField] private List<AIAgentAction> actions;
         
         [Title("Text to Speech")]
+        [SerializeField] private bool deferActionsUntilVoiceComplete;
         [SerializeField] private AudioSource voiceSource;
         [SerializeField] private TextToSpeechVoicePreset voicePreset;
         

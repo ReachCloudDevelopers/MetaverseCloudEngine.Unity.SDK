@@ -81,7 +81,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 targetVisible = !Physics.Linecast(tr.position, target.position, viewBlockMask);
 
                 if (targetVisible || targetIsWaypoint) {
-                    targetPoint = targetBody ? target.position + targetBody.velocity : target.position;
+                    targetPoint = targetBody ? target.position + targetBody.GetLinearVelocity() : target.position;
                 }
 
                 if (targetIsWaypoint) {
@@ -190,7 +190,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             yield return new WaitForFixedUpdate();
             tr.position = targetPoint;
             tr.rotation = Quaternion.LookRotation(targetIsWaypoint ? (targetWaypoint.nextPoint.transform.position - targetPoint).normalized : Vector3.forward, Vector3.up);
-            rb.velocity = Vector3.zero;
+            rb.SetLinearVelocity(Vector3.zero);
             rb.angularVelocity = Vector3.zero;
         }
 
@@ -198,7 +198,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             yield return new WaitForFixedUpdate();
             tr.eulerAngles = new Vector3(0, transform.eulerAngles.y, 0);
             tr.Translate(Vector3.up, Space.World);
-            rb.velocity = Vector3.zero;
+            rb.SetLinearVelocity(Vector3.zero);
             rb.angularVelocity = Vector3.zero;
         }
 

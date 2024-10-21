@@ -7,6 +7,18 @@ using UnityEngine.Events;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 
+#if MV_XR_TOOLKIT_3
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+using IXRInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRInteractor;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRHoverInteractor;
+#else
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+using IXRInteractor = UnityEngine.XR.Interaction.Toolkit.IXRInteractor;
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractor;
+using IXRHoverInteractor = UnityEngine.XR.Interaction.Toolkit.IXRHoverInteractor;
+#endif
+
 namespace MetaverseCloudEngine.Unity.Inputs.Components
 {
     [DeclareFoldoutGroup("Hand Options")]

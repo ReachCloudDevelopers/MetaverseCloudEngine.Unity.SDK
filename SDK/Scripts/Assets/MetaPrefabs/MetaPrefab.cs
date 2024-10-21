@@ -55,7 +55,12 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                 .ToArray();
 
             foreach (var metaPrefab in metaPrefabs)
-                metaPrefab.scriptableRenderPipelineSupported = GraphicsSettings.renderPipelineAsset;
+                metaPrefab.scriptableRenderPipelineSupported = 
+#if MV_RENDER_PIPELINE_17
+                    GraphicsSettings.defaultRenderPipeline;
+#else
+                    GraphicsSettings.renderPipelineAsset;
+#endif
         }
 #endif
 

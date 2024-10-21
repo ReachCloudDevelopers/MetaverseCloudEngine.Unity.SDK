@@ -124,7 +124,7 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
 
         private Vector3 GetVelocity()
         {
-            return useTransform ? _transformVelocity : body.velocity;
+            return useTransform ? _transformVelocity : body.GetLinearVelocity();
         }
     }
 }

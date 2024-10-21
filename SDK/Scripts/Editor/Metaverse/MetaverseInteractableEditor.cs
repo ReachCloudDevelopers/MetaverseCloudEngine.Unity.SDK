@@ -16,7 +16,10 @@ namespace MetaverseCloudEngine.Unity.Editors
     [CustomPropertyDrawer(typeof(ActivateEvent))]
     [CustomPropertyDrawer(typeof(DeactivateEvent))]
 #pragma warning disable CS0618 // Type or member is obsolete
+#if UNITY_6000_0_OR_NEWER
+#else
     [CustomPropertyDrawer(typeof(XRInteractableEvent))]
+#endif
 #pragma warning restore CS0618 // Type or member is obsolete
     public class MetaverseInteractableHideEventsPropertyDrawer : PropertyDrawer
     {

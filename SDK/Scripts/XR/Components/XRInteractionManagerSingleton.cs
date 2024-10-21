@@ -4,6 +4,14 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 
+#if MV_XR_TOOLKIT_3
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRBaseInteractor;
+#else
+using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+using XRBaseInteractor = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractor;
+#endif
+
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
     /// <summary>
@@ -52,7 +60,16 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     _singletonManager.enabled = false;
                     _singletonManager.enabled = true;
                 }
+
+                #if UNITY_6000_0_OR_NEWER
+                FindObjectsByType<XRBaseInteractor>(FindObjectsSortMode.None)
+                    .ForEach(x => x.enabled = false)
+                    .ForEach(x => x.enabled = true);
             
+                FindObjectsByType<XRBaseInteractable>(FindObjectsSortMode.None)
+                    .ForEach(x => x.enabled = false)
+                    .ForEach(x => x.enabled = true);
+                #else
                 FindObjectsOfType<XRBaseInteractor>()
                     .ForEach(x => x.enabled = false)
                     .ForEach(x => x.enabled = true);
@@ -60,6 +77,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 FindObjectsOfType<XRBaseInteractable>()
                     .ForEach(x => x.enabled = false)
                     .ForEach(x => x.enabled = true);
+                #endif
             });
         }
     }

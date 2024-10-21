@@ -1,5 +1,10 @@
 ﻿using UnityEngine;
-using UnityEngine.XR.Interaction.Toolkit;
+
+#if MV_XR_TOOLKIT_3
+using XRSocketInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor;
+#else
+using XRSocketInteractor = UnityEngine.XR.Interaction.Toolkit.XRSocketInteractor;
+#endif
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {

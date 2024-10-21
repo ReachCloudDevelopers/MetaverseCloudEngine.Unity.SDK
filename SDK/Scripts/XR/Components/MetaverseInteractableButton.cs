@@ -3,6 +3,12 @@ using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.Events;
 using UnityEngine;
 
+#if MV_XR_TOOLKIT_3
+using XRSimpleInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRSimpleInteractable;
+#else
+using XRSimpleInteractable = UnityEngine.XR.Interaction.Toolkit.XRSimpleInteractable;
+#endif
+
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
     [DisallowMultipleComponent]

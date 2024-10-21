@@ -78,7 +78,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             tr = transform;
             rb = GetComponent<Rigidbody>();
             vp = GetComponent<VehicleParent>();
-            initialAngularDrag = rb.angularDrag;
+            initialAngularDrag = rb.GetAngularDamping();
         }
 
         void FixedUpdate() {
@@ -86,7 +86,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 groundedFactor = basedOnWheelsGrounded ? vp.groundedWheels / (vp.hover ? vp.hoverWheels.Length : vp.wheels.Length) : 1;
 
                 angDragTime = 20;
-                rb.angularDrag = initialAngularDrag;
+                rb.SetAngularDamping(initialAngularDrag);
 
                 if (driftSpinAssist > 0) {
                     ApplySpinAssist();
@@ -99,7 +99,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
             else {
                 if (angularDragOnJump) {
                     angDragTime = Mathf.Max(0, angDragTime - Time.timeScale * TimeValues.InverseFixedTimeFactor);
-                    rb.angularDrag = angDragTime > 0 && vp.upDot > 0.5 ? 10 : initialAngularDrag;
+                    rb.SetAngularDamping(angDragTime > 0 && vp.upDot > 0.5 ? 10 : initialAngularDrag);
                 }
             }
 
@@ -142,7 +142,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 new Vector3(0, (targetTurnSpeed - vp.localAngularVel.y) * driftSpinAssist * driftSpinCurve.Evaluate(Mathf.Abs(Mathf.Pow(vp.localVelocity.x, driftSpinExponent))) * groundedFactor, 0),
                 ForceMode.Acceleration);
 
-            float rightVelDot = Vector3.Dot(tr.right, rb.velocity.normalized);
+            float rightVelDot = Vector3.Dot(tr.right, rb.GetLinearVelocity().normalized);
 
             if (straightenAssist && vp.steerInput == 0 && Mathf.Abs(rightVelDot) < 0.1f && vp.sqrVelMag > 5) {
                 rb.AddRelativeTorque(
@@ -203,7 +203,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
 
         // Assist for accelerating while drifting
         void ApplyDriftPush() {
-            float pushFactor = (vp.accelAxisIsBrake ? vp.accelInput : vp.accelInput - vp.brakeInput) * Mathf.Abs(vp.localVelocity.x) * driftPush * groundedFactor * (1 - Mathf.Abs(Vector3.Dot(vp.forwardDir, rb.velocity.normalized)));
+            float pushFactor = (vp.accelAxisIsBrake ? vp.accelInput : vp.accelInput - vp.brakeInput) * Mathf.Abs(vp.localVelocity.x) * driftPush * groundedFactor * (1 - Mathf.Abs(Vector3.Dot(vp.forwardDir, rb.GetLinearVelocity().normalized)));
 
             rb.AddForce(
                 vp.norm.TransformDirection(new Vector3(Mathf.Abs(pushFactor) * Mathf.Sign(vp.localVelocity.x), Mathf.Abs(pushFactor) * Mathf.Sign(vp.localVelocity.z), 0)),

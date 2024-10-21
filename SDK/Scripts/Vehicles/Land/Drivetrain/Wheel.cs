@@ -1,6 +1,13 @@
 using MetaverseCloudEngine.Unity.Physix.Components;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_6000_0_OR_NEWER
+using PhysicMaterial = UnityEngine.PhysicsMaterial;
+using PhysicMaterialCombine = UnityEngine.PhysicsMaterialCombine;
+#else
+using PhysicMaterial = UnityEngine.PhysicMaterial;
+using PhysicMaterialCombine = UnityEngine.PhysicMaterialCombine;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Vehicles
 {
@@ -721,7 +728,7 @@ namespace MetaverseCloudEngine.Unity.Vehicles
                 }
 
                 rb.mass -= mass;
-                detachedBody.velocity = rb.GetPointVelocity(rim.position);
+                detachedBody.SetLinearVelocity(rb.GetPointVelocity(rim.position));
                 detachedBody.angularVelocity = rb.angularVelocity;
 
                 rim.gameObject.SetActive(false);

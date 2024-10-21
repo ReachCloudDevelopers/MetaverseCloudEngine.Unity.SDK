@@ -7,6 +7,11 @@ using System.Linq;
 using MetaverseCloudEngine.Unity.Async;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+#if MV_XR_TOOLKIT_3
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.IXRSelectInteractor;
+#else
+using IXRSelectInteractor = UnityEngine.XR.Interaction.Toolkit.IXRSelectInteractor;
+#endif
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
@@ -186,7 +191,12 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             if (!TryGetComponent(out IXRSelectInteractor interactor))
                 return;
 
-            var xrInteractionManagers = FindObjectsOfType<XRInteractionManager>();
+            var xrInteractionManagers = 
+#if UNITY_6000_0_OR_NEWER
+                FindObjectsByType<XRInteractionManager>(FindObjectsSortMode.None);
+#else
+                FindObjectsOfType<XRInteractionManager>();
+#endif
             foreach (var manager in xrInteractionManagers.ToArray())
                 foreach (var selection in interactor.interactablesSelected.ToArray())
                     manager.SelectExit(interactor, selection);

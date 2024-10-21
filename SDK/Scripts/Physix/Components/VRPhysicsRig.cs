@@ -38,7 +38,7 @@ namespace MetaverseCloudEngine.Unity.Physix
         [DisableIf(nameof(IsActive))][SerializeField] private float positionSpring = 5000;
         [DisableIf(nameof(IsActive))][SerializeField] private float positionDamper = 200;
         [DisableIf(nameof(IsActive))][SerializeField] private float strength = 500;
-        [DisableIf(nameof(IsActive))][SerializeField] private PhysicMaterial handMaterial;
+        [DisableIf(nameof(IsActive))][SerializeField] private PhysicsMaterial handMaterial;
 
         [Header("Events")]
         public UnityEvent onGenerated;
@@ -89,7 +89,7 @@ namespace MetaverseCloudEngine.Unity.Physix
         {
             if (MVUtils.CachedTime < _freezeRigidbodyTimeout && rootBody)
             {
-                rootBody.velocity = Vector3.zero;
+                rootBody.SetLinearVelocity(Vector3.zero);
                 rootBody.angularVelocity = Vector3.zero;
 
                 var kinematic = rootBody.isKinematic;

@@ -868,10 +868,15 @@ namespace MetaverseCloudEngine.Unity
             return withExtension ? Path.GetFileName(path) : Path.GetFileNameWithoutExtension(path);
         }
 
-        public static string ToPrettyErrorString(this object e)
+        public static string ToPrettyErrorString(this object e, string defaultMessage = "Something went wrong.")
         {
-            if (e == null) return string.Empty;
-            return e is not Exception ex ? e.ToString() : ex.Message;
+            if (e == null) return defaultMessage;
+            var err = e is not Exception ex ? e.ToString() : ex.Message;
+            if (string.IsNullOrEmpty(err))
+                return defaultMessage;
+            if (err.Contains("Exception of type") || err.Contains("Exception from"))
+                return defaultMessage;
+            return err;
         }
 
         #endregion
@@ -1338,6 +1343,60 @@ namespace MetaverseCloudEngine.Unity
                 MetaverseProgram.Logger.Log("Requesting permission for USB device");
                 _usbManager.Call("requestPermission", device, permissionIntent);
             }
+        }
+
+        public static Vector3 GetLinearVelocity(this Rigidbody rigidbody)
+        {
+#if UNITY_6000_0_OR_NEWER
+            return rigidbody.linearVelocity;
+#else
+            return rigidbody.velocity;
+#endif
+        }
+
+        public static void SetLinearVelocity(this Rigidbody rigidbody, Vector3 velocity)
+        {
+#if UNITY_6000_0_OR_NEWER
+            rigidbody.linearVelocity = velocity;
+#else
+            rigidbody.velocity = velocity;
+#endif
+        }
+
+        public static float GetLinearDamping(this Rigidbody rigidbody)
+        {
+#if UNITY_6000_0_OR_NEWER
+            return rigidbody.linearDamping;
+#else
+            return rigidbody.drag;
+#endif
+        }
+
+        public static void SetLinearDamping(this Rigidbody rigidbody, float damping)
+        {
+#if UNITY_6000_0_OR_NEWER
+            rigidbody.linearDamping = damping;
+#else
+            rigidbody.drag = damping;
+#endif
+        }
+
+        public static float GetAngularDamping(this Rigidbody rigidbody)
+        {
+#if UNITY_6000_0_OR_NEWER
+            return rigidbody.angularDamping;
+#else
+            return rigidbody.angularDrag;
+#endif
+        }
+
+        public static void SetAngularDamping(this Rigidbody rigidbody, float damping)
+        {
+#if UNITY_6000_0_OR_NEWER
+            rigidbody.angularDamping = damping;
+#else
+            rigidbody.angularDrag = damping;
+#endif
         }
 
         public static bool IsVRCompatible()
