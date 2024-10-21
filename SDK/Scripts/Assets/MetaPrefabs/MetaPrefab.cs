@@ -20,6 +20,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
     public class MetaPrefab : Asset<MetaPrefabMetadata>
     {
         [SerializeField, HideInInspector] private bool scriptableRenderPipelineSupported;
+        [SerializeField, HideInInspector] private bool uploadedWithUnity6000;
 
         private bool _registered;
         private List<Material> _createdMaterials;
@@ -33,6 +34,11 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
         /// Whether or not this prefab is supported by the scriptable render pipeline.
         /// </summary>
         public bool UsesScriptableRenderPipeline => scriptableRenderPipelineSupported;
+
+        /// <summary>
+        /// Whether or not this prefab was uploaded with Unity 6000.
+        /// </summary>
+        public bool UploadedWithUnity6000 => uploadedWithUnity6000;
 
         private static Material _standardPipelineFallbackMaterial;
         private static Material _universalPipelineFallbackMaterial;
@@ -55,12 +61,19 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                 .ToArray();
 
             foreach (var metaPrefab in metaPrefabs)
+            {
                 metaPrefab.scriptableRenderPipelineSupported = 
 #if MV_RENDER_PIPELINE_17
                     GraphicsSettings.defaultRenderPipeline;
 #else
                     GraphicsSettings.renderPipelineAsset;
 #endif
+#if UNITY_6000_0_OR_NEWER
+                metaPrefab.uploadedWithUnity6000 = true;
+#else
+                metaPrefab.uploadedWithUnity6000 = false;
+#endif
+            }
         }
 #endif
 
@@ -86,6 +99,14 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                 var renderPipelineSupported = GraphicsSettings.defaultRenderPipeline != null && !MetaverseProgram.IsCoreApp;
                 if (scriptableRenderPipelineSupported != renderPipelineSupported)
                     scriptableRenderPipelineSupported = renderPipelineSupported;
+                var uploadedWithUnity6000 =
+#if UNITY_6000_0_OR_NEWER
+                    true;
+#else
+                    false;
+#endif
+                if (this.uploadedWithUnity6000 != uploadedWithUnity6000)
+                    this.uploadedWithUnity6000 = uploadedWithUnity6000;
             }
 #endif
         }

@@ -14,6 +14,7 @@ using MetaverseCloudEngine.Unity.Components;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Common.Models.QueryParams;
 using UnityEngine.Rendering;
+using MetaverseCloudEngine.Unity.UI.Components;
 
 namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
 {
@@ -709,7 +710,8 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
             }
         }
 
-        private static void ConfigureDownloadedObjectForCurrentRenderPipeline(GameObject downloadedObject,
+        private static void ConfigureDownloadedObjectForCurrentRenderPipeline(
+            GameObject downloadedObject,
             bool hasChildren)
         {
             if (!downloadedObject.TryGetComponent(out MetaPrefab metaPrefab))
@@ -723,6 +725,30 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                         MetaverseProgram.Logger.Log(
                             $"Successfully upgraded {downloadedObject.name} to the current render pipeline.");
                     break;
+            }
+
+            const bool isCurrentlyUnity6000 =
+#if UNITY_6000_0_OR_NEWER
+                true;
+#else
+                false;
+#endif
+            if (isCurrentlyUnity6000 != metaPrefab.UploadedWithUnity6000)
+            {
+                var defaultFont = Resources.Load<TMPro.TMP_FontAsset>(MetaverseConstants.Resources.DefaultFont);
+                var tmp_texts = downloadedObject.GetComponentsInChildren<TMPro.TMP_Text>(true);
+                foreach (var tmpText in tmp_texts)
+                    tmpText.font = defaultFont;
+                var threeDTexts = downloadedObject.GetComponentsInChildren<TMPro.TextMeshPro>(true);
+                foreach (var textMesh in threeDTexts)
+                    textMesh.font = defaultFont;
+                var themes = Resources.FindObjectsOfTypeAll<Theme>();
+                foreach (var theme in themes)
+                {
+                    theme.PrimaryFont = defaultFont;
+                    theme.SecondaryFont = defaultFont;
+                    theme.TertiaryFont = defaultFont;
+                }
             }
         }
 

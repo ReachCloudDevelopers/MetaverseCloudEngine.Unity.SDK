@@ -51,6 +51,11 @@ namespace MetaverseCloudEngine.Unity
             /// The path for the default Seat prefab.
             /// </summary>
             public const string Seat = ResourcesBasePath + "Seat";
+
+            /// <summary>
+            /// The path to the default font resource.
+            /// </summary>
+            public const string DefaultFont = "Fonts & Materials/LiberationSans SDF";
         }
 
         /// <summary>
