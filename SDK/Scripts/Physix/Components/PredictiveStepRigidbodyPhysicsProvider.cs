@@ -70,7 +70,7 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
         private void StepUp()
         {
             _tr.position += stepAdjustmentSpeed * Time.deltaTime * (_rb.rotation * Vector3.up);
-            _rb.SetLinearVelocity(Vector3.ProjectOnPlane(_rb.linearVelocity, _tr.up));
+            _rb.SetLinearVelocity(Vector3.ProjectOnPlane(_rb.GetLinearVelocity(), _tr.up));
         }
 
         private bool SweepRay()
