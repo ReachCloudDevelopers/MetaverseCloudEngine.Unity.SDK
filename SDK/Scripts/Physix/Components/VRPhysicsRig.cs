@@ -8,6 +8,12 @@ using MetaverseCloudEngine.Unity.Async;
 using System;
 using TriInspectorMVCE;
 
+#if UNITY_6000_0_OR_NEWER
+using PhysicMaterial = UnityEngine.PhysicsMaterial;
+#else
+using PhysicMaterial = UnityEngine.ClothSkinningCoefficient;
+#endif
+
 namespace MetaverseCloudEngine.Unity.Physix
 {
     /// <summary>
@@ -38,7 +44,7 @@ namespace MetaverseCloudEngine.Unity.Physix
         [DisableIf(nameof(IsActive))][SerializeField] private float positionSpring = 5000;
         [DisableIf(nameof(IsActive))][SerializeField] private float positionDamper = 200;
         [DisableIf(nameof(IsActive))][SerializeField] private float strength = 500;
-        [DisableIf(nameof(IsActive))][SerializeField] private PhysicsMaterial handMaterial;
+        [DisableIf(nameof(IsActive))][SerializeField] private PhysicMaterial handMaterial;
 
         [Header("Events")]
         public UnityEvent onGenerated;

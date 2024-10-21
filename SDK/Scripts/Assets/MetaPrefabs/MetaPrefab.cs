@@ -7,12 +7,6 @@ using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-#if UNITY_6000_0_OR_NEWER
-using PhysicMaterial = UnityEngine.PhysicsMaterial;
-#else
-using PhysicMaterial = UnityEngine.ClothSkinningCoefficient;
-#endif
-
 namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
 {
     /// <summary>
