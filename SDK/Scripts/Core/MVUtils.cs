@@ -1345,6 +1345,28 @@ namespace MetaverseCloudEngine.Unity
             }
         }
 
+        internal static void UpgradeAllLoadedFontsForUnity6000()
+        {
+            var defaultFont = Resources.Load<TMP_FontAsset>(MetaverseConstants.Resources.DefaultFont);
+            var allTextResources = Resources.FindObjectsOfTypeAll<TMP_Text>();
+            foreach (var tmpText in allTextResources)
+            {
+                if (tmpText.font)
+                    Debug.Log(tmpText.font.version);
+                tmpText.font = defaultFont;
+                tmpText.textWrappingMode = tmpText.overflowMode == TextOverflowModes.Overflow 
+                    ? TextWrappingModes.Normal 
+                    : TextWrappingModes.NoWrap;
+            }
+            var themes = Resources.FindObjectsOfTypeAll<UI.Components.Theme>();
+            foreach (var theme in themes)
+            {
+                theme.PrimaryFont = defaultFont;
+                theme.SecondaryFont = defaultFont;
+                theme.TertiaryFont = defaultFont;
+            }
+        }
+
         public static Vector3 GetLinearVelocity(this Rigidbody rigidbody)
         {
 #if UNITY_6000_0_OR_NEWER

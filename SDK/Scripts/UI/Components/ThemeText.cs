@@ -51,7 +51,11 @@ namespace MetaverseCloudEngine.Unity.UI.Components
                 };
 
                 if (font != null && TryGetComponent(out TMP_Text text))
+                {
                     text.font = font;
+                    text.enabled = false;
+                    text.enabled = true;
+                }
             });
         }
     }

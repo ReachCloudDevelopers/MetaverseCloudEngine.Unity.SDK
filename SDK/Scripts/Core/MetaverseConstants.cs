@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity
             /// <summary>
             /// The path to the default font resource.
             /// </summary>
-            public const string DefaultFont = "Fonts & Materials/LiberationSans SDF";
+            public const string DefaultFont = "Fonts & Materials/Roboto-Regular SDF";
         }
 
         /// <summary>

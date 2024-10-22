@@ -735,20 +735,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
 #endif
             if (isCurrentlyUnity6000 != metaPrefab.UploadedWithUnity6000)
             {
-                var defaultFont = Resources.Load<TMPro.TMP_FontAsset>(MetaverseConstants.Resources.DefaultFont);
-                var tmp_texts = downloadedObject.GetComponentsInChildren<TMPro.TMP_Text>(true);
-                foreach (var tmpText in tmp_texts)
-                    tmpText.font = defaultFont;
-                var threeDTexts = downloadedObject.GetComponentsInChildren<TMPro.TextMeshPro>(true);
-                foreach (var textMesh in threeDTexts)
-                    textMesh.font = defaultFont;
-                var themes = Resources.FindObjectsOfTypeAll<Theme>();
-                foreach (var theme in themes)
-                {
-                    theme.PrimaryFont = defaultFont;
-                    theme.SecondaryFont = defaultFont;
-                    theme.TertiaryFont = defaultFont;
-                }
+                MVUtils.UpgradeAllLoadedFontsForUnity6000();
             }
         }
 
