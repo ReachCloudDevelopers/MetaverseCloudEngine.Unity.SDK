@@ -20,6 +20,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
                 text = text.Replace("EditorApplication.update += EnableMetaXRFeature;", "// Removed line...");
                 System.IO.File.WriteAllText(path, text);
                 CompilationPipeline.RequestScriptCompilation();
+                Debug.Log("Disabled Prompt To Enable Meta Quest OpenXR Support");
             }
         }
     }

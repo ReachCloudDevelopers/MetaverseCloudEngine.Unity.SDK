@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace MetaverseCloudEngine.Unity.Editors.BugFixes
 {
     public class DisableXRProjectValidationWindowPopup
@@ -27,7 +29,10 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
             }
 
             if (changed)
+            {
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+                Debug.Log("Disabled XR Project Validation Window Popup");
+            }
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors.BugFixes
 {
@@ -25,6 +26,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
                     "if (subgraph?.nest?.graph?.units != null) foreach (var unit in subgraph.nest.graph.units)");
                 System.IO.File.WriteAllText(file, newText);
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+                Debug.Log("Fixed LinkerCreator.cs");
             }
         }
 

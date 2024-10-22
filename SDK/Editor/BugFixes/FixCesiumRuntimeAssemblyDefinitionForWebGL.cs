@@ -1,5 +1,6 @@
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors.BugFixes
 {
@@ -20,6 +21,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
                 var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\"]");
                 System.IO.File.WriteAllText(file, newText);
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+                Debug.Log("Fixed CesiumRuntime.asmdef");
             }
         }
     }
