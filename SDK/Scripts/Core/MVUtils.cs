@@ -1347,6 +1347,7 @@ namespace MetaverseCloudEngine.Unity
 
         internal static void UpgradeAllLoadedFontsForUnity6000()
         {
+#if UNITY_6000_0_OR_NEWER
             var defaultFont = Resources.Load<TMP_FontAsset>(MetaverseConstants.Resources.DefaultFont);
             var allTextResources = Resources.FindObjectsOfTypeAll<TMP_Text>();
             foreach (var tmpText in allTextResources)
@@ -1365,6 +1366,7 @@ namespace MetaverseCloudEngine.Unity
                 theme.SecondaryFont = defaultFont;
                 theme.TertiaryFont = defaultFont;
             }
+#endif
         }
 
         public static Vector3 GetLinearVelocity(this Rigidbody rigidbody)
