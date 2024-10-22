@@ -6,10 +6,14 @@ using UnityEngine.Scripting;
 
 namespace MetaverseCloudEngine.Unity.Internal.IL2CPP
 {
+    /// <summary>
+    /// Helps preserve the unity navmesh agent properties in standalone player builds.
+    /// </summary>
     [Preserve]
-    internal class UnityNavMeshAgentPreserve : MonoBehaviour
+    [AddComponentMenu("")]
+    internal class IL2CPP_ONLY_UnityNavMeshAgentPreserveStandaloneBuildHelper : MonoBehaviour
     {
-        void Start()
+        private void Start()
         {
             try
             {
