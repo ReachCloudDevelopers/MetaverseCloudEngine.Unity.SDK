@@ -12,7 +12,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         {
             var files = System.IO.Directory.GetFiles("Library/PackageCache", "MetaXRFeatureEnabler.cs", System.IO.SearchOption.AllDirectories);
             if (files.Length == 0) return;
-            var path = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith("Library/PackageCache/com.meta.xr.sdk.core@") && x.Replace("\\", "/").EndsWith("/Editor/OpenXRFeatures/MetaXRFeatureEnabler.cs"));
+            var path = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith("Library/PackageCache/com.meta.xr.sdk.core") && x.Replace("\\", "/").EndsWith("/Editor/OpenXRFeatures/MetaXRFeatureEnabler.cs"));
             if (!System.IO.File.Exists(path)) return;
             var text = System.IO.File.ReadAllText(path);
             if (text.Contains("EditorApplication.update += EnableMetaXRFeature;"))
