@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors.BugFixes
@@ -7,13 +8,16 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         [UnityEditor.InitializeOnLoadMethod]
         private static void PatchCode()
         {
-            var path = "./";
-            if (!System.IO.Directory.Exists(path)) return;
-            var changed = false;
+            var path = "Library/PackageCache";
+            if (!System.IO.Directory.Exists("Library/PackageCache") ||
+                !System.IO.Directory.Exists("Assets")) return;
+            var changed = 0;
             // Scan all .cs files in the PackageCache directory
-            foreach (var file in System.IO.Directory.GetFiles(path, "*.cs", System.IO.SearchOption.AllDirectories))
+            var files = System.IO.Directory.GetFiles(path, "*.cs", System.IO.SearchOption.AllDirectories).Concat(
+                System.IO.Directory.GetFiles("Assets", "*.cs", System.IO.SearchOption.AllDirectories)).ToArray();
+            foreach (var file in files) 
             {
-                if (!file.StartsWith("./Assets") && !file.StartsWith("./Library/PackageCache"))
+                if (!file.StartsWith("Library/PackageCache") && !file.StartsWith("Assets"))
                     continue;
                 var text = System.IO.File.ReadAllText(file);
                 var regex = new System.Text.RegularExpressions.Regex(@"SettingsService\.OpenProjectSettings\([^)]+\);");
@@ -24,14 +28,14 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
                     // time the domain is reloaded.
                     var newText = regex.Replace(text, "((System.Action)(() => {}))();"); // Replace with a lambda that does nothing
                     System.IO.File.WriteAllText(file, newText);
-                    changed = true;
+                    changed++;
                 }
             }
 
-            if (changed)
+            if (changed > 0)
             {
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
-                Debug.Log("Disabled XR Project Validation Window Popup");
+                Debug.Log("Updated " + changed + " files to disable XR build validation window popup.");
             }
         }
     }

@@ -31,7 +31,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
         public override void Apply()
         {
             if (Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer) return;
-            Screen.fullScreenMode = (FullScreenMode)CurrentGraphicsSubOption.intValue;
+            if (Screen.fullScreenMode != (FullScreenMode)CurrentGraphicsSubOption.intValue)
+                Screen.fullScreenMode = (FullScreenMode)CurrentGraphicsSubOption.intValue;
         }
 
         public void SetCurrentsuboptionByValue(int v)
