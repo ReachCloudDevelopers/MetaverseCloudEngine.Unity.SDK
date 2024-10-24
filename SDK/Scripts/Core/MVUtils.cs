@@ -1352,8 +1352,6 @@ namespace MetaverseCloudEngine.Unity
             var allTextResources = Resources.FindObjectsOfTypeAll<TMP_Text>();
             foreach (var tmpText in allTextResources)
             {
-                if (tmpText.font)
-                    Debug.Log(tmpText.font.version);
                 tmpText.font = defaultFont;
                 tmpText.textWrappingMode = tmpText.overflowMode == TextOverflowModes.Overflow 
                     ? TextWrappingModes.Normal 

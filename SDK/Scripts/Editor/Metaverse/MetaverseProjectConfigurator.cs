@@ -53,7 +53,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if ((!SessionState.GetBool(configureXrSessionFlag, false) && EditorPrefs.GetBool(configureXrProjectFlag, true)) || force)
             {
 #if !UNITY_IOS
-                if (!MetaverseEditorUtils.IsXrLoaderConfigured(BuildTargetGroup.Android, "Unity.XR.ARCore.ARCoreLoader") &&
+                if (!MetaverseEditorUtils.IsXrLoaderConfigured(BuildTargetGroup.Android, "UnityEngine.XR.ARCore.ARCoreLoader") &&
                     !MetaverseEditorUtils.IsXrLoaderConfigured(BuildTargetGroup.Android, "Unity.XR.Oculus.OculusLoader") &&
                     !MetaverseEditorUtils.IsXrLoaderConfigured(BuildTargetGroup.Android, "UnityEngine.XR.OpenXR.OpenXRLoader") &&
                     !MetaverseEditorUtils.IsXrLoaderConfigured(BuildTargetGroup.Standalone, "UnityEngine.XR.OpenXR.OpenXRLoader") &&
