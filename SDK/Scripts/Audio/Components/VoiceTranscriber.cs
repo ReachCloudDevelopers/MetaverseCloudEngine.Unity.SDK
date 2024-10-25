@@ -11,7 +11,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [InfoBox(
             "Using native transcription does not require AI features to be enabled for this Meta Space but the quality may " + 
             "suffer as a result.")]
-        [LabelText("Native")]
+        [LabelText("Native (Offline)")]
         [SerializeField] private bool offline;
         [SerializeField] private UnityEvent onListeningStarted = new();
         [SerializeField] private UnityEvent onListeningFinished = new();
