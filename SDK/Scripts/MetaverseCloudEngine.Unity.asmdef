@@ -160,6 +160,11 @@
             "name": "com.unity.render-pipelines.core",
             "expression": "17",
             "define": "MV_RENDER_PIPELINE_17"
+        },
+        {
+            "name": "com.google.play.core",
+            "expression": "",
+            "define": "MV_GPLAY_CORE"
         }
     ],
     "noEngineReferences": false
