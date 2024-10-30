@@ -140,7 +140,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             longitude = lonRad * 180.0 / Math.PI;
         }
         
-        public static double3 GetRelativeGeoSpatialLatitudeLongitudeHeight(
+        public static double3 GetGeospatialLatitudeLongitudeHeight(
             this ARGeospatialCreatorOrigin originPoint, Transform transform)
         {
             var enuToECef = CalculateEnuToEcefTransform((originPoint.Latitude, originPoint.Longitude, originPoint.Altitude));
@@ -155,7 +155,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
         }
         
 #if MV_CESIUM
-        public static double3 GetRelativeGeoSpatialLatitudeLongitudeHeight(
+        public static double3 GetGeospatialLatitudeLongitudeHeight(
             this CesiumGeoreference originPoint, Transform transform)
         {
             var enuToECef = CalculateEnuToEcefTransform((originPoint.latitude, originPoint.longitude, originPoint.height));
