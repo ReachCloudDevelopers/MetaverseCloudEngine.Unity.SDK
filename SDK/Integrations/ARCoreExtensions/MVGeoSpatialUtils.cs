@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CesiumForUnity;
 using Google.XR.ARCoreExtensions.GeospatialCreator;
 using Unity.Mathematics;
 using UnityEngine;
@@ -152,6 +153,23 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             var height = llh.z;
             return new double3(lat, lon, height);
         }
+        
+#if MV_CESIUM
+        public static double3 GetRelativeGeoSpatialLatitudeLongitudeHeight(
+            this CesiumGeoreference originPoint, Transform transform)
+        {
+            var enuToECef = CalculateEnuToEcefTransform((originPoint.latitude, originPoint.longitude, originPoint.height));
+            var eun = new double3(transform.position.x, transform.position.y, transform.position.z);
+            var enu = new double3(eun.x, eun.z, eun.y);
+            var eCef = MatrixStack.MultPoint(enuToECef, enu);
+            var llh = ECEFToLongitudeLatitudeHeight(eCef);
+            var lon = llh.x;
+            var lat = llh.y;
+            var height = llh.z;
+            return new double3(lat, lon, height);
+        }
+
+#endif
 
         private class MatrixStack
         {
