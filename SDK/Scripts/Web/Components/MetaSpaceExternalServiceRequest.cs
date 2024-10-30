@@ -87,16 +87,16 @@ namespace MetaverseCloudEngine.Unity.Web.Components
                 switch (requestType)
                 {
                     case ServiceRequestType.GET:
-                        r.ExternalService.Get(uri, HandleResponse);
+                        r.ExternalApiService.Get(uri, HandleResponse);
                         break;
                     case ServiceRequestType.POST:
-                        r.ExternalService.Post(uri, RequestBody, Uri, HandleResponse);
+                        r.ExternalApiService.Post(uri, RequestBody, Uri, HandleResponse);
                         break;
                     case ServiceRequestType.PUT:
-                        r.ExternalService.Put(uri, RequestBody, Uri, HandleResponse);
+                        r.ExternalApiService.Put(uri, RequestBody, Uri, HandleResponse);
                         break;
                     case ServiceRequestType.DELETE:
-                        r.ExternalService.Delete(Uri, HandleResponse);
+                        r.ExternalApiService.Delete(Uri, HandleResponse);
                         break;
                     default:
                         onFailure?.Invoke("Invalid request type.");

@@ -110,7 +110,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         /// <summary>
         /// Gets the external API service for the Meta Space.
         /// </summary>
-        public IMetaSpaceExternalApiService ExternalService => GetService<IMetaSpaceExternalApiService>();
+        public IMetaSpaceExternalApiService ExternalApiService => GetService<IMetaSpaceExternalApiService>();
 
         /// <summary>
         /// The current instance of the <see cref="MetaSpace"/> component.
@@ -194,11 +194,6 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         /// </summary>
         public IVideoCameraService VideoCameraService => GetService<IVideoCameraService>();
         
-        /// <summary>
-        /// The service that provides management of the external API.
-        /// </summary>
-        public IMetaSpaceExternalApiService ExternalApiService => GetService<IMetaSpaceExternalApiService>();
-
         #endregion
 
         #region Unity Events
