@@ -1,5 +1,6 @@
 ﻿{
   "name": "MetaverseCloudEngine.Unity.ARCoreExtensions",
+  "rootNamespace": "MetaverseCloudEngine.Unity.ARCoreExtensions",
   "references": [
     "GUID:f19b7182756095a428b94d1459e7491e",
     "GUID:9e6bdf94fcb245c585c26819fa23a202",
