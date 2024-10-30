@@ -40,6 +40,11 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
 " + oldValue);
                 newText = newText.Replace("// SetOriginPoint() method.", "// SetOriginPoint() method in Editor or SetOriginPointWithoutUpdatingAdapter() method for updating at runtime.");
                 newText = newText.Replace("origin at runtime is not supported.", "origin along with the component adapter at runtime is not supported. Use SetOriginPointWithoutUpdatingAdapter() method instead.");
+                newText = newText.Replace(
+@"#if UNITY_EDITOR
+            private set;
+#endif",
+"            private set;");
                 System.IO.File.WriteAllText(file, newText);
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
                 Debug.Log("Fixed ARGeospatialCreatorOrigin.cs");
