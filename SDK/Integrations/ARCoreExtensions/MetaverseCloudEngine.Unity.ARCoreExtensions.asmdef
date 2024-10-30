@@ -1,0 +1,37 @@
+﻿{
+  "name": "MetaverseCloudEngine.Unity.ARCoreExtensions",
+  "references": [
+    "GUID:f19b7182756095a428b94d1459e7491e",
+    "GUID:9e6bdf94fcb245c585c26819fa23a202",
+    "GUID:b35d8248e1a04478bb2d70fe76652ddf",
+    "GUID:d8b63aba1907145bea998dd612889d6b"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "METAVERSE_CLOUD_ENGINE",
+    "MV_GOOGLE_AR_CORE_EXT",
+    "MV_UNITY_MATHEMATICS"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.google.ar.core.arfoundation.extensions",
+      "expression": "",
+      "define": "MV_GOOGLE_AR_CORE_EXT"
+    },
+    {
+      "name": "com.unity.mathematics",
+      "expression": "",
+      "define": "MV_UNITY_MATHEMATICS"
+    },
+    {
+      "name": "com.reachcloud.metaverse-cloud-sdk",
+      "expression": "",
+      "define": "METAVERSE_CLOUD_ENGINE"
+    }
+  ]
+}
