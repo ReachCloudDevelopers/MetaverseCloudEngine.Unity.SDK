@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Google.XR.ARCoreExtensions.GeospatialCreator;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -138,6 +139,20 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             longitude = lonRad * 180.0 / Math.PI;
         }
         
+        public static double3 GetRelativeGeoSpatialLatitudeLongitudeHeight(
+            this ARGeospatialCreatorOrigin originPoint, Transform transform)
+        {
+            var enuToECef = CalculateEnuToEcefTransform((originPoint.Latitude, originPoint.Longitude, originPoint.Altitude));
+            var eun = new double3(transform.position.x, transform.position.y, transform.position.z);
+            var enu = new double3(eun.x, eun.z, eun.y);
+            var eCef = MatrixStack.MultPoint(enuToECef, enu);
+            var llh = ECEFToLongitudeLatitudeHeight(eCef);
+            var lon = llh.x;
+            var lat = llh.y;
+            var height = llh.z;
+            return new double3(lat, lon, height);
+        }
+
         private class MatrixStack
         {
             private readonly List<double4x4> _stack = new();
@@ -146,7 +161,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             {
                 _stack.Add(double4x4.identity);
             }
-
+            
             public static Quaternion GetRotation(double4x4 m)
             {
                 Vector3 forward;
