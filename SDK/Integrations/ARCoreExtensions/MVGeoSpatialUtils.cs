@@ -8,7 +8,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
     /// <summary>
     /// Exposes the methods that are internalized by Google ARCoreExtensions for use at runtime.
     /// </summary>
-    public static class GeoSpatialUtils
+    public static class MVGeoSpatialUtils
     {
         // Equatorial radius in meters
         private const double Wgs84EllipsoidSemiMajorAxis = 6378137.0;
@@ -23,12 +23,12 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             return new double3(longitude, latitude, altitude);
         }
 
-        private static double4x4 CalculateEnuToEcefTransform((double Latitude, double Longitude, double Altitude) originPoint)
+        public static double4x4 CalculateEnuToEcefTransform((double Latitude, double Longitude, double Altitude) originPoint)
         {
             return math.inverse(CalculateEcefToEnuTransform(originPoint));
         }
 
-        private static double4x4 CalculateEcefToEnuTransform((double Latitude, double Longitude, double Altitude) originPoint)
+        public static double4x4 CalculateEcefToEnuTransform((double Latitude, double Longitude, double Altitude) originPoint)
         {
             // :TODO b/277370107: This could be optimized by only changing the position if the
             // object or origin has moved
@@ -70,7 +70,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             return matrixStack.GetMatrix();
         }
         
-        private static double3 GeoCoordinateToECEF((double Latitude, double Longitude, double Altitude) coor)
+        public static double3 GeoCoordinateToECEF((double Latitude, double Longitude, double Altitude) coor)
         {
             var ret = new double3();
 
@@ -103,7 +103,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
 
         // Conversion between geodetic decimal degrees and earth-centered, earth-fixed (ECEF)
         // coordinates. Ref https://en.wikipedia.org/wiki/Geographic_coordinate_conversion.
-        private static void ECEFToGeodetic(
+        public static void ECEFToGeodetic(
             double3 ecef, out double latitude, out double longitude, out double altitude)
         {
             const double a2 = Wgs84EllipsoidSemiMajorAxis * Wgs84EllipsoidSemiMajorAxis;
@@ -138,7 +138,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             longitude = lonRad * 180.0 / Math.PI;
         }
         
-        internal class MatrixStack
+        private class MatrixStack
         {
             private readonly List<double4x4> _stack = new();
 
