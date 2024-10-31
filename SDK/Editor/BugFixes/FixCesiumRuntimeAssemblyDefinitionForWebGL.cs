@@ -9,7 +9,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         [InitializeOnLoadMethod]
         private static void PatchASMDef()
         {
-            var path = "./Library/PackageCache";
+            const string path = "./Library/PackageCache";
             if (!System.IO.Directory.Exists(path)) return;
             var files = System.IO.Directory.GetFiles(path, "CesiumRuntime.asmdef", System.IO.SearchOption.AllDirectories);
             if (files.Length == 0) return;
@@ -18,7 +18,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
             var text = System.IO.File.ReadAllText(file);
             if (text.Contains("\"excludePlatforms\": []"))
             {
-                var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\",\"StandaloneLinux64\"]");
+                var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\",\"LinuxStandalone64\"]");
                 System.IO.File.WriteAllText(file, newText);
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
                 Debug.Log("Fixed CesiumRuntime.asmdef");
