@@ -13,7 +13,6 @@ using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.OpenCV.YOLO
 {
-    [RequireComponent(typeof(WebCameraFrameProvider))]
     [HideMonoScript]
     public class YOLOObjectDetection : ImageInferenceNet
     {
