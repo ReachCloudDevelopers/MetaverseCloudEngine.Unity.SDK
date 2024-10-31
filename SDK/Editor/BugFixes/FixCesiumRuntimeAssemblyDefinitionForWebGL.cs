@@ -18,7 +18,7 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
             var text = System.IO.File.ReadAllText(file);
             if (text.Contains("\"excludePlatforms\": []"))
             {
-                var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\"]");
+                var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\",\"StandaloneLinux64\"]");
                 System.IO.File.WriteAllText(file, newText);
                 UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
                 Debug.Log("Fixed CesiumRuntime.asmdef");
