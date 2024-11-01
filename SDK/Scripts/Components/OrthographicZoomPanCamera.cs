@@ -51,6 +51,12 @@ namespace MetaverseCloudEngine.Unity.Components
                 return;
             }
 
+            if (!m_Camera.orthographic)
+            {
+                m_MoveInitiated = false;
+                return;
+            }
+
             if (!UnityEngine.Device.Application.isMobilePlatform)
             {
                 var isOverUI = MVUtils.IsPointerOverUI();
