@@ -10,9 +10,17 @@ namespace MetaverseCloudEngine.Unity.Components
         [Tooltip("The camera that will be used for zooming and panning.")]
         [Required, SerializeField] private Camera m_Camera;
         [Tooltip("The speed at which the camera will zoom in and out.")]
+        [Min(0)]
         [SerializeField] private float m_ZoomSpeed = 1f;
+        [Min(0)]
         [SerializeField] private float m_MinZoom = 0.1f;
+        [Min(0)]
         [SerializeField] private float m_MaxZoom = 100f;
+        [Tooltip("The speed at which the camera will pan.")]
+        [Range(0, 1)]
+        [SerializeField] private float m_PanSpeed = 0.01f;
+        [Range(0, 2)]
+        [SerializeField] private int m_PanMouseButton = 1;
         
         private float m_LastPinchDistance;
         private Vector2 m_LastTouchPosition;
@@ -43,13 +51,18 @@ namespace MetaverseCloudEngine.Unity.Components
                 return;
             }
 
-            if (!Application.isMobilePlatform)
+            if (!UnityEngine.Device.Application.isMobilePlatform)
             {
                 var isOverUI = MVUtils.IsPointerOverUI();
-                if (Input.GetMouseButtonDown(2) && !isOverUI)
+                if (Input.GetMouseButtonDown(1) && !isOverUI)
                     m_MoveInitiated = true;
-                if (Input.GetMouseButton(2) && m_MoveInitiated)
-                    m_Camera.transform.position -= new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * 0.01f);
+                if (Input.GetMouseButton(1) && m_MoveInitiated)
+                {
+                    var pan = new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                    pan = m_Camera.transform.rotation * pan;
+                    m_Camera.transform.position -= pan;
+                }
+
                 if (Input.mouseScrollDelta.y != 0 && !isOverUI)
                     m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - Input.mouseScrollDelta.y * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
                 return;
@@ -67,10 +80,11 @@ namespace MetaverseCloudEngine.Unity.Components
                             m_MoveInitiated = !MVUtils.IsPointerOverUI();
                             break;
                         case TouchPhase.Moved when m_MoveInitiated:
-                            m_Camera.transform.position -=
-                                new Vector3(
-                                    touch.position.x - m_LastTouchPosition.x,
-                                    touch.position.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * 0.01f);
+                            var pan = new Vector3(
+                                touch.position.x - m_LastTouchPosition.x,
+                                touch.position.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                            pan = m_Camera.transform.rotation * pan;
+                            m_Camera.transform.position -= pan;
                             break;
                         case TouchPhase.Ended:
                             m_MoveInitiated = false;
