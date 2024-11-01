@@ -17,14 +17,14 @@ namespace MetaverseCloudEngine.Unity.Components
         [Min(0)]
         [SerializeField] private float m_MaxZoom = 100f;
         [Tooltip("The speed at which the camera will pan.")]
-        [Range(0, 1)]
-        [SerializeField] private float m_PanSpeed = 0.01f;
+        [Range(0, 5)]
+        [SerializeField] private float m_PanSpeed = 1f;
         [Range(0, 2)]
         [SerializeField] private int m_PanMouseButton = 1;
         
         private float m_LastPinchDistance;
         private Vector2 m_LastTouchPosition;
-        private bool m_MoveInitiated;
+        private bool m_Initiated;
         
         /// <summary>
         /// The camera that will be used for zooming and panning.
@@ -53,23 +53,27 @@ namespace MetaverseCloudEngine.Unity.Components
 
             if (!m_Camera.orthographic)
             {
-                m_MoveInitiated = false;
+                m_Initiated = false;
                 return;
             }
 
             if (!UnityEngine.Device.Application.isMobilePlatform)
             {
                 var isOverUI = MVUtils.IsPointerOverUI();
-                if (Input.GetMouseButtonDown(1) && !isOverUI)
-                    m_MoveInitiated = true;
-                if (Input.GetMouseButton(1) && m_MoveInitiated)
+                if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
+                    m_Initiated = true;
+                if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
                 {
-                    var pan = new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
-                    pan = m_Camera.transform.rotation * pan;
+                    var pan = new Vector3(
+                        Input.GetAxis("Mouse X"), 
+                        Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                    pan = m_Camera.transform.rotation * pan * Time.deltaTime;
                     m_Camera.transform.position -= pan;
                 }
+                if (Input.GetMouseButtonUp(m_PanMouseButton))
+                    m_Initiated = false;
 
-                if (Input.mouseScrollDelta.y != 0 && !isOverUI)
+                if (Input.mouseScrollDelta.y != 0 && (!isOverUI || m_Initiated))
                     m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - Input.mouseScrollDelta.y * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
                 return;
             }
@@ -83,17 +87,17 @@ namespace MetaverseCloudEngine.Unity.Components
                     {
                         case TouchPhase.Began:
                             m_LastTouchPosition = touch.position;
-                            m_MoveInitiated = !MVUtils.IsPointerOverUI();
+                            m_Initiated = !MVUtils.IsPointerOverUI();
                             break;
-                        case TouchPhase.Moved when m_MoveInitiated:
+                        case TouchPhase.Moved when m_Initiated:
                             var pan = new Vector3(
                                 touch.position.x - m_LastTouchPosition.x,
                                 touch.position.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * m_PanSpeed);
-                            pan = m_Camera.transform.rotation * pan;
+                            pan = m_Camera.transform.rotation * pan * Time.deltaTime;
                             m_Camera.transform.position -= pan;
                             break;
                         case TouchPhase.Ended:
-                            m_MoveInitiated = false;
+                            m_Initiated = false;
                             break;
                     }
 
@@ -107,27 +111,27 @@ namespace MetaverseCloudEngine.Unity.Components
                     var pinchDistance = Vector2.Distance(touch0.position, touch1.position);
                 
                     if ((touch1.phase == TouchPhase.Began ||
-                         touch0.phase == TouchPhase.Began) && !m_MoveInitiated)
+                         touch0.phase == TouchPhase.Began) && !m_Initiated)
                     {
                         m_LastPinchDistance = pinchDistance;
-                        m_MoveInitiated = !MVUtils.IsPointerOverUI();
+                        m_Initiated = !MVUtils.IsPointerOverUI();
                     }
                 
                     if (touch0.phase == TouchPhase.Ended ||
                         touch1.phase == TouchPhase.Ended)
                     {
-                        m_MoveInitiated = false;
+                        m_Initiated = false;
                         return;
                     }
                 
-                    if (m_LastPinchDistance != 0 && (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved) && m_MoveInitiated)
+                    if (m_LastPinchDistance != 0 && (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved) && m_Initiated)
                         m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - (pinchDistance - m_LastPinchDistance) * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
                 
                     m_LastPinchDistance = pinchDistance;
                     break;
                 }
                 default:
-                    m_MoveInitiated = false;
+                    m_Initiated = false;
                     break;
             }
         }
