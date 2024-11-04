@@ -1,5 +1,4 @@
 #if !CLOUD_BUILD_PLATFORM
-using System;
 using System.Linq;
 using MetaverseCloudEngine.Unity.Installer.Editor;
 using JetBrains.Annotations;
@@ -53,10 +52,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (deletedAssets.Length > 0 && deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk")))
-            {
-                ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
-            }
+            if (deletedAssets.Length <= 0 ||
+                !deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk"))) 
+                return;
+            ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
         }
 
         [UsedImplicitly]
