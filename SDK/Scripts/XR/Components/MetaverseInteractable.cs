@@ -1288,10 +1288,13 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             {
                 if (isFixedUpdate)
                 {
-                    if (IsInterpolating())
-                        _rootRigidbody.excludeLayers = ~0;
-                    else if (_rootRigidbody.excludeLayers != _originalRigidbodyExcludeLayers)
-                        _rootRigidbody.excludeLayers = _originalRigidbodyExcludeLayers;
+                    if (_rootRigidbody)
+                    {
+                        if (IsInterpolating())
+                            _rootRigidbody.excludeLayers = ~0;
+                        else if (_rootRigidbody.excludeLayers != _originalRigidbodyExcludeLayers)
+                            _rootRigidbody.excludeLayers = _originalRigidbodyExcludeLayers;
+                    }
                 }
                 UpdateRotation(isFixedUpdate);
                 UpdatePosition(isFixedUpdate);

@@ -167,6 +167,13 @@ namespace MetaverseCloudEngine.Unity
         {
             if (Initialized)
                 return;
+#if UNITY_EDITOR
+            Application.logMessageReceivedThreaded += (condition, trace, type) =>
+            {
+                if (type is LogType.Exception or LogType.Error && condition.Contains("Exception"))
+                    Logger.LogError(condition + "\n" + trace);
+            };
+#endif
 
             MVUtils.FreeUpMemory(() =>
             {

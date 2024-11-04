@@ -7,14 +7,24 @@ using MetaverseCloudEngine.Common.Models.DataTransfer;
 using MetaverseCloudEngine.Unity.Assets.Attributes;
 using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Common.Enumerations;
+using MetaverseCloudEngine.Common.Models.QueryParams;
+using MetaverseCloudEngine.Unity.Attributes;
+using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.Components
 {
     public partial class MetaSpacePortal : MonoBehaviour
     {
         [MetaSpaceIdProperty]
+        [InfoBox("Leaving Meta Space empty will default to the current Meta Space.")]
         [SerializeField] private string metaSpace;
         [SerializeField] private string instanceID;
+        [FormerlySerializedAs("organizationId")]
+        [OrganizationIdProperty]
+        [InfoBox("Make sure that the Organization has this metaspace added, otherwise joining will fail.")]
+        [SerializeField] private string organization;
+        [HideIf(nameof(organization))]
+        [SerializeField] private bool defaultToCurrentOrganization = true;
 
         [Header("Visibility")]
         [Tooltip("If true, the instance being joined will be unlisted.")]
@@ -84,26 +94,63 @@ namespace MetaverseCloudEngine.Unity.Components
             
             onStartedLoading?.Invoke();
             IsJoining = true;
+
+            if (string.IsNullOrWhiteSpace(metaSpace) && Assets.MetaSpaces.MetaSpace.Instance)
+                metaSpace = Assets.MetaSpaces.MetaSpace.Instance.IDString;
             
-            if (!Guid.TryParse(metaSpace, out Guid metaSpaceId))
+            if (!Guid.TryParse(metaSpace, out var metaSpaceId))
             {
                 JoinFailed("Meta Space ID is invalid.");
                 return;
             }
+
+            if (string.IsNullOrWhiteSpace(organization) && defaultToCurrentOrganization)
+            {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                organization = MetaverseProgram.RuntimeServices.InternalOrganizationManager.SelectedOrganization?.Id.ToString();
+#endif
+            }
+
+            if (!string.IsNullOrWhiteSpace(organization))
+            {
+                if (!Guid.TryParse(organization.Trim(), out var organizationId))
+                {
+                    JoinFailed("Organization ID is invalid.");
+                    return;
+                }
+
+                MetaverseProgram.ApiClient.Organizations.GetAllMetaSpacesAsync(
+                        new MetaSpaceQueryParams
+                        {
+                            OrganizationId = organizationId,
+                            SpecificAssetId = metaSpaceId
+                        })
+                    .ResponseThen(r =>
+                    {
+                        var spaces = r as OrganizationMetaSpaceDto[] ?? r.ToArray();
+                        if (!spaces.Any())
+                        {
+                            JoinFailed("Meta Space not found in organization.");
+                            return;
+                        }
+                        OnMetaSpaceFound(spaces.First().MetaSpace);
+                    }, JoinFailed);
+                return;
+            }
             
             MetaverseProgram.ApiClient.MetaSpaces.FindAsync(metaSpaceId)
-                .ResponseThen(space =>
-                {
-                    bool implemented = false;
-                    JoinInternal(ref implemented, space);
+                .ResponseThen(OnMetaSpaceFound, JoinFailed);
+        }
+
+        private void OnMetaSpaceFound(MetaSpaceDto space)
+        {
+            var implemented = false;
+            JoinInternal(ref implemented, space);
 #if UNITY_EDITOR
-                    if (!implemented)
-                    {
-                        UnityEditor.EditorApplication.isPlaying = false;
-                        MetaverseProgram.Logger.Log($"Meta Space '{space.Name}' with instance ID '{GetMetaSpaceInstanceID()}' would have been joined.");
-                    }
+            if (implemented) return;
+            UnityEditor.EditorApplication.isPlaying = false;
+            MetaverseProgram.Logger.Log($"Meta Space '{space.Name}' with instance ID '{GetMetaSpaceInstanceID()}' would have been joined.");
 #endif
-                }, JoinFailed);
         }
 
         private void JoinFailed(object error)
@@ -117,22 +164,23 @@ namespace MetaverseCloudEngine.Unity.Components
         private string GetMetaSpaceInstanceID()
         {
             string propertyDefAppend = null;
-            MetaSpacePortalInstancePropertyDefinition[] propertyDefComponents = GetPropertyDefinitions();
+            var propertyDefComponents = GetPropertyDefinitions();
             if (propertyDefComponents.Length > 0)
             {
-                string[] appendComponents = propertyDefComponents.Where(x => x.appendToInstanceID && !string.IsNullOrWhiteSpace(x.propertyName)).Select(x => x.propertyName + ":" + x.GetObjectValue()).ToArray();
+                var appendComponents = propertyDefComponents.Where(x => x.appendToInstanceID && !string.IsNullOrWhiteSpace(x.propertyName)).Select(x => x.propertyName + ":" + x.GetObjectValue()).ToArray();
                 if (appendComponents.Length > 0)
                     propertyDefAppend = "_" + string.Join("_", appendComponents);
             }
 
-            string finalInstanceID = instanceID?.Trim() + propertyDefAppend;
+            var finalInstanceID = instanceID?.Trim() + propertyDefAppend;
             return finalInstanceID;
         }
 
         private MetaSpacePortalInstancePropertyDefinition[] GetPropertyDefinitions()
         {
-            if (!gameObject) return Array.Empty<MetaSpacePortalInstancePropertyDefinition>();
-            return gameObject.GetTopLevelComponentsInChildrenOrdered<MetaSpacePortalInstancePropertyDefinition, MetaSpacePortal>();
+            return !gameObject 
+                ? Array.Empty<MetaSpacePortalInstancePropertyDefinition>() 
+                : gameObject.GetTopLevelComponentsInChildrenOrdered<MetaSpacePortalInstancePropertyDefinition, MetaSpacePortal>();
         }
     }
 }
