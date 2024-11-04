@@ -1,6 +1,8 @@
 #if !CLOUD_BUILD_PLATFORM
+using System;
+using System.Linq;
 using MetaverseCloudEngine.Unity.Installer.Editor;
-using System.IO;
+using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
@@ -8,7 +10,7 @@ using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
-    public static class MetaverseRequiredPackageInstaller
+    public class MetaverseRequiredPackageInstaller : AssetPostprocessor
     {
         private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
 
@@ -45,6 +47,19 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
+        private static void OnPostprocessAllAssets(
+            string[] importedAssets, 
+            string[] deletedAssets, 
+            string[] movedAssets,
+            string[] movedFromAssetPaths)
+        {
+            if (deletedAssets.Length > 0 && deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk")))
+            {
+                ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
+            }
+        }
+
+        [UsedImplicitly]
         private static bool TryUpdatePackages()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -54,16 +69,21 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall);
-            if (_packageRequest.Status != StatusCode.InProgress)
+            switch (_packageRequest.Status)
             {
-                if (_packageRequest.Status == StatusCode.Success)
+                case StatusCode.InProgress:
+                    return false;
+                case StatusCode.Success:
                     OnPackagesInstalled();
-                else OnPackagesFailed();
-                _packageRequest = null;
-                return true;
+                    break;
+                default:
+                    OnPackagesFailed();
+                    break;
             }
 
-            return false;
+            _packageRequest = null;
+            return true;
+
         }
 
         private static void OnPackagesInstalled()
@@ -79,8 +99,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorUtility.ClearProgressBar();
         }
 
+        [UsedImplicitly]
         private static void ShowProgressBar() => EditorUtility.DisplayProgressBar("Metaverse Cloud Engine Dependencies", "Ensuring Package Dependencies...", 1);
 
+        [UsedImplicitly]
         private static void HideProgressBar() => EditorUtility.ClearProgressBar();
     }
 }
