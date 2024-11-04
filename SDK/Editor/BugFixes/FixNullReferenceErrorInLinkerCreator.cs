@@ -13,26 +13,22 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         [InitializeOnLoadMethod]
         private static void PatchCode()
         {
-            var path = "./Library/PackageCache";
-            if (!System.IO.Directory.Exists(path)) return;
-            var files = System.IO.Directory.GetFiles(path, "LinkerCreator.cs", System.IO.SearchOption.AllDirectories);
+            const string basePath = "./Library/PackageCache";
+            if (!System.IO.Directory.Exists(basePath)) return;
+            var files = System.IO.Directory.GetFiles(basePath, "LinkerCreator.cs", System.IO.SearchOption.AllDirectories);
             if (files.Length == 0) return;
-            var file = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith("./Library/PackageCache/com.unity.visualscripting") && x.Replace("\\", "/").EndsWith("LinkerCreator.cs"));
+            var file = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith($"{basePath}/com.unity.visualscripting") && x.Replace("\\", "/").EndsWith("LinkerCreator.cs"));
             if (file == null) return;
             var text = System.IO.File.ReadAllText(file);
-            if (text.Contains("foreach (var unit in subgraph.nest.graph.units)") && !text.Contains("if (subgraph?.nest?.graph?.units != null)"))
-            {
-                var newText = text.Replace("foreach (var unit in subgraph.nest.graph.units)", 
-                    "if (subgraph?.nest?.graph?.units != null) foreach (var unit in subgraph.nest.graph.units)");
-                System.IO.File.WriteAllText(file, newText);
-                UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
-                Debug.Log("Fixed LinkerCreator.cs");
-            }
+            const string badCode = "foreach (var unit in subgraph.nest.graph.units)";
+            const string fixedCode = "if (subgraph?.nest?.graph?.units != null) foreach (var unit in subgraph.nest.graph.units)";
+            if (!text.Contains(badCode) || text.Contains(fixedCode)) return;
+            var newText = text.Replace(badCode, fixedCode);
+            System.IO.File.WriteAllText(file, newText);
+            UnityEditor.Compilation.CompilationPipeline.RequestScriptCompilation();
+            Debug.Log("Fixed LinkerCreator.cs");
         }
 
-        public void OnPreprocessBuild(BuildReport report)
-        {
-            PatchCode();
-        }
+        public void OnPreprocessBuild(BuildReport report) => PatchCode();
     }
 }
