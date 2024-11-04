@@ -1,0 +1,16 @@
+﻿{
+  "name": "MetaverseCloudEngine.Unity.FoPC",
+  "rootNamespace": "MetaverseCloudEngine.Unity.FixingOtherPeoplesCode",
+  "references": [],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

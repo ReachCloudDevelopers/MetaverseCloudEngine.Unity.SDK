@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors.BugFixes
+namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
 {
     // Fixes the OVRProjectSetupRenderingTasks.cs file, and replaces line 573 with the corrected code.
     internal static class FixMetaSDKCoreAccessingCameraStackWithoutUrpEnabled

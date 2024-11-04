@@ -4,7 +4,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors.BugFixes
+namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
 {
     public class FixNullReferenceErrorInVuplexBaseWebView : IPreprocessBuildWithReport
     {
@@ -13,9 +13,9 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
         [InitializeOnLoadMethod]
         private static void PatchCode()
         {
-            const string path = "Assets";
-            if (!System.IO.Directory.Exists(path)) return;
-            var files = System.IO.Directory.GetFiles(path, "BaseWebView.cs", System.IO.SearchOption.AllDirectories);
+            const string basePath = "Assets";
+            if (!System.IO.Directory.Exists(basePath)) return;
+            var files = System.IO.Directory.GetFiles(basePath, "BaseWebView.cs", System.IO.SearchOption.AllDirectories);
             if (files.Length == 0) return;
             var file = files.FirstOrDefault(x => x.Replace("\\", "/").Contains("Vuplex/WebView/Core/") && x.Replace("\\", "/").EndsWith("BaseWebView.cs"));
             if (file == null) return;
@@ -29,9 +29,6 @@ namespace MetaverseCloudEngine.Unity.Editors.BugFixes
             Debug.Log("Fixed Vuplex BaseWebView.cs");
         }
 
-        public void OnPreprocessBuild(BuildReport report)
-        {
-            PatchCode();
-        }
+        public void OnPreprocessBuild(BuildReport report) => PatchCode();
     }
 }

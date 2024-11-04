@@ -1,6 +1,6 @@
 #if !CLOUD_BUILD_PLATFORM
 using System.Linq;
-using MetaverseCloudEngine.Unity.Installer.Editor;
+using MetaverseCloudEngine.Unity.Installer;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.Callbacks;
@@ -8,7 +8,7 @@ using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors
+namespace MetaverseCloudEngine.Unity.Installer
 {
     public class MetaverseRequiredPackageInstaller : AssetPostprocessor
     {
@@ -49,7 +49,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 SessionState.SetBool(InitialUpdateCheckFlag, true);
             }
         }
-
+        
+#if !METAVERSE_CLOUD_ENGINE_INTERNAL
         private static void OnPostprocessAllAssets(
             string[] importedAssets, 
             string[] deletedAssets, 
@@ -66,6 +67,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     "You will have to re-enable integrations if you choose to install the SDK again.", 
                     "No (Recommended)", "Yes") == false);
         }
+#endif
 
         [UsedImplicitly]
         private static bool TryUpdatePackages()

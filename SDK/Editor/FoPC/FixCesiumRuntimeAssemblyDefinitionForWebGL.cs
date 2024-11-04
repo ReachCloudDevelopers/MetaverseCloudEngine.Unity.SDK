@@ -2,7 +2,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors.BugFixes
+namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
 {
     public class FixCesiumRuntimeAssemblyDefinitionForWebGL
     {

@@ -4,7 +4,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors.BugFixes
+namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
 {
     public class FixNullReferenceErrorInLinkerCreator : IPreprocessBuildWithReport
     {

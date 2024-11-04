@@ -3,7 +3,7 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editors.BugFixes
+namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
 {
     public static class DisablePromptToEnableMetaQuestOpenXRSupport
     {

@@ -1,5 +1,5 @@
 ﻿using System.Linq;
-using MetaverseCloudEngine.Unity.Installer.Editor;
+using MetaverseCloudEngine.Unity.Installer;
 using MetaverseCloudEngine.Unity.XR;
 using UnityEditor;
 using UnityEditor.Rendering;

@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 
-namespace MetaverseCloudEngine.Unity.Installer.Editor
+namespace MetaverseCloudEngine.Unity.Installer
 {
     public static class ScriptingDefines
     {
