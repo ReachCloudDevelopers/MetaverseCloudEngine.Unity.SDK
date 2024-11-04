@@ -2,14 +2,17 @@ using System.Collections.Generic;
 using System.Linq;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using MetaverseCloudEngine.Unity.Async;
+using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Serialization;
 // ReSharper disable InconsistentNaming
 
 namespace MetaverseCloudEngine.Unity.UI.Components
 {
-    public class BaseTheme : ScriptableObject
+    [HideMonoScript]
+    public class BaseTheme : TriInspectorScriptableObject
     {
+        [Title("Base Colors")]
         [FormerlySerializedAs("buttonDanger")] public Color ButtonDanger = new(1f, 54f / 255f, 65f / 255f, 1);
         [FormerlySerializedAs("buttonPrimary")] public Color ButtonPrimary = new(0, 116 / 255f, 217 / 255f, 1);
         [FormerlySerializedAs("buttonSecondary")] public Color ButtonSecondary = new(53f / 255f, 192f / 255f, 255f / 255f, 1);
@@ -25,11 +28,13 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         [FormerlySerializedAs("secondaryBackgroundLight")] public Color SecondaryBackgroundLight = new(221f / 255f, 221f / 255f, 221f / 255f, 1f);
         [FormerlySerializedAs("secondaryBackgroundLighter")] public Color SecondaryBackgroundLighter = new(1f, 1f, 1f, 1f);
 
+        [Title("Text Colors")]
         [FormerlySerializedAs("textDark")] public Color TextDark = new(170f / 255f, 170f / 255f, 170f / 255f, 1f);
         [FormerlySerializedAs("textDarker")] public Color TextDarker = new(17f / 255f, 17f / 255f, 17f / 255f, 1f);
         [FormerlySerializedAs("textLight")] public Color TextLight = new(221f / 255f, 221f / 255f, 221f / 255f, 1f);
         [FormerlySerializedAs("textLighter")] public Color TextLighter = new(1f, 1f, 1f, 1f);
         
+        [Title("Logo")]
         [FormerlySerializedAs("SmallLogo")] 
         [FormerlySerializedAs("smallLogo")] 
         [FormerlySerializedAs("LargeLogo")] 

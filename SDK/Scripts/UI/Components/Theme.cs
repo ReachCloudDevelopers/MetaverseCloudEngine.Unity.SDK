@@ -1,4 +1,5 @@
 using TMPro;
+using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,10 +8,13 @@ namespace MetaverseCloudEngine.Unity.UI.Components
     [CreateAssetMenu(fileName = "New Theme", menuName = MetaverseConstants.MenuItems.MenuRootPath + "UI/Theme")]
     public class Theme : BaseTheme
     {
-        [FormerlySerializedAs("Override")] public BaseTheme @override;
+        [Title("Font")]
         [FormerlySerializedAs("primaryFont")] public TMP_FontAsset PrimaryFont;
         [FormerlySerializedAs("secondaryFont")] public TMP_FontAsset SecondaryFont;
         [FormerlySerializedAs("tertiaryFont")] public TMP_FontAsset TertiaryFont;
+
+        [Title("Override")]
+        [FormerlySerializedAs("Override")] public BaseTheme @override;
 
         protected override void OnValidate()
         {
