@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (deletedAssets.Length <= 0 ||
                 !deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk"))) 
                 return;
-            ScriptingDefines.Remove(new[] {ScriptingDefines.DefaultSymbols});
+            ScriptingDefines.RemoveDefaultSymbols();
         }
 
         [UsedImplicitly]
@@ -87,7 +87,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static void OnPackagesInstalled()
         {
-            ScriptingDefines.Add(new[] {ScriptingDefines.DefaultSymbols});
+            ScriptingDefines.AddDefaultSymbols();
             Client.Resolve();
             EditorUtility.ClearProgressBar();
         }

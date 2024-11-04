@@ -10,9 +10,21 @@ namespace MetaverseCloudEngine.Unity.Installer.Editor
     public static class ScriptingDefines
     {
         public const string DefaultSymbols = "METAVERSE_CLOUD_ENGINE";
-
+        public const string AdditionalSymbols = "MV_OPENCV";
         private const char DefSeparator = ';';
         private static readonly List<string> Defs = new();
+        
+        public static void AddDefaultSymbols()
+        {
+            Add(new[] { DefaultSymbols });
+        }
+        
+        public static void RemoveDefaultSymbols(bool includeAdditional = true)
+        {
+            Remove(new[] { DefaultSymbols });
+            if (includeAdditional)
+                Remove(new[] { AdditionalSymbols });
+        }
 
         public static void Add(string[] symbols)
         {
