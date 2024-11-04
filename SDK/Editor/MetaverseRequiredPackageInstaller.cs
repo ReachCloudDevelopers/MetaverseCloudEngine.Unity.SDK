@@ -3,6 +3,7 @@ using System.Linq;
 using MetaverseCloudEngine.Unity.Installer.Editor;
 using JetBrains.Annotations;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
@@ -25,23 +26,26 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static AddAndRemoveRequest _packageRequest;
 
+        [DidReloadScripts]
         [InitializeOnLoadMethod]
         private static void InstallPackages()
         {
-            if (EditorApplication.isCompiling)
-                return;
-
-            if (!SessionState.GetBool(InitialUpdateCheckFlag, false))
+            if (EditorApplication.isCompiling) return;
+            if (SessionState.GetBool(InitialUpdateCheckFlag, false)) return;
+            try
             {
 #if !METAVERSE_CLOUD_ENGINE_INTERNAL
-                while (!TryUpdatePackages())
-                {
-                    ShowProgressBar();
-                    System.Threading.Thread.Sleep(500);
-                }
+                    while (!TryUpdatePackages())
+                    {
+                        ShowProgressBar();
+                        System.Threading.Thread.Sleep(500);
+                    }
 
-                HideProgressBar();
+                    HideProgressBar();
 #endif
+            }
+            finally
+            {
                 SessionState.SetBool(InitialUpdateCheckFlag, true);
             }
         }
@@ -55,6 +59,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (deletedAssets.Length <= 0 ||
                 !deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk"))) 
                 return;
+            SessionState.EraseBool(InitialUpdateCheckFlag);
             ScriptingDefines.RemoveDefaultSymbols();
         }
 
