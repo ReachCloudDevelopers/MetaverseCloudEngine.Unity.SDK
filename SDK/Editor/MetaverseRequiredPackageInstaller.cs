@@ -60,7 +60,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                 !deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk"))) 
                 return;
             SessionState.EraseBool(InitialUpdateCheckFlag);
-            ScriptingDefines.RemoveDefaultSymbols();
+            ScriptingDefines.RemoveDefaultSymbols(
+                EditorUtility.DisplayDialog("Uninstall Metaverse Cloud Engine SDK Defines", 
+                    "Would you like to remove integration package scripting symbols? " +
+                    "You will have to re-enable integrations if you choose to install the SDK again.", 
+                    "No (Recommended)", "Yes") == false);
         }
 
         [UsedImplicitly]
