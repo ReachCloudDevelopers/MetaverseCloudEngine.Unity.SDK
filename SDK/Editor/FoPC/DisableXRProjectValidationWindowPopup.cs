@@ -8,7 +8,7 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
         [UnityEditor.InitializeOnLoadMethod]
         private static void PatchCode()
         {
-            var path = "Library/PackageCache";
+            const string path = "Library/PackageCache";
             if (!System.IO.Directory.Exists("Library/PackageCache") ||
                 !System.IO.Directory.Exists("Assets")) return;
             var changed = 0;

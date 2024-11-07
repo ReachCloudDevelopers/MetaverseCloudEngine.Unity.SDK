@@ -10,18 +10,21 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
         [InitializeOnLoadMethod]
         private static void PatchCode()
         {
-            var files = System.IO.Directory.GetFiles("Library/PackageCache", "MetaXRFeatureEnabler.cs", System.IO.SearchOption.AllDirectories);
+            var files = System.IO.Directory.GetFiles(
+                "Library/PackageCache", 
+                "MetaXRFeatureEnabler.cs", System.IO.SearchOption.AllDirectories);
             if (files.Length == 0) return;
-            var path = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith("Library/PackageCache/com.meta.xr.sdk.core") && x.Replace("\\", "/").EndsWith("/Editor/OpenXRFeatures/MetaXRFeatureEnabler.cs"));
+            var path = files.FirstOrDefault(x => 
+                x.Replace("\\", "/").StartsWith("Library/PackageCache/com.meta.xr.sdk.core") && 
+                x.Replace("\\", "/").EndsWith("MetaXRFeatureEnabler.cs"));
             if (!System.IO.File.Exists(path)) return;
             var text = System.IO.File.ReadAllText(path);
-            if (text.Contains("EditorApplication.update += EnableMetaXRFeature;"))
-            {
-                text = text.Replace("EditorApplication.update += EnableMetaXRFeature;", "// Removed line...");
-                System.IO.File.WriteAllText(path, text);
-                CompilationPipeline.RequestScriptCompilation();
-                Debug.Log("Disabled Prompt To Enable Meta Quest OpenXR Support");
-            }
+            const string badCode = "EditorApplication.update += EnableMetaXRFeature;";
+            if (!text.Contains(badCode)) return;
+            text = text.Replace(badCode, "/* Removed line... */");
+            System.IO.File.WriteAllText(path, text);
+            CompilationPipeline.RequestScriptCompilation();
+            Debug.Log("Disabled Prompt To Enable Meta Quest OpenXR Support");
         }
     }
 }

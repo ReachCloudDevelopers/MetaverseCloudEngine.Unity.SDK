@@ -7,9 +7,9 @@ using UnityEngine.Events;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
+    [HideMonoScript]
     public class AIAgentAwareObject : TriInspectorMonoBehaviour
     {
-        private static readonly Dictionary<string, AIAgentAwareObject> ActionableObjects = new();
         public static readonly List<AIAgentAwareObject> ActiveObjects = new();
 
         [Serializable]
@@ -18,6 +18,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             [DisableInPlayMode]
             [Required]
             public string id;
+            [InfoBox("Call EnableAction or DisableAction to enable or disable this action.")]
             public bool disabled;
             public UnityEvent<GameObject> onAgentPerformed;
             public UnityEvent onEnabled;
@@ -37,73 +38,69 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         public string ID => useGameObjectName ? gameObject.name : id;
 
-        private Dictionary<string, SupportedObjectAction> _supportedActionsLookup;  
-
         private void OnEnable()
         {
-            RefreshSupportedActionsLookup();
-
             foreach (var action in supportedActions)
             {
                 if (action.disabled) action.onDisabled?.Invoke();
                 else action.onEnabled?.Invoke();
             }
-
-            ActionableObjects[useGameObjectName ? gameObject.name : id] = this;
             ActiveObjects.Add(this);
-        }
-
-        public void RefreshSupportedActionsLookup(bool force = false)
-        {
-            if (force)
-                _supportedActionsLookup = null;
-            _supportedActionsLookup ??= supportedActions
-                .Where(x => !string.IsNullOrWhiteSpace(x.id))
-                .ToDictionary(x => x.id, y => y);
         }
 
         private void OnDisable()
         {
-            ActionableObjects.Remove(useGameObjectName ? gameObject.name : id);
             ActiveObjects.Remove(this);
         }
 
         public static AIAgentAwareObject Find(string targetID)
         {
-            return ActionableObjects.GetValueOrDefault(targetID);
+            return ActiveObjects.FirstOrDefault(x => x.ID == targetID);
         }
 
         public bool IsActionSupported(string action)
         {
-            return _supportedActionsLookup.TryGetValue(action, out var a) && !a.disabled;
+            return supportedActions.Any(x => x.id == action && !x.disabled);
         }
 
         public static IEnumerable<AIAgentAwareObject> FindAll(string actionID)
         {
-            return ActionableObjects.Select(x => x.Value).Where(x => x&& x.IsActionSupported(actionID));
+            return ActiveObjects.Where(x => x&& x.IsActionSupported(actionID));
         }
 
         public void EnableAction(string actionID)
         {
-            if (!_supportedActionsLookup.TryGetValue(actionID, out var a)) return;
+            if (!TryGetAction(actionID, out var a)) return;
             if (!a.disabled) return;
             a.disabled = false;
+            if (!isActiveAndEnabled) return;
             a.onEnabled?.Invoke();
         }
 
         public void DisableAction(string actionID)
         {
-            if (!_supportedActionsLookup.TryGetValue(actionID, out var a)) return;
+            if (!TryGetAction(actionID, out var a)) return;
             if (a.disabled) return;
             a.disabled = true;
+            if (!isActiveAndEnabled) return;
             a.onDisabled?.Invoke();
         }
 
         public void OnPerformedAction(string actionID, AIAgent aiAgent)
         {
-            RefreshSupportedActionsLookup(true);
-            if (_supportedActionsLookup.TryGetValue(actionID, out var action))
-                action.onAgentPerformed?.Invoke(aiAgent.gameObject);
+            if (!TryGetAction(actionID, out var action)) return;
+            action.onAgentPerformed?.Invoke(aiAgent.gameObject);
+        }
+        
+        private bool TryGetAction(string actionID, out SupportedObjectAction action)
+        {
+            action = GetAction(actionID);
+            return action != null;
+        }
+        
+        private SupportedObjectAction GetAction(string actionID)
+        {
+            return supportedActions.FirstOrDefault(x => x.id == actionID);
         }
     }
 }
