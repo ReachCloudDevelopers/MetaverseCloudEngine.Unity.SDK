@@ -135,7 +135,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
             CancellationToken cancellationToken = default,
             Guid? gameStateLoadRequestId = null)
         {
-            if (MetaverseProgram.IsQuitting)
+            if (MetaverseProgram.IsQuitting && Application.isPlaying)
             {
                 failed?.Invoke("Application is quitting.");
                 return;
