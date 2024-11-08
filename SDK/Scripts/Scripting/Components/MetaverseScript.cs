@@ -161,6 +161,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private readonly Dictionary<string, JsValue> _functionLookup = new();
         private static int _timeoutHandleIndex;
         private readonly HashSet<int> _timeoutHandles = new();
+        private readonly Queue<Action> _initializationMethodQueue = new(); 
 
         /// <summary>
         /// Gets the variable declarations for the javascript file.
@@ -169,6 +170,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         protected override void OnDestroy()
         {
+            _initializationMethodQueue.Clear(); // Make sure no initialization methods are triggered.
+            
             base.OnDestroy();
             
             if (!Application.isPlaying)
@@ -182,7 +185,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (_methods != null && _ready)
             {
-                if (_methods.TryGetValue(ScriptFunctions.OnDestroy, out var method))
+                if (_methods?.TryGetValue(ScriptFunctions.OnDestroy, out var method) == true)
                     _ = _engine.Invoke(method);
             }
 
@@ -192,15 +195,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private void OnEnable()
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnEnable, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnDisable()
         {
             if (!_ready) return;
-            if (_methods == null) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnDisable, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnDisable, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
@@ -215,11 +217,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
                 if (MetaSpace.Instance)
                 {
-                    MetaSpace.OnReady(() => OnReady());
+                    MetaSpace.OnReady(() => OnMetaSpaceReady());
                     return;
                 }
 
-                OnReady();
+                OnMetaSpaceReady();
             }
             catch(Exception e)
             {
@@ -228,9 +230,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             }
             return;
 
-            void OnReady()
+            void OnMetaSpaceReady()
             {
-                MetaverseDispatcher.AtEndOfFrame(() => // At end of frame to ensure everything is initialized first.
+                MetaverseDispatcher.AtEndOfFrame(() =>
                 {
                     try
                     {
@@ -240,24 +242,60 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             return;
                         }
 
-                        if (_methods.TryGetValue(ScriptFunctions.Awake, out var method))
-                            _ = _engine.Invoke(method);
-
-                        if (enabled)
+                        void CallAwake()
                         {
-                            if (_methods.TryGetValue(ScriptFunctions.OnEnable, out method))
-                                _ = _engine.Invoke(method);
+                            _ready = true;
+                            
+                            if (_methods?.TryGetValue(ScriptFunctions.Awake, out var awakeMethod) == true)
+                                _ = _engine.Invoke(awakeMethod);   
+                            
+                            while (_initializationMethodQueue.Count > 0)
+                            {
+                                try
+                                {
+                                    _initializationMethodQueue.Dequeue()?.Invoke();
+                                }
+                                catch (Exception e)
+                                {
+                                    MetaverseProgram.Logger.LogError("Failed to execute initialization method: " + e);
+                                }
+                            }
+                        }
+
+                        if (gameObject.activeInHierarchy)
+                        {
+                            CallAwake();
                         }
                         else
                         {
-                            if (_methods.TryGetValue(ScriptFunctions.OnDisable, out method))
-                                _ = _engine.Invoke(method);
+                            MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
+                            {
+                                if (!this) return;
+                                CallAwake();
+                            });
+                        }
+                        
+                        void CallOnEnabled()
+                        {
+                            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out var onEnableMethod) == true)
+                                _ = _engine.Invoke(onEnableMethod);
+
+                            if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out var startMethod) == true)
+                                _ = _engine.Invoke(startMethod);
                         }
 
-                        if (enabled && _methods.TryGetValue(ScriptFunctions.Start, out method))
-                            _ = _engine.Invoke(method);
-
-                        _ready = true;
+                        if (isActiveAndEnabled)
+                        {
+                            CallOnEnabled();
+                        }
+                        else
+                        {
+                            MetaverseDispatcher.WaitUntil(() => !this || isActiveAndEnabled, () =>
+                            {
+                                if (!this) return;
+                                CallOnEnabled();
+                            });
+                        }
                     }
                     catch (Exception e)
                     {
@@ -321,170 +359,189 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         }
 #endif
 
+        private void OnEngineReady(Action a)
+        {
+            if (_ready)
+            {
+                a?.Invoke();
+                return;
+            }
+            
+            _initializationMethodQueue.Enqueue(a);
+        }
+
         private void Update()
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.Update, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.Update, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void LateUpdate()
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.LateUpdate, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.LateUpdate, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void FixedUpdate()
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.FixedUpdate, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.FixedUpdate, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnTriggerEnter(Collider other)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerEnter, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter, out var method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerExit(Collider other)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerExit, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit, out var method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerStay(Collider other)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerStay, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay, out var method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerEnter2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerExit2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerExit2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerStay2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnTriggerStay2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnAnimatorIK(int layer)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnAnimatorIK, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorIK, out var method) == true)
                 _ = _engine.Invoke(method, layer);
         }
 
         private void OnAnimatorMove()
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnAnimatorMove, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorMove, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnCollisionEnter(Collision collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionEnter, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit(Collision collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionExit, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay(Collision collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionStay, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionExit2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnCollisionStay2D, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay2D, out var method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         public override void OnNetworkReady(bool offline)
         {
             base.OnNetworkReady(offline);
-            if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnNetworkReady, out var method))
-                _ = _engine.Invoke(method, offline);
+            OnEngineReady(() =>
+            {
+                if (_methods?.TryGetValue(ScriptFunctions.OnNetworkReady, out var method) == true)
+                    _ = _engine.Invoke(method, offline); 
+            });
         }
 
         protected override void RegisterNetworkRPCs()
         {
             base.RegisterNetworkRPCs();
-            if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out var method))
-                _ = _engine.Invoke(method);
+            OnEngineReady(() =>
+            {
+                if (_methods?.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out var method) == true)
+                    _ = _engine.Invoke(method); 
+            });
         }
 
         protected override void UnRegisterNetworkRPCs()
         {
             base.UnRegisterNetworkRPCs();
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
         protected override void OnMetaSpaceBehaviourInitialize()
         {
             base.OnMetaSpaceBehaviourInitialize();
-            if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out var method))
-                _ = _engine.Invoke(method);
+            OnEngineReady(() =>
+            {
+                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out var method) == true)
+                    _ = _engine.Invoke(method);
+            });
         }
 
         protected override void OnMetaSpaceServicesRegistered()
         {
             base.OnMetaSpaceServicesRegistered();
-            if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out var method))
-                _ = _engine.Invoke(method);
+            OnEngineReady(() =>
+            {
+                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out var method) == true)
+                    _ = _engine.Invoke(method); 
+            });
         }
 
         protected override void OnMetaSpaceBehaviourDestroyed()
         {
             base.OnMetaSpaceBehaviourDestroyed();
             if (!_ready) return;
-            if (_methods.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out var method))
+            if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out var method) == true)
                 _ = _engine.Invoke(method);
         }
 
@@ -808,7 +865,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private static bool OnJavaScriptCLRException(Exception exception)
         {
-            MetaverseProgram.Logger.LogError(exception);
+            MetaverseProgram.Logger.LogError("Error in JavaScript CLR: " + exception);
             return true;
         }
 

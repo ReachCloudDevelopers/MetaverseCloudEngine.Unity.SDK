@@ -143,7 +143,7 @@ namespace MetaverseCloudEngine.Unity.Async
                 }
                 catch (Exception e)
                 {
-                    MetaverseProgram.Logger.LogError(e);
+                    MetaverseProgram.Logger.LogError("Error in Dequeued Action: " + e);
                 }
                 
                 if (Application.isPlaying && --maximumIterationsPerFrame <= 0)
