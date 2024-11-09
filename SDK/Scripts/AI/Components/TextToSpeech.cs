@@ -65,6 +65,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         
         public UnityEvent OnPlayTts => onPlayTts;
         
+        public UnityEvent OnPlayTtsFinished => onPlayTtsFinished;
+        
         public UnityEvent OnPlayTtsFailed => onPlayTtsFailed;
         
         public bool IsLoading { get; private set; }
