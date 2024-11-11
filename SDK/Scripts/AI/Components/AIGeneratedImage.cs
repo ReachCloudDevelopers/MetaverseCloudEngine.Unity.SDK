@@ -35,7 +35,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             set
             {
                 if (value == prompt) return;
-                Prompt = prompt;
+                prompt = value;
                 Generate();
             }
         }
