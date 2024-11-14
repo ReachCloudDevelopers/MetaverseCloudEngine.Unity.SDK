@@ -17,6 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using MetaverseCloudEngine.Unity.Scripting.Components;
 using MetaverseCloudEngine.Unity.Web.Implementation;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -806,8 +807,7 @@ namespace MetaverseCloudEngine.Unity
                     .Any(x => x.gameObject == gameObject);
         }
 
-        public static AssetPlatformDocumentDto GetDocumentForCurrentPlatform(
-            this IEnumerable<AssetPlatformDocumentDto> platforms)
+        public static AssetPlatformDocumentDto GetDocumentForCurrentPlatform(this IEnumerable<AssetPlatformDocumentDto> platforms)
         {
             if (platforms is null)
                 return null;
@@ -818,6 +818,86 @@ namespace MetaverseCloudEngine.Unity
                 .ToArray();
             var result = matchingPlatforms.FirstOrDefault();
             return result;
+        }
+        
+        public static MetaverseScript GetMetaverseScript(this GameObject gameObject)
+        {
+            return gameObject.GetComponent<MetaverseScript>();
+        }
+        
+        public static MetaverseScript GetMetaverseScript(this Component component)
+        {
+            return component.GetComponent<MetaverseScript>();
+        }
+
+        public static MetaverseScript GetMetaverseScript(this GameObject gameObject, string name)
+        {
+            return gameObject.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
+        }
+        
+        public static MetaverseScript GetMetaverseScript(this Component component, string name)
+        {
+            return component.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
+        }
+        
+        public static MetaverseScript[] GetMetaverseScripts(this GameObject gameObject, string name)
+        {
+            return gameObject.GetComponents<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
+        }
+        
+        public static MetaverseScript[] GetMetaverseScripts(this Component component, string name)
+        {
+            return component.GetComponents<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
+        }
+        
+        public static MetaverseScript GetMetaverseScriptInParent(this GameObject gameObject, string name, bool includeInactive = false)
+        {
+            return gameObject.GetComponentInParent<MetaverseScript>(includeInactive);
+        }
+        
+        public static MetaverseScript[] GetMetaverseScriptsInParent(this Component component, string name, bool includeInactive = false)
+        {
+            return component.GetComponentsInParent<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+        } 
+            
+        public static MetaverseScript[] GetMetaverseScriptsInParent(this GameObject gameObject, string name, bool includeInactive = false)
+        {
+            return gameObject.GetComponentsInParent<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+        }
+        
+        public static MetaverseScript GetMetaverseScriptInChildren(this Component component, string name, bool includeInactive = false)
+        {
+            return component.GetComponentsInChildren<MetaverseScript>(includeInactive).FirstOrDefault(x => x.javascriptFile.name == name);
+        }
+        
+        public static MetaverseScript GetMetaverseScriptInChildren(this GameObject gameObject, string name, bool includeInactive = false)
+        {
+            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive).FirstOrDefault(x => x.javascriptFile.name == name);
+        }
+        
+        public static MetaverseScript[] GetMetaverseScriptsInChildren(this Component component, string name, bool includeInactive = false)
+        {
+            return component.GetComponentsInChildren<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+        }
+        
+        public static MetaverseScript[] GetMetaverseScriptsInChildren(this GameObject gameObject, string name, bool includeInactive = false)
+        {
+            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+        }
+        
+        public static MetaverseScript GetMetaverseScriptInParent(this Component component, string name, bool includeInactive = false)
+        {
+            return component.GetComponentInParent<MetaverseScript>(includeInactive);
+        }
+        
+        public static MetaverseScript FindMetaverseScriptOfType(string name)
+        {
+            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
+        }
+        
+        public static MetaverseScript[] FindMetaverseScriptsOfType(string name)
+        {
+            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
         }
 
         #endregion

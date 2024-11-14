@@ -153,7 +153,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
-        [HideInInspector][SerializeField] private Variables variables;
+        [SerializeField] private Variables variables;
 
         private bool _ready;
         private Engine _engine;
@@ -174,15 +174,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             
             base.OnDestroy();
             
-            if (!Application.isPlaying)
-            {
-                if (variables == null || variables.gameObject == gameObject) 
-                    return;
-                DestroyImmediate(variables.gameObject);
-                variables = null;
-                return;
-            }
-
             if (_methods != null && _ready)
             {
                 if (_methods?.TryGetValue(ScriptFunctions.OnDestroy, out var method) == true)
@@ -236,7 +227,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 {
                     try
                     {
-                        if (!InitializeEngine())
+                        if (!TryInitializeEngine())
                         {
                             enabled = false;
                             return;
@@ -304,70 +295,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }
                 });
             }
-        }
-
-#if UNITY_EDITOR
-        
-        private const string k_VariablesObjectName = "MetaverseScriptVariables";
-
-        [UnityEditor.InitializeOnLoadMethod]
-        private static void Init()
-        {
-            if (Application.isPlaying)
-                return;
-
-            var variables = FindObjectsOfType<Variables>(true)
-                .Where(x => x.name.StartsWith(k_VariablesObjectName) && x.transform.parent == null);
-
-            var cleanedUpCount = 0;
-            foreach (var orphanedMetaverseScript in variables)
-            {
-                cleanedUpCount++;
-                DestroyImmediate(orphanedMetaverseScript.gameObject);
-            }
-            
-            if (cleanedUpCount > 0)
-                MetaverseProgram.Logger.Log($"Cleaned up {cleanedUpCount} orphaned Variables objects.");
-        }
-
-        protected override void OnValidate()
-        {
-            base.OnValidate();
-            
-            if (Application.isPlaying)
-                return;
-
-            UnityEditor.EditorApplication.delayCall += () =>
-            {
-                if (!this)
-                    return;
-
-                if (UnityEditor.EditorUtility.IsPersistent(gameObject))
-                    return;
-
-                var objectName = $"{k_VariablesObjectName}:\"{name}\"";
-                if (!variables)
-                {
-                    var go = new GameObject(objectName);
-                    variables = go.AddComponent<Variables>();
-                }
-                else if (variables.name != objectName)
-                    variables.name = objectName;
-                
-                variables.transform.SetParent(transform);
-            };
-        }
-#endif
-
-        private void OnEngineReady(Action a)
-        {
-            if (_ready)
-            {
-                a?.Invoke();
-                return;
-            }
-            
-            _initializationMethodQueue.Enqueue(a);
         }
 
         private void Update()
@@ -549,14 +476,21 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Executes a javascript function.
         /// </summary>
         /// <param name="fn">The function to execute.</param>
-        public void ExecuteFunction(string fn)
+        [Obsolete("Please use ExecuteVoid instead.")]
+        public void ExecuteFunction(string fn) => ExecuteVoid(fn);
+
+        /// <summary>
+        /// Executes a javascript function.
+        /// </summary>
+        /// <param name="fn">The function to execute.</param>
+        public void ExecuteVoid(string fn)
         {
             if (string.IsNullOrEmpty(fn))
                 return;
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log("The MetaSpace has not fully initialized yet. Call to '" + fn + "' ignored.");
+                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -565,6 +499,80 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (method != null && !method.IsUndefined())
                 _ = _engine.Invoke(method);
+        }
+
+        /// <summary>
+        /// Executes a javascript function with arguments.
+        /// </summary>
+        /// <param name="fn">The function to execute.</param>
+        /// <param name="args">The arguments to pass to the function.</param>
+        public void ExecuteVoid(string fn, object[] args)
+        {
+            if (string.IsNullOrEmpty(fn))
+                return;
+
+            if (!_ready)
+            {
+                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                return;
+            }
+            
+            if (!_functionLookup.TryGetValue(fn, out var method))
+                _functionLookup[fn] = method = _engine.GetValue(fn);
+            
+            if (method != null && !method.IsUndefined())
+                _ = _engine.Invoke(method, args);
+        }
+
+        /// <summary>
+        /// Executes a javascript function with arguments.
+        /// </summary>
+        /// <param name="fn">The function to execute.</param>
+        /// <param name="arguments">The arguments to pass to the function.</param>
+        /// <returns>The result of the function.</returns>
+        public JsValue Execute(string fn, object[] arguments)
+        {
+            if (string.IsNullOrEmpty(fn))
+                return null;
+
+            if (!_ready)
+            {
+                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                return null;
+            }
+
+            if (!_functionLookup.TryGetValue(fn, out var method))
+                _functionLookup[fn] = method = _engine.GetValue(fn);
+
+            if (method != null && !method.IsUndefined())
+                return _engine.Invoke(method, arguments);
+
+            return null;
+        }
+        
+        /// <summary>
+        /// Executes a javascript function without any arguments.
+        /// </summary>
+        /// <param name="fn">The function to execute.</param>
+        /// <returns>The result of the function.</returns>
+        public JsValue Execute(string fn)
+        {
+            if (string.IsNullOrEmpty(fn))
+                return null;
+
+            if (!_ready)
+            {
+                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                return null;
+            }
+
+            if (!_functionLookup.TryGetValue(fn, out var method))
+                _functionLookup[fn] = method = _engine.GetValue(fn);
+
+            if (method != null && !method.IsUndefined())
+                return _engine.Invoke(method);
+
+            return null;
         }
         
         /// <summary>
@@ -664,7 +672,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return BlackListedNames.Contains(value) || (isType && BlackListedTypes.Contains(value));
         }
 
-        private bool InitializeEngine()
+        private void OnEngineReady(Action a)
+        {
+            if (_ready)
+            {
+                a?.Invoke();
+                return;
+            }
+            
+            _initializationMethodQueue.Enqueue(a);
+        }
+
+        private bool TryInitializeEngine()
         {
             if (!javascriptFile)
                 return false;
