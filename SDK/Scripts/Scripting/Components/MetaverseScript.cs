@@ -805,9 +805,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         _ = continueWith.Invoke(uniTask, new[] { uniTask, action });
                     }));
             
-            _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
             foreach (var include in includes)
                 _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(include));
+            _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
             var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
             foreach (var method in methods)
                 CacheMethod(method);
