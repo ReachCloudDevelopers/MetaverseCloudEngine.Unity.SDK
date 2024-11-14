@@ -8,7 +8,7 @@ namespace MetaverseCloudEngine.Unity.Editors
     public static class MetaverseCheckForUpdatesEditorButton
     {
         [UsedImplicitly]
-        [MenuItem(MetaverseConstants.ProductName + "Check for SDK Updates", false, 100)]
+        [MenuItem(MetaverseConstants.ProductName + "/Check for SDK Updates", false, 100)]
         public static void CheckForUpdates()
         {
             MetaverseRequiredPackageInstaller.ForceInstallPackages();
