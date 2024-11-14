@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using MetaverseCloudEngine.Unity.Scripting.Components;
-using MetaverseCloudEngine.Unity.Web.Implementation;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Networking;
@@ -32,6 +31,8 @@ using MethodAttributes = System.Reflection.MethodAttributes;
 
 #if UNITY_ANDROID || UNITY_EDITOR
 using UnityEngine.XR.ARCore;
+#elif UNITY_IOS
+using UnityEngine.XR.ARKit;
 #endif
 
 #if !UNITY_IOS
@@ -1569,23 +1570,28 @@ namespace MetaverseCloudEngine.Unity
         {
             var isMobile = Application.isMobilePlatform;
 #if UNITY_EDITOR
-            isMobile = UnityEditor.EditorUserBuildSettings.activeBuildTarget is UnityEditor.BuildTarget.Android or UnityEditor.BuildTarget.iOS;
+            isMobile = UnityEditor.EditorUserBuildSettings.activeBuildTarget is 
+                UnityEditor.BuildTarget.Android or 
+                UnityEditor.BuildTarget.iOS;
 #endif
             return Application.isMobilePlatform && IsVRCompatible();
         }
 
         public static bool IsARCompatible()
         {
-#if !UNITY_IOS
             if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings && XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
             {
 #if UNITY_ANDROID || UNITY_EDITOR
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARCoreLoader))
                     return true;
+#elif UNITY_IOS
+                if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
+                        x => x is ARKitLoader))
+                    return true;
 #endif
             }
-#endif
+            
             return false;
         }
 
