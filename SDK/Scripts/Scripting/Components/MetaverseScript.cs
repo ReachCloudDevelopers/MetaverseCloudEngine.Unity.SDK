@@ -123,7 +123,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string TransformProperty = "transform";
         private const string IsUnityNullFunctionOld1 = "isUnityNull";
         private const string IsUnityNullFunctionOld2 = "NULL";
-        private const string IsUnityNullFunction = "null";
         private const string CoroutineFunction = "StartCoroutine";
         private const string GetMetaverseScriptFunction = "GetMetaverseScript";
         private const string PrintFunction = "print";
@@ -153,6 +152,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
+        [SerializeField] private TextAsset[] includes;
         [SerializeField] private Variables variables;
 
         private bool _ready;
@@ -695,7 +695,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 .SetValue(NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()))
                 .SetValue(MetaSpaceProperty, (object)MetaSpace.Instance)
                 .SetValue(GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) => go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n)))
-                .SetValue(ThisProperty, (object)gameObject)
+                .SetValue(ThisProperty, (object)this)
                 .SetValue(GameObjectProperty, (object)gameObject)
                 .SetValue(TransformProperty, (object)transform)
                 .SetValue(CoroutineFunction, (Action<Func<object>>)(o => StartCoroutine(CoroutineUpdate(o))))
@@ -771,7 +771,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }))
                     .SetValue(IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()))
                     .SetValue(IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()))
-                    .SetValue(IsUnityNullFunction, (Func<object, bool>)(o => o.IsUnityNull()))
                     .SetValue(AwaitFunction, (Action<object, Action<object>>)((t, action) =>
                     {
                         if (t is not Task task)
@@ -807,7 +806,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }));
             
             _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
-
+            foreach (var include in includes)
+                _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(include));
             var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
             foreach (var method in methods)
                 CacheMethod(method);
