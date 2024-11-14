@@ -189,9 +189,11 @@ namespace MetaverseCloudEngine.Unity.Components
         {
             if (useCurrentInstanceID)
             {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
                 var currentInstance = MetaverseProgram.RuntimeServices.InternalSceneManager.CurrentJoinState.InstanceID;
                 if (!string.IsNullOrEmpty(currentInstance))
                     return currentInstance;
+#endif
             }
             
             string propertyDefAppend = null;
