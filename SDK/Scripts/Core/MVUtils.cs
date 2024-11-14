@@ -1500,7 +1500,8 @@ namespace MetaverseCloudEngine.Unity
             if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings && XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
             {
 #if UNITY_ANDROID || UNITY_EDITOR
-                if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(x => x is ARCoreLoader))
+                if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
+                        x => x is ARCoreLoader))
                     return true;
 #endif
             }

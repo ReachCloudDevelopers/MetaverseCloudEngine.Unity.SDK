@@ -2,7 +2,6 @@
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
-using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Attributes;
 using MetaverseCloudEngine.Unity.XR;
 using TriInspectorMVCE;
@@ -10,6 +9,9 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 using UnityEngine.XR;
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+using UnityEngine.XR.ARFoundation;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Components
 {
@@ -130,6 +132,9 @@ namespace MetaverseCloudEngine.Unity.Components
         private bool _enabledStateChanged;
         private bool _firstTime = true;
         private bool? _isCurrentPlatformSupported;
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+        private ARSessionState? _lastARSessionState;
+#endif
 
         /// <summary>
         /// The supported platforms.
@@ -190,6 +195,10 @@ namespace MetaverseCloudEngine.Unity.Components
             else
                 Check();
 
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+            ARSession.stateChanged += OnARSessionStateChanged;
+#endif
+
             XRInputTrackingAPI.HmdConnected += OnDeviceConnected;
             XRInputTrackingAPI.HmdDisconnected += OnDeviceDisconnected;
             return;
@@ -201,6 +210,23 @@ namespace MetaverseCloudEngine.Unity.Components
             }
         }
 
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID 
+        private void OnARSessionStateChanged(ARSessionStateChangedEventArgs e)
+        {
+            UniTask.Void(async c =>
+            {
+                if (!this) return;
+                await UniTask.DelayFrame(1, cancellationToken: c);
+                if (destroyCancellationToken.IsCancellationRequested) return;
+                if (_lastARSessionState == e.state) return;
+                _lastARSessionState = e.state;
+                MetaverseProgram.Logger.Log("AR Session state changed to: " + e.state);
+                ClearPlatformSupportCachedValue();
+                PerformCheck();
+            }, destroyCancellationToken);
+        }
+#endif
+
         private void OnEnable()
         {
             PerformCheck();
@@ -211,6 +237,9 @@ namespace MetaverseCloudEngine.Unity.Components
             if (MetaverseProgram.IsQuitting) return;
             XRInputTrackingAPI.HmdConnected -= OnDeviceConnected;
             XRInputTrackingAPI.HmdDisconnected -= OnDeviceDisconnected;
+#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+            ARSession.stateChanged -= OnARSessionStateChanged;
+#endif
         }
 
         private void OnDeviceConnected(InputDevice device)

@@ -19,6 +19,7 @@ namespace MetaverseCloudEngine.Unity.Components
         [InfoBox("Leaving Meta Space empty will default to the current Meta Space.")]
         [SerializeField] private string metaSpace;
         [SerializeField] private string instanceID;
+        [FormerlySerializedAs("useInstanceID")] [SerializeField] private bool useCurrentInstanceID;
         [FormerlySerializedAs("organizationId")]
         [OrganizationIdProperty]
         [InfoBox("Make sure that the Organization has this metaspace added, otherwise joining will fail.")]
@@ -45,11 +46,34 @@ namespace MetaverseCloudEngine.Unity.Components
         public UnityEvent<string> onLoadingFailed;
         
         public bool IsJoining { get; private set; }
+        
+        public string Organization
+        {
+            get => organization;
+            set => organization = value;
+        }
+        
+        public Guid? OrganizationId
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(organization))
+                    return null;
+                return Guid.TryParse(organization, out var id) ? id : (Guid?) null;
+            }
+            set => organization = value?.ToString() ?? string.Empty;
+        }
 
         public string InstanceID
         {
             get => instanceID;
             set => instanceID = value;
+        }
+
+        public bool UseInstanceID
+        {
+            get => useCurrentInstanceID;
+            set => useCurrentInstanceID = value;
         }
 
         public string BlockchainAsset
@@ -163,6 +187,13 @@ namespace MetaverseCloudEngine.Unity.Components
 
         private string GetMetaSpaceInstanceID()
         {
+            if (useCurrentInstanceID)
+            {
+                var currentInstance = MetaverseProgram.RuntimeServices.InternalSceneManager.CurrentJoinState.InstanceID;
+                if (!string.IsNullOrEmpty(currentInstance))
+                    return currentInstance;
+            }
+            
             string propertyDefAppend = null;
             var propertyDefComponents = GetPropertyDefinitions();
             if (propertyDefComponents.Length > 0)
