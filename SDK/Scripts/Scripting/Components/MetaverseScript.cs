@@ -607,7 +607,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (variables == null) return;
             variables.declarations.Set(variableName, value);
         }
-
+        
         /// <summary>
         /// Gets a property with the given name from the javascript engine.
         /// </summary>
@@ -615,7 +615,21 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The property value.</returns>
         public JsValue GetProperty(string propertyName)
         {
-            return _engine?.GetValue(propertyName);
+            return GetProperty(propertyName, JsValue.Undefined);
+        }
+
+        /// <summary>
+        /// Gets a property with the given name from the javascript engine.
+        /// </summary>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="defaultValue">The default value to return if the property doesn't exist.</param>
+        /// <returns>The property value.</returns>
+        public JsValue GetProperty(string propertyName, JsValue defaultValue)
+        {
+            var v = _engine?.GetValue(propertyName);
+            if (v == null || v.IsUndefined())
+                return defaultValue;
+            return v;
         }
 
         /// <summary>
@@ -806,8 +820,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }));
             
             foreach (var include in includes)
-                _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(include));
+                if (include && !string.IsNullOrEmpty(include.text))
+                    _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(include));
             _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
+            
             var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
             foreach (var method in methods)
                 CacheMethod(method);
