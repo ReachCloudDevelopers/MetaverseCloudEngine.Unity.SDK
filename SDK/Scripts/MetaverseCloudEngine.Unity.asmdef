@@ -9,6 +9,7 @@
         "GUID:9e6bdf94fcb245c585c26819fa23a202",
         "GUID:92703082f92b41ba80f0d6912de66115",
         "GUID:a9420e37d7990b54abdef6688edbe313",
+        "GUID:dfd0ce20189d48e5b22bb4134b558f5a",
         "GUID:4847341ff46394e83bb78fbd0652937e",
         "GUID:95054a9710b0f114a85f6ced6b7f891c",
         "GUID:a9582160ded7e3c46829c5005bf42835",
@@ -17,7 +18,6 @@
         "GUID:7040c93f6035f5749888e6fdf5ef28f8",
         "GUID:3b7cf88e9d6729441884290e764f086b",
         "GUID:2a230cb87a1d3ba4a98bdc0ddae76e6c",
-        "GUID:a9f1da384a134aa5af763cbed09bbfcf",
         "GUID:ce522b6ed64c8be4c989a1d26d0e3275",
         "GUID:75469ad4d38634e559750d17036d5f7c",
         "GUID:ba171b3dd2a51234ab864770f99741a5",
@@ -54,10 +54,7 @@
         "MV_INPUT_SYSTEM",
         "MV_CINEMACHINE",
         "MV_CYSHARP",
-        "MV_GLTF",
-        "MV_XR_MANAGEMENT",
-        "MV_XR_HANDS",
-        "MV_XR_HANDS_LEGACY"
+        "MV_GLTF"
     ],
     "versionDefines": [
         {

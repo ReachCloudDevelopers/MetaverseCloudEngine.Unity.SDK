@@ -1,4 +1,3 @@
-using System;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;

@@ -13,13 +13,15 @@ using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.Components
 {
-    public partial class MetaSpacePortal : MonoBehaviour
+    [HideMonoScript]
+    public partial class MetaSpacePortal : TriInspectorMonoBehaviour
     {
         [MetaSpaceIdProperty]
         [InfoBox("Leaving Meta Space empty will default to the current Meta Space.")]
         [SerializeField] private string metaSpace;
         [SerializeField] private string instanceID;
-        [FormerlySerializedAs("useInstanceID")] [SerializeField] private bool useCurrentInstanceID;
+        [FormerlySerializedAs("useInstanceID")]
+        [SerializeField] private bool useCurrentInstanceID;
         [FormerlySerializedAs("organizationId")]
         [OrganizationIdProperty]
         [InfoBox("Make sure that the Organization has this metaspace added, otherwise joining will fail.")]
