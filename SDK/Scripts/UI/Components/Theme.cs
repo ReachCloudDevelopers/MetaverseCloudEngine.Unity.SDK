@@ -8,12 +8,12 @@ namespace MetaverseCloudEngine.Unity.UI.Components
     [CreateAssetMenu(fileName = "New Theme", menuName = MetaverseConstants.MenuItems.MenuRootPath + "UI/Theme")]
     public class Theme : BaseTheme
     {
-        [Title("Font")]
+        [Header("Font")]
         [FormerlySerializedAs("primaryFont")] public TMP_FontAsset PrimaryFont;
         [FormerlySerializedAs("secondaryFont")] public TMP_FontAsset SecondaryFont;
         [FormerlySerializedAs("tertiaryFont")] public TMP_FontAsset TertiaryFont;
 
-        [Title("Override")]
+        [Header("Override")]
         [FormerlySerializedAs("Override")] public BaseTheme @override;
 
         protected override void OnValidate()

@@ -9,10 +9,9 @@ using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.UI.Components
 {
-    [HideMonoScript]
-    public class BaseTheme : TriInspectorScriptableObject
+    public class BaseTheme : ScriptableObject
     {
-        [Title("Base Colors")]
+        [Header("Base Colors")]
         [FormerlySerializedAs("buttonDanger")] public Color ButtonDanger = new(1f, 54f / 255f, 65f / 255f, 1);
         [FormerlySerializedAs("buttonPrimary")] public Color ButtonPrimary = new(0, 116 / 255f, 217 / 255f, 1);
         [FormerlySerializedAs("buttonSecondary")] public Color ButtonSecondary = new(53f / 255f, 192f / 255f, 255f / 255f, 1);
@@ -28,13 +27,13 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         [FormerlySerializedAs("secondaryBackgroundLight")] public Color SecondaryBackgroundLight = new(221f / 255f, 221f / 255f, 221f / 255f, 1f);
         [FormerlySerializedAs("secondaryBackgroundLighter")] public Color SecondaryBackgroundLighter = new(1f, 1f, 1f, 1f);
 
-        [Title("Text Colors")]
+        [Header("Text Colors")]
         [FormerlySerializedAs("textDark")] public Color TextDark = new(170f / 255f, 170f / 255f, 170f / 255f, 1f);
         [FormerlySerializedAs("textDarker")] public Color TextDarker = new(17f / 255f, 17f / 255f, 17f / 255f, 1f);
         [FormerlySerializedAs("textLight")] public Color TextLight = new(221f / 255f, 221f / 255f, 221f / 255f, 1f);
         [FormerlySerializedAs("textLighter")] public Color TextLighter = new(1f, 1f, 1f, 1f);
         
-        [Title("Logo")]
+        [Header("Logo")]
         [FormerlySerializedAs("SmallLogo")] 
         [FormerlySerializedAs("smallLogo")] 
         [FormerlySerializedAs("LargeLogo")] 
