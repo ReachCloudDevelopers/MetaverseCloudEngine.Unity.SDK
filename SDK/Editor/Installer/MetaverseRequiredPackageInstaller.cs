@@ -25,6 +25,12 @@ namespace MetaverseCloudEngine.Unity.Installer
         };
 
         private static AddAndRemoveRequest _packageRequest;
+        
+        public static void ForceInstallPackages()
+        {
+            SessionState.EraseBool(InitialUpdateCheckFlag);
+            InstallPackages();
+        }
 
         [DidReloadScripts]
         [InitializeOnLoadMethod]
