@@ -29,15 +29,17 @@ using UnityEngine.InputSystem;
 using Bounds = UnityEngine.Bounds;
 using MethodAttributes = System.Reflection.MethodAttributes;
 
+using UnityEngine.XR;
+
+#if MV_XR_MANAGEMENT
+using UnityEngine.XR.Management;
+#endif
+
 #if UNITY_ANDROID || UNITY_EDITOR
 using UnityEngine.XR.ARCore;
 #elif UNITY_IOS
 using UnityEngine.XR.ARKit;
 #endif
-
-#if !UNITY_IOS
-using UnityEngine.XR;
-using UnityEngine.XR.Management;
 
 #if !GOOGLE_PLAY
 using UnityEngine.XR.OpenXR;
@@ -52,7 +54,6 @@ using UnityEngine.XR.OpenXR.Features;
 using UnityEngine.XR.OpenXR.Features.MetaQuestSupport;
 #endif
 
-#endif
 #endif
 
 namespace MetaverseCloudEngine.Unity
