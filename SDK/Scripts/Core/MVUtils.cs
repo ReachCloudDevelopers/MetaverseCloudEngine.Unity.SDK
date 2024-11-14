@@ -37,7 +37,8 @@ using UnityEngine.XR.Management;
 
 #if UNITY_ANDROID || UNITY_EDITOR
 using UnityEngine.XR.ARCore;
-#elif UNITY_IOS
+#endif
+#if UNITY_IOS || UNITY_EDITOR
 using UnityEngine.XR.ARKit;
 #endif
 
@@ -1586,7 +1587,8 @@ namespace MetaverseCloudEngine.Unity
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARCoreLoader))
                     return true;
-#elif UNITY_IOS
+#endif
+#if UNITY_IOS || UNITY_EDITOR
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARKitLoader))
                     return true;
