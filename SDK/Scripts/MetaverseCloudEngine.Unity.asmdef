@@ -149,12 +149,12 @@
         },
         {
             "name": "com.unity.xr.interaction.toolkit",
-            "expression": "3",
+            "expression": "3.0.0",
             "define": "MV_XR_TOOLKIT_3"
         },
         {
             "name": "com.unity.render-pipelines.core",
-            "expression": "17",
+            "expression": "17.0.0",
             "define": "MV_RENDER_PIPELINE_17"
         },
         {
