@@ -13,17 +13,18 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public override void OnInspectorGUI()
         {
-            SerializedProperty javascriptFileProp = serializedObject.FindProperty("javascriptFile");
-
+            var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
             MetaverseEditorUtils.Header(javascriptFileProp.objectReferenceValue != null ? javascriptFileProp.objectReferenceValue.name : "(No Script)", false);
 
-            SerializedProperty variablesProp = serializedObject.FindProperty("variables"); // This property references a visual scripting variables component.
+            var variablesProp = serializedObject.FindProperty("variables"); // This property references a visual scripting variables component.
             
             base.OnInspectorGUI();
 
             GUILayout.Space(15);
 
-            if (variablesProp.objectReferenceValue != null)
+            if (variablesProp.objectReferenceValue != null && 
+                variablesProp.objectReferenceValue is Component c && 
+                c.gameObject != (target as MonoBehaviour)?.gameObject)
             {
                 RenderVariablesEditor(variablesProp);
             }
