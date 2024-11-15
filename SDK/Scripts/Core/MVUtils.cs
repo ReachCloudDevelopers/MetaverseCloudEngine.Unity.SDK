@@ -1588,7 +1588,7 @@ namespace MetaverseCloudEngine.Unity
                         x => x is ARCoreLoader))
                     return true;
 #endif
-#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR) 
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARKitLoader))
                     return true;
