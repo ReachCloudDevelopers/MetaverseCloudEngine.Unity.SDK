@@ -38,7 +38,7 @@ using UnityEngine.XR.Management;
 #if UNITY_ANDROID || UNITY_EDITOR
 using UnityEngine.XR.ARCore;
 #endif
-#if UNITY_IOS || UNITY_EDITOR
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
 using UnityEngine.XR.ARKit;
 #endif
 
