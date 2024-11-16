@@ -69,7 +69,7 @@ function Update() {
             {
                 RenderVariablesEditor(variablesProp);
             }
-            else
+            else if (!variablesProp.objectReferenceValue && javascriptFileProp.objectReferenceValue)
             {
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
                 EditorGUILayout.LabelField(new GUIContent("Variables", EditorGUIUtility.IconContent("d_UnityEditor.ConsoleWindow").image), EditorStyles.boldLabel); 
@@ -78,12 +78,10 @@ function Update() {
                 EditorGUILayout.HelpBox("This script does not have any variables. You can add variables to this script by creating a new Variables component.", MessageType.Info);
                 if (GUILayout.Button("Create New Variables Component"))
                 {
-                    var variables = new GameObject("Variables");
-                    variables.AddComponent<Variables>();
-                    variables.transform.SetParent((target as MonoBehaviour)?.transform);
-                    variablesProp.objectReferenceValue = variables.GetComponent<Variables>();
-                    variablesProp.serializedObject.ApplyModifiedProperties();
-                    GUIUtility.ExitGUI();
+                    var popup = new GenericMenu();
+                    popup.AddItem(new GUIContent("Add to this Object"), false, CreateNewVariablesComponent, false);
+                    popup.AddItem(new GUIContent("Create New Child Object"), false, CreateNewVariablesComponent, true);
+                    popup.ShowAsContext();
                 }
             }
 
@@ -99,6 +97,25 @@ function Update() {
                     }
                 }
             }
+        }
+        
+        private void CreateNewVariablesComponent(object createAsChild)
+        {
+            GameObject host;
+            if (createAsChild is true)
+            {
+                host = new GameObject("Variables");
+                host.transform.SetParent((target as MonoBehaviour)?.transform);
+            }
+            else
+            {
+                host = (target as MonoBehaviour)!.gameObject;
+            }
+
+            host.AddComponent<Variables>();
+            var variablesProp = serializedObject.FindProperty("variables");
+            variablesProp.objectReferenceValue = host.GetComponent<Variables>();
+            variablesProp.serializedObject.ApplyModifiedProperties();
         }
 
         private void RenderVariablesEditor(SerializedProperty variablesProp)
