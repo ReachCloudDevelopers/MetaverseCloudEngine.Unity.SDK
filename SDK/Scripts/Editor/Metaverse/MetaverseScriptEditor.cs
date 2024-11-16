@@ -44,6 +44,8 @@ function Update() {
 ");
                         AssetDatabase.ImportAsset(path);
                         javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
+                        GUIUtility.ExitGUI();
                     }
                 }
             }
