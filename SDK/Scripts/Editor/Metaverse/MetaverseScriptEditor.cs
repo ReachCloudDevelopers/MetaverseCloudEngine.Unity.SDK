@@ -98,12 +98,14 @@ function Update() {
                         foreach (var variable in varsToBeAdded)
                         {
                             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                            EditorGUILayout.LabelField("var " + variable.Key + ": " + variable.Value.Item1.Name.ToLower() + " = " + (variable.Value.Item2?.ToString() ?? "default(null)"), EditorStyles.boldLabel);
+                            EditorGUILayout.LabelField("var " + variable.Key + " : " + variable.Value.Item1.Name.ToLower() + " = " + (variable.Value.Item2?.ToString() ?? "default(null)") + ";", EditorStyles.boldLabel);
                             EditorGUILayout.LabelField("This variable is defined in the script but not in the Variables component.", EditorStyles.wordWrappedLabel);
                             if (GUILayout.Button("Add Variable"))
                             {
-                                // variables.declarations.Add(variable.Key, variable.Value.Item1);
-                                // variables.declarations[variable.Key].value = variable.Value.Item2;
+                                variables.declarations.Set(variable.Key, variable.Value.Item2);
+                                var declaration = variables.declarations.GetDeclaration(variable.Key);
+                                declaration.typeHandle = new SerializableType(variable.Value.Item1.AssemblyQualifiedName);
+                                variablesProp.serializedObject.ApplyModifiedProperties();
                             }
                             EditorGUILayout.EndVertical();
                         }
