@@ -91,9 +91,22 @@ function Update() {
                 var variables = variablesProp.objectReferenceValue as Variables;
                 if (variables)
                 {
-                    foreach (var variable in 
-                             defaultVariables.Where(variable => !variables.declarations.IsDefined(variable.Key)))
+                    var varsToBeAdded = defaultVariables.Where(variable => !variables.declarations.IsDefined(variable.Key)).ToArray();
+                    if (varsToBeAdded.Length > 0)
                     {
+                        EditorGUILayout.HelpBox("The following variables are defined in the script but not in the Variables component. You can add them by clicking the 'Add Variable' button.", MessageType.Info);
+                        foreach (var variable in varsToBeAdded)
+                        {
+                            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                            EditorGUILayout.LabelField("var " + variable.Key + ": " + variable.Value.Item1.Name.ToLower() + " = " + (variable.Value.Item2?.ToString() ?? "default(null)"), EditorStyles.boldLabel);
+                            EditorGUILayout.LabelField("This variable is defined in the script but not in the Variables component.", EditorStyles.wordWrappedLabel);
+                            if (GUILayout.Button("Add Variable"))
+                            {
+                                // variables.declarations.Add(variable.Key, variable.Value.Item1);
+                                // variables.declarations[variable.Key].value = variable.Value.Item2;
+                            }
+                            EditorGUILayout.EndVertical();
+                        }
                     }
                 }
             }
@@ -188,10 +201,37 @@ function Update() {
                 return result;
             
             var scriptText = script.text;
-            // This regex pattern matches all GetVar calls in the script.
-            var matches = Regex.Matches(scriptText, @"GetVar\(""(?<name>[^""]+)"", ""(?<value>[^""]+)""\);");
+            // Matches
+            // = GetVar("name", "value"); // With quotes
+            // or 
+            // = GetVar("name", 0.0); // No quotes
+            // or
+            // = GetVar("name", true);
+            // or
+            // = GetVar("name", null);
+            // etc.
+            var matches = Regex.Matches(scriptText, @".*?GetVar\(""(?<name>.+?)""\s*,\s*(?<value>.+?)\);"); 
             foreach (Match match in matches)
             {
+                // Make sure it is outside a comment.
+                var val = match.Value;
+                if (val.Trim().StartsWith("//") || 
+                    val.Trim().StartsWith("/*") ||
+                    (val.Split('=').Length > 2 && val.Split('=')[0].Trim().EndsWith("//") ||
+                     val.Split('=')[0].Trim().EndsWith("/*") ||
+                     val.Split('=')[1].Trim().StartsWith("//") ||
+                     val.Split('=')[1].Trim().StartsWith("/*")))
+                    continue;
+
+                // Make sure it's not inside any scope.
+                var index = scriptText.IndexOf(val, StringComparison.Ordinal);
+                var scriptBefore = scriptText.Substring(0, index);
+                var scriptAfter = scriptText.Substring(index + val.Length);
+                var openBraces = scriptBefore.Count(c => c == '{');
+                var closeBraces = scriptBefore.Count(c => c == '}');
+                if (openBraces != closeBraces)
+                    continue;
+                
                 var n = match.Groups["name"].Value;
                 var value = match.Groups["value"].Value;
                 if (float.TryParse(value, out var doubleValue))
