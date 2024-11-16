@@ -19,17 +19,18 @@ namespace MetaverseCloudEngine.Unity.SceneManagement.Components
     public partial class MetaSpaceAPI : MetaverseBehaviour
     {
         [Tooltip("Event invoked when the MetaSpace is loading prefabs.")]
-        [Group("Prefabs")] public UnityEvent onLoadingPrefabsStarted;
+        [Group("Prefabs")] public UnityEvent onLoadingPrefabsStarted = new();
         [Tooltip("Event invoked when the MetaSpace has finished loading prefabs.")]
-        [Group("Prefabs")] public UnityEvent onLoadingPrefabsCompleted;
+        [Group("Prefabs")] public UnityEvent onLoadingPrefabsCompleted = new();
 
         [Tooltip("Event invoked when the MetaSpace is initialized.")]
-        [Group("Initialization")] public UnityEvent onMetaSpaceInitialized;
+        [Group("Initialization")] public UnityEvent onMetaSpaceInitialized = new();
         [Tooltip("Event invoked when the MetaSpace is de-initialized.")]
-        [Group("Initialization")] public UnityEvent onMetaSpaceNotInitialized;
+        [Group("Initialization")] public UnityEvent onMetaSpaceNotInitialized = new();
 
+        [UsedImplicitly]
         [Tooltip("Event invoked when the link to the MetaSpace is loaded or changed.")]
-        [Group("Deep Linking")] public UnityEvent<string> onDeepLink;
+        [Group("Deep Linking")] public UnityEvent<string> onDeepLink = new();
 
         protected override void Awake()
         {
