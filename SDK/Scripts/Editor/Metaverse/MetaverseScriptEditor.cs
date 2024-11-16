@@ -98,7 +98,7 @@ function Update() {
                         foreach (var variable in varsToBeAdded)
                         {
                             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                            EditorGUILayout.LabelField("var " + variable.Key + " : " + variable.Value.Item1.Name.ToLower() + " = " + (variable.Value.Item2?.ToString() ?? "default(null)") + ";", EditorStyles.boldLabel);
+                            EditorGUILayout.LabelField("var " + variable.Key + " : " + variable.Value.Item1.Name + " = " + (variable.Value.Item2?.ToString() ?? "default(null)") + ";", EditorStyles.boldLabel);
                             EditorGUILayout.LabelField("This variable is defined in the script but not in the Variables component.", EditorStyles.wordWrappedLabel);
                             if (GUILayout.Button("Add Variable"))
                             {
@@ -204,15 +204,16 @@ function Update() {
             
             var scriptText = script.text;
             // Matches
-            // = GetVar("name", "value"); // With quotes
+            // = GetVar("name", "value"); // <optional_type>
             // or 
-            // = GetVar("name", 0.0); // No quotes
+            // = GetVar("name", 0.0); // <optional_type>
             // or
-            // = GetVar("name", true);
+            // = GetVar("name", true); // <optional_type>
             // or
-            // = GetVar("name", null);
+            // = GetVar("name", null); // <optional_type>
             // etc.
-            var matches = Regex.Matches(scriptText, @".*?GetVar\(""(?<name>.+?)""\s*,\s*(?<value>.+?)\);"); 
+            // Optionally match the specific type with a subsequent comment on the same line like // System.Single or // System.Int32 or // UnityEngine.Vector3
+            var matches = Regex.Matches(scriptText, @".*?GetVar\(""(.+?)""\s*,\s*(.+?)\)\s*;\s*(?:\/\/\s*.*?\bType\s*:\s*(\S.*\S|\S))?"); 
             foreach (Match match in matches)
             {
                 // Make sure it is outside a comment.
@@ -228,27 +229,48 @@ function Update() {
                 // Make sure it's not inside any scope.
                 var index = scriptText.IndexOf(val, StringComparison.Ordinal);
                 var scriptBefore = scriptText.Substring(0, index);
-                var scriptAfter = scriptText.Substring(index + val.Length);
                 var openBraces = scriptBefore.Count(c => c == '{');
                 var closeBraces = scriptBefore.Count(c => c == '}');
                 if (openBraces != closeBraces)
                     continue;
                 
-                var n = match.Groups["name"].Value;
-                var value = match.Groups["value"].Value;
+                var n = match.Groups[1].Value;
+                var value = match.Groups[2].Value;
+                var type = match.Groups[3].Value;
+                if (!string.IsNullOrEmpty(type))
+                {
+                    // Find first type with name matching the type string.
+                    var t = GetCachedType(type);
+                    if (t == null)
+                        continue;    
+                    result[n] = (t, null);
+                    continue;
+                }
                 if (float.TryParse(value, out var doubleValue))
                     result[n] = (typeof(float), doubleValue);
                 else if (int.TryParse(value, out var intValue))
                     result[n] = (typeof(int), intValue);
                 else if (bool.TryParse(value, out var boolValue))
                     result[n] = (typeof(bool), boolValue);
-                else if (value == "null")
-                    result[n] = (typeof(object), null);
                 else if (value.StartsWith("\"") && value.EndsWith("\""))
                     result[n] = (typeof(string), value);
+
             }
 
             return result;
+        }
+
+        private static readonly Dictionary<string, Type> cachedTypeData = new();
+        
+        private static Type GetCachedType(string type)
+        {
+            if (cachedTypeData.TryGetValue(type, out var cachedType))
+                return cachedType;
+            var t = AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(a => a.GetTypes())
+                .FirstOrDefault(t => t.Namespace + "." + t.Name == type);
+            cachedTypeData[type] = t;
+            return t;
         } 
     }
 }
