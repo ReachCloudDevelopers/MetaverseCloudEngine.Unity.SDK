@@ -7,17 +7,29 @@ namespace MetaverseCloudEngine.Unity.Components
 {
     public class QREncoder : MonoBehaviour
     {
-        public string text;
-        public bool generateOnStart = true;
+        [SerializeField] private string text;
+        [SerializeField] private bool generateOnStart = true;
 
         [Header("Events")]
         public UnityEvent<Texture2D> onGeneratedTexture;
         public UnityEvent<Sprite> onGeneratedSprite;
 
+        public string Text
+        {
+            get => text;
+            set => text = value;
+        }
+
         private void Start()
         {
             if (generateOnStart)
                 Generate();
+        }
+
+        public void Generate(string text)
+        {
+            Text = text;
+            Generate();
         }
 
         public void Generate()
@@ -36,22 +48,24 @@ namespace MetaverseCloudEngine.Unity.Components
         public Texture2D GenerateQR(string text)
         {
             Texture2D encoded = new Texture2D(256, 256);
-            Color[] color = Encode(text, encoded.width, encoded.height);
-            encoded.SetPixels(color);
+            Color32[] color = Encode(text, encoded.width, encoded.height);
+            encoded.SetPixels32(color);
             encoded.Apply();
             return encoded;
         }
 
-        private static Color[] Encode(string textForEncoding, int width, int height)
+        private static Color32[] Encode(string textForEncoding, int width, int height)
         {
-            BarcodeWriterGeneric<Color[]> writer = new BarcodeWriterGeneric<Color[]>
+            var renderer = new Color32Renderer();
+            var writer = new BarcodeWriterGeneric<Color32[]>
             {
                 Format = BarcodeFormat.QR_CODE,
                 Options = new QrCodeEncodingOptions
                 {
                     Height = height,
                     Width = width
-                }
+                },
+                Renderer = renderer,
             };
             return writer.Write(textForEncoding);
         }
