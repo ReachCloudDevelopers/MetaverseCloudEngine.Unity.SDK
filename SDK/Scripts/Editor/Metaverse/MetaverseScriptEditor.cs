@@ -95,12 +95,13 @@ function Update() {
                     if (varsToBeAdded.Length > 0)
                     {
                         EditorGUILayout.HelpBox("The following variables are defined in the script but not in the Variables component. You can add them by clicking the 'Add Variable' button.", MessageType.Info);
+                        var addAll = GUILayout.Button("Add All Variables");
                         foreach (var variable in varsToBeAdded)
                         {
                             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                             EditorGUILayout.LabelField("var " + variable.Key + " : " + variable.Value.Item1.Name + " = " + (variable.Value.Item2?.ToString() ?? "default(null)") + ";", EditorStyles.boldLabel);
                             EditorGUILayout.LabelField("This variable is defined in the script but not in the Variables component.", EditorStyles.wordWrappedLabel);
-                            if (GUILayout.Button("Add Variable"))
+                            if (GUILayout.Button("Add Variable") || addAll)
                             {
                                 variables.declarations.Set(variable.Key, variable.Value.Item2);
                                 var declaration = variables.declarations.GetDeclaration(variable.Key);
@@ -242,8 +243,20 @@ function Update() {
                     // Find first type with name matching the type string.
                     var t = GetCachedType(type);
                     if (t == null)
-                        continue;    
-                    result[n] = (t, null);
+                        continue;
+                    // If the type contains a "TryParse" method, let's try to parse the
+                    // default value as that type.
+                    var tryParse = t.GetMethod("TryParse", new[] {typeof(string), t.MakeByRefType()});
+                    if (tryParse != null)
+                    {
+                        var parameters = new object[] {value, null};
+                        if ((bool) tryParse.Invoke(null, parameters))
+                            result[n] = (t, parameters[1]);
+                    }
+                    else
+                    {
+                        result[n] = (t, null);                    
+                    }
                     continue;
                 }
                 if (float.TryParse(value, out var doubleValue))
