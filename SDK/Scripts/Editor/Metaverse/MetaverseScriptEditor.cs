@@ -244,6 +244,7 @@ function Update() {
                     var t = GetCachedType(type);
                     if (t == null)
                         continue;
+
                     // If the type contains a "TryParse" method, let's try to parse the
                     // default value as that type.
                     var tryParse = t.GetMethod("TryParse", new[] {typeof(string), t.MakeByRefType()});
@@ -255,7 +256,7 @@ function Update() {
                     }
                     else
                     {
-                        result[n] = (t, null);                    
+                        result[n] = (t, null);
                     }
                     continue;
                 }
