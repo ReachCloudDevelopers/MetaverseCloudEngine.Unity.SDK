@@ -1,18 +1,26 @@
-﻿using UnityEngine;
+﻿using TriInspectorMVCE;
+using UnityEngine;
 using UnityEngine.Events;
 using ZXing;
 using ZXing.QrCode;
 
 namespace MetaverseCloudEngine.Unity.Components
 {
-    public class QREncoder : MonoBehaviour
+    [HideMonoScript]
+    public class QREncoder : TriInspectorMonoBehaviour
     {
         [SerializeField] private string text;
         [SerializeField] private bool generateOnStart = true;
 
         [Header("Events")]
-        public UnityEvent<Texture2D> onGeneratedTexture;
-        public UnityEvent<Sprite> onGeneratedSprite;
+        [SerializeField] private UnityEvent<Texture2D> onGeneratedTexture;
+        [SerializeField] private UnityEvent<Sprite> onGeneratedSprite;
+        
+        public UnityEvent<Texture2D> OnGeneratedTexture => onGeneratedTexture;
+        public UnityEvent<Sprite> OnGeneratedSprite => onGeneratedSprite;
+        
+        private Texture2D _encoded;
+        private Sprite _sprite;
 
         public string Text
         {
@@ -26,29 +34,46 @@ namespace MetaverseCloudEngine.Unity.Components
                 Generate();
         }
 
-        public void Generate(string text)
+        private void OnDestroy()
         {
-            Text = text;
+            Dispose();
+        }
+
+        /// <summary>
+        /// Generates a QR code from the text.
+        /// </summary>
+        /// <param name="t"></param>
+        public void Generate(string t)
+        {
+            Text = t;
             Generate();
         }
 
+        /// <summary>
+        /// Generates a QR code from the <see cref="Text"/>.
+        /// </summary>
         public void Generate()
         {
             if (onGeneratedTexture.GetPersistentEventCount() == 0 &&
                 onGeneratedSprite.GetPersistentEventCount() == 0)
                 return;
-
-            Texture2D qr = GenerateQR(text);
+            Dispose();
+            _encoded = GenerateQr(text);
             if (onGeneratedTexture.GetPersistentEventCount() > 0)
-                onGeneratedTexture?.Invoke(qr);
+                onGeneratedTexture?.Invoke(_encoded);
             if (onGeneratedSprite.GetPersistentEventCount() > 0)
-                onGeneratedSprite?.Invoke(Sprite.Create(qr, new Rect(0, 0, qr.width, qr.height), Vector2.zero));
+                onGeneratedSprite?.Invoke(_sprite = Sprite.Create(_encoded, new Rect(0, 0, _encoded.width, _encoded.height), Vector2.zero));
         }
 
-        public Texture2D GenerateQR(string text)
+        /// <summary>
+        /// Generates a QR code from the text and returns a <see cref="Texture2D"/>.
+        /// </summary>
+        /// <param name="t">The text to encode.</param>
+        /// <returns>The generated QR code as a <see cref="Texture2D"/>.</returns>
+        public static Texture2D GenerateQr(string t)
         {
-            Texture2D encoded = new Texture2D(256, 256);
-            Color32[] color = Encode(text, encoded.width, encoded.height);
+            var encoded = new Texture2D(256, 256);
+            var color = Encode(t, encoded.width, encoded.height);
             encoded.SetPixels32(color);
             encoded.Apply();
             return encoded;
@@ -68,6 +93,14 @@ namespace MetaverseCloudEngine.Unity.Components
                 Renderer = renderer,
             };
             return writer.Write(textForEncoding);
+        }
+        
+        private void Dispose()
+        {
+            if (_encoded)
+                Destroy(_encoded);
+            if (_sprite)
+                Destroy(_sprite);
         }
     }
 }
