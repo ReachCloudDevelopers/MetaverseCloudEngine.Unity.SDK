@@ -14,7 +14,39 @@ namespace MetaverseCloudEngine.Unity.Editors
         public override void OnInspectorGUI()
         {
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
-            MetaverseEditorUtils.Header(javascriptFileProp.objectReferenceValue != null ? javascriptFileProp.objectReferenceValue.name : "(No Script)", false);
+            MetaverseEditorUtils.Header(javascriptFileProp.objectReferenceValue != null 
+                ? javascriptFileProp.objectReferenceValue.name 
+                : "(No Script)", false);
+
+            if (!javascriptFileProp.objectReferenceValue)
+            {
+                if (GUILayout.Button("Create New Script"))
+                {
+                    var path = EditorUtility.SaveFilePanelInProject("Create New Script", "NewScript", "js", "Create a new script file");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var script = new TextAsset();
+                        System.IO.File.WriteAllText(path, 
+@"// This is a new script file. You can write your script here.
+// For more information on how to write scripts, visit the documentation at https://docs.reachcloud.org/
+const UnityEngine = importNamespace('UnityEngine');
+const MetaverseCloudEngine = importNamespace('MetaverseCloudEngine');
+
+// This function is called when the script is started.
+function Start() {
+
+}
+
+// This function is called every frame.
+function Update() {
+
+}
+");
+                        AssetDatabase.ImportAsset(path);
+                        javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
+                    }
+                }
+            }
 
             var variablesProp = serializedObject.FindProperty("variables"); // This property references a visual scripting variables component.
             

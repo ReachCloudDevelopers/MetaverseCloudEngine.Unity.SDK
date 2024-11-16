@@ -10,6 +10,7 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
         public static void PatchCode()
         {
             var isItOkToOverwriteFiles = false;
+            if (!Directory.Exists("Assets/Convai")) return;
             var files = Directory.GetFiles("Assets/Convai", "*.cs", SearchOption.AllDirectories);
             if (files.Length != 0)
             {
