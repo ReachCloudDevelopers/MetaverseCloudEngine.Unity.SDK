@@ -17,11 +17,18 @@ namespace MetaverseCloudEngine.Unity.SceneManagement.Components
     [HideMonoScript]
     public partial class MetaSpaceAPI : MetaverseBehaviour
     {
+        [Tooltip("Event invoked when the MetaSpace is loading prefabs.")]
         [Group("Prefabs")] public UnityEvent onLoadingPrefabsStarted;
+        [Tooltip("Event invoked when the MetaSpace has finished loading prefabs.")]
         [Group("Prefabs")] public UnityEvent onLoadingPrefabsCompleted;
 
+        [Tooltip("Event invoked when the MetaSpace is initialized.")]
         [Group("Initialization")] public UnityEvent onMetaSpaceInitialized;
+        [Tooltip("Event invoked when the MetaSpace is de-initialized.")]
         [Group("Initialization")] public UnityEvent onMetaSpaceNotInitialized;
+
+        [Tooltip("Event invoked when the link to the MetaSpace is loaded or changed.")]
+        [Group("Deep Linking")] public UnityEvent<string> onDeepLink;
 
         protected override void Awake()
         {
@@ -53,7 +60,7 @@ namespace MetaverseCloudEngine.Unity.SceneManagement.Components
                     });
                 }
             }
-
+            
             AwakeInternal();
         }
 
