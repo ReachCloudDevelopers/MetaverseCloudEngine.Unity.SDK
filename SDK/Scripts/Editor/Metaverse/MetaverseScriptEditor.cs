@@ -1,7 +1,12 @@
-﻿using System.Linq;
+﻿using System;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Collections;
+using System.Collections.Generic;
 using TriInspectorMVCE;
 using UnityEditor;
 using UnityEngine;
+using Unity.VisualScripting;
 using MetaverseCloudEngine.Unity.Scripting.Components;
 
 namespace MetaverseCloudEngine.Unity.Editors
@@ -56,11 +61,43 @@ function Update() {
 
             GUILayout.Space(15);
 
-            if (variablesProp.objectReferenceValue != null && 
-                variablesProp.objectReferenceValue is Component c && 
-                c.gameObject != (target as MonoBehaviour)?.gameObject)
+            if (variablesProp.objectReferenceValue && 
+                variablesProp.objectReferenceValue is Variables v &&
+                target &&
+                target is MonoBehaviour m &&
+                v.gameObject != m.gameObject)
             {
                 RenderVariablesEditor(variablesProp);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                EditorGUILayout.LabelField(new GUIContent("Variables", EditorGUIUtility.IconContent("d_UnityEditor.ConsoleWindow").image), EditorStyles.boldLabel); 
+                EditorGUILayout.EndHorizontal(); 
+                
+                EditorGUILayout.HelpBox("This script does not have any variables. You can add variables to this script by creating a new Variables component.", MessageType.Info);
+                if (GUILayout.Button("Create New Variables Component"))
+                {
+                    var variables = new GameObject("Variables");
+                    variables.AddComponent<Variables>();
+                    variables.transform.SetParent((target as MonoBehaviour)?.transform);
+                    variablesProp.objectReferenceValue = variables.GetComponent<Variables>();
+                    variablesProp.serializedObject.ApplyModifiedProperties();
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            if (variablesProp.objectReferenceValue)
+            {
+                var defaultVariables = GetScriptDefaultVariables();
+                var variables = variablesProp.objectReferenceValue as Variables;
+                if (variables)
+                {
+                    foreach (var variable in 
+                             defaultVariables.Where(variable => !variables.declarations.IsDefined(variable.Key)))
+                    {
+                    }
+                }
             }
         }
 
@@ -95,7 +132,9 @@ function Update() {
             
             var source = PrefabUtility.GetCorrespondingObjectFromSource(variablesProp.objectReferenceValue);
             var modifications = PrefabUtility.GetPropertyModifications(variablesProp.objectReferenceValue);
-            var modifiedProperties = modifications.Where(mod => mod.target == source).ToArray();
+            var modifiedProperties = modifications
+                .Where(mod => mod.target == source && !string.IsNullOrEmpty(mod.propertyPath))
+                .ToArray();
             if (modifiedProperties.Length == 0) 
                 return;
 
@@ -123,5 +162,34 @@ function Update() {
                 }
             }
         }
+        
+        private Dictionary<string, (Type, object)> GetScriptDefaultVariables()
+        {
+            var result = new Dictionary<string, (Type, object)>();
+            var script = (target as MetaverseScript)?.javascriptFile;
+            if (script == null)
+                return result;
+            
+            var scriptText = script.text;
+            // This regex pattern matches all GetVar calls in the script.
+            var matches = Regex.Matches(scriptText, @"GetVar\(""(?<name>[^""]+)"", ""(?<value>[^""]+)""\);");
+            foreach (Match match in matches)
+            {
+                var n = match.Groups["name"].Value;
+                var value = match.Groups["value"].Value;
+                if (float.TryParse(value, out var doubleValue))
+                    result[n] = (typeof(float), doubleValue);
+                else if (int.TryParse(value, out var intValue))
+                    result[n] = (typeof(int), intValue);
+                else if (bool.TryParse(value, out var boolValue))
+                    result[n] = (typeof(bool), boolValue);
+                else if (value == "null")
+                    result[n] = (typeof(object), null);
+                else if (value.StartsWith("\"") && value.EndsWith("\""))
+                    result[n] = (typeof(string), value);
+            }
+
+            return result;
+        } 
     }
 }
