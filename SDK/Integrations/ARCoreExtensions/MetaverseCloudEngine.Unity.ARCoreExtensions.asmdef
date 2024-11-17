@@ -11,7 +11,8 @@
   ],
   "includePlatforms": [
     "Editor",
-    "Android"
+    "Android",
+    "iOS"
   ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
