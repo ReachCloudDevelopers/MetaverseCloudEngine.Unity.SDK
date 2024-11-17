@@ -574,7 +574,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             return null;
         }
-        
+
         /// <summary>
         /// Gets a Unity variable with the given name.
         /// </summary>
@@ -606,6 +606,20 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             if (variables == null) return;
             variables.declarations.Set(variableName, value);
+        }
+        
+        /// <summary>
+        /// Tries to set a Unity variable with the given name.
+        /// </summary>
+        /// <param name="variableName">The name of the variable.</param>
+        /// <param name="value">The value to set it to.</param>
+        /// <returns>true if the variable was set, false otherwise.</returns>
+        public bool TrySetVar(string variableName, object value)
+        {
+            if (variables == null) return false;
+            if (!variables.declarations.IsDefined(variableName)) return false;
+            variables.declarations.Set(variableName, value);
+            return true;
         }
         
         /// <summary>
@@ -686,6 +700,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return BlackListedNames.Contains(value) || (isType && BlackListedTypes.Contains(value));
         }
 
+        private Func<object> DefineVar(string variableName, object defaultValue)
+        {
+            return () => TryGetVar(variableName, defaultValue);
+        }
+        
+        private Func<object> DefineTypedVar(string variableName, string typePath, object defaultValue)
+        {
+            return () =>
+            {
+                var output = TryGetVar(variableName, defaultValue);
+                if (output is UnityEngine.Object o && !o)
+                    return null;
+                return output;
+            };
+        }
+
         private void OnEngineReady(Action a)
         {
             if (_ready)
@@ -719,6 +749,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 .SetValue(nameof(GetVar), (Func<string, object>)GetVar)
                 .SetValue(nameof(TryGetVar), (Func<string, object, object>)TryGetVar)
                 .SetValue(nameof(SetVar), (Action<string, object>)SetVar)
+                .SetValue(nameof(TrySetVar), (Func<string, object, bool>)TrySetVar)
+                .SetValue(nameof(DefineVar), (Func<string, object, Func<object>>)DefineVar)
+                .SetValue(nameof(DefineTypedVar), (Func<string, string, object, Func<object>>)DefineTypedVar)
                 .SetValue(GetNetworkObjectFunction, (Func<NetworkObject>)(() => NetworkObject.uNull()))
                 .SetValue(IsInputAuthorityProperty, (Func<bool>)(() => NetworkObject.uNull()?.IsInputAuthority ?? false))
                 .SetValue(IsStateAuthorityProperty, (Func<bool>)(() => NetworkObject.uNull()?.IsStateAuthority ?? false))
