@@ -907,7 +907,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,
                     typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
-#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR)
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
                     ,
                     typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
 #endif
