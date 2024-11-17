@@ -911,6 +911,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,
                     typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
 #endif
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
+                    ,
+                    typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
+#endif
                     )
                 .AllowClrWrite()
                 .AllowOperatorOverloading()
