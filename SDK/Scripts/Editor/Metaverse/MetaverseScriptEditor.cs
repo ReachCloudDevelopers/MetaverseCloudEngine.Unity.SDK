@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.RegularExpressions;
 using System.Linq;
 using System.Collections;
@@ -14,23 +14,34 @@ namespace MetaverseCloudEngine.Unity.Editors
     [CustomEditor(typeof(MetaverseScript), editorForChildClasses: true, isFallback = true)]
     internal class MetaverseScriptEditor : TriMonoBehaviourEditor
     {
-        private UnityEditor.Editor _variablesEditor;
+        private Editor _variablesEditor;
 
         public override void OnInspectorGUI()
         {
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
+
             MetaverseEditorUtils.Header(javascriptFileProp.objectReferenceValue != null 
                 ? javascriptFileProp.objectReferenceValue.name 
                 : "(No Script)", false);
 
             if (!javascriptFileProp.objectReferenceValue)
             {
+                if (GUILayout.Button("Select Script"))
+                {
+                    var path = EditorUtility.OpenFilePanel("Select Script", Application.dataPath, "js");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var assetPath = path.Replace(Application.dataPath, "Assets");
+                        javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
+                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
+                    }
+                }
+                
                 if (GUILayout.Button("Create New Script"))
                 {
                     var path = EditorUtility.SaveFilePanelInProject("Create New Script", "NewScript", "js", "Create a new script file");
                     if (!string.IsNullOrEmpty(path))
                     {
-                        var script = new TextAsset();
                         System.IO.File.WriteAllText(path, 
 @"// This is a new script file. You can write your script here.
 // For more information on how to write scripts, visit the documentation at https://docs.reachcloud.org/
@@ -54,12 +65,56 @@ function Update() {
                     }
                 }
             }
+            else if (!AssetDatabase.GetAssetPath(javascriptFileProp.objectReferenceValue).EndsWith(".js"))
+            {
+                EditorGUILayout.HelpBox("The selected file is not a JavaScript file. Please select a valid JavaScript file.", MessageType.Error);
+                if (GUILayout.Button("Select New Script"))
+                {
+                    var path = EditorUtility.OpenFilePanel("Select Script", Application.dataPath, "js");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var assetPath = path.Replace(Application.dataPath, "Assets");
+                        javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
+                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
+                    }
+                }
+
+                return;
+            }
+            else 
+            {
+                if (GUILayout.Button("Open Script"))
+                {
+                    AssetDatabase.OpenAsset(javascriptFileProp.objectReferenceValue);
+                }
+                
+                if (GUILayout.Button("Replace Script"))
+                {
+                    var path = EditorUtility.OpenFilePanel("Select Script", Application.dataPath, "js");
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var assetPath = path.Replace(Application.dataPath, "Assets");
+                        javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
+                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
+                        GUIUtility.ExitGUI();
+                    }
+                }
+                
+                if (GUILayout.Button("Delete Script"))
+                {
+                    if (EditorUtility.DisplayDialog("Delete Script", "Are you sure you want to delete the script?", "Yes", "No"))
+                    {
+                        AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(javascriptFileProp.objectReferenceValue));
+                        javascriptFileProp.objectReferenceValue = null;
+                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
+                        GUIUtility.ExitGUI();
+                    }
+                }
+            }
 
             var variablesProp = serializedObject.FindProperty("variables"); // This property references a visual scripting variables component.
             
             base.OnInspectorGUI();
-
-            GUILayout.Space(15);
 
             if (variablesProp.objectReferenceValue && 
                 variablesProp.objectReferenceValue is Variables v &&
@@ -114,7 +169,7 @@ function Update() {
                 }
             }
         }
-        
+
         private void CreateNewVariablesComponent(object createAsChild)
         {
             GameObject host;
@@ -204,40 +259,38 @@ function Update() {
                 return result;
             
             var scriptText = script.text;
-            // Matches
-            // = GetVar("name", "value"); // <optional_type>
+            // Matches (or DefineTypedVar)
+            // = DefineVar("name", "value");
             // or 
-            // = GetVar("name", 0.0); // <optional_type>
+            // = DefineVar("name", 0.0);
             // or
-            // = GetVar("name", true); // <optional_type>
-            // or
-            // = GetVar("name", null); // <optional_type>
-            // etc.
-            // Optionally match the specific type with a subsequent comment on the same line like // System.Single or // System.Int32 or // UnityEngine.Vector3
-            var matches = Regex.Matches(scriptText, @".*?GetVar\(""(.+?)""\s*,\s*(.+?)\)\s*;\s*(?:\/\/\s*.*?\bType\s*:\s*(\S.*\S|\S))?"); 
+            // = DefineVar("name", true);
+            // DefineTypedVar is like this: DefineTypedVar("name", typePath, 0.0);
+            // For DefineVar, the type is inferred by the primitive value.
+            // Use named groups to capture the name, value, and type (remember type is option for DefineVar).
+            // To use named groups: (?<name>...) (?<value>...) (?<type>...)
+            var matches = Regex.Matches(scriptText, 
+                @".*?(?:(?:DefineVar\s*\(\s*(?<name>\""\S+?\"")\s*\,\s*(?<value>\S+?)\)\s*\;*){1})|(?:(?:DefineTypedVar\s*\(\s*(?<name>\""\S+?\"")\s*\,\s*(?<type>\""\S+?\"")\s*\,\s*(?<value>\S+?)\)\s*\;*){1})");
             foreach (Match match in matches)
             {
                 // Make sure it is outside a comment.
-                var val = match.Value;
-                if (val.Trim().StartsWith("//") || 
-                    val.Trim().StartsWith("/*") ||
-                    (val.Split('=').Length > 2 && val.Split('=')[0].Trim().EndsWith("//") ||
-                     val.Split('=')[0].Trim().EndsWith("/*") ||
-                     val.Split('=')[1].Trim().StartsWith("//") ||
-                     val.Split('=')[1].Trim().StartsWith("/*")))
-                    continue;
-
+                var val = match.Value; 
                 // Make sure it's not inside any scope.
                 var index = scriptText.IndexOf(val, StringComparison.Ordinal);
-                var scriptBefore = scriptText.Substring(0, index);
+                var scriptBefore = scriptText[..index];
                 var openBraces = scriptBefore.Count(c => c == '{');
                 var closeBraces = scriptBefore.Count(c => c == '}');
                 if (openBraces != closeBraces)
                     continue;
                 
-                var n = match.Groups[1].Value;
-                var value = match.Groups[2].Value;
-                var type = match.Groups[3].Value;
+                var variableName = match.Groups["name"].Value.Replace("\"", "");
+                if (string.IsNullOrEmpty(variableName))
+                    continue;
+                var rawValue = match.Groups["value"].Value;
+                var value = rawValue.Replace("\"", "");
+                if (string.IsNullOrEmpty(value))
+                    continue;
+                var type = match.Groups["type"].Value.Replace("\"", "");
                 if (!string.IsNullOrEmpty(type))
                 {
                     // Find first type with name matching the type string.
@@ -252,22 +305,24 @@ function Update() {
                     {
                         var parameters = new object[] {value, null};
                         if ((bool) tryParse.Invoke(null, parameters))
-                            result[n] = (t, parameters[1]);
+                            result[variableName] = (t, parameters[1]);
                     }
                     else
                     {
-                        result[n] = (t, null);
+                        result[variableName] = (t, null);
                     }
                     continue;
                 }
                 if (float.TryParse(value, out var doubleValue))
-                    result[n] = (typeof(float), doubleValue);
+                    result[variableName] = (typeof(float), doubleValue);
                 else if (int.TryParse(value, out var intValue))
-                    result[n] = (typeof(int), intValue);
+                    result[variableName] = (typeof(int), intValue);
                 else if (bool.TryParse(value, out var boolValue))
-                    result[n] = (typeof(bool), boolValue);
-                else if (value.StartsWith("\"") && value.EndsWith("\""))
-                    result[n] = (typeof(string), value);
+                    result[variableName] = (typeof(bool), boolValue);
+                else if (rawValue.StartsWith("\"") && rawValue.EndsWith("\""))
+                    result[variableName] = (typeof(string), value);
+                else if (value == "null")
+                    result[variableName] = (typeof(object), null);
 
             }
 
