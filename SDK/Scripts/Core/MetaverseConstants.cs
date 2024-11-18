@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 #if !UNITY_IOS
 #if MV_OCULUS_PLUGIN
@@ -219,6 +219,11 @@ namespace MetaverseCloudEngine.Unity
             /// The default Meta Space ID to use when none is specified.
             /// </summary>
             public static Guid? DefaultMetaSpaceId = null;
+
+            /// <summary>
+            /// The default spawn point ID to use when none is specified.
+            /// </summary>
+            public static string GooglePlayServicesClientId = null;
         }
 
         /// <summary>
