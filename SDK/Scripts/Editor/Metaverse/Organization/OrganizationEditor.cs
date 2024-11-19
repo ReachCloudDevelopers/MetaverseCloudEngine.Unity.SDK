@@ -114,6 +114,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             base.UpdateRecord(record);
             _theme = null;
             _themeEditor = null;
+            if (_organizationLogo)
+                DestroyImmediate(_organizationLogo);
+            _organizationLogo = null;
+            _fetchedLogo = false;
             Initialize();
         }
 
@@ -200,6 +204,9 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (!_fetchedLogo)
             {
                 EditorUtility.DisplayProgressBar("Fetching Logo", "Fetching organization logo...", 0.5f);
+                if (_organizationLogo)
+                    DestroyImmediate(_organizationLogo);
+                _organizationLogo = null;
                 _fetchedLogo = true;
                 try
                 {
@@ -253,6 +260,13 @@ namespace MetaverseCloudEngine.Unity.Editors
                         {
                             var bytes = _organizationLogo.EncodeToPNG();
                             File.WriteAllBytes(path, bytes);
+                            
+                            var open = EditorUtility.DisplayDialog("Logo Downloaded", "The organization logo has been downloaded successfully.", "Open", "Ok");
+                            if (open)
+                            {
+                                var fullPath = Path.GetFullPath(path);
+                                EditorUtility.RevealInFinder(fullPath);
+                            }
                         }
                     }
                 }
@@ -308,6 +322,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorUtility.DisplayDialog("Logo Uploaded", "The organization logo has been uploaded successfully.", "Ok");
             
             _fetchedLogo = false;
+            _logoError = null;
+            if (_organizationLogo)
+                DestroyImmediate(_organizationLogo);
+            _organizationLogo = null;
         }
 
         protected override void OnAfterDrawRecord(OrganizationDto record)
