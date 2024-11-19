@@ -1,4 +1,5 @@
-﻿namespace MetaverseCloudEngine.Unity.Editors
+#if METAVERSE_CLOUD_ENGINE
+namespace MetaverseCloudEngine.Unity.Editors
 {
     public static class SDKInitializedMessage
     {
@@ -9,3 +10,4 @@
         }
     }
 }
+#endif
