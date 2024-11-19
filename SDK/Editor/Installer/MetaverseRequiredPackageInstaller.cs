@@ -64,7 +64,7 @@ namespace MetaverseCloudEngine.Unity.Installer
                 string currentVersion = null;
                 if (package != null)
                 {
-                    currentVersion = package.name.Split('#').LastOrDefault();
+                    currentVersion = package.git.hash;
                 }
                 
                 var httpClient = new System.Net.WebClient();
