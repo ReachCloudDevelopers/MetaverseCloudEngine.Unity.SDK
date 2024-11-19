@@ -56,7 +56,7 @@ namespace MetaverseCloudEngine.Unity.Installer
                 var match = System.Text.RegularExpressions.Regex.Match(response, "\"sha\": \"([a-f0-9]+)\"");
                 if (!match.Success)
                 {
-                    Debug.LogError("Failed to fetch latest commit hash from Metaverse Cloud Engine SDK repository.");
+                    Debug.LogError("Failed to fetch latest commit hash from Metaverse Cloud Engine SDK repository: " + response);
                     return;
                 }
             
