@@ -54,7 +54,11 @@ namespace MetaverseCloudEngine.Unity.Installer
                 httpClient.Headers.Add("User-Agent", "MetaverseCloudEngine.Unity.SDK");
                 var response = httpClient.DownloadString("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
                 var match = System.Text.RegularExpressions.Regex.Match(response, "\"sha\": \"([a-f0-9]+)\"");
-                if (!match.Success) return false;
+                if (!match.Success)
+                {
+                    Debug.LogError("Failed to fetch latest commit hash from Metaverse Cloud Engine SDK repository.");
+                    return;
+                }
             
                 var latestCommitHash = match.Groups[1].Value;
                 while (!TryUpdatePackages(latestCommitHash))
