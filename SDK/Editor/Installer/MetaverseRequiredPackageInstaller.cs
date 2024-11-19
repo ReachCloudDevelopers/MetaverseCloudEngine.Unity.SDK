@@ -106,7 +106,7 @@ namespace MetaverseCloudEngine.Unity.Installer
             var latestCommitHash = match.Groups[1].Value;
             _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall.Concat(new[] {
                 $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{latestCommitHash}"
-            });
+            }));
             switch (_packageRequest.Status)
             {
                 case StatusCode.InProgress:
