@@ -47,6 +47,25 @@ namespace MetaverseCloudEngine.Unity.Installer
             try 
             {
                 ShowProgressBar();
+
+                var list = Client.List();
+                while (!list.IsCompleted)
+                {
+                    System.Threading.Thread.Sleep(500);
+                }
+                
+                if (list.Status == StatusCode.Failure)
+                {
+                    Debug.LogError("Failed to fetch package list: " + list.Error.message);
+                    return;
+                }
+                
+                var package = list.Result.FirstOrDefault(x => x.name.StartsWith("com.reachcloud.metaverse-cloud-sdk"));
+                string currentVersion = null;
+                if (package != null)
+                {
+                    currentVersion = package.name.Split('#').LastOrDefault();
+                }
                 
                 var httpClient = new System.Net.WebClient();
                 httpClient.Headers.Add("Accept", "application/vnd.github+json");
@@ -61,6 +80,15 @@ namespace MetaverseCloudEngine.Unity.Installer
                 }
             
                 var latestCommitHash = match.Groups[1].Value;
+                if (currentVersion == latestCommitHash)
+                {
+                    // Display "Already up to date" message
+                    Debug.Log("Metaverse Cloud Engine SDK is already up to date.");
+                    return;
+                }
+
+                UnityEngine.Debug.Log($"Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
+
                 while (!TryUpdatePackages(latestCommitHash))
                 {
                     System.Threading.Thread.Sleep(500);
