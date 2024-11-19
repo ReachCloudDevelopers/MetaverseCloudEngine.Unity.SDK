@@ -15,7 +15,6 @@ namespace MetaverseCloudEngine.Unity.Installer
     public class MetaverseRequiredPackageInstaller : AssetPostprocessor
     {
         private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
-        //private const string PAT = "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";
 
         private static readonly string[] PackagesToInstall =
         {
