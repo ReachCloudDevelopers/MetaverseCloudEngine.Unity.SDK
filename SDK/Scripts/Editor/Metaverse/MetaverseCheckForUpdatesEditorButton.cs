@@ -1,4 +1,4 @@
-﻿#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE
 using JetBrains.Annotations;
 using MetaverseCloudEngine.Unity.Installer;
 using UnityEditor;
