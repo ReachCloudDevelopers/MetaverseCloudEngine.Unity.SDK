@@ -1,4 +1,5 @@
 #if !CLOUD_BUILD_PLATFORM
+using System;
 using System.Linq;
 using System.Net;
 using MetaverseCloudEngine.Unity.Installer;
@@ -86,9 +87,12 @@ namespace MetaverseCloudEngine.Unity.Installer
                 return true;
             }
             
-            var httpClient = new HttpWebRequest("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
+            var httpClient = new System.Net.HttpWebRequest();
+            httpClient.RequestUri = new Uri(
+                "https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
+            httpClient.Method = "GET";
             var response = httpClient.GetResponse();
-            if (response.StatusCode != HttpStatusCode.OK)
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
                 Debug.LogError("Failed to check for updates: " + response.StatusDescription);
                 return true;
@@ -106,7 +110,7 @@ namespace MetaverseCloudEngine.Unity.Installer
             var latestCommitHash = match.Groups[1].Value;
             _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall.Concat(new[] {
                 $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{latestCommitHash}"
-            }));
+            }).ToArray());
             switch (_packageRequest.Status)
             {
                 case StatusCode.InProgress:
