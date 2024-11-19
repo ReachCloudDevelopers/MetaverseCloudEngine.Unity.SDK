@@ -1,6 +1,9 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Threading.Tasks;
+using MetaverseCloudEngine.ApiClient;
+using MetaverseCloudEngine.ApiClient.Abstract;
+using MetaverseCloudEngine.ApiClient.Extensions;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using MetaverseCloudEngine.Common.Models.Forms;
@@ -9,6 +12,7 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.UI.Components;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
@@ -30,6 +34,10 @@ namespace MetaverseCloudEngine.Unity.Editors
         private bool _themeExpanded;
         private EditorTabs _currentEditorTab;
         private static string[] _editorTabNames;
+        
+        private bool _fetchedLogo;
+        private string _logoError;
+        private Texture2D _organizationLogo;
 
         public override string Header => "Organizations";
 
@@ -114,11 +122,33 @@ namespace MetaverseCloudEngine.Unity.Editors
             MetaverseEditorUtils.Disabled(() => MetaverseEditorUtils.TextField("ID", !HasValidRecordId ? null : record.Id.ToString()));
             record.Name = MetaverseEditorUtils.TextField("Name", record.Name);
             record.Description = MetaverseEditorUtils.TextArea("Description", record.Description);
+            if (HasValidRecordId)
+            {
+                if (!string.IsNullOrEmpty(MetaverseConstants.Urls.DashboardUrl) &&
+                    GUILayout.Button("View Online"))
+                {
+                    var url = MetaverseConstants.Urls.DashboardUrl + "?organizationId=" + record.Id;
+                    Application.OpenURL(url);
+                }
+
+                if (!string.IsNullOrEmpty(MetaverseConstants.Urls.DeepLink) &&
+                    !string.IsNullOrEmpty(MetaverseConstants.Urls.WebGLHost) &&
+                    GUILayout.Button("View In Desktop App"))
+                {
+                    var deepLinkUrl = MetaverseConstants.Urls.DeepLink + MetaverseConstants.Urls.WebGLHost + "?organizationId=" + record.Id;
+                    Application.OpenURL(deepLinkUrl);
+                }
+            }
             record.Private = EditorGUILayout.Toggle("Private", record.Private);
             record.SupportsCrypto = EditorGUILayout.Toggle("Blockchain Support", record.SupportsCrypto);
             _themeExpanded = EditorGUILayout.Foldout(_themeExpanded, "Theme");
             if (_themeExpanded)
             {
+                MetaverseEditorUtils.Box(() =>
+                {
+                    RenderThumbnail(record);
+                });
+                
                 MetaverseEditorUtils.Box(() =>
                 {
                     var labelWidth = EditorGUIUtility.labelWidth;
@@ -131,31 +161,30 @@ namespace MetaverseCloudEngine.Unity.Editors
                             _theme = BaseTheme.FromOrganizationTheme<BaseTheme>(record.Theme);
 
                         if (_themeEditor)
-                            _themeEditor.OnInspectorGUI();
-
-                        MetaverseEditorUtils.Box(() =>
                         {
-                            MetaverseEditorUtils.Info("Place your logo in the 'Logo' field above to upload your organization logo.");
-
-                            MetaverseEditorUtils.Box(() =>
+                            foreach (var target in _themeEditor.targets)
                             {
-                                EditorGUILayout.PrefixLabel("Uploaded Logo", EditorStyles.miniBoldLabel);
-                                EditorGUILayout.LabelField($"{(record.Theme is { Logo: not null } ? $"{record.Theme.Logo.UpdatedDate ?? record.Theme.Logo.CreatedDate:G}" : "--")}", GUILayout.Width(200));
-
-                                if (_theme != null && GUILayout.Button("Upload Logo"))
+                                var serializedObject = new SerializedObject(target);
+                                serializedObject.UpdateIfRequiredOrScript();
+                                try
                                 {
-                                    UploadLogo(record);
-                                    GUIUtility.ExitGUI();
+                                    var iterator = serializedObject.GetIterator();
+                                    // Draw all excluding m_Script and Logo
+                                    for (var enterChildren = true;
+                                         iterator.NextVisible(enterChildren);
+                                         enterChildren = false)
+                                    {
+                                        if (iterator.propertyPath is "m_Script" or nameof(BaseTheme.Logo))
+                                            continue;
+                                        EditorGUILayout.PropertyField(iterator, true);
+                                    }
                                 }
-
-                                if (record.Theme?.Logo != null && GUILayout.Button("Delete Logo"))
+                                finally
                                 {
-                                    DeleteLogo(record);
-                                    GUIUtility.ExitGUI();
+                                    serializedObject.ApplyModifiedProperties();
                                 }
-
-                            }, vertical: false);
-                        });
+                            }
+                        }
                     }
                     finally
                     {
@@ -163,6 +192,79 @@ namespace MetaverseCloudEngine.Unity.Editors
                         EditorGUIUtility.labelWidth = labelWidth;
                     }
                 });
+            }
+        }
+
+        private void RenderThumbnail(OrganizationDto record)
+        {
+            if (!_fetchedLogo)
+            {
+                EditorUtility.DisplayProgressBar("Fetching Logo", "Fetching organization logo...", 0.5f);
+                _fetchedLogo = true;
+                try
+                {
+                    if (record.Theme?.Logo != null)
+                    {
+                        MetaverseProgram.ApiClient.Organizations.DownloadLogoAsync(record.Id).ResponseThen(
+                            r =>
+                            {
+                                r.GetResultAsAsync<Texture2D>().Then(t =>
+                                {
+                                    _organizationLogo = t;
+                                });
+                            }, e =>
+                            {
+                                _logoError = e.ToString();
+                            });
+                    }
+                    else
+                    {
+                        _organizationLogo = null;
+                        _logoError = "No organization logo.";
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logoError = e.Message;
+                }
+                finally
+                {
+                    EditorUtility.ClearProgressBar();
+                }
+            }
+            else
+            {
+                if (_organizationLogo)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.Space();
+
+                    EditorGUILayout.LabelField(
+                        new GUIContent(_organizationLogo), EditorStyles.centeredGreyMiniLabel, GUILayout.MinHeight(128), GUILayout.ExpandWidth(true));
+
+                    EditorGUILayout.Space();
+
+                    if (GUILayout.Button("Delete Logo"))
+                        DeleteLogo(record);
+                    if (GUILayout.Button("Download Logo"))
+                    {
+                        var path = EditorUtility.SaveFilePanel("Download Logo (PNG)", "", "logo.png", "png");
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            var bytes = _organizationLogo.EncodeToPNG();
+                            File.WriteAllBytes(path, bytes);
+                        }
+                    }
+                }
+                else if (!string.IsNullOrEmpty(_logoError))
+                    EditorGUILayout.HelpBox(_logoError, MessageType.Error);
+                else
+                    EditorGUILayout.HelpBox("Downloading...", MessageType.Info);
+                            
+                if (GUILayout.Button("Upload Logo"))
+                {
+                    UploadLogo(record);
+                }
             }
         }
 
@@ -182,18 +284,15 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private void UploadLogo(OrganizationDto record)
         {
-            if (_theme.Logo == null)
-            {
-                EditorUtility.DisplayDialog("Upload Failed", "Please select a logo to upload first.", "Ok");
-                return;
-            }
-            
             string fileName = null;
-            var thumbnailPath = AssetDatabase.GetAssetPath(_theme.Logo);
+            var thumbnailPath = EditorUtility.OpenFilePanel("Select Logo", "", "png,jpg,jpeg");
+            if (string.IsNullOrEmpty(thumbnailPath))
+                return;
+            
             if (!string.IsNullOrEmpty(thumbnailPath))
                 fileName = Path.GetFileName(thumbnailPath);
 
-            var bytes = _theme.Logo.Copy2D().EncodeToBytes();
+            var bytes = File.ReadAllBytes(thumbnailPath);
             var memStream = new MemoryStream(bytes);
             var upsertLogo = Task.Run(async () => await MetaverseProgram.ApiClient.Organizations.UpsertLogoAsync(record.Id, memStream, fileName ?? "logo.png")).Result;
             if (!upsertLogo.Succeeded)
@@ -205,8 +304,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             record.Theme ??= new OrganizationThemeDto();
             record.Theme.Logo = Task.Run(async () => await upsertLogo.GetResultAsync()).Result;
-
-            Debug.Log("Updated organization logo <b><color=green>successfully</color></b>!");
+            
+            EditorUtility.DisplayDialog("Logo Uploaded", "The organization logo has been uploaded successfully.", "Ok");
+            
+            _fetchedLogo = false;
         }
 
         protected override void OnAfterDrawRecord(OrganizationDto record)
@@ -214,9 +315,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (!HasValidRecordId) return;
 
             EditorGUILayout.Space();
-
             EditorGUILayout.Space();
-
             EditorGUILayout.Space();
 
             MetaverseEditorUtils.Box(() =>
