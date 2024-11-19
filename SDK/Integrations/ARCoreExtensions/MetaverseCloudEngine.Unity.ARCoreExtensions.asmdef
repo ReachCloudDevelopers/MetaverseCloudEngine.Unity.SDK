@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "MetaverseCloudEngine.Unity.ARCoreExtensions",
   "rootNamespace": "MetaverseCloudEngine.Unity.ARCoreExtensions",
   "references": [
@@ -7,7 +7,9 @@
     "GUID:b35d8248e1a04478bb2d70fe76652ddf",
     "GUID:8a015f4995fdb4fe592dfb7b3c09e505",
     "GUID:d8b63aba1907145bea998dd612889d6b",
-    "GUID:63cab5ddbd23cf34ca160a9b3d74438d"
+    "GUID:63cab5ddbd23cf34ca160a9b3d74438d",
+    "GUID:f51ebe6a0ceec4240a699833d6309b23",
+    "GUID:a9420e37d7990b54abdef6688edbe313"
   ],
   "includePlatforms": [
     "Editor",
@@ -23,7 +25,9 @@
     "METAVERSE_CLOUD_ENGINE",
     "MV_GOOGLE_AR_CORE_EXT",
     "MV_UNITY_MATHEMATICS",
-    "MV_CESIUM"
+    "MV_CESIUM",
+    "MV_UNITASK",
+    "MV_AR_FOUNDATION"
   ],
   "versionDefines": [
     {
@@ -45,6 +49,16 @@
       "name": "com.reachcloud.metaverse-cloud-sdk",
       "expression": "",
       "define": "METAVERSE_CLOUD_ENGINE"
+    },
+    {
+        "name": "com.cysharp.unitask",
+        "expression": "",
+        "define": "MV_UNITASK"
+    },
+    {
+        "name": "com.unity.xr.arfoundation",
+        "expression": "",
+        "define": "MV_AR_FOUNDATION"
     }
   ]
 }
