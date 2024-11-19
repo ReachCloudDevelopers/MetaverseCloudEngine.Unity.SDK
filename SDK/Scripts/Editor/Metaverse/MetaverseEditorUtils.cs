@@ -60,27 +60,34 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public static void Box(Action draw, string style = "box", bool vertical = true)
         {
-            if (vertical)
+            try
             {
-                if (string.IsNullOrEmpty(style))
-                    EditorGUILayout.BeginVertical();
+                if (vertical)
+                {
+                    if (string.IsNullOrEmpty(style))
+                        EditorGUILayout.BeginVertical();
+                    else
+                        EditorGUILayout.BeginVertical(style);
+                }
                 else
-                    EditorGUILayout.BeginVertical(style);
-            }
-            else
-            {
-                if (string.IsNullOrEmpty(style))
-                    EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
-                else
-                    EditorGUILayout.BeginHorizontal(style, GUILayout.ExpandWidth(true));
-            }
+                {
+                    if (string.IsNullOrEmpty(style))
+                        EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true));
+                    else
+                        EditorGUILayout.BeginHorizontal(style, GUILayout.ExpandWidth(true));
+                }
 
-            draw?.Invoke();
+                draw?.Invoke();
             
-            if (vertical)
-                EditorGUILayout.EndVertical();
-            else
-                EditorGUILayout.EndHorizontal();
+                if (vertical)
+                    EditorGUILayout.EndVertical();
+                else
+                    EditorGUILayout.EndHorizontal();
+            }
+            catch (ArgumentException) // Unity GUI bug
+            {
+                /* ignored */
+            }
         }
 
         public static void Header(string text, bool displayIcon = true)
