@@ -148,7 +148,14 @@ namespace MetaverseCloudEngine.Unity.Editors
             _themeExpanded = EditorGUILayout.Foldout(_themeExpanded, "Theme");
             if (_themeExpanded)
             {
-                RenderThumbnail(record);
+                try
+                {
+                    RenderThumbnail(record);
+                }
+                catch
+                {
+                    /* ignored */
+                }
 
                 MetaverseEditorUtils.Box(() =>
                 {
@@ -235,8 +242,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     EditorUtility.ClearProgressBar();
                 }
-                
-                GUIUtility.ExitGUI();
             }
             else
             {
@@ -250,7 +255,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     EditorGUILayout.Space();
 
-                    if (GUILayout.Button("Delete Logo"))
+                    if (GUILayout.Button("Delete Logo") && EditorUtility.DisplayDialog("Delete Logo", "Are you sure you want to delete the organization logo?", "Yes", "No"))
                     {
                         DeleteLogo(record);
                         GUIUtility.ExitGUI();
