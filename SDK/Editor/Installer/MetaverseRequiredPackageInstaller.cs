@@ -1,5 +1,6 @@
 #if !CLOUD_BUILD_PLATFORM
 using System.Linq;
+using System.Net;
 using MetaverseCloudEngine.Unity.Installer;
 using JetBrains.Annotations;
 using UnityEditor;
@@ -19,9 +20,6 @@ namespace MetaverseCloudEngine.Unity.Installer
             "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
             "https://github.com/Unity-Technologies/AssetBundles-Browser.git",
             "https://github.com/ReachCloudDevelopers/GLTFUtility.git",
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
-            "https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git",
-#endif
         };
 
         private static AddAndRemoveRequest _packageRequest;
@@ -37,10 +35,15 @@ namespace MetaverseCloudEngine.Unity.Installer
         private static void InstallPackages()
         {
             if (EditorApplication.isCompiling) return;
-            if (SessionState.GetBool(InitialUpdateCheckFlag, false)) return;
+            if (SessionState.GetBool(InitialUpdateCheckFlag, 
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                true
+#else
+                false
+#endif
+                    )) return;
             try
             {
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
                     while (!TryUpdatePackages())
                     {
                         ShowProgressBar();
@@ -48,7 +51,6 @@ namespace MetaverseCloudEngine.Unity.Installer
                     }
 
                     HideProgressBar();
-#endif
             }
             finally
             {
@@ -83,8 +85,28 @@ namespace MetaverseCloudEngine.Unity.Installer
                 _packageRequest = null;
                 return true;
             }
-
-            _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall);
+            
+            var httpClient = new HttpWebRequest("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
+            var response = httpClient.GetResponse();
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                Debug.LogError("Failed to check for updates: " + response.StatusDescription);
+                return true;
+            }
+            
+            var latestCommit = response.GetResponseStream().ReadToEnd();
+            var regex = new System.Text.RegularExpressions.Regex("\"sha\": \"([a-zA-Z0-9]+)\"");
+            var match = regex.Match(latestCommit);
+            if (!match.Success)
+            {
+                Debug.LogError("Failed to check for updates: " + latestCommit);
+                return true;
+            }
+            
+            var latestCommitHash = match.Groups[1].Value;
+            _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall.Concat(new[] {
+                $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{latestCommitHash}"
+            });
             switch (_packageRequest.Status)
             {
                 case StatusCode.InProgress:
