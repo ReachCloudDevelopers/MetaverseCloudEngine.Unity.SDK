@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -280,10 +280,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                             BuildTargetGroup.Standalone, "com.meta.openxr.featureset.metaxr");
                         metaXRFeatureSet.isEnabled = false;
                         UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
+#if MV_OPENXR
                         ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, false);
+#endif
 #endif
 #if MV_XR_HANDS
                         ToggleOpenXRFeature<UnityEngine.XR.Hands.OpenXR.MetaHandTrackingAim>(openXRSettings, usingOpenXR);
