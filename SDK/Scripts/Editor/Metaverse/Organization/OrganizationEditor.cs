@@ -148,11 +148,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             _themeExpanded = EditorGUILayout.Foldout(_themeExpanded, "Theme");
             if (_themeExpanded)
             {
-                MetaverseEditorUtils.Box(() =>
-                {
-                    RenderThumbnail(record);
-                });
-                
+                RenderThumbnail(record);
+
                 MetaverseEditorUtils.Box(() =>
                 {
                     var labelWidth = EditorGUIUtility.labelWidth;
@@ -238,6 +235,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     EditorUtility.ClearProgressBar();
                 }
+                
+                GUIUtility.ExitGUI();
             }
             else
             {
@@ -252,7 +251,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorGUILayout.Space();
 
                     if (GUILayout.Button("Delete Logo"))
+                    {
                         DeleteLogo(record);
+                        GUIUtility.ExitGUI();
+                    }
                     if (GUILayout.Button("Download Logo"))
                     {
                         var path = EditorUtility.SaveFilePanel("Download Logo (PNG)", "", "logo.png", "png");
@@ -266,6 +268,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             {
                                 var fullPath = Path.GetFullPath(path);
                                 EditorUtility.RevealInFinder(fullPath);
+                                GUIUtility.ExitGUI();
                             }
                         }
                     }
@@ -274,7 +277,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorGUILayout.HelpBox(_logoError, MessageType.Error);
                 else
                     EditorGUILayout.HelpBox("Downloading...", MessageType.Info);
-                            
+
                 if (GUILayout.Button("Upload Logo"))
                 {
                     UploadLogo(record);
