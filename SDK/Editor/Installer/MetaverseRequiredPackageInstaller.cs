@@ -87,23 +87,13 @@ namespace MetaverseCloudEngine.Unity.Installer
                 return true;
             }
             
-            var httpClient = new System.Net.HttpWebRequest();
-            httpClient.RequestUri = new Uri(
-                "https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
-            httpClient.Method = "GET";
-            var response = httpClient.GetResponse();
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
-            {
-                Debug.LogError("Failed to check for updates: " + response.StatusDescription);
-                return true;
-            }
-            
-            var latestCommit = response.GetResponseStream().ReadToEnd();
+            var httpClient = new System.Net.WebClient();
+            var response = httpClient.DownloadString("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
             var regex = new System.Text.RegularExpressions.Regex("\"sha\": \"([a-zA-Z0-9]+)\"");
-            var match = regex.Match(latestCommit);
+            var match = regex.Match(response);
             if (!match.Success)
             {
-                Debug.LogError("Failed to check for updates: " + latestCommit);
+                Debug.LogError("Failed to check for updates: " + response);
                 return true;
             }
             
