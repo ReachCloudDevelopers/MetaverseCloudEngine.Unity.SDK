@@ -79,6 +79,11 @@
             "define": "MV_META_CORE"
         },
         {
+            "name": "com.unity.xr.openxr",
+            "expression": "",
+            "define": "MV_OPENXR"
+        },
+        {
             "name": "com.unity.xr.oculus",
             "expression": "",
             "define": "MV_OCULUS_PLUGIN"
