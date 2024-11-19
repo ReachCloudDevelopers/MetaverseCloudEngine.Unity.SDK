@@ -15,6 +15,7 @@ namespace MetaverseCloudEngine.Unity.Installer
     public class MetaverseRequiredPackageInstaller : AssetPostprocessor
     {
         private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
+        private const string PAT = "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";
 
         private static readonly string[] PackagesToInstall =
         {
@@ -27,7 +28,7 @@ namespace MetaverseCloudEngine.Unity.Installer
         
         public static void ForceInstallPackages()
         {
-            SessionState.EraseBool(InitialUpdateCheckFlag);
+            SessionState.SetBool(InitialUpdateCheckFlag, false);
             InstallPackages();
         }
 
@@ -88,14 +89,13 @@ namespace MetaverseCloudEngine.Unity.Installer
             }
             
             var httpClient = new System.Net.WebClient();
+            httpClient.Headers.Add("Accept", "application/vnd.github+json");
+            httpClient.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+            httpClient.Headers.Add("Authorization", $"Bearer {PAT}");
+            httpClient.Headers.Add("User-Agent", "MetaverseCloudEngine.Unity.SDK");
             var response = httpClient.DownloadString("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
-            var regex = new System.Text.RegularExpressions.Regex("\"sha\": \"([a-zA-Z0-9]+)\"");
-            var match = regex.Match(response);
-            if (!match.Success)
-            {
-                Debug.LogError("Failed to check for updates: " + response);
-                return true;
-            }
+            var match = System.Text.RegularExpressions.Regex.Match(response, "\"sha\": \"([a-f0-9]+)\"");
+            if (!match.Success) return false;
             
             var latestCommitHash = match.Groups[1].Value;
             _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall.Concat(new[] {
