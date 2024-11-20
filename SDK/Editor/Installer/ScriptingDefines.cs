@@ -14,14 +14,18 @@ namespace MetaverseCloudEngine.Unity.Installer
         private const char DefSeparator = ';';
         private static readonly List<string> Defs = new();
         
+        public static bool AreDefaultSymbolsDefined => IsDefined(DefaultSymbols);
+        
         public static bool IsDefined(string symbol)
         {
-            return GetAll().Contains(symbol);
+            if (!GetAll().Any()) return false;
+            return GetAll().Contains(symbol) || (string.Join(DefSeparator.ToString(), GetAll()) + ";").Contains(symbol + ";");
         }
         
         public static bool IsDefined(string symbol, BuildTargetGroup group)
         {
-            return GetAll(group).Contains(symbol);
+            if (!GetAll().Any()) return false;
+            return GetAll(group).Contains(symbol) || (string.Join(DefSeparator.ToString(), GetAll(group)) + ";").Contains(symbol + ";");
         }
         
         public static void AddDefaultSymbols()
