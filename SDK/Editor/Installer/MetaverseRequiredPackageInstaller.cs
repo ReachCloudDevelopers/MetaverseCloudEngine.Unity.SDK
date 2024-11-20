@@ -86,8 +86,15 @@ namespace MetaverseCloudEngine.Unity.Installer
                     Debug.Log("Metaverse Cloud Engine SDK is already up to date.");
                     return;
                 }
+                
+                if (!EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", 
+                    "A new version of Metaverse Cloud Engine SDK is available. This may take a few minutes but rest assured we'll be done in no time.", 
+                    "Update (Recommended)", "Skip"))
+                {
+                    return;
+                }
 
-                UnityEngine.Debug.Log($"Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
+                UnityEngine.Debug.Log($"Updating Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
 
                 while (!TryUpdatePackages(latestCommitHash))
                 {
@@ -112,12 +119,17 @@ namespace MetaverseCloudEngine.Unity.Installer
                 ScriptingDefines.AddDefaultSymbols();
                 return;
             }
+            
+            if (!ScriptingDefines.AreDefaultSymbolsDefined) 
+                return;
+            
             SessionState.EraseBool(InitialUpdateCheckFlag);
             ScriptingDefines.RemoveDefaultSymbols(
-                EditorUtility.DisplayDialog("Uninstall Metaverse Cloud Engine SDK Defines", 
-                    "Would you like to remove integration package scripting symbols? " +
-                    "You will have to re-enable integrations if you choose to install the SDK again.", 
+                EditorUtility.DisplayDialog("Uninstall Metaverse Cloud Engine SDK", 
+                    "We're sorry to see you go! Nevertheless thank you for using the SDK. Would you like to keep the integrations enabled in case you decide to install the SDK again?", 
                     "No (Recommended)", "Yes") == false);
+            
+            UnityEditor.EditorApplication.OpenProject(Environment.CurrentDirectory);
         }
 
         [UsedImplicitly]
