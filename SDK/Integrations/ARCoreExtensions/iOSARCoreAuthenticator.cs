@@ -1,3 +1,5 @@
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && (UNITY_IOS || UNITY_EDITOR)
+
 using System;
 using Firebase;
 using Firebase.Auth;
@@ -197,3 +199,5 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
         }
     }
 }
+
+#endif
