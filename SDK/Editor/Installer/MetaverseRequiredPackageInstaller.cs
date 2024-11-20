@@ -130,7 +130,7 @@ namespace MetaverseCloudEngine.Unity.Installer
             ScriptingDefines.RemoveDefaultSymbols(
                 EditorUtility.DisplayDialog("Uninstall Metaverse Cloud Engine SDK", 
                     "We're sorry to see you go! Nevertheless thank you for using the SDK. Would you like to keep the integrations enabled in case you decide to install the SDK again?", 
-                    "No (Recommended)", "Yes") == false);
+                    "Yes (Recommended)", "No") == false);
             
             UnityEditor.EditorApplication.OpenProject(Environment.CurrentDirectory);
         }
