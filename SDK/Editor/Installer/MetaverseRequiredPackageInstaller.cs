@@ -100,6 +100,9 @@ namespace MetaverseCloudEngine.Unity.Installer
                 {
                     System.Threading.Thread.Sleep(500);
                 }
+
+                // Restart
+                UnityEditor.EditorApplication.OpenProject(Environment.CurrentDirectory);
             }
             finally 
             {
