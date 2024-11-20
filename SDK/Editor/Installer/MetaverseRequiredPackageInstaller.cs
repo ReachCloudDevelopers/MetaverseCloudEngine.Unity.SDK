@@ -107,7 +107,7 @@ namespace MetaverseCloudEngine.Unity.Installer
             string[] movedFromAssetPaths)
         {
             // Check if com.reachcloud.metaverse-cloud-sdk is installed
-            if (AssetDatabase.FindAssets("Packages/com.reachcloud.metaverse-cloud-sdk").Length > 0)
+            if (AssetDatabase.FindAssets("", new[] { "Packages/com.reachcloud.metaverse-cloud-sdk" }).Length > 0)
             {
                 ScriptingDefines.AddDefaultSymbols();
                 return;
