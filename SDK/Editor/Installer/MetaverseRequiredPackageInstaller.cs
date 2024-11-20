@@ -100,16 +100,18 @@ namespace MetaverseCloudEngine.Unity.Installer
             }
         }
         
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
         private static void OnPostprocessAllAssets(
             string[] importedAssets, 
             string[] deletedAssets, 
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (deletedAssets.Length <= 0 ||
-                !deletedAssets.Any(x => x.Contains("Packages/com.reachcloud.metaverse-cloud-sdk"))) 
+            // Check if com.reachcloud.metaverse-cloud-sdk is installed
+            if (AssetDatabase.FindAssets("Packages/com.reachcloud.metaverse-cloud-sdk").Length > 0)
+            {
+                ScriptingDefines.AddDefaultSymbols();
                 return;
+            }
             SessionState.EraseBool(InitialUpdateCheckFlag);
             ScriptingDefines.RemoveDefaultSymbols(
                 EditorUtility.DisplayDialog("Uninstall Metaverse Cloud Engine SDK Defines", 
@@ -117,7 +119,6 @@ namespace MetaverseCloudEngine.Unity.Installer
                     "You will have to re-enable integrations if you choose to install the SDK again.", 
                     "No (Recommended)", "Yes") == false);
         }
-#endif
 
         [UsedImplicitly]
         private static bool TryUpdatePackages(string commitHash)
