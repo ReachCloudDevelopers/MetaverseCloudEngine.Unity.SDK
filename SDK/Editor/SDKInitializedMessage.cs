@@ -6,7 +6,10 @@ namespace MetaverseCloudEngine.Unity.Editors
         [UnityEditor.InitializeOnLoadMethod]
         private static void OnSDKInitialized()
         {
-            MetaverseProgram.Logger.Log(MetaverseConstants.ProductName + " SDK Initialized");
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                MetaverseProgram.Logger.Log(MetaverseConstants.ProductName + " SDK Initialized");
+            };
         }
     }
 }
