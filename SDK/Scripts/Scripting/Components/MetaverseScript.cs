@@ -894,26 +894,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     typeof(UniTask).Assembly /* UniTask */,
                     typeof(UniTaskExtensions).Assembly /* UniTask */
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
-                    ,
-                    typeof(Vuforia.VuforiaApplication).Assembly,
-                    typeof(Vuforia.VuforiaConfiguration).Assembly
+                    ,typeof(Vuforia.VuforiaApplication).Assembly
+                    ,typeof(Vuforia.VuforiaConfiguration).Assembly
 #endif
 #if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
-                    ,
-                    typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly,
-                    typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
+                    ,typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
+                    ,typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
 #if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
-                    ,
-                    typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
+                    ,typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
-                    ,
-                    typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
+                    ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
+                    ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
-                    ,
-                    typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
+                    ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
 #endif
                     )
                 .AllowClrWrite()
@@ -923,7 +919,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     MemberFilter = IsMemberAllowed
                 })
                 .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
-#if MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR) 
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
                     ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
                 )
