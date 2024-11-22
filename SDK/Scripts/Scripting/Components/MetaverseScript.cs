@@ -901,7 +901,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
                     ,typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
-#if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
+#if MV_UNITY_AR_CORE && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
                     ,typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
