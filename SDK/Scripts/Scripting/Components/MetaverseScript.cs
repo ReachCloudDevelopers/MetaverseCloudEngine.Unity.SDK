@@ -907,6 +907,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
                     ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
                     ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
+                    ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
                     ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
@@ -928,7 +929,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (strict)
                 options.Strict();
 
-            options.Interop.TrackObjectWrapperIdentity = false;
+            //options.Interop.TrackObjectWrapperIdentity = false;
         }
 
         private static bool OnJavaScriptCLRException(Exception exception)
