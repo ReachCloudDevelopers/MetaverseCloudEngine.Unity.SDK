@@ -168,6 +168,11 @@
             "name": "com.unity.xr.arkit",
             "expression": "",
             "define": "MV_UNITY_AR_KIT"
+        },
+        {
+            "name": "com.cesium.unity",
+            "expression": "",
+            "define": "MV_CESIUM_UNITY"
         }
     ],
     "noEngineReferences": false
