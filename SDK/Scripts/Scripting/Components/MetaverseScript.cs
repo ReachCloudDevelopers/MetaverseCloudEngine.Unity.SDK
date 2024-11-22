@@ -908,6 +908,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
                     ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
                     ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
+#if MV_CESIUM_UNITY
+                    ,typeof(CesiumForUnity.CesiumGeoreference)
+#endif
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
                     ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
