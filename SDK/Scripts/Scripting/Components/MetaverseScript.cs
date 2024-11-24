@@ -1,31 +1,36 @@
 using Jint;
 using Jint.Native;
+using TMPro;
+using Cinemachine;
+using Cysharp.Threading.Tasks;
+
+using CesiumForUnity;
+
+using MetaverseCloudEngine.ApiClient;
+using MetaverseCloudEngine.Common.Models.DataTransfer;
+using MetaverseCloudEngine.Unity.Async;
+using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
+using MetaverseCloudEngine.Unity.Networking.Abstract;
+using MetaverseCloudEngine.Unity.Networking.Components;
+using MetaverseCloudEngine.Unity.Networking.Enumerations;
+
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
+
+using Unity.VisualScripting;
+#if MV_UNITY_AI_NAV
+using Unity.AI.Navigation;
+#endif
+
 using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.AI;
-using UnityEngine.InputSystem;
-using Unity.VisualScripting;
-using UnityEngine;
-using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
-using TMPro;
-using Cinemachine;
-using Cysharp.Threading.Tasks;
-using TriInspectorMVCE;
 using System.Reflection;
 using System.Threading.Tasks;
-using MetaverseCloudEngine.ApiClient;
-using MetaverseCloudEngine.Common.Models.DataTransfer;
-using UnityEngine.XR.Interaction.Toolkit;
-using MetaverseCloudEngine.Unity.Async;
-using MetaverseCloudEngine.Unity.Networking.Abstract;
-using MetaverseCloudEngine.Unity.Networking.Components;
-using MetaverseCloudEngine.Unity.Networking.Enumerations;
-using UnityEngine.EventSystems;
-#if MV_UNITY_AI_NAV
-using Unity.AI.Navigation;
-#endif
+
+using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
@@ -866,73 +871,94 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private static void DefaultEngineOptions(Options options, bool strict)
         {
-            options.AllowClr(
-                    typeof(DateTime).Assembly,
-                    typeof(Transform).Assembly,
-                    typeof(GameObject).Assembly,
-                    typeof(Component).Assembly /* UnityEngine.CoreModule */,
-                    typeof(Rigidbody).Assembly /* UnityEngine.PhysicsModule */,
-                    typeof(Terrain).Assembly /* UnityEngine.TerrainModule */,
-                    typeof(AudioSource).Assembly /* UnityEngine.AudioModule */,
-                    typeof(Canvas).Assembly /* UnityEngine.UIModule */,
-                    typeof(NavMesh).Assembly /* UnityEngine.AIModule */,
-                    typeof(NavMeshAgent).Assembly /* UnityEngine.AIModule */,
-                    typeof(RaycastResult).Assembly /* UnityEngine.UI */,
-#if MV_UNITY_AI_NAV
-                    typeof(NavMeshSurface).Assembly /* Unity.AI.Navigation */,
-#endif
-                    typeof(Input).Assembly /* UnityEngine.InputModule */,
-                    typeof(MetaverseProgram).Assembly /* MetaverseCloudEngine */,
-                    typeof(MetaverseClient).Assembly /* MetaverseCloudEngine.ApiClient */,
-                    typeof(MetaSpaceDto).Assembly /* MetaverseCloudEngine.Common */,
-                    typeof(TextMeshPro).Assembly /* TextMeshPro */,
-                    typeof(InputSystem).Assembly /* New Input System */,
-                    typeof(CinemachineCore).Assembly /* Cinema-chine */,
-                    typeof(Variables).Assembly /* Visual Scripting */,
-                    typeof(ActionBasedController).Assembly /* XR Interaction Toolkit */,
-                    typeof(Task).Assembly /* System.Threading.Tasks */,
-                    typeof(UniTask).Assembly /* UniTask */,
-                    typeof(UniTaskExtensions).Assembly /* UniTask */
-#if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
-                    ,typeof(Vuforia.VuforiaApplication).Assembly
-                    ,typeof(Vuforia.VuforiaConfiguration).Assembly
-#endif
-#if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
-                    ,typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
-                    ,typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
-#endif
-#if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
-                    ,typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
-#endif
-#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
-                    ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
-                    ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
-                    ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
-#if MV_CESIUM_UNITY
-                    ,typeof(CesiumForUnity.CesiumGeoreference).Assembly
-#endif
-#endif
-#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
-                    ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
-#endif
-                    )
+            options.AllowClr(GetAssemblies())
                 .AllowClrWrite()
                 .AllowOperatorOverloading()
                 .SetTypeResolver(new Jint.Runtime.Interop.TypeResolver
                 {
                     MemberFilter = IsMemberAllowed
                 })
-                .AddExtensionMethods(typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
-#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
-                    ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
-#endif
-                )
+                .AddExtensionMethods(GetExtensionMethodTypes())
                 .CatchClrExceptions(OnJavaScriptCLRException);
 
             if (strict)
                 options.Strict();
 
             //options.Interop.TrackObjectWrapperIdentity = false;
+        }
+
+        /// <summary>
+        /// Gets the types that contain extension methods.
+        /// </summary>
+        /// <returns>The types that contain extension methods.</returns>
+        public static Type[] GetExtensionMethodTypes()
+        {
+            return new [] { typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
+                ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
+#endif
+            };
+        }
+
+        /// <summary>
+        /// Gets the assemblies to allow access to from javascript.
+        /// </summary>
+        /// <returns>The assemblies to allow access to.</returns>
+        public static Assembly[] GetAssemblies()
+        {
+            var assemblies = new [] { 
+                typeof(DateTime).Assembly,
+                typeof(Transform).Assembly,
+                typeof(GameObject).Assembly,
+                typeof(Component).Assembly /* UnityEngine.CoreModule */,
+                typeof(Rigidbody).Assembly /* UnityEngine.PhysicsModule */,
+                typeof(Terrain).Assembly /* UnityEngine.TerrainModule */,
+                typeof(AudioSource).Assembly /* UnityEngine.AudioModule */,
+                typeof(Canvas).Assembly /* UnityEngine.UIModule */,
+                typeof(RaycastResult).Assembly /* UnityEngine.UI */,
+#if MV_UNITY_AI_NAV
+                typeof(UnityEngine.AI.NavMesh).Assembly /* UnityEngine.AIModule */,
+                typeof(UnityEngine.AI.NavMeshAgent).Assembly /* UnityEngine.AIModule */,
+                typeof(NavMeshSurface).Assembly /* Unity.AI.Navigation */,
+#endif
+                typeof(Input).Assembly /* UnityEngine.InputModule */,
+                typeof(MetaverseProgram).Assembly /* MetaverseCloudEngine */,
+                typeof(MetaverseClient).Assembly /* MetaverseCloudEngine.ApiClient */,
+                typeof(MetaSpaceDto).Assembly /* MetaverseCloudEngine.Common */,
+                typeof(TextMeshPro).Assembly /* TextMeshPro */,
+                typeof(InputSystem).Assembly /* New Input System */,
+                typeof(CinemachineCore).Assembly /* Cinema-chine */,
+                typeof(Variables).Assembly /* Visual Scripting */,
+                typeof(UnityEngine.XR.Interaction.Toolkit.ActionBasedController).Assembly /* XR Interaction Toolkit */,
+                typeof(Task).Assembly /* System.Threading.Tasks */,
+                typeof(UniTask).Assembly /* UniTask */,
+                typeof(UniTaskExtensions).Assembly /* UniTask */
+#if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
+                ,typeof(Vuforia.VuforiaApplication).Assembly
+                ,typeof(Vuforia.VuforiaConfiguration).Assembly
+#endif
+#if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
+                ,typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
+                ,typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
+#endif
+#if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
+                ,typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
+#endif
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
+                ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
+                ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
+                ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
+#if MV_CESIUM_UNITY
+                ,typeof(CesiumGeoreference).Assembly
+#endif
+#endif
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
+                ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
+#endif
+            };
+            return assemblies
+                .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())
+                .ToArray();
         }
 
         private static bool OnJavaScriptCLRException(Exception exception)
