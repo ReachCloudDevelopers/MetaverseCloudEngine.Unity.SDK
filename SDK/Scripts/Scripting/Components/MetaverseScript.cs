@@ -71,6 +71,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             "System.Web",
             "System.Http",
             "System.CodeDom",
+            "Microsoft.Win32",
+            "Microsoft.SafeHandles",
         };
 
         private static readonly List<string> BlackListedTypes = new()
