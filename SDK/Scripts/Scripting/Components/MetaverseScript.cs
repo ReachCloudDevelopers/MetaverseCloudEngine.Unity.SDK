@@ -671,6 +671,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>true if the member is allowed, false otherwise.</returns>
         public static bool FilterAllowedMembers(MemberInfo member)
         {
+            if (member is null)
+                return false;
             return
                 !IsBlackListedMemberName(member.Name) &&
                 (member.DeclaringType == null || !IsBlackListedMemberName(member.DeclaringType.Name, true)) &&
