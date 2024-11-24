@@ -4,8 +4,6 @@ using TMPro;
 using Cinemachine;
 using Cysharp.Threading.Tasks;
 
-using CesiumForUnity;
-
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using MetaverseCloudEngine.Unity.Async;
@@ -949,7 +947,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
                 ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
 #if MV_CESIUM_UNITY
-                ,typeof(CesiumGeoreference).Assembly
+                ,typeof(CesiumForUnity.CesiumGeoreference).Assembly
 #endif
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
