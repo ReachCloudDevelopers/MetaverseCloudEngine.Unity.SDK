@@ -882,7 +882,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (strict)
                 options.Strict();
 
-            //options.Interop.TrackObjectWrapperIdentity = false;
+            options.Interop.TrackObjectWrapperIdentity = false;
         }
 
         /// <summary>
