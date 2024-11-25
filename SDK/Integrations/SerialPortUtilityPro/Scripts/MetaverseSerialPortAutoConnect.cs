@@ -36,6 +36,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [SerializeField] private string regexSearchString = "<Enter Search String>";
         [SerializeField] private DeviceField searchField = (DeviceField)(-1);
         [SerializeField] private DeviceType searchType = (DeviceType)(-1);
+        [SerializeField] private bool debugLog = true;
 
         private FieldInfo _isAutoOpenField;
         private readonly MetaverseSerialPortDeviceAPI _deviceAPI = new();
@@ -81,7 +82,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 if (!this || !isActiveAndEnabled)
                 {
-                    MetaverseProgram.Logger.Log("AutoConnect cancelled because the component is not enabled.");
+                    if (this && debugLog)
+                        MetaverseProgram.Logger.Log("AutoConnect cancelled because the component is not enabled.");
                     return;
                 }
                 var btDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
@@ -91,9 +93,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 var pciDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
                 
-                MetaverseProgram.Logger.Log("Connected Bluetooth Devices: " + btDevices.Length + " | " +
-                                             "Connected USB Devices: " + usbDevices.Length + " | " +
-                                             "Connected PCI Devices: " + pciDevices.Length);
+                if (debugLog)
+                    MetaverseProgram.Logger.Log("Connected Bluetooth Devices: " + btDevices.Length + " | " +
+                                                 "Connected USB Devices: " + usbDevices.Length + " | " +
+                                                 "Connected PCI Devices: " + pciDevices.Length);
 
                 var deviceInfo =
                     Array.Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
@@ -126,7 +129,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 if (deviceInfo.Item1 != null)
                 {
-                    MetaverseProgram.Logger.Log("AutoConnect found a device: " + deviceInfo.Item1.SerialNumber);
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log("AutoConnect found a device: " + deviceInfo.Item1.SerialNumber);
 
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
@@ -137,8 +141,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 }
                 else
                 {
-                    MetaverseProgram.Logger.Log("AutoConnect did not find a device for: " + regexSearchString +
-                                                 " | " + searchField + " | " + searchType);
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log("AutoConnect did not find a device for: " + regexSearchString +
+                                                     " | " + searchField + " | " + searchType);
                 }
 
                 if (!IsInvoking(nameof(WatchConnection)))
