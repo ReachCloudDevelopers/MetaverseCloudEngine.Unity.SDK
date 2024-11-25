@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -79,13 +79,21 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             MetaverseDispatcher.AtEndOfFrame(() =>
             {
-                if (!this || !isActiveAndEnabled) return;
+                if (!this || !isActiveAndEnabled)
+                {
+                    MetaverseProgram.Logger.Log("AutoConnect cancelled because the component is not enabled.");
+                    return;
+                }
                 var btDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp);
                 var usbDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Usb);
                 var pciDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
+                
+                MetaverseProgram.Logger.Log("Connected Bluetooth Devices: " + btDevices.Length + " | " +
+                                             "Connected USB Devices: " + usbDevices.Length + " | " +
+                                             "Connected PCI Devices: " + pciDevices.Length);
 
                 var deviceInfo =
                     Array.Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
@@ -118,16 +126,23 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 if (deviceInfo.Item1 != null)
                 {
+                    MetaverseProgram.Logger.Log("AutoConnect found a device: " + deviceInfo.Item1.SerialNumber);
+
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
                         deviceInfo.Item1.SerialNumber,
                         deviceInfo.Item1,
                         deviceInfo.Item2);
                     _deviceAPI.Open();
-
-                    if (!IsInvoking(nameof(WatchConnection)))
-                        Invoke(nameof(WatchConnection), 1f);
                 }
+                else
+                {
+                    MetaverseProgram.Logger.Log("AutoConnect did not find a device for: " + regexSearchString +
+                                                 " | " + searchField + " | " + searchType);
+                }
+
+                if (!IsInvoking(nameof(WatchConnection)))
+                    Invoke(nameof(WatchConnection), 1f);
             });
         }
 
