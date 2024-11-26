@@ -220,7 +220,6 @@ namespace MetaverseCloudEngine.Unity.Components
                 if (destroyCancellationToken.IsCancellationRequested) return;
                 if (_lastARSessionState == e.state) return;
                 _lastARSessionState = e.state;
-                MetaverseProgram.Logger.Log("AR Session state changed to: " + e.state);
                 ClearPlatformSupportCachedValue();
                 PerformCheck();
             }, destroyCancellationToken);
