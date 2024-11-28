@@ -22,7 +22,7 @@ using Unity.AI.Navigation;
 #endif
 
 #if MV_XRCOREUTILS
-using XROrigin = Unity.XR.CoreUtils;
+using XROrigin = Unity.XR.CoreUtils.XROrigin;
 #endif
 
 using System;
