@@ -21,6 +21,10 @@ using Unity.VisualScripting;
 using Unity.AI.Navigation;
 #endif
 
+#if MV_XRCOREUTILS
+using XROrigin = Unity.XR.CoreUtils;
+#endif
+
 using System;
 using System.Linq;
 using System.Collections;
@@ -1047,8 +1051,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(Task).Assembly /* System.Threading.Tasks */,
                 typeof(UniTask).Assembly /* UniTask */,
                 typeof(UniTaskExtensions).Assembly /* UniTask */
-#if MV_XRCOREUTILS && ENABLE_VR
-                ,typeof(Unity.XR.CoreUtils.XROrigin).Assembly
+#if MV_XRCOREUTILS
+                ,typeof(XROrigin).Assembly
 #endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                 ,typeof(Vuforia.VuforiaApplication).Assembly
