@@ -56,7 +56,8 @@
         "MV_INPUT_SYSTEM",
         "MV_CINEMACHINE",
         "MV_CYSHARP",
-        "MV_GLTF"
+        "MV_GLTF",
+        "MV_XRCOREUTILS"
     ],
     "versionDefines": [
         {
