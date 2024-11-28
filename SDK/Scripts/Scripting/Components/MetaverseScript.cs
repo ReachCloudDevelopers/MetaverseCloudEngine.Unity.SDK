@@ -1047,6 +1047,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(Task).Assembly /* System.Threading.Tasks */,
                 typeof(UniTask).Assembly /* UniTask */,
                 typeof(UniTaskExtensions).Assembly /* UniTask */
+#if MV_XRCOREUTILS
+                ,typeof(Unity.XR.CoreUtils).Assembly
+#endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                 ,typeof(Vuforia.VuforiaApplication).Assembly
                 ,typeof(Vuforia.VuforiaConfiguration).Assembly
