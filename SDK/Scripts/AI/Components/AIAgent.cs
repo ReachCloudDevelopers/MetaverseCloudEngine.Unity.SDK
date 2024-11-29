@@ -29,13 +29,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public class AIAgentAction
         {
             [Required]
-            public string actionID;
+            public string actionID = "";
             [TextArea]
             [Required]
-            public string description;
+            public string description = "";
             [Tooltip("If true, this is an action that is specifically for object targets.")]
             public bool requireTarget;
-            public UnityEvent onAction;
+            public UnityEvent onAction = new();
             [ShowIf(nameof(requireTarget))]
             [FormerlySerializedAs("onActionGameObject")] public UnityEvent<GameObject> onActionTarget;
 
@@ -45,8 +45,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
 
-        [Required] [SerializeField] private string id;
+        [Required] [SerializeField] private string id = "";
         [SerializeField] private AiCharacterIntelligencePreset intelligencePreset;
+        [SerializeField] private bool queueUserInputs = true;
         
         [HideIf(nameof(UsingDeprecatedFields))]
         [SerializeField] private AIPrompt prompt = new();
@@ -66,12 +67,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [TextArea(minLines: 5, maxLines: 100)] [SerializeField] private string contextualKnowledge;
         
         [Title("Actions & Events")]
-        [SerializeField] private UnityEvent onThinkingStarted;
-        [SerializeField] private UnityEvent onThinkingFinished;
-        [SerializeField] private UnityEvent<string> onResponse;
+        [SerializeField] private UnityEvent onThinkingStarted = new();
+        [SerializeField] private UnityEvent onThinkingFinished = new();
+        [SerializeField] private UnityEvent<string> onResponse = new();
         [SerializeField] private UnityEvent onVoiceComplete = new();
-        [SerializeField] private UnityEvent onResponseFailed;
-        [SerializeField] private List<AIAgentAction> actions;
+        [SerializeField] private UnityEvent onResponseFailed = new();
+        [SerializeField] private List<AIAgentAction> actions = new();
         
         [Title("Text to Speech")]
         [SerializeField] private bool deferActionsUntilVoiceComplete;
@@ -85,6 +86,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public UnityEvent OnThinkingStarted => onThinkingStarted;
         public UnityEvent OnThinkingFinished => onThinkingFinished;
         public UnityEvent<string> OnResponse => onResponse;
+        public UnityEvent OnVoiceComplete => onVoiceComplete;
         public UnityEvent OnResponseFailed => onResponseFailed;
         
         public List<AIAgentAction> Actions => actions;
