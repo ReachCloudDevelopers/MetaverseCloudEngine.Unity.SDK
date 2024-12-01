@@ -12,7 +12,7 @@ using UnityEditor.iOS;
 
 namespace MetaverseCloudEngine.Unity.Editors.FoPC
 {
-    public static class DisableUndefinedErrorInUnityCloudBuilds
+    public class DisableUndefinedErrorInUnityCloudBuilds
     {
         [PostProcessBuild]
         public static void OnPostProcessBuild(BuildTarget buildTarget, string pathToBuildProject)
