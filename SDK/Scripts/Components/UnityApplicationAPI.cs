@@ -17,7 +17,7 @@ namespace MetaverseCloudEngine.Unity.Components
         public void QuitAndSaveState()
         {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-            MetaverseDeepLinkAPI.SaveState();
+            MetaverseDeepLinkAPI.CacheApplicationState();
 #endif
             Quit();
         }
