@@ -30,7 +30,7 @@ namespace MetaverseCloudEngine.Unity.Editors.FoPC
     #else
                 string targetGuid = pbxProject.GetUnityMainTargetGuid();
     #endif
-                pbxProject.AddBuildProperty(targetGuid, "OTHER_LDFLAGS", "-Wl,-undefined,dynamic_lookup");
+                pbxProject.AddBuildProperty(targetGuid, "OTHER_LDFLAGS", "-Wl,-undefined,dynamic_lookup,-no_fixup_chains");
                 pbxProject.WriteToFile(pbxProjectPath);
             }
         }
