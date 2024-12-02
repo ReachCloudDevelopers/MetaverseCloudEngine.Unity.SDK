@@ -119,15 +119,19 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
                         .ToArray()
                         .FirstOrDefault(device =>
-                            device?.Item1 != null &&
-                            (Regex.IsMatch(device.Item1.SerialNumber, regexSearchString) &&
-                             searchField.HasFlag(DeviceField.SerialNumber)) ||
-                            (Regex.IsMatch(device.Item1.Product, regexSearchString) &&
-                             searchField.HasFlag(DeviceField.Product)) ||
-                            (Regex.IsMatch(device.Item1.PortName, regexSearchString) &&
-                             searchField.HasFlag(DeviceField.PortName)) ||
-                            (Regex.IsMatch(device.Item1.Vendor, regexSearchString) &&
-                             searchField.HasFlag(DeviceField.Vendor)));
+                            device.Item1 != null &&
+                            (!string.IsNullOrWhiteSpace(device.Item1.SerialNumber) &&
+                                Regex.IsMatch(device.Item1.SerialNumber, regexSearchString) &&
+                                searchField.HasFlag(DeviceField.SerialNumber)) ||
+                            (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
+                                Regex.IsMatch(device.Item1.Product, regexSearchString) &&
+                                searchField.HasFlag(DeviceField.Product)) ||
+                            (!string.IsNullOrWhiteSpace(device.Item1.PortName) &&
+                                Regex.IsMatch(device.Item1.PortName, regexSearchString) &&
+                                searchField.HasFlag(DeviceField.PortName)) ||
+                            (!string.IsNullOrWhiteSpace(device.Item1.Vendor) &&
+                                Regex.IsMatch(device.Item1.Vendor, regexSearchString) &&
+                                searchField.HasFlag(DeviceField.Vendor)));
 
                 if (deviceInfo.Item1 != null)
                 {
