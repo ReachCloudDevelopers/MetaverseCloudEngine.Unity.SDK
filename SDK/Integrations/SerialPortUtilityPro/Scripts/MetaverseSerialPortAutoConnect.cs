@@ -86,6 +86,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         MetaverseProgram.Logger.Log("AutoConnect cancelled because the component is not enabled.");
                     return;
                 }
+
                 var btDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp);
                 var usbDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
@@ -169,15 +170,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         Invoke(nameof(WatchConnection), 1f);
                 }
                 else if (!IsInvoking(nameof(AutoConnect)))
-                {
                     Invoke(nameof(AutoConnect), 1f);
-                }
             }
-            else
-            {
-                if (!IsInvoking(nameof(WatchConnection)))
-                    Invoke(nameof(WatchConnection), 5f);
-            }
+            else if (!IsInvoking(nameof(WatchConnection)))
+                Invoke(nameof(WatchConnection), 5f);
         }
     }
 }
