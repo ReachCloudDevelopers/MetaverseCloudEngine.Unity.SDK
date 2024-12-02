@@ -94,30 +94,32 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
                 
                 if (debugLog)
-                    MetaverseProgram.Logger.Log("Connected Bluetooth Devices: " + btDevices.Length + " | " +
-                                                 "Connected USB Devices: " + usbDevices.Length + " | " +
-                                                 "Connected PCI Devices: " + pciDevices.Length);
+                    MetaverseProgram.Logger.Log(
+                        "Connected Bluetooth Devices: " + (btDevices?.Length ?? 0) + " | " +
+                        "Connected USB Devices: " + (usbDevices?.Length ?? 0) + " | " +
+                        "Connected PCI Devices: " + (pciDevices?.Length ?? 0));
 
                 var deviceInfo =
                     Array.Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                             MetaverseSerialPortUtilityInterop.OpenSystem)>()
-                        .Concat(searchType.HasFlag(DeviceType.Bluetooth)
+                        .Concat(searchType.HasFlag(DeviceType.Bluetooth) && btDevices != null
                             ? btDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp))
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
                         .Concat(searchType.HasFlag(DeviceType.Usb)
-                            ? usbDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Usb))
+                            ? usbDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Usb)) && usbDevices != null
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
                         .Concat(searchType.HasFlag(DeviceType.Pci)
-                            ? pciDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Pci))
+                            ? pciDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Pci)) && pciDevices != null
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
                         .ToArray()
                         .FirstOrDefault(device =>
+                            device?.Item1 != null &&
                             (Regex.IsMatch(device.Item1.SerialNumber, regexSearchString) &&
                              searchField.HasFlag(DeviceField.SerialNumber)) ||
                             (Regex.IsMatch(device.Item1.Product, regexSearchString) &&
@@ -142,8 +144,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 else
                 {
                     if (debugLog)
-                        MetaverseProgram.Logger.Log("AutoConnect did not find a device for: " + regexSearchString +
-                                                     " | " + searchField + " | " + searchType);
+                        MetaverseProgram.Logger.Log(
+                            "AutoConnect did not find a device for: " + regexSearchString +
+                            " | " + searchField + 
+                            " | " + searchType);
                 }
 
                 if (!IsInvoking(nameof(WatchConnection)))
