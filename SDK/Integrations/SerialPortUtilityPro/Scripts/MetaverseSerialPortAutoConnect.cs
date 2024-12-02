@@ -107,13 +107,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
-                        .Concat(searchType.HasFlag(DeviceType.Usb)
-                            ? usbDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Usb)) && usbDevices != null
+                        .Concat(searchType.HasFlag(DeviceType.Usb) && usbDevices != null
+                            ? usbDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Usb))
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
-                        .Concat(searchType.HasFlag(DeviceType.Pci)
-                            ? pciDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Pci)) && pciDevices != null
+                        .Concat(searchType.HasFlag(DeviceType.Pci) && pciDevices != null
+                            ? pciDevices.Select(x => (x, MetaverseSerialPortUtilityInterop.OpenSystem.Pci))
                             : Array
                                 .Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
