@@ -37,7 +37,10 @@
           "System.ComponentModel.Annotations": "5.0.0"
         },
         "runtime": {
-          "MetaverseCloudEngine.Common.dll": {}
+          "MetaverseCloudEngine.Common.dll": {
+            "assemblyVersion": "1.0.0",
+            "fileVersion": "1.0.0.0"
+          }
         }
       }
     }
