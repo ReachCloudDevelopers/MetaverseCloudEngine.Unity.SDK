@@ -122,7 +122,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         .FirstOrDefault(device =>
                             device.Item1 != null &&
                             (!string.IsNullOrWhiteSpace(device.Item1.SerialNumber) &&
-                                Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_") &&
+                                Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_")) &&
                                 searchField.HasFlag(DeviceField.SerialNumber)) ||
                             (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
                                 Regex.IsMatch(device.Item1.Product, regexSearchString.Replace("\\_", "_")) &&
