@@ -125,13 +125,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_") &&
                                 searchField.HasFlag(DeviceField.SerialNumber)) ||
                             (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
-                                Regex.IsMatch(device.Item1.Product, regexSearchString).Replace("\\_", "_") &&
+                                Regex.IsMatch(device.Item1.Product, regexSearchString.Replace("\\_", "_")) &&
                                 searchField.HasFlag(DeviceField.Product)) ||
                             (!string.IsNullOrWhiteSpace(device.Item1.PortName) &&
-                                Regex.IsMatch(device.Item1.PortName, regexSearchString).Replace("\\_", "_") &&
+                                Regex.IsMatch(device.Item1.PortName, regexSearchString.Replace("\\_", "_")) &&
                                 searchField.HasFlag(DeviceField.PortName)) ||
                             (!string.IsNullOrWhiteSpace(device.Item1.Vendor) &&
-                                Regex.IsMatch(device.Item1.Vendor, regexSearchString).Replace("\\_", "_") &&
+                                Regex.IsMatch(device.Item1.Vendor, regexSearchString.Replace("\\_", "_")) &&
                                 searchField.HasFlag(DeviceField.Vendor)));
 
                 if (deviceInfo.Item1 != null)
