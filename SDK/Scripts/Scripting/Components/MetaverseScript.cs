@@ -17,6 +17,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
 
 using Unity.VisualScripting;
+using Unity.Collections;
 #if MV_UNITY_AI_NAV
 using Unity.AI.Navigation;
 #endif
@@ -1050,7 +1051,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(UnityEngine.XR.Interaction.Toolkit.ActionBasedController).Assembly /* XR Interaction Toolkit */,
                 typeof(Task).Assembly /* System.Threading.Tasks */,
                 typeof(UniTask).Assembly /* UniTask */,
-                typeof(UniTaskExtensions).Assembly /* UniTask */
+                typeof(UniTaskExtensions).Assembly, /* UniTask */
+                typeof(NativeArray<>).Assembly /* Unity.Collections */
 #if MV_XRCOREUTILS
                 ,typeof(XROrigin).Assembly
 #endif
