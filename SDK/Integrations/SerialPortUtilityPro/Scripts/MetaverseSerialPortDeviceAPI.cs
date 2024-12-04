@@ -324,6 +324,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         public bool IsThisDeviceOpened()
         {
+            if (_data == null) return false;
             var serNum = _data.SerialNumber;
             if (string.IsNullOrEmpty(serNum))
                 serNum = _data.Vendor;
