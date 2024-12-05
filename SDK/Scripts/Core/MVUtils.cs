@@ -1564,6 +1564,7 @@ namespace MetaverseCloudEngine.Unity
         
         private static readonly HashSet<string> LockedWorldMaps = new();
         
+        [UsedImplicitly]
         public static void LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
             string key, 
@@ -1671,6 +1672,7 @@ namespace MetaverseCloudEngine.Unity
             });
         }
 
+        [UsedImplicitly]
         public static void SaveArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
             string key, 
