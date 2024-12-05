@@ -1,4 +1,4 @@
-﻿using TMPro;
+using TMPro;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
@@ -17,7 +17,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Reflection;
+using JetBrains.Annotations;
 using MetaverseCloudEngine.Unity.Scripting.Components;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Networking;
@@ -28,7 +30,6 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem;
 using Bounds = UnityEngine.Bounds;
 using MethodAttributes = System.Reflection.MethodAttributes;
-
 using UnityEngine.XR;
 
 #if MV_XR_MANAGEMENT
@@ -64,7 +65,8 @@ namespace MetaverseCloudEngine.Unity
     {
         #region HTTP
 
-        public static UnityWebRequest WithHttpRequestMessageData(this UnityWebRequest uwr, HttpRequestMessage request, UploadHandler uploadHandler = null, DownloadHandler downloadHandler = null)
+        public static UnityWebRequest WithHttpRequestMessageData(this UnityWebRequest uwr, HttpRequestMessage request,
+            UploadHandler uploadHandler = null, DownloadHandler downloadHandler = null)
         {
             if (downloadHandler != null)
                 uwr.downloadHandler = downloadHandler;
@@ -81,7 +83,8 @@ namespace MetaverseCloudEngine.Unity
             return uwr;
         }
 
-        public static UnityWebRequest ToUnityWebRequest(this HttpRequestMessage request, UploadHandler uploadHandler = null, DownloadHandler downloadHandler = null)
+        public static UnityWebRequest ToUnityWebRequest(this HttpRequestMessage request,
+            UploadHandler uploadHandler = null, DownloadHandler downloadHandler = null)
         {
             var uwr = new UnityWebRequest(request.RequestUri, request.Method.Method);
             return uwr.WithHttpRequestMessageData(request, uploadHandler, downloadHandler);
@@ -95,9 +98,9 @@ namespace MetaverseCloudEngine.Unity
             };
 
             var respHeaders = request.GetResponseHeaders();
-            if (respHeaders is null) 
+            if (respHeaders is null)
                 return resp;
-            
+
             foreach (var (key, value) in respHeaders)
                 resp.Headers.TryAddWithoutValidation(key, value);
 
@@ -125,7 +128,7 @@ namespace MetaverseCloudEngine.Unity
 
                 return launchUrls;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 MetaverseProgram.Logger.LogWarning($"Interpreting URL ('{url}') failed: {e}");
                 return launchUrls;
@@ -136,20 +139,23 @@ namespace MetaverseCloudEngine.Unity
         {
             if (!url.Contains("://") || url.StartsWith("http://") || url.StartsWith("file://"))
             {
-                MetaverseProgram.Logger.LogError("Attempted to open '" + url + "' but it was not in an appropriate format.");
+                MetaverseProgram.Logger.LogError("Attempted to open '" + url +
+                                                 "' but it was not in an appropriate format.");
                 onFailed?.Invoke();
                 return;
             }
 
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-            if (MetaverseInternalResources.Instance.blackListedDomains.Any(x => url.StartsWith(x) || url.Replace("www.", string.Empty).StartsWith(x)))
+            if (MetaverseInternalResources.Instance.blackListedDomains.Any(x =>
+                    url.StartsWith(x) || url.Replace("www.", string.Empty).StartsWith(x)))
             {
                 onFailed?.Invoke();
                 return;
             }
 
             if (url.StartsWith(MetaverseConstants.Urls.WebGL) ||
-                MetaverseInternalResources.Instance.whiteListedDomains.Any(x => url.StartsWith(x) || url.Replace("www.", string.Empty).StartsWith(x)))
+                MetaverseInternalResources.Instance.whiteListedDomains.Any(x =>
+                    url.StartsWith(x) || url.Replace("www.", string.Empty).StartsWith(x)))
             {
                 Application.OpenURL(url);
                 onOpened?.Invoke();
@@ -157,21 +163,20 @@ namespace MetaverseCloudEngine.Unity
             }
 
             if (MetaverseProgram.RuntimeServices?.InternalNotificationManager != null)
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Opening URL", "You are about to navigate to '" + url + "'. Is that ok?", "Yes", "Cancel",
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Opening URL",
+                    "You are about to navigate to '" + url + "'. Is that ok?", "Yes", "Cancel",
                     () =>
                     {
                         Application.OpenURL(url);
                         onOpened?.Invoke();
                     },
-                    () =>
-                    {
-                        onFailed?.Invoke();
-                    });
+                    () => { onFailed?.Invoke(); });
             else if (MetaverseProgram.AppUpdateRequired)
             {
                 Application.OpenURL(url);
                 onOpened?.Invoke();
             }
+
             return;
 #endif
 
@@ -249,7 +254,7 @@ namespace MetaverseCloudEngine.Unity
             UnityEditor.EditorUtility.SetDirty(target);
 #endif
         }
-        
+
         [Obsolete("Use SafeDestroy instead.")]
         public static void PlayModeSafeDestroy(this UnityEngine.Object o)
         {
@@ -259,13 +264,13 @@ namespace MetaverseCloudEngine.Unity
         public static void SafeDestroy(this UnityEngine.Object o)
         {
             if (!o) return;
-            
+
             if (Application.isPlaying)
                 UnityEngine.Object.Destroy(o);
             else
                 UnityEngine.Object.DestroyImmediate(o);
         }
-        
+
         #endregion
 
         #region Graphics
@@ -274,20 +279,20 @@ namespace MetaverseCloudEngine.Unity
         {
             if (Application.isBatchMode)
                 return null;
-            
+            if (!source)
+                return null;
             var renderTex = RenderTexture.GetTemporary(
                 source.width,
                 source.height,
                 0,
                 RenderTextureFormat.Default,
                 RenderTextureReadWrite.Default);
-
-            Graphics.Blit(source, renderTex);
-
-            var previous = RenderTexture.active;
-            RenderTexture.active = renderTex;
+            RenderTexture previous = null;
             try
             {
+                Graphics.Blit(source, renderTex);
+                previous = RenderTexture.active;
+                RenderTexture.active = renderTex;
                 var readableText = new Texture2D(source.width, source.height);
                 readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
                 readableText.Apply();
@@ -295,7 +300,8 @@ namespace MetaverseCloudEngine.Unity
             }
             finally
             {
-                RenderTexture.active = previous;
+                if (previous)
+                    RenderTexture.active = previous;
                 RenderTexture.ReleaseTemporary(renderTex);
             }
         }
@@ -327,9 +333,10 @@ namespace MetaverseCloudEngine.Unity
                 hit.mask = mask;
                 hit.hit = isHit;
             }
+
             return hit;
         }
-        
+
         public static bool IsOnNavMesh(this Vector3 position)
         {
             return position.IsOnNavMesh(0.1f, false, NavMesh.AllAreas);
@@ -339,12 +346,12 @@ namespace MetaverseCloudEngine.Unity
         {
             return position.IsOnNavMesh(sampleDistance, false, NavMesh.AllAreas);
         }
-        
+
         public static bool IsOnNavMesh(this Vector3 position, float sampleDistance, bool sampleY, int areaMask)
         {
             if (sampleY)
                 return NavMesh.SamplePosition(position, out _, sampleDistance, areaMask);
-            
+
             var sample = NavMesh.SamplePosition(position, out var hit, Mathf.Infinity, areaMask);
             if (!sample) return false;
             var hit2d = new Vector3(hit.position.x, 0, hit.position.z);
@@ -356,7 +363,8 @@ namespace MetaverseCloudEngine.Unity
 
         #region Behaviour
 
-        public static void ManuallyDeAllocateReferencedAssets(this GameObject o, bool materials = true, bool textures = true, bool meshes = true, bool animationClips = true)
+        public static void ManuallyDeAllocateReferencedAssets(this GameObject o, bool materials = true,
+            bool textures = true, bool meshes = true, bool animationClips = true)
         {
             if (!o)
                 return;
@@ -418,7 +426,8 @@ namespace MetaverseCloudEngine.Unity
             }
         }
 
-        public static RuntimeAnimatorController OverrideAnimations(this RuntimeAnimatorController @base, AnimatorOverrideController layer, bool ignoreNulls = true)
+        public static RuntimeAnimatorController OverrideAnimations(this RuntimeAnimatorController @base,
+            AnimatorOverrideController layer, bool ignoreNulls = true)
         {
             if (!layer)
                 return @base;
@@ -436,7 +445,10 @@ namespace MetaverseCloudEngine.Unity
                 {
                     finalOverrideController[ovr.Key.name] = ovr.Value;
                 }
-                catch { /* ignored */ }
+                catch
+                {
+                    /* ignored */
+                }
             }
 
             return finalOverrideController;
@@ -463,7 +475,8 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool Exists(this UnityEngine.Object obj) => obj;
 
-        public static Transform ResetLocalTransform(this Transform transform, bool position = true, bool rotation = true, bool scale = true)
+        public static Transform ResetLocalTransform(this Transform transform, bool position = true,
+            bool rotation = true, bool scale = true)
         {
             if (position)
                 transform.localPosition = Vector3.zero;
@@ -514,7 +527,7 @@ namespace MetaverseCloudEngine.Unity
             return gameObject.transform.GetOrAddComponent<T>();
         }
 
-        public static T GetOrAddComponent<T, TBase>(this GameObject gameObject, out TBase baseT) 
+        public static T GetOrAddComponent<T, TBase>(this GameObject gameObject, out TBase baseT)
             where T : Component, TBase
         {
             var t = gameObject.transform.GetOrAddComponent<T>();
@@ -597,7 +610,8 @@ namespace MetaverseCloudEngine.Unity
             return GetComponentsInChildrenOrderedOfType(component, type, null);
         }
 
-        public static object[] GetComponentsInChildrenOrderedOfType(this Component component, Type type, List<object> mem)
+        public static object[] GetComponentsInChildrenOrderedOfType(this Component component, Type type,
+            List<object> mem)
         {
             mem ??= new List<object>();
             mem.AddRange(component.GetComponents(type));
@@ -614,7 +628,8 @@ namespace MetaverseCloudEngine.Unity
             return mem.ToArray();
         }
 
-        public static short GetNetworkObjectBehaviorID<T>(this NetworkObject networkObject, T behavior) where T : MonoBehaviour
+        public static short GetNetworkObjectBehaviorID<T>(this NetworkObject networkObject, T behavior)
+            where T : MonoBehaviour
         {
             if (!networkObject)
                 return -1;
@@ -631,7 +646,8 @@ namespace MetaverseCloudEngine.Unity
             return GetTopLevelComponentsInChildrenOrdered<TLookFor, TStopAt>(gameObject, gameObject);
         }
 
-        private static TLookFor[] GetTopLevelComponentsInChildrenOrdered<TLookFor, TStopAt>(this GameObject gameObject, GameObject root)
+        private static TLookFor[] GetTopLevelComponentsInChildrenOrdered<TLookFor, TStopAt>(this GameObject gameObject,
+            GameObject root)
         {
             var rootComponents = gameObject.GetComponents<TLookFor>();
             if (typeof(TLookFor).IsAssignableFrom(typeof(TStopAt)))
@@ -648,7 +664,8 @@ namespace MetaverseCloudEngine.Unity
                             if (!tLookForComponent.transform.parent)
                                 return true;
 
-                            var parentComponent = tLookForComponent.transform.parent.GetComponentInParent<TLookFor>(true);
+                            var parentComponent =
+                                tLookForComponent.transform.parent.GetComponentInParent<TLookFor>(true);
                             if (parentComponent == null)
                                 return false;
 
@@ -666,7 +683,8 @@ namespace MetaverseCloudEngine.Unity
                         if (!tLookForComponent.transform.parent)
                             return true;
 
-                        var allParentComponents = tLookForComponent.transform.parent.GetComponentsInParent<TLookFor>(true);
+                        var allParentComponents =
+                            tLookForComponent.transform.parent.GetComponentsInParent<TLookFor>(true);
                         if (allParentComponents.Length == 0)
                             return true;
 
@@ -696,7 +714,8 @@ namespace MetaverseCloudEngine.Unity
 
                 var stopAt = child.GetComponents<TStopAt>();
                 if (stopAt.Length == 0)
-                    componentsList.AddRange(child.gameObject.GetTopLevelComponentsInChildrenOrdered<TLookFor, TStopAt>(root));
+                    componentsList.AddRange(
+                        child.gameObject.GetTopLevelComponentsInChildrenOrdered<TLookFor, TStopAt>(root));
             }
 
             return componentsList.ToArray();
@@ -780,19 +799,23 @@ namespace MetaverseCloudEngine.Unity
 #endif
         }
 
-        public static IEnumerable<Guid> GetMetaPrefabSpawnerIds(this GameObject gameObject, bool requireLoadOnStart = true, bool checkCanSpawn = true)
+        public static IEnumerable<Guid> GetMetaPrefabSpawnerIds(this GameObject gameObject,
+            bool requireLoadOnStart = true, bool checkCanSpawn = true)
         {
             return !gameObject
                 ? Array.Empty<Guid>()
-                : GetMetaPrefabSpawners(gameObject, requireLoadOnStart: requireLoadOnStart, checkCanSpawn: checkCanSpawn).Select(x => x.ID!.Value)
+                : GetMetaPrefabSpawners(gameObject, requireLoadOnStart: requireLoadOnStart,
+                        checkCanSpawn: checkCanSpawn).Select(x => x.ID!.Value)
                     .Distinct();
         }
 
-        public static IEnumerable<MetaPrefabSpawner> GetMetaPrefabSpawners(this GameObject gameObject, bool requireLoadOnStart = true, bool checkCanSpawn = true)
+        public static IEnumerable<MetaPrefabSpawner> GetMetaPrefabSpawners(this GameObject gameObject,
+            bool requireLoadOnStart = true, bool checkCanSpawn = true)
         {
             return gameObject
                 .GetComponentsInChildrenOrdered<MetaPrefabSpawner>()
-                .Where(x => x && x.ID.HasValue && (!requireLoadOnStart || x.spawnOnStart) && (!checkCanSpawn || x.HasSpawnAuthority()));
+                .Where(x => x && x.ID.HasValue && (!requireLoadOnStart || x.spawnOnStart) &&
+                            (!checkCanSpawn || x.HasSpawnAuthority()));
         }
 
         public static MetaSpace GetMetaSpace(this GameObject gameObject)
@@ -810,7 +833,8 @@ namespace MetaverseCloudEngine.Unity
                     .Any(x => x.gameObject == gameObject);
         }
 
-        public static AssetPlatformDocumentDto GetDocumentForCurrentPlatform(this IEnumerable<AssetPlatformDocumentDto> platforms)
+        public static AssetPlatformDocumentDto GetDocumentForCurrentPlatform(
+            this IEnumerable<AssetPlatformDocumentDto> platforms)
         {
             if (platforms is null)
                 return null;
@@ -822,12 +846,12 @@ namespace MetaverseCloudEngine.Unity
             var result = matchingPlatforms.FirstOrDefault();
             return result;
         }
-        
+
         public static MetaverseScript GetMetaverseScript(this GameObject gameObject)
         {
             return gameObject.GetComponent<MetaverseScript>();
         }
-        
+
         public static MetaverseScript GetMetaverseScript(this Component component)
         {
             return component.GetComponent<MetaverseScript>();
@@ -837,70 +861,86 @@ namespace MetaverseCloudEngine.Unity
         {
             return gameObject.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
         }
-        
+
         public static MetaverseScript GetMetaverseScript(this Component component, string name)
         {
             return component.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
         }
-        
+
         public static MetaverseScript[] GetMetaverseScripts(this GameObject gameObject, string name)
         {
             return gameObject.GetComponents<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
         }
-        
+
         public static MetaverseScript[] GetMetaverseScripts(this Component component, string name)
         {
             return component.GetComponents<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
         }
-        
-        public static MetaverseScript GetMetaverseScriptInParent(this GameObject gameObject, string name, bool includeInactive = false)
+
+        public static MetaverseScript GetMetaverseScriptInParent(this GameObject gameObject, string name,
+            bool includeInactive = false)
         {
             return gameObject.GetComponentInParent<MetaverseScript>(includeInactive);
         }
-        
-        public static MetaverseScript[] GetMetaverseScriptsInParent(this Component component, string name, bool includeInactive = false)
+
+        public static MetaverseScript[] GetMetaverseScriptsInParent(this Component component, string name,
+            bool includeInactive = false)
         {
-            return component.GetComponentsInParent<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
-        } 
-            
-        public static MetaverseScript[] GetMetaverseScriptsInParent(this GameObject gameObject, string name, bool includeInactive = false)
-        {
-            return gameObject.GetComponentsInParent<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+            return component.GetComponentsInParent<MetaverseScript>(includeInactive)
+                .Where(x => x.javascriptFile.name == name).ToArray();
         }
-        
-        public static MetaverseScript GetMetaverseScriptInChildren(this Component component, string name, bool includeInactive = false)
+
+        public static MetaverseScript[] GetMetaverseScriptsInParent(this GameObject gameObject, string name,
+            bool includeInactive = false)
         {
-            return component.GetComponentsInChildren<MetaverseScript>(includeInactive).FirstOrDefault(x => x.javascriptFile.name == name);
+            return gameObject.GetComponentsInParent<MetaverseScript>(includeInactive)
+                .Where(x => x.javascriptFile.name == name).ToArray();
         }
-        
-        public static MetaverseScript GetMetaverseScriptInChildren(this GameObject gameObject, string name, bool includeInactive = false)
+
+        public static MetaverseScript GetMetaverseScriptInChildren(this Component component, string name,
+            bool includeInactive = false)
         {
-            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive).FirstOrDefault(x => x.javascriptFile.name == name);
+            return component.GetComponentsInChildren<MetaverseScript>(includeInactive)
+                .FirstOrDefault(x => x.javascriptFile.name == name);
         }
-        
-        public static MetaverseScript[] GetMetaverseScriptsInChildren(this Component component, string name, bool includeInactive = false)
+
+        public static MetaverseScript GetMetaverseScriptInChildren(this GameObject gameObject, string name,
+            bool includeInactive = false)
         {
-            return component.GetComponentsInChildren<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive)
+                .FirstOrDefault(x => x.javascriptFile.name == name);
         }
-        
-        public static MetaverseScript[] GetMetaverseScriptsInChildren(this GameObject gameObject, string name, bool includeInactive = false)
+
+        public static MetaverseScript[] GetMetaverseScriptsInChildren(this Component component, string name,
+            bool includeInactive = false)
         {
-            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive).Where(x => x.javascriptFile.name == name).ToArray();
+            return component.GetComponentsInChildren<MetaverseScript>(includeInactive)
+                .Where(x => x.javascriptFile.name == name).ToArray();
         }
-        
-        public static MetaverseScript GetMetaverseScriptInParent(this Component component, string name, bool includeInactive = false)
+
+        public static MetaverseScript[] GetMetaverseScriptsInChildren(this GameObject gameObject, string name,
+            bool includeInactive = false)
+        {
+            return gameObject.GetComponentsInChildren<MetaverseScript>(includeInactive)
+                .Where(x => x.javascriptFile.name == name).ToArray();
+        }
+
+        public static MetaverseScript GetMetaverseScriptInParent(this Component component, string name,
+            bool includeInactive = false)
         {
             return component.GetComponentInParent<MetaverseScript>(includeInactive);
         }
-        
+
         public static MetaverseScript FindMetaverseScriptOfType(string name)
         {
-            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>().FirstOrDefault(x => x.javascriptFile.name == name);
+            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>()
+                .FirstOrDefault(x => x.javascriptFile.name == name);
         }
-        
+
         public static MetaverseScript[] FindMetaverseScriptsOfType(string name)
         {
-            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>().Where(x => x.javascriptFile.name == name).ToArray();
+            return UnityEngine.Object.FindObjectsOfType<MetaverseScript>().Where(x => x.javascriptFile.name == name)
+                .ToArray();
         }
 
         #endregion
@@ -974,7 +1014,8 @@ namespace MetaverseCloudEngine.Unity
 
         public static int ToArgb(this Color color)
         {
-            var sysColor = System.Drawing.Color.FromArgb((int)(color.a * 255), (int)(color.r * 255), (int)(color.g * 255), (int)(color.b * 255));
+            var sysColor = System.Drawing.Color.FromArgb((int)(color.a * 255), (int)(color.r * 255),
+                (int)(color.g * 255), (int)(color.b * 255));
             return sysColor.ToArgb();
         }
 
@@ -990,7 +1031,7 @@ namespace MetaverseCloudEngine.Unity
         {
             if (CachedFrameCount <= _isPointerOverUITime)
                 return _isPointerOverUICached;
-            
+
             _isPointerOverUITime = CachedFrameCount + IsPointerOverUIPerFrame;
 
             if (UnityEngine.Device.Application.isMobilePlatform)
@@ -1000,13 +1041,15 @@ namespace MetaverseCloudEngine.Unity
                 {
                     var touchPos = touch.position;
                     var hits = new List<RaycastResult>();
-                    EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = touchPos }, hits);
+                    EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = touchPos },
+                        hits);
                     _isPointerOverUICached = hits.Count > 0;
                 }
             }
             else
             {
-                _isPointerOverUICached = ((Func<bool>)(() => EventSystem.current && EventSystem.current.IsPointerOverGameObject()))();
+                _isPointerOverUICached =
+                    ((Func<bool>)(() => EventSystem.current && EventSystem.current.IsPointerOverGameObject()))();
             }
 
             return _isPointerOverUICached;
@@ -1018,9 +1061,9 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool IsUnityInputFieldFocused()
         {
-            if (CachedFrameCount <= _isUnityInputFieldFocusedTime) 
+            if (CachedFrameCount <= _isUnityInputFieldFocusedTime)
                 return _isUnityInputFieldFocusedCached;
-            
+
             _isUnityInputFieldFocusedTime = CachedFrameCount + IsUnityInputFieldFocusedPerFrame;
             _isUnityInputFieldFocusedCached = ((Func<bool>)(() =>
             {
@@ -1123,6 +1166,7 @@ namespace MetaverseCloudEngine.Unity
             return Array.Empty<T>();
 #endif
         }
+
         #endregion
 
         #region Maths
@@ -1177,7 +1221,8 @@ namespace MetaverseCloudEngine.Unity
             if (trs.Count == 1 && trs[0]) return trs[0].position;
             var result = Vector3.zero;
             for (var i = 0; i < trs.Count; i++)
-                if (trs[i]) result += trs[i].transform.position;
+                if (trs[i])
+                    result += trs[i].transform.position;
             return result / trs.Count;
         }
 
@@ -1186,7 +1231,8 @@ namespace MetaverseCloudEngine.Unity
             if (trs.Length == 1 && trs[0]) return trs[0].position;
             var result = Vector3.zero;
             for (var i = 0; i < trs.Length; i++)
-                if (trs[i]) result += trs[i].transform.position;
+                if (trs[i])
+                    result += trs[i].transform.position;
             return result / trs.Length;
         }
 
@@ -1195,7 +1241,8 @@ namespace MetaverseCloudEngine.Unity
             if (objects.Count == 1 && objects[0]) return objects[0].transform.position;
             var result = Vector3.zero;
             for (var i = 0; i < objects.Count; i++)
-                if (objects[i]) result += objects[i].transform.position;
+                if (objects[i])
+                    result += objects[i].transform.position;
             return result / objects.Count;
         }
 
@@ -1204,7 +1251,8 @@ namespace MetaverseCloudEngine.Unity
             if (objects.Length == 1 && objects[0]) return objects[0].transform.position;
             var result = Vector3.zero;
             for (var i = 0; i < objects.Length; i++)
-                if (objects[i]) result += objects[i].transform.position;
+                if (objects[i])
+                    result += objects[i].transform.position;
             return result / objects.Length;
         }
 
@@ -1238,7 +1286,7 @@ namespace MetaverseCloudEngine.Unity
         {
             return v.FlattenDirection(normal, normal);
         }
-        
+
         public static Bounds LocalBoundsToWorld(this GameObject gameObject, Bounds localBounds)
         {
             var bounds = new Bounds();
@@ -1318,7 +1366,8 @@ namespace MetaverseCloudEngine.Unity
             return bounds;
         }
 
-        public static void FocusOn(this Bounds bounds, Vector3 forward, float marginPercentage, float fieldOfView, out Vector3 outPosition)
+        public static void FocusOn(this Bounds bounds, Vector3 forward, float marginPercentage, float fieldOfView,
+            out Vector3 outPosition)
         {
             var maxExtent = bounds.extents.magnitude;
             var minDistance = (maxExtent * marginPercentage) / Mathf.Sin(Mathf.Deg2Rad * fieldOfView / 2f);
@@ -1331,8 +1380,10 @@ namespace MetaverseCloudEngine.Unity
             var outerBoundsMin = outerBounds.min;
             var innerBoundsMax = innerBounds.max;
             var innerBoundsMin = innerBounds.min;
-            return outerBoundsMax.x >= innerBoundsMax.x && outerBoundsMax.y >= innerBoundsMax.y && outerBoundsMax.z >= innerBoundsMax.z
-                && outerBoundsMin.x <= innerBoundsMin.x && outerBoundsMin.y <= innerBoundsMin.y && outerBoundsMin.z <= innerBoundsMin.z;
+            return outerBoundsMax.x >= innerBoundsMax.x && outerBoundsMax.y >= innerBoundsMax.y &&
+                   outerBoundsMax.z >= innerBoundsMax.z
+                   && outerBoundsMin.x <= innerBoundsMin.x && outerBoundsMin.y <= innerBoundsMin.y &&
+                   outerBoundsMin.z <= innerBoundsMin.z;
         }
 
         public static bool Contains(this Terrain terrain, Vector3 pos)
@@ -1374,7 +1425,7 @@ namespace MetaverseCloudEngine.Unity
             if (gcCollect) GC.Collect();
             if (delay) await UniTask.Yield();
         }
-        
+
         public static void DestroyOnCancel(this UnityEngine.Object obj, CancellationToken token)
         {
             token.Register(() => UnityEngine.Object.Destroy(obj));
@@ -1383,14 +1434,14 @@ namespace MetaverseCloudEngine.Unity
         #endregion
 
         #region Compatibility
-        
+
         private static AndroidJavaObject _usbManager;
 
         private static List<AndroidJavaObject> GetConnectedUsbDevices()
         {
             if (_usbManager is null)
                 return new List<AndroidJavaObject>();
-            
+
             var deviceList = _usbManager.Call<AndroidJavaObject>("getDeviceList"); // HashMap<String, UsbDevice>
             var deviceListValues = deviceList.Call<AndroidJavaObject>("values"); // Collection<UsbDevice>
             var deviceListIterator = deviceListValues.Call<AndroidJavaObject>("iterator"); // Iterator<UsbDevice>
@@ -1400,6 +1451,7 @@ namespace MetaverseCloudEngine.Unity
                 var device = deviceListIterator.Call<AndroidJavaObject>("next");
                 devices.Add(device);
             }
+
             return devices;
         }
 
@@ -1407,20 +1459,22 @@ namespace MetaverseCloudEngine.Unity
         {
             if (Application.platform != RuntimePlatform.Android)
                 return;
-            
+
             using var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
             var unityActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             _usbManager = unityActivity.Call<AndroidJavaObject>("getSystemService", "usb");
             var intent = new AndroidJavaObject("android.content.Intent", "com.ReachCloud.REACHExplorer.USB_PERMISSION");
             var flagImmutable = new AndroidJavaClass("android.app.PendingIntent").GetStatic<int>("FLAG_IMMUTABLE");
-            var permissionIntent = new AndroidJavaObject("android.app.PendingIntent").CallStatic<AndroidJavaObject>("getBroadcast", unityActivity, 0, intent, flagImmutable);
+            var permissionIntent =
+                new AndroidJavaObject("android.app.PendingIntent").CallStatic<AndroidJavaObject>("getBroadcast",
+                    unityActivity, 0, intent, flagImmutable);
 
             var connectedUsbDevices = GetConnectedUsbDevices();
             MetaverseProgram.Logger.Log("Found " + connectedUsbDevices.Count + " connected USB devices");
             foreach (var device in connectedUsbDevices)
             {
                 var hasPermission = _usbManager.Call<bool>("hasPermission", device);
-                if (hasPermission) 
+                if (hasPermission)
                     continue;
 
                 MetaverseProgram.Logger.Log("Requesting permission for USB device");
@@ -1504,17 +1558,268 @@ namespace MetaverseCloudEngine.Unity
 #endif
         }
 
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
+        
+        private static string WorldMapSavePath = Application.persistentDataPath + "/ARKitWorldMaps";
+        private static readonly HashSet<string> LockedWorldMaps = new HashSet<string>();
+        
+        public static void LoadArKitWorldMapAsync(
+            this UnityEngine.XR.ARFoundation.ARSession session, 
+            string key, 
+            Action<ARWorldMap> onLoaded,
+            Action<object> onFailed, 
+            CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (!session)
+            {
+                onFailed?.Invoke("No AR session found");
+                return;
+            }
+            
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (!session)
+                {
+                    onFailed?.Invoke("AR session destroyed");
+                    return;
+                }
+                
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+                
+                if (!ARKitSessionSubsystem.worldMapSupported)
+                {
+                    onFailed?.Invoke("World map not supported");
+                    return;
+                }
+                
+                if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
+                {
+                    onFailed?.Invoke("ARKit session subsystem not found");
+                    return;
+                }
+                
+                if (LockedWorldMaps.Contains(key))
+                {
+                    onFailed?.Invoke("World map is being saved");
+                    return;
+                }
+                
+                UniTask.Void(async c =>
+                {
+                    try
+                    {
+                        LockedWorldMaps.Add(key);
+
+                        byte[] data = null;
+                        try
+                        {
+                            await UniTask.SwitchToThreadPool();
+
+                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                            if (!File.Exists(path))
+                            {
+                                MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("World map not found"));
+                                return;
+                            }
+                        
+                            data = await File.ReadAllBytesAsync(path, c);
+                            await UniTask.SwitchToMainThread();
+                        }
+                        finally
+                        {
+                            LockedWorldMaps.Remove(key);
+                        }
+                        
+                        if (data == null)
+                        {
+                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Failed to read world map"));
+                            return;
+                        }
+                        
+                        var nativeArray = new NativeArray<byte>(data, Allocator.Temp);
+                        if (!ARWorldMap.TryDeserialize(nativeArray, out var map))
+                        {
+                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Failed to deserialize world map"));
+                            return;
+                        }
+                        
+                        if (!map.valid)
+                        {
+                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Invalid world map"));
+                            return;
+                        }
+
+                        if (!session)
+                        {
+                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("AR session destroyed"));
+                            return;
+                        }
+                        
+                        sessionSubsystem.ApplyWorldMap(map);
+                        MetaverseDispatcher.AtEndOfFrame(() => onLoaded?.Invoke(map));
+                    }
+                    catch (Exception e)
+                    {
+                        MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke(e));
+                    }
+                }, cancellationToken);
+            });
+        }
+
+        public static void SaveArKitWorldMapAsync(
+            this UnityEngine.XR.ARFoundation.ARSession session, 
+            string key, 
+            Action<ARWorldMap> onSaved,
+            Action<object> onFailed, 
+            CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return;
+
+            if (!session)
+            {
+                onFailed?.Invoke("No AR session found");
+                return;
+            }
+            
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (!session)
+                {
+                    onFailed?.Invoke("AR session destroyed");
+                    return;
+                }
+                
+                if (cancellationToken.IsCancellationRequested)
+                    return;
+                
+                if (!ARKitSessionSubsystem.worldMapSupported)
+                {
+                    onFailed?.Invoke("World map not supported");
+                    return;
+                }
+                
+                if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
+                {
+                    onFailed?.Invoke("ARKit session subsystem not found");
+                    return;
+                }
+            
+                LockedWorldMaps.Add(key);
+                
+                if (LockedWorldMaps.Contains(key))
+                {
+                    onFailed?.Invoke("World map is being saved");
+                    return;
+                }
+                
+                var cts = CancellationTokenSource.CreateLinkedTokenSource(session.destroyCancellationToken, cancellationToken);
+                cts.Token.Register(() =>
+                {
+                    if (cts == null) return;
+                    cts.Dispose();
+                    cts = null;
+                    MetaverseDispatcher.AtEndOfFrame(() =>
+                    {
+                        LockedWorldMaps.Remove(key);
+                        MetaverseProgram.Logger.Log($"Cancelled saving world map {key}");
+                        onFailed?.Invoke("Cancelled"); 
+                    });
+                });
+                
+                sessionSubsystem.GetARWorldMapAsync((r, map) =>
+                {
+                    if (!session)
+                    {
+                        if (cts == null) 
+                            return;
+                        cts.Dispose();
+                        cts = null;
+                        LockedWorldMaps.Remove(key);
+                        onFailed?.Invoke("AR session destroyed");
+                        return;
+                    }
+                    
+                    if (!map.valid || r != ARWorldMapRequestStatus.Success)
+                    {
+                        if (cts == null) 
+                            return;
+                        cts.Dispose();
+                        cts = null;
+                        LockedWorldMaps.Remove(key);
+                        onFailed?.Invoke($"Get world map failed: {r}");
+                        return;
+                    }
+                
+                    var data = map.Serialize(Allocator.Temp);
+                    onSaved += _ =>
+                    {
+                        if (!data.IsCreated) return;
+                        data.Dispose();
+                        data = default;
+                    };
+                    onFailed += _ =>
+                    {
+                        if (!data.IsCreated) return;
+                        data.Dispose();
+                        data = default;
+                    };
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                            Directory.CreateDirectory(WorldMapSavePath);
+                            await File.WriteAllBytesAsync(path, data.ToArray(), cts.Token);
+                            
+                            if (cts != null)
+                            {
+                                cts.Dispose();
+                                cts = null;
+                                MetaverseDispatcher.AtEndOfFrame(() =>
+                                {
+                                    LockedWorldMaps.Remove(key);
+                                    onSaved?.Invoke(map);
+                                });
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            if (cts != null)
+                            {
+                                cts.Dispose();
+                                cts = null;
+
+                                MetaverseDispatcher.AtEndOfFrame(() =>
+                                {
+                                    LockedWorldMaps.Remove(key);
+                                    onFailed?.Invoke(e);
+                                });
+                            }
+                        }
+                    
+                    }, cts.Token);
+                });
+            });
+        }
+#endif
+
         public static bool IsVRCompatible()
         {
 #if !GOOGLE_PLAY
 #if !UNITY_IOS
             if (!XRSettings.enabled)
                 return false;
-            if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings && XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
+            if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings &&
+                XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
                 return XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(x => x
-                    is OpenXRLoader
+                        is OpenXRLoader
 #if MV_OCULUS_PLUGIN
-                    or OculusLoader
+                        or OculusLoader
 #endif
                 );
 #endif
@@ -1528,9 +1833,9 @@ namespace MetaverseCloudEngine.Unity
 #if !UNITY_IOS
             if (!XRSettings.enabled)
                 return false;
-            
-            if (XRGeneralSettings.Instance && 
-                XRGeneralSettings.Instance.AssignedSettings && 
+
+            if (XRGeneralSettings.Instance &&
+                XRGeneralSettings.Instance.AssignedSettings &&
                 XRGeneralSettings.Instance.AssignedSettings.activeLoader != null)
             {
 #if MV_OCULUS_PLUGIN
@@ -1572,8 +1877,8 @@ namespace MetaverseCloudEngine.Unity
         {
             var isMobile = Application.isMobilePlatform;
 #if UNITY_EDITOR
-            isMobile = UnityEditor.EditorUserBuildSettings.activeBuildTarget is 
-                UnityEditor.BuildTarget.Android or 
+            isMobile = UnityEditor.EditorUserBuildSettings.activeBuildTarget is
+                UnityEditor.BuildTarget.Android or
                 UnityEditor.BuildTarget.iOS;
 #endif
             return Application.isMobilePlatform && IsVRCompatible();
@@ -1581,27 +1886,28 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool IsARCompatible()
         {
-            if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings && XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
+            if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings &&
+                XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
             {
 #if UNITY_ANDROID || UNITY_EDITOR
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARCoreLoader))
                     return true;
 #endif
-#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR) 
+#if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARKitLoader))
                     return true;
 #endif
             }
-            
+
             return false;
         }
 
         #endregion
 
         #region Threading
-        
+
         public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSource<bool>();
@@ -1611,14 +1917,15 @@ namespace MetaverseCloudEngine.Unity
             return await task;
         }
 
-        public static async Task<bool> AwaitSemaphore(SemaphoreSlim semaphore, int? timeout = null, CancellationToken cancellationToken = default)
+        public static async Task<bool> AwaitSemaphore(SemaphoreSlim semaphore, int? timeout = null,
+            CancellationToken cancellationToken = default)
         {
             // ReSharper disable MethodHasAsyncOverload
             try
             {
                 if (!MetaverseDispatcher.UseUniTaskThreading)
                     return await semaphore.WaitAsync(timeout ?? Timeout.Infinite, cancellationToken);
-                
+
                 if (timeout.HasValue)
                 {
                     var start = DateTime.UtcNow;
@@ -1686,10 +1993,10 @@ namespace MetaverseCloudEngine.Unity
 
                 key = trimmed.TrimStart('-');
             }
-            
+
             if (value.Count > 0 && !string.IsNullOrEmpty(key))
                 commandLineArgs[key] = string.Join(" ", value);
-            
+
             return commandLineArgs;
         }
 
@@ -1705,7 +2012,6 @@ namespace MetaverseCloudEngine.Unity
             return UnityEngine.Object.FindObjectsOfType<T>(includeInactive)
                 .Where(x => !x.GetComponentInParent<MetaPrefabPoolContainer>(true))
                 .ToArray();
-
         }
 
         public static bool IfNull<T>(this T o)
@@ -1748,7 +2054,8 @@ namespace MetaverseCloudEngine.Unity
             return copy;
         }
 
-        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> valueFactory)
+        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key,
+            Func<TKey, TValue> valueFactory)
         {
             if (dict.TryGetValue(key, out var value)) return value;
             value = valueFactory(key);
@@ -1756,13 +2063,17 @@ namespace MetaverseCloudEngine.Unity
             return value;
         }
 
-        public static Dictionary<HumanBodyBones, Transform> GetBones(this Animator animator, HumanBodyBones[] ignoredBones = null, HumanBodyBones[] specificBones = null)
+        public static Dictionary<HumanBodyBones, Transform> GetBones(this Animator animator,
+            HumanBodyBones[] ignoredBones = null, HumanBodyBones[] specificBones = null)
         {
             var ignoredBonesList = ignoredBones != null ? ignoredBones.ToList() : new List<HumanBodyBones>();
             var specificBonesList = specificBones != null ? specificBones.ToList() : new List<HumanBodyBones>();
             var dict = new Dictionary<HumanBodyBones, Transform>();
-            foreach (var boneType in ((HumanBodyBones[])Enum.GetValues(typeof(HumanBodyBones))).Where(x => x >= 0 && x < HumanBodyBones.LastBone))
-                if (animator.TryGet(out Transform bone, x => x.GetBoneTransform(boneType), y => y != null) && !ignoredBonesList.Contains(boneType) && (specificBonesList.Count == 0 || specificBonesList.Contains(boneType)))
+            foreach (var boneType in ((HumanBodyBones[])Enum.GetValues(typeof(HumanBodyBones))).Where(x =>
+                         x >= 0 && x < HumanBodyBones.LastBone))
+                if (animator.TryGet(out Transform bone, x => x.GetBoneTransform(boneType), y => y != null) &&
+                    !ignoredBonesList.Contains(boneType) &&
+                    (specificBonesList.Count == 0 || specificBonesList.Contains(boneType)))
                     dict[boneType] = bone;
             return dict;
         }
@@ -1796,6 +2107,7 @@ namespace MetaverseCloudEngine.Unity
                 index++;
                 f?.Invoke(o, index);
             }
+
             return enumerable;
         }
 
@@ -1805,7 +2117,8 @@ namespace MetaverseCloudEngine.Unity
             return o ? o : null;
         }
 
-        public static UniTask<IEnumerable<T>> ForEachPerFrame<T>(this IEnumerable<T> e, int perFrame, int frameDelay, Action<T> f, CancellationToken cancellationToken = default)
+        public static UniTask<IEnumerable<T>> ForEachPerFrame<T>(this IEnumerable<T> e, int perFrame, int frameDelay,
+            Action<T> f, CancellationToken cancellationToken = default)
         {
             return UniTask.Create(async () =>
             {
@@ -1835,7 +2148,8 @@ namespace MetaverseCloudEngine.Unity
             return f(o);
         }
 
-        public static Dictionary<TKey, TVal> Map<TKey, TVal>(this IEnumerable<TKey> keys, IEnumerable<TVal> values, Func<TKey, TVal, bool> selector)
+        public static Dictionary<TKey, TVal> Map<TKey, TVal>(this IEnumerable<TKey> keys, IEnumerable<TVal> values,
+            Func<TKey, TVal, bool> selector)
         {
             var dict = new Dictionary<TKey, TVal>();
             var valuesEnumerable = values as TVal[] ?? values.ToArray();
@@ -1843,7 +2157,7 @@ namespace MetaverseCloudEngine.Unity
             {
                 foreach (var val in valuesEnumerable)
                 {
-                    if (!selector(key, val)) 
+                    if (!selector(key, val))
                         continue;
                     dict[key] = val;
                     break;
@@ -1891,9 +2205,9 @@ namespace MetaverseCloudEngine.Unity
 
             public static CachedValues GetOrCreate()
             {
-                if (_created) 
+                if (_created)
                     return _current;
-                
+
                 if (!Application.isPlaying)
                     return null;
                 _created = true;
