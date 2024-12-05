@@ -1677,24 +1677,28 @@ namespace MetaverseCloudEngine.Unity
 
             sessionSubsystem.GetARWorldMapAsync(onComplete: (r, map) =>
             {
-                try
+                // This function returns in an async context, so we need to make sure we're on the main thread.
+                MetaverseDispatcher.AtEndOfFrame(() =>
                 {
-                    using var nativeData = map.Serialize(Allocator.Temp);
-                    if (!Directory.Exists(WorldMapSavePath))
-                        Directory.CreateDirectory(WorldMapSavePath);
-                    var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                    using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
-                    fs.Write(nativeData);
-                    onSaved?.Invoke(map);
-                }
-                catch (Exception e)
-                {
-                    onFailed?.Invoke(e);
-                }
-                finally
-                {
-                    MetaSpace.Instance.RemoveFromCache(key);
-                }
+                    try
+                    {
+                        using var nativeData = map.Serialize(Allocator.Temp);
+                        if (!Directory.Exists(WorldMapSavePath))
+                            Directory.CreateDirectory(WorldMapSavePath);
+                        var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                        using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                        fs.Write(nativeData);
+                        onSaved?.Invoke(map);
+                    }
+                    catch (Exception e)
+                    {
+                        onFailed?.Invoke(e);
+                    }
+                    finally
+                    {
+                        MetaSpace.Instance.RemoveFromCache(key);
+                    }
+                });
             });
         }
 #endif
