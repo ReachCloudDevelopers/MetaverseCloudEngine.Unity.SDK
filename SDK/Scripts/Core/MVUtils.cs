@@ -1570,98 +1570,69 @@ namespace MetaverseCloudEngine.Unity
             Action<object> onFailed, 
             CancellationToken cancellationToken = default)
         {
+            if (!MetaSpace.Instance)
+            {
+                onFailed?.Invoke("MetaSpace destroyed");
+                return;
+            }
+            
+            if (MetaSpace.Instance.TryGetCachedValue(key, out _))
+            {
+                MetaverseDispatcher.WaitForSeconds(1, () => LoadArKitWorldMapAsync(session, key, onLoaded, onFailed, cancellationToken));
+                return;
+            }
+            
             if (!session)
             {
                 onFailed?.Invoke("No AR session found");
                 return;
             }
             
-            MetaverseDispatcher.AtEndOfFrame(() =>
+            if (!ARKitSessionSubsystem.worldMapSupported)
             {
-                if (!MetaSpace.Instance)
+                onFailed?.Invoke("World map not supported");
+                return;
+            }
+            
+            if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
+            {
+                onFailed?.Invoke("ARKit session subsystem not found");
+                return;
+            }
+            
+            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+            if (!File.Exists(path))
+            {
+                onFailed?.Invoke("World map not found");
+                return;
+            }
+            
+            MetaSpace.Instance.SetCachedValue(key, null);
+            try
+            {
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+                using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
+                while (fs.Position < fs.Length)
                 {
-                    onFailed?.Invoke("MetaSpace destroyed");
+                    var read = fs.Read(nativeData);
+                    if (read == 0)
+                        break;
+                }
+
+                var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
+                if (worldMap.HasValue)
+                {
+                    sessionSubsystem.ApplyWorldMap(worldMap.Value);
+                    onLoaded?.Invoke(worldMap.Value);
                     return;
                 }
-                
-                if (!session)
-                {
-                    onFailed?.Invoke("AR session destroyed");
-                    return;
-                }
-                
-                if (!ARKitSessionSubsystem.worldMapSupported)
-                {
-                    onFailed?.Invoke("World map not supported");
-                    return;
-                }
-                
-                if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
-                {
-                    onFailed?.Invoke("ARKit session subsystem not found");
-                    return;
-                }
-                
-                if (MetaSpace.Instance.TryGetCachedValue(key, out _))
-                {
-                    onFailed?.Invoke("World map is locked");
-                    return;
-                }
-                
-                UniTask.Void(async () =>
-                {
-                    try
-                    {
-                        await UniTask.SwitchToMainThread();
-                        await UniTask.WaitUntil(() => !MetaSpace.Instance || !MetaSpace.Instance.TryGetCachedValue(key, out _), cancellationToken: cancellationToken);
 
-                        if (!MetaSpace.Instance)
-                        {
-                            onFailed?.Invoke("MetaSpace destroyed");
-                            return;
-                        }
-
-                        MetaSpace.Instance.SetCachedValue(key, null);
-
-                        try
-                        {
-                            await UniTask.SwitchToThreadPool();
-
-                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                            if (!File.Exists(path))
-                            {
-                                await UniTask.SwitchToMainThread();
-                                onFailed?.Invoke("World map not found");
-                                return;
-                            }
-                        
-                            var data = await File.ReadAllBytesAsync(path);
-                            await UniTask.SwitchToMainThread();
-                            
-                            using var nativeData = new NativeArray<byte>(data, Allocator.Temp);
-                            var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
-                            if (worldMap.HasValue)
-                            {
-                                sessionSubsystem.ApplyWorldMap(worldMap.Value);
-                                onLoaded?.Invoke(worldMap.Value);
-                                return;
-                            }
-                            
-                            onFailed?.Invoke("Failed to deserialize world map");
-                        }
-                        finally
-                        {
-                            await UniTask.SwitchToMainThread();
-
-                            MetaSpace.Instance.RemoveFromCache(key);
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        onFailed?.Invoke(e);
-                    }
-                });
-            });
+                onFailed?.Invoke("Failed to deserialize world map");
+            }
+            finally
+            {
+                MetaSpace.Instance.RemoveFromCache(key);
+            }
         }
 
         [UsedImplicitly]
@@ -1674,83 +1645,56 @@ namespace MetaverseCloudEngine.Unity
         {
             if (!session)
             {
-                onFailed?.Invoke("No AR session found");
+                onFailed?.Invoke("AR session destroyed");
                 return;
             }
             
-            MetaverseDispatcher.AtEndOfFrame(() =>
+            if (!MetaSpace.Instance)
             {
-                if (!session)
-                {
-                    onFailed?.Invoke("AR session destroyed");
-                    return;
-                }
-                
-                if (!ARKitSessionSubsystem.worldMapSupported)
-                {
-                    onFailed?.Invoke("World map not supported");
-                    return;
-                }
-                
-                if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
-                {
-                    onFailed?.Invoke("ARKit session subsystem not found");
-                    return;
-                }
+                onFailed?.Invoke("MetaSpace destroyed");
+                return;
+            }
             
-                if (MetaSpace.Instance.TryGetCachedValue(key, out _))
+            if (!ARKitSessionSubsystem.worldMapSupported)
+            {
+                onFailed?.Invoke("World map not supported");
+                return;
+            }
+            
+            if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
+            {
+                onFailed?.Invoke("ARKit session subsystem not found");
+                return;
+            }
+        
+            if (MetaSpace.Instance.TryGetCachedValue(key, out _))
+            {
+                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                return;
+            }
+            
+            MetaSpace.Instance.SetCachedValue(key, null);
+
+            sessionSubsystem.GetARWorldMapAsync(onComplete: (r, map) =>
+            {
+                try
                 {
-                    onFailed?.Invoke("World map is being saved");
-                    return;
+                    using var nativeData = map.Serialize(Allocator.Temp);
+                    if (!Directory.Exists(WorldMapSavePath))
+                        Directory.CreateDirectory(WorldMapSavePath);
+                    var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                    using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                    fs.Write(nativeData);
+                    onSaved?.Invoke(map);
                 }
-                
-                MetaSpace.Instance.SetCachedValue(key, null);
-
-                sessionSubsystem.GetARWorldMapAsync((r, map) =>
+                catch (Exception e)
                 {
-                    UniTask.Void(async () =>
-                    {
-                        try
-                        {
-                            await UniTask.SwitchToMainThread();
-                            await UniTask.WaitUntil(
-                                () => !MetaSpace.Instance || !MetaSpace.Instance.TryGetCachedValue(key, out _),
-                                cancellationToken: cancellationToken);
-
-                            var data = map.Serialize(Allocator.Temp);
-                            var dataArray = data.ToArray();
-                            
-                            try
-                            {
-                                await UniTask.SwitchToThreadPool();
-
-                                if (!Directory.Exists(WorldMapSavePath))
-                                    Directory.CreateDirectory(WorldMapSavePath);
-
-                                var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                                await File.WriteAllBytesAsync(path, dataArray);
-                                await UniTask.SwitchToMainThread();
-
-                                onSaved?.Invoke(map);
-                            }
-                            catch (Exception e)
-                            {
-                                await UniTask.SwitchToMainThread();
-                                onFailed?.Invoke(e);
-                            }
-                            finally
-                            {
-                                await UniTask.SwitchToMainThread();
-                                MetaSpace.Instance.RemoveFromCache(key);
-                            }
-                        }
-                        catch (Exception e)
-                        {
-                            await UniTask.SwitchToMainThread();
-                            onFailed?.Invoke(e);
-                        }
-                    });
-                });
+                    onFailed?.Invoke(e);
+                }
+                finally
+                {
+                    MetaSpace.Instance.RemoveFromCache(key);
+                }
             });
         }
 #endif
