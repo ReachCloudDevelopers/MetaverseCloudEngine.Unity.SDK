@@ -1610,18 +1610,22 @@ namespace MetaverseCloudEngine.Unity
             MetaSpace.Instance.SetCachedValue(key, null);
             try
             {
+                MetaverseProgram.Logger.Log("Loading world map from " + path + ". Opening FS...");
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+                using var ms = new MemoryStream();
+                fs.CopyTo(ms);
+                
+                MetaverseProgram.Logger.Log("Creating native array...");
                 using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
-                var read = fs.Read(nativeData);
-                if (read != fs.Length)
-                {
-                    onFailed?.Invoke("Failed to read world map");
-                    return;
-                }
+                
+                MetaverseProgram.Logger.Log("Reading world map...");
+                nativeData.CopyFrom(ms.GetBuffer());
 
+                MetaverseProgram.Logger.Log("Deserializing world map...");
                 var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
                 if (worldMap.HasValue)
                 {
+                    MetaverseProgram.Logger.Log("Applying world map...");
                     sessionSubsystem.ApplyWorldMap(worldMap.Value);
                     onLoaded?.Invoke(worldMap.Value);
                     return;
@@ -1669,8 +1673,7 @@ namespace MetaverseCloudEngine.Unity
         
             if (MetaSpace.Instance.TryGetCachedValue(key, out _))
             {
-                MetaverseDispatcher.WaitForSeconds(1, 
-                    () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
                 return;
             }
             
@@ -1678,24 +1681,28 @@ namespace MetaverseCloudEngine.Unity
 
             sessionSubsystem.GetARWorldMapAsync(onComplete: (r, map) =>
             {
-                try
+                // This function returns in an async context, so we need to make sure we're on the main thread.
+                MetaverseDispatcher.AtEndOfFrame(() =>
                 {
-                    using var nativeData = map.Serialize(Allocator.Temp);
-                    if (!Directory.Exists(WorldMapSavePath))
-                        Directory.CreateDirectory(WorldMapSavePath);
-                    var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                    using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
-                    fs.Write(nativeData);
-                    onSaved?.Invoke(map);
-                }
-                catch (Exception e)
-                {
-                    onFailed?.Invoke(e);
-                }
-                finally
-                {
-                    MetaSpace.Instance.RemoveFromCache(key);
-                }
+                    try
+                    {
+                        using var nativeData = map.Serialize(Allocator.Temp);
+                        if (!Directory.Exists(WorldMapSavePath))
+                            Directory.CreateDirectory(WorldMapSavePath);
+                        var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                        using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                        fs.Write(nativeData);
+                        onSaved?.Invoke(map);
+                    }
+                    catch (Exception e)
+                    {
+                        onFailed?.Invoke(e);
+                    }
+                    finally
+                    {
+                        MetaSpace.Instance.RemoveFromCache(key);
+                    }
+                });
             });
         }
 #endif
