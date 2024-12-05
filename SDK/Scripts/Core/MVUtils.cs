@@ -1610,13 +1610,20 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
                 
-                UniTask.Void(async c =>
+                UniTask.Void(async () =>
                 {
                     try
                     {
+                        await UniTask.SwitchToMainThread();
+                        
+                        await UniTask.WaitUntil(() => !LockedWorldMaps.Contains(key), cancellationToken: cancellationToken);
+                        
+                        if (cancellationToken.IsCancellationRequested)
+                            return;
+                        
                         LockedWorldMaps.Add(key);
 
-                        byte[] data = null;
+                        byte[] data;
                         try
                         {
                             await UniTask.SwitchToThreadPool();
@@ -1628,7 +1635,7 @@ namespace MetaverseCloudEngine.Unity
                                 return;
                             }
                         
-                            data = await File.ReadAllBytesAsync(path, c);
+                            data = await File.ReadAllBytesAsync(path, cancellationToken);
                             await UniTask.SwitchToMainThread();
                         }
                         finally
@@ -1668,7 +1675,7 @@ namespace MetaverseCloudEngine.Unity
                     {
                         MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke(e));
                     }
-                }, cancellationToken);
+                });
             });
         }
 
