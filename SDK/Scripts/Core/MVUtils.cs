@@ -1561,8 +1561,19 @@ namespace MetaverseCloudEngine.Unity
 
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
         
+        /// <summary>
+        /// The path to save ARKit world maps to.
+        /// </summary>
         private static string WorldMapSavePath => Application.persistentDataPath + "/ARKitWorldMaps";
         
+        /// <summary>
+        /// Loads an ARKit world map from the device.
+        /// </summary>
+        /// <param name="session">The AR session to load the world map into.</param>
+        /// <param name="key">The key to load the world map under.</param>
+        /// <param name="onLoaded">Invoked when the world map has been loaded.</param>
+        /// <param name="onFailed">Invoked when the world map failed to load.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         [UsedImplicitly]
         public static void LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
@@ -1646,6 +1657,14 @@ namespace MetaverseCloudEngine.Unity
             }
         }
 
+        /// <summary>
+        /// Saves an ARKit world map to the device.
+        /// </summary>
+        /// <param name="session">The AR session to save the world map from.</param>
+        /// <param name="key">The key to save the world map under.</param>
+        /// <param name="onSaved">Invoked when the world map has been saved.</param>
+        /// <param name="onFailed">Invoked when the world map failed to save.</param>
+        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
         [UsedImplicitly]
         public static void SaveArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
@@ -1717,6 +1736,17 @@ namespace MetaverseCloudEngine.Unity
                     }
                 });
             });
+        }
+        
+        /// <summary>
+        /// Deletes an ARKit world map from the device.
+        /// </summary>
+        /// <param name="key">The key of the world map to delete.</param>
+        public static void DeleteArKitWorldMap(string key)
+        {
+            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+            if (File.Exists(path))
+                File.Delete(path);
         }
 #endif
 
