@@ -1656,20 +1656,25 @@ namespace MetaverseCloudEngine.Unity
                             return;
                         }
                         
-                        if (!map.valid)
+                        MetaverseDispatcher.AtEndOfFrame(() =>
                         {
-                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Invalid world map"));
-                            return;
-                        }
-
-                        if (!session)
-                        {
-                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("AR session destroyed"));
-                            return;
-                        }
-                        
-                        sessionSubsystem.ApplyWorldMap(map);
-                        MetaverseDispatcher.AtEndOfFrame(() => onLoaded?.Invoke(map));
+                            if (!map.valid)
+                            {
+                                map.Dispose();
+                                onFailed?.Invoke("Invalid world map");
+                                return;
+                            }
+                            
+                            if (!session)
+                            {
+                                map.Dispose();
+                                onFailed?.Invoke("AR session destroyed");
+                                return;
+                            }
+                            
+                            sessionSubsystem.ApplyWorldMap(map);
+                            onLoaded?.Invoke(map);
+                        });
                     }
                     catch (Exception e)
                     {
