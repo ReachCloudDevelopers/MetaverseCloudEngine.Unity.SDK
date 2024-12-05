@@ -1562,8 +1562,6 @@ namespace MetaverseCloudEngine.Unity
         
         private static string WorldMapSavePath => Application.persistentDataPath + "/ARKitWorldMaps";
         
-        private static readonly HashSet<string> LockedWorldMaps = new();
-        
         [UsedImplicitly]
         public static void LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
@@ -1572,9 +1570,6 @@ namespace MetaverseCloudEngine.Unity
             Action<object> onFailed, 
             CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
             if (!session)
             {
                 onFailed?.Invoke("No AR session found");
@@ -1583,14 +1578,17 @@ namespace MetaverseCloudEngine.Unity
             
             MetaverseDispatcher.AtEndOfFrame(() =>
             {
+                if (!MetaSpace.Instance)
+                {
+                    onFailed?.Invoke("MetaSpace destroyed");
+                    return;
+                }
+                
                 if (!session)
                 {
                     onFailed?.Invoke("AR session destroyed");
                     return;
                 }
-                
-                if (cancellationToken.IsCancellationRequested)
-                    return;
                 
                 if (!ARKitSessionSubsystem.worldMapSupported)
                 {
@@ -1604,9 +1602,9 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
                 
-                if (LockedWorldMaps.Contains(key))
+                if (MetaSpace.Instance.TryGetCachedValue(key, out _))
                 {
-                    onFailed?.Invoke("World map is being saved");
+                    onFailed?.Invoke("World map is locked");
                     return;
                 }
                 
@@ -1615,15 +1613,16 @@ namespace MetaverseCloudEngine.Unity
                     try
                     {
                         await UniTask.SwitchToMainThread();
-                        
-                        await UniTask.WaitUntil(() => !LockedWorldMaps.Contains(key), cancellationToken: cancellationToken);
-                        
-                        if (cancellationToken.IsCancellationRequested)
-                            return;
-                        
-                        LockedWorldMaps.Add(key);
+                        await UniTask.WaitUntil(() => !MetaSpace.Instance || !MetaSpace.Instance.TryGetCachedValue(key, out _), cancellationToken: cancellationToken);
 
-                        byte[] data;
+                        if (!MetaSpace.Instance)
+                        {
+                            onFailed?.Invoke("MetaSpace destroyed");
+                            return;
+                        }
+
+                        MetaSpace.Instance.SetCachedValue(key, null);
+
                         try
                         {
                             await UniTask.SwitchToThreadPool();
@@ -1631,54 +1630,35 @@ namespace MetaverseCloudEngine.Unity
                             var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
                             if (!File.Exists(path))
                             {
-                                MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("World map not found"));
+                                await UniTask.SwitchToMainThread();
+                                onFailed?.Invoke("World map not found");
                                 return;
                             }
                         
-                            data = await File.ReadAllBytesAsync(path, cancellationToken);
+                            var data = await File.ReadAllBytesAsync(path);
                             await UniTask.SwitchToMainThread();
+                            
+                            using var nativeData = new NativeArray<byte>(data, Allocator.Temp);
+                            var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
+                            if (worldMap.HasValue)
+                            {
+                                sessionSubsystem.ApplyWorldMap(worldMap.Value);
+                                onLoaded?.Invoke(worldMap.Value);
+                                return;
+                            }
+                            
+                            onFailed?.Invoke("Failed to deserialize world map");
                         }
                         finally
                         {
-                            LockedWorldMaps.Remove(key);
+                            await UniTask.SwitchToMainThread();
+
+                            MetaSpace.Instance.RemoveFromCache(key);
                         }
-                        
-                        if (data == null)
-                        {
-                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Failed to read world map"));
-                            return;
-                        }
-                        
-                        using var nativeArray = new NativeArray<byte>(data, Allocator.Temp);
-                        if (!ARWorldMap.TryDeserialize(nativeArray, out var map))
-                        {
-                            MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Failed to deserialize world map"));
-                            return;
-                        }
-                        
-                        MetaverseDispatcher.AtEndOfFrame(() =>
-                        {
-                            if (!map.valid)
-                            {
-                                map.Dispose();
-                                onFailed?.Invoke("Invalid world map");
-                                return;
-                            }
-                            
-                            if (!session)
-                            {
-                                map.Dispose();
-                                onFailed?.Invoke("AR session destroyed");
-                                return;
-                            }
-                            
-                            sessionSubsystem.ApplyWorldMap(map);
-                            onLoaded?.Invoke(map);
-                        });
                     }
                     catch (Exception e)
                     {
-                        MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke(e));
+                        onFailed?.Invoke(e);
                     }
                 });
             });
@@ -1692,9 +1672,6 @@ namespace MetaverseCloudEngine.Unity
             Action<object> onFailed, 
             CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return;
-
             if (!session)
             {
                 onFailed?.Invoke("No AR session found");
@@ -1709,9 +1686,6 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
                 
-                if (cancellationToken.IsCancellationRequested)
-                    return;
-                
                 if (!ARKitSessionSubsystem.worldMapSupported)
                 {
                     onFailed?.Invoke("World map not supported");
@@ -1724,98 +1698,58 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
             
-                if (!LockedWorldMaps.Add(key))
+                if (MetaSpace.Instance.TryGetCachedValue(key, out _))
                 {
                     onFailed?.Invoke("World map is being saved");
                     return;
                 }
-
-                var cts = CancellationTokenSource.CreateLinkedTokenSource(session.destroyCancellationToken, cancellationToken);
-                cts.Token.Register(() =>
-                {
-                    if (cts == null) return;
-                    cts.Dispose();
-                    cts = null;
-                    MetaverseDispatcher.AtEndOfFrame(() =>
-                    {
-                        LockedWorldMaps.Remove(key);
-                        MetaverseProgram.Logger.Log($"Cancelled saving world map {key}");
-                        onFailed?.Invoke("Cancelled"); 
-                    });
-                });
                 
+                MetaSpace.Instance.SetCachedValue(key, null);
+
                 sessionSubsystem.GetARWorldMapAsync((r, map) =>
                 {
-                    if (!session)
-                    {
-                        if (cts == null) 
-                            return;
-                        cts.Dispose();
-                        cts = null;
-                        LockedWorldMaps.Remove(key);
-                        onFailed?.Invoke("AR session destroyed");
-                        return;
-                    }
-                    
-                    if (!map.valid || r != ARWorldMapRequestStatus.Success)
-                    {
-                        if (cts == null) 
-                            return;
-                        cts.Dispose();
-                        cts = null;
-                        LockedWorldMaps.Remove(key);
-                        onFailed?.Invoke($"Get world map failed: {r}");
-                        return;
-                    }
-                
-                    var data = map.Serialize(Allocator.Temp);
-                    onSaved += _ =>
-                    {
-                        if (!data.IsCreated) return;
-                        data.Dispose();
-                        data = default;
-                    };
-                    onFailed += _ =>
-                    {
-                        if (!data.IsCreated) return;
-                        data.Dispose();
-                        data = default;
-                    };
-                    Task.Run(async () =>
+                    UniTask.Void(async () =>
                     {
                         try
                         {
-                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                            Directory.CreateDirectory(WorldMapSavePath);
-                            await File.WriteAllBytesAsync(path, data.ToArray(), cts.Token);
+                            await UniTask.SwitchToMainThread();
+                            await UniTask.WaitUntil(
+                                () => !MetaSpace.Instance || !MetaSpace.Instance.TryGetCachedValue(key, out _),
+                                cancellationToken: cancellationToken);
+
+                            var data = map.Serialize(Allocator.Temp);
+                            var dataArray = data.ToArray();
                             
-                            if (cts != null)
+                            try
                             {
-                                cts.Dispose();
-                                cts = null;
-                                MetaverseDispatcher.AtEndOfFrame(() =>
-                                {
-                                    LockedWorldMaps.Remove(key);
-                                    onSaved?.Invoke(map);
-                                });
+                                await UniTask.SwitchToThreadPool();
+
+                                if (!Directory.Exists(WorldMapSavePath))
+                                    Directory.CreateDirectory(WorldMapSavePath);
+
+                                var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                                await File.WriteAllBytesAsync(path, dataArray);
+                                await UniTask.SwitchToMainThread();
+
+                                onSaved?.Invoke(map);
+                            }
+                            catch (Exception e)
+                            {
+                                await UniTask.SwitchToMainThread();
+                                onFailed?.Invoke(e);
+                            }
+                            finally
+                            {
+                                await UniTask.SwitchToMainThread();
+                                MetaSpace.Instance.RemoveFromCache(key);
                             }
                         }
                         catch (Exception e)
                         {
-                            if (cts != null)
-                            {
-                                cts.Dispose();
-                                cts = null;
-
-                                MetaverseDispatcher.AtEndOfFrame(() =>
-                                {
-                                    LockedWorldMaps.Remove(key);
-                                    onFailed?.Invoke(e);
-                                });
-                            }
+                            await UniTask.SwitchToMainThread();
+                            onFailed?.Invoke(e);
                         }
-                    
-                    }, cts.Token);
+                    });
                 });
             });
         }
