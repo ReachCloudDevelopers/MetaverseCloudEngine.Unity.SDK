@@ -1560,7 +1560,7 @@ namespace MetaverseCloudEngine.Unity
 
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
         
-        private static string WorldMapSavePath = Application.persistentDataPath + "/ARKitWorldMaps";
+        private static string WorldMapSavePath => Application.persistentDataPath + "/ARKitWorldMaps";
         private static readonly HashSet<string> LockedWorldMaps = new HashSet<string>();
         
         public static void LoadArKitWorldMapAsync(
