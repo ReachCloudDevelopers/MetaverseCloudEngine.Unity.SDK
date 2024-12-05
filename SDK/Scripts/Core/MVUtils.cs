@@ -1612,11 +1612,11 @@ namespace MetaverseCloudEngine.Unity
             {
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
                 using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
-                while (fs.Position < fs.Length)
+                var read = fs.Read(nativeData);
+                if (read != fs.Length)
                 {
-                    var read = fs.Read(nativeData);
-                    if (read == 0)
-                        break;
+                    onFailed?.Invoke("Failed to read world map");
+                    return;
                 }
 
                 var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
