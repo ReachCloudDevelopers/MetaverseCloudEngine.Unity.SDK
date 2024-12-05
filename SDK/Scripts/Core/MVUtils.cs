@@ -31,6 +31,7 @@ using UnityEngine.InputSystem;
 using Bounds = UnityEngine.Bounds;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using UnityEngine.XR;
+using UnityEngine.XR.ARSubsystems;
 
 #if MV_XR_MANAGEMENT
 using UnityEngine.XR.Management;
@@ -1597,6 +1598,12 @@ namespace MetaverseCloudEngine.Unity
             if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
             {
                 onFailed?.Invoke("ARKit session subsystem not found");
+                return;
+            }
+
+            if (sessionSubsystem.trackingState == TrackingState.None)
+            {
+                MetaverseDispatcher.WaitForSeconds(1, () => LoadArKitWorldMapAsync(session, key, onLoaded, onFailed, cancellationToken));
                 return;
             }
             
