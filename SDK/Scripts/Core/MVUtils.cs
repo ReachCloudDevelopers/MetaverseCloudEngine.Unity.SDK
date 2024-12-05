@@ -1649,7 +1649,7 @@ namespace MetaverseCloudEngine.Unity
                             return;
                         }
                         
-                        var nativeArray = new NativeArray<byte>(data, Allocator.Temp);
+                        using var nativeArray = new NativeArray<byte>(data, Allocator.Temp);
                         if (!ARWorldMap.TryDeserialize(nativeArray, out var map))
                         {
                             MetaverseDispatcher.AtEndOfFrame(() => onFailed?.Invoke("Failed to deserialize world map"));
@@ -1724,14 +1724,12 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
             
-                LockedWorldMaps.Add(key);
-                
-                if (LockedWorldMaps.Contains(key))
+                if (!LockedWorldMaps.Add(key))
                 {
                     onFailed?.Invoke("World map is being saved");
                     return;
                 }
-                
+
                 var cts = CancellationTokenSource.CreateLinkedTokenSource(session.destroyCancellationToken, cancellationToken);
                 cts.Token.Register(() =>
                 {
