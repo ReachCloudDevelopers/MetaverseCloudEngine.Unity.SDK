@@ -962,7 +962,7 @@ namespace MetaverseCloudEngine.Unity
                 age.Days > 0 ? (age.Days + " day(s)" + (pastTense ? " ago" : "")) :
                 age.Hours > 0 ? (age.Hours + " hour(s)" + (pastTense ? " ago" : "")) :
                 age.Minutes > 1 ? (age.Minutes + " minute(s)" + (pastTense ? " ago" : "")) :
-                (pastTense ? "Just now" : "Now");
+                (pastTense ? "Just now" : "Less than a minute");
         }
 
         public static string ToYouTubeStyleFormatString(this int number)
@@ -1693,6 +1693,12 @@ namespace MetaverseCloudEngine.Unity
                 {
                     try
                     {
+                        if (r != ARWorldMapRequestStatus.Success)
+                        {
+                            onFailed?.Invoke(r);
+                            return;
+                        }
+                        
                         using var nativeData = map.Serialize(Allocator.Temp);
                         if (!Directory.Exists(WorldMapSavePath))
                             Directory.CreateDirectory(WorldMapSavePath);
