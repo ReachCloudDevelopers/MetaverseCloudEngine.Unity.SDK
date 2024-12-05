@@ -1669,7 +1669,8 @@ namespace MetaverseCloudEngine.Unity
         
             if (MetaSpace.Instance.TryGetCachedValue(key, out _))
             {
-                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                MetaverseDispatcher.WaitForSeconds(1, 
+                    () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
                 return;
             }
             
@@ -1677,28 +1678,24 @@ namespace MetaverseCloudEngine.Unity
 
             sessionSubsystem.GetARWorldMapAsync(onComplete: (r, map) =>
             {
-                // This function returns in an async context, so we need to make sure we're on the main thread.
-                MetaverseDispatcher.AtEndOfFrame(() =>
+                try
                 {
-                    try
-                    {
-                        using var nativeData = map.Serialize(Allocator.Temp);
-                        if (!Directory.Exists(WorldMapSavePath))
-                            Directory.CreateDirectory(WorldMapSavePath);
-                        var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                        using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
-                        fs.Write(nativeData);
-                        onSaved?.Invoke(map);
-                    }
-                    catch (Exception e)
-                    {
-                        onFailed?.Invoke(e);
-                    }
-                    finally
-                    {
-                        MetaSpace.Instance.RemoveFromCache(key);
-                    }
-                });
+                    using var nativeData = map.Serialize(Allocator.Temp);
+                    if (!Directory.Exists(WorldMapSavePath))
+                        Directory.CreateDirectory(WorldMapSavePath);
+                    var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                    using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                    fs.Write(nativeData);
+                    onSaved?.Invoke(map);
+                }
+                catch (Exception e)
+                {
+                    onFailed?.Invoke(e);
+                }
+                finally
+                {
+                    MetaSpace.Instance.RemoveFromCache(key);
+                }
             });
         }
 #endif
