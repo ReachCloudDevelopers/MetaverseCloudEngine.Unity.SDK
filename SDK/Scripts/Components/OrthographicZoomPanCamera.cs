@@ -1,4 +1,4 @@
-﻿using TriInspectorMVCE;
+using TriInspectorMVCE;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Components
@@ -21,14 +21,10 @@ namespace MetaverseCloudEngine.Unity.Components
         [SerializeField] private float m_PanSpeed = 1f;
         [Range(0, 2)]
         [SerializeField] private int m_PanMouseButton = 1;
-        
-        private float m_LastPinchDistance;
+
         private Vector2 m_LastTouchPosition;
         private bool m_Initiated;
-        
-        /// <summary>
-        /// The camera that will be used for zooming and panning.
-        /// </summary>
+
         public Camera Camera
         {
             get => m_Camera;
@@ -59,80 +55,92 @@ namespace MetaverseCloudEngine.Unity.Components
 
             if (!UnityEngine.Device.Application.isMobilePlatform)
             {
-                var isOverUI = MVUtils.IsPointerOverUI();
-                if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
-                    m_Initiated = true;
-                if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
-                {
-                    var pan = new Vector3(
-                        Input.GetAxis("Mouse X"), 
-                        Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
-                    pan = m_Camera.transform.rotation * pan * Time.deltaTime;
-                    m_Camera.transform.position -= pan;
-                }
-                if (Input.GetMouseButtonUp(m_PanMouseButton))
-                    m_Initiated = false;
-
-                if (Input.mouseScrollDelta.y != 0 && (!isOverUI || m_Initiated))
-                    m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - Input.mouseScrollDelta.y * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
-                return;
+                HandleMouseInput();
             }
-            
+            else
+            {
+                HandleTouchInput();
+            }
+        }
+
+        private void HandleMouseInput()
+        {
+            var isOverUI = MVUtils.IsPointerOverUI();
+            if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
+                m_Initiated = true;
+
+            if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
+            {
+                Vector3 pan = new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                pan = m_Camera.transform.rotation * pan;
+                m_Camera.transform.position -= pan;
+            }
+
+            if (Input.GetMouseButtonUp(m_PanMouseButton))
+                m_Initiated = false;
+
+            if (Input.mouseScrollDelta.y != 0 && (!isOverUI || m_Initiated))
+                m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - Input.mouseScrollDelta.y * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
+        }
+
+        private void HandleTouchInput()
+        {
             switch (Input.touchCount)
             {
                 case 1:
-                {
-                    var touch = Input.GetTouch(0);
-                    switch (touch.phase)
-                    {
-                        case TouchPhase.Began:
-                            m_LastTouchPosition = touch.position;
-                            m_Initiated = !MVUtils.IsPointerOverUI();
-                            break;
-                        case TouchPhase.Moved when m_Initiated:
-                            var pan = new Vector3(
-                                touch.position.x - m_LastTouchPosition.x,
-                                touch.position.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * m_PanSpeed);
-                            pan = m_Camera.transform.rotation * pan * Time.deltaTime;
-                            m_Camera.transform.position -= pan;
-                            break;
-                        case TouchPhase.Ended:
-                            m_Initiated = false;
-                            break;
-                    }
-
-                    m_LastTouchPosition = touch.position;
+                    HandleSingleTouch();
                     break;
-                }
                 case 2:
-                {
-                    var touch0 = Input.GetTouch(0);
-                    var touch1 = Input.GetTouch(1);
-                    var pinchDistance = Vector2.Distance(touch0.position, touch1.position);
-                
-                    if ((touch1.phase == TouchPhase.Began ||
-                         touch0.phase == TouchPhase.Began) && !m_Initiated)
-                    {
-                        m_LastPinchDistance = pinchDistance;
-                        m_Initiated = !MVUtils.IsPointerOverUI();
-                    }
-                
-                    if (touch0.phase == TouchPhase.Ended ||
-                        touch1.phase == TouchPhase.Ended)
-                    {
-                        m_Initiated = false;
-                        return;
-                    }
-                
-                    if (m_LastPinchDistance != 0 && (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved) && m_Initiated)
-                        m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - (pinchDistance - m_LastPinchDistance) * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
-                
-                    m_LastPinchDistance = pinchDistance;
+                    HandlePinchToZoom();
                     break;
-                }
                 default:
                     m_Initiated = false;
                     break;
+            }
+        }
+
+        private void HandleSingleTouch()
+        {
+            var touch = Input.GetTouch(0);
+            switch (touch.phase)
+            {
+                case TouchPhase.Began:
+                    m_LastTouchPosition = touch.position;
+                    m_Initiated = !MVUtils.IsPointerOverUI();
+                    break;
+
+                case TouchPhase.Moved when m_Initiated:
+                    Vector3 pan = new Vector3(
+                        touch.position.x - m_LastTouchPosition.x,
+                        touch.position.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                    pan = m_Camera.transform.rotation * pan;
+                    m_Camera.transform.position -= pan;
+                    m_LastTouchPosition = touch.position;
+                    break;
+
+                case TouchPhase.Ended:
+                    m_Initiated = false;
+                    break;
+            }
+        }
+
+        private void HandlePinchToZoom()
+        {
+            var touch0 = Input.GetTouch(0);
+            var touch1 = Input.GetTouch(1);
+            var pinchDistance = Vector2.Distance(touch0.position, touch1.position);
+
+            if (touch1.phase == TouchPhase.Began || touch0.phase == TouchPhase.Began)
+            {
+                m_LastTouchPosition = Vector2.zero;
+                m_Initiated = !MVUtils.IsPointerOverUI();
+                return;
+            }
+
+            if (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved)
+            {
+                float delta = (Vector2.Distance(touch0.position, touch1.position) - pinchDistance) * m_ZoomSpeed;
+                m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - delta, m_MinZoom, m_MaxZoom);
             }
         }
     }
