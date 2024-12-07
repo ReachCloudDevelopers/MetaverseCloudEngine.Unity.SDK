@@ -1,4 +1,6 @@
-﻿using System;
+﻿
+#if MV_XR_TOOLKIT
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Collections;
@@ -1670,3 +1672,38 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         #endregion
     }
 }
+#elif UNITY_EDITOR
+using System;
+using JetBrains.Annotations;
+using MetaverseCloudEngine.Unity.UI;
+using TriInspectorMVCE;
+using UnityEditor;
+using UnityEditor.PackageManager;
+
+namespace MetaverseCloudEngine.Unity.XR.Components
+{
+    [HideMonoScript]
+    public class MetaverseInteractable : TriInspectorMonoBehaviour
+    {
+        private void Awake()
+        {
+            EditorCompatibilityError.For(gameObject, "com.unity.xr.interaction.toolkit", destroyCancellationToken);
+        }
+
+        [UsedImplicitly]
+        [InfoBox("This component requires XR Interaction Toolkit to be installed.", TriMessageType.Error)]
+        [Button("Install XR Interaction Toolkit")]
+        public void InstallXRInteractionToolkit()
+        {
+            if (!EditorUtility.DisplayDialog("Install XR Interaction Toolkit", "This will install the XR Interaction Toolkit package. Do you want to continue?", "Yes", "No"))
+                return;
+            var req = Client.Add("com.unity.xr.interaction.toolkit");
+            while (!req.IsCompleted)
+            {
+                EditorUtility.DisplayProgressBar("Installing XR Interaction Toolkit", "Please wait...", 0);
+                Thread.Sleep(100);
+            }
+        }
+    }
+}
+#endif

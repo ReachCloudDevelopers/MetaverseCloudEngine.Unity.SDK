@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnityEditor;
+#pragma warning disable CS0219 // Variable is assigned but its value is never used
 
 namespace MetaverseCloudEngine.Unity.Editors
 {

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿#if MV_XR_TOOLKIT
+using System.Linq;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
@@ -154,3 +155,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         }
     }
 }
+#endif

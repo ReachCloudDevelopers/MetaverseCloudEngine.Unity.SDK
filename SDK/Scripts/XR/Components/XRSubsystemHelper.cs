@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if MV_XR_MANAGEMENT
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
@@ -12,3 +13,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         public void StopXR() => XRSubsystemAPI.StopXR();
     }
 }
+#endif

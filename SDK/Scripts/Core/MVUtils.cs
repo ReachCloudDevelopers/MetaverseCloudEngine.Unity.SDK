@@ -31,20 +31,22 @@ using UnityEngine.InputSystem;
 using Bounds = UnityEngine.Bounds;
 using MethodAttributes = System.Reflection.MethodAttributes;
 using UnityEngine.XR;
+#if MV_UNITY_AR_FOUNDATION
 using UnityEngine.XR.ARSubsystems;
+#endif
 
 #if MV_XR_MANAGEMENT
 using UnityEngine.XR.Management;
 #endif
 
-#if UNITY_ANDROID || UNITY_EDITOR
+#if (UNITY_ANDROID || UNITY_EDITOR) && MV_UNITY_AR_CORE
 using UnityEngine.XR.ARCore;
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
 using UnityEngine.XR.ARKit;
 #endif
 
-#if !GOOGLE_PLAY
+#if !GOOGLE_PLAY && MV_OPENXR
 using UnityEngine.XR.OpenXR;
 
 #if MV_OCULUS_PLUGIN || !UNITY_2022_2_OR_NEWER
@@ -1485,7 +1487,7 @@ namespace MetaverseCloudEngine.Unity
 
         internal static void UpgradeAllLoadedFontsForUnity6000()
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             var defaultFont = Resources.Load<TMP_FontAsset>(MetaverseConstants.Resources.DefaultFont);
             var allTextResources = Resources.FindObjectsOfTypeAll<TMP_Text>();
             foreach (var tmpText in allTextResources)
@@ -1507,7 +1509,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static Vector3 GetLinearVelocity(this Rigidbody rigidbody)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             return rigidbody.linearVelocity;
 #else
             return rigidbody.velocity;
@@ -1516,7 +1518,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static void SetLinearVelocity(this Rigidbody rigidbody, Vector3 velocity)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             rigidbody.linearVelocity = velocity;
 #else
             rigidbody.velocity = velocity;
@@ -1525,7 +1527,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static float GetLinearDamping(this Rigidbody rigidbody)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             return rigidbody.linearDamping;
 #else
             return rigidbody.drag;
@@ -1534,7 +1536,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static void SetLinearDamping(this Rigidbody rigidbody, float damping)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             rigidbody.linearDamping = damping;
 #else
             rigidbody.drag = damping;
@@ -1543,7 +1545,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static float GetAngularDamping(this Rigidbody rigidbody)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             return rigidbody.angularDamping;
 #else
             return rigidbody.angularDrag;
@@ -1552,7 +1554,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static void SetAngularDamping(this Rigidbody rigidbody, float damping)
         {
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
             rigidbody.angularDamping = damping;
 #else
             rigidbody.angularDrag = damping;
@@ -1752,7 +1754,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool IsVRCompatible()
         {
-#if !GOOGLE_PLAY
+#if !GOOGLE_PLAY && MV_XR_MANAGEMENT
 #if !UNITY_IOS
             if (!XRSettings.enabled)
                 return false;
@@ -1771,7 +1773,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool IsOculusPlatform()
         {
-#if !GOOGLE_PLAY
+#if !GOOGLE_PLAY && MV_XR_MANAGEMENT
 #if !UNITY_IOS
             if (!XRSettings.enabled)
                 return false;
@@ -1828,6 +1830,7 @@ namespace MetaverseCloudEngine.Unity
 
         public static bool IsARCompatible()
         {
+#if MV_XR_MANAGEMENT
             if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings &&
                 XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
             {
@@ -1842,7 +1845,7 @@ namespace MetaverseCloudEngine.Unity
                     return true;
 #endif
             }
-
+#endif
             return false;
         }
 

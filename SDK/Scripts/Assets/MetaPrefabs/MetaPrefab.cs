@@ -68,7 +68,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
 #else
                     GraphicsSettings.renderPipelineAsset;
 #endif
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
                 metaPrefab.uploadedWithUnity6000 = true;
 #else
                 metaPrefab.uploadedWithUnity6000 = false;
@@ -100,7 +100,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
                 if (scriptableRenderPipelineSupported != renderPipelineSupported)
                     scriptableRenderPipelineSupported = renderPipelineSupported;
                 var uploadedWithUnity6000 =
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
                     true;
 #else
                     false;

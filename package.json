@@ -6,20 +6,12 @@
   "unity": "2022.1",
   "displayName": "Metaverse Cloud Engine Unity SDK",
   "dependencies": {
-    "com.unity.burst": "1.0.0",
     "com.unity.cinemachine": "2.0.0",
     "com.unity.inputsystem": "1.0.0",
-    "com.unity.mathematics": "1.0.0",
     "com.unity.nuget.newtonsoft-json": "3.0.2",
     "com.unity.visualscripting": "1.0.0",
     "com.unity.scriptablebuildpipeline": "1.0.0",
-    "com.unity.xr.openxr": "1.0.0",
-    "com.unity.xr.interaction.toolkit": "2.0.0",
-    "com.unity.xr.management": "1.0.0",
-    "com.unity.xr.arcore": "4.0.0",
-    "com.unity.xr.arfoundation": "4.0.0",
-    "com.unity.xr.hands": "1.2.0",
-    "com.unity.render-pipelines.universal": "14.0.0",
-    "com.unity.editorcoroutines": "1.0.0"
+    "com.unity.editorcoroutines": "1.0.0",
+    "com.unity.textmeshpro": "3.0.0"
   }
 }

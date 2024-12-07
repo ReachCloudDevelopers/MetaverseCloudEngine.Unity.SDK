@@ -7,12 +7,16 @@ using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+#if MV_AR_CORE
 using UnityEngine.XR.ARCore;
+#endif
 #if !UNITY_IOS
 #if MV_OCULUS_PLUGIN
 using Unity.XR.Oculus;
 #endif
+#if MV_OPENXR
 using UnityEngine.XR.OpenXR;
+#endif
 #endif
 
 namespace MetaverseCloudEngine.Unity.Editors
@@ -47,6 +51,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public static void ConfigureXRLoaders(bool force = false)
         {
+#if MV_XR_MANAGEMENT && (MV_OCULUS_PLUGIN || MV_OPENXR || MV_AR_CORE)
             const string configureXrSessionFlag = "MVCE_ConfigureXR_Session";
             var configureXrProjectFlag = $"MVCE_ConfigureXR_Project_{PlayerSettings.productGUID}";
 
@@ -71,9 +76,13 @@ namespace MetaverseCloudEngine.Unity.Editors
 #if MV_OCULUS_PLUGIN
                         typeof(OculusLoader).FullName, 
 #else
+#if MV_OPENXR
                         typeof(OpenXRLoader).FullName,
 #endif
+#endif
+#if MV_AR_CORE
                         typeof(ARCoreLoader).FullName
+#endif
                     }, 
                     xrsdk: XRSDK.None,
                     changeInitOnStartup: false);
@@ -87,6 +96,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                 SessionState.SetBool(configureXrSessionFlag, true);
             }
+#endif
         }
 
         [MenuItem(MetaverseConstants.ProductName + "/Project/Integrations/Enable OpenCV Integration")]

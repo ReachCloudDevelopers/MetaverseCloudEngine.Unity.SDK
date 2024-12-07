@@ -1,3 +1,4 @@
+#if MV_XR_TOOLKIT
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -578,3 +579,4 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         }
     }
 }
+#endif

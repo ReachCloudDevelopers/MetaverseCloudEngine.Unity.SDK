@@ -13,7 +13,11 @@ namespace MetaverseCloudEngine.Unity.Vehicles.Land.Networking
     [AddComponentMenu(MetaverseConstants.ProductName + "/Vehicles/Land/Networking/Vehicles - Vehicle Parent Networking")]
     public partial class VehicleParentNetworking : NetworkObjectBehaviour
     {
+#if MV_XR_TOOLKIT
         [SerializeField] private Seat driverSeat;
+#else
+        [InfoBox("Please install the XR Toolkit package to use this component.")]
+#endif
         [SerializeField] private bool allowUserControl = true;
 
         private BasicInput _input;
@@ -46,12 +50,14 @@ namespace MetaverseCloudEngine.Unity.Vehicles.Land.Networking
             _followAI = GetComponent<FollowAI>();
 
             SetControl(false);
-            
+
+#if MV_XR_TOOLKIT
             if (driverSeat != null)
             {
                 OnSeatEntered(!driverSeat || driverSeat.CurrentSitter != null);
                 driverSeat.events.onEnteredValue.AddListener(OnSeatEntered);
             }
+#endif
 
             base.Awake();
         }
@@ -99,7 +105,12 @@ namespace MetaverseCloudEngine.Unity.Vehicles.Land.Networking
         
         private bool CanActivateIgnition()
         {
-            return allowUserControl && (driverSeat == null || (driverSeat.CurrentSitter != null && driverSeat.CurrentSitter.IsInputAuthority));
+            return allowUserControl
+#if MV_XR_TOOLKIT
+                   && (driverSeat == null || (driverSeat.CurrentSitter != null && driverSeat.CurrentSitter.IsInputAuthority));
+#else
+                ;
+#endif
         }
     }
 }

@@ -4,7 +4,10 @@ using Cinemachine;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces.Abstract;
 using MetaverseCloudEngine.Unity.Cinemachine.Editor.Components;
 using UnityEngine;
+
+#if MV_UNITY_AR_FOUNDATION
 using UnityEngine.XR.ARFoundation;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Cinemachine.Editor
 {
@@ -15,10 +18,12 @@ namespace MetaverseCloudEngine.Unity.Cinemachine.Editor
             if (camera.GetComponent<MetaSpaceCameraCinemachineWarningIgnore>())
                 return false;
 
+#if MV_UNITY_AR_FOUNDATION
 #pragma warning disable CS0618
             if (camera.GetComponent<ARCameraManager>() || camera.GetComponentInParent<ARSessionOrigin>())
 #pragma warning restore CS0618
                 return false;
+#endif
 
             var cinemachineBrain = camera.GetComponent<CinemachineBrain>();
             if (!cinemachineBrain &&

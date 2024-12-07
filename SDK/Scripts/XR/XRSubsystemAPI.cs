@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if MV_XR_MANAGEMENT
+using System.Collections;
 using MetaverseCloudEngine.Unity.Async;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -188,3 +189,4 @@ namespace MetaverseCloudEngine.Unity.XR
         }
     }
 }
+#endif

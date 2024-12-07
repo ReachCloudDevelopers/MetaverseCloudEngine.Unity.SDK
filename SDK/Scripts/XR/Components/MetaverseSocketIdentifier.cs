@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if MV_XR_TOOLKIT
+using UnityEngine;
 
 #if MV_XR_TOOLKIT_3
 using XRSocketInteractor = UnityEngine.XR.Interaction.Toolkit.Interactors.XRSocketInteractor;
@@ -14,3 +15,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         public int socketType;
     }
 }
+#endif

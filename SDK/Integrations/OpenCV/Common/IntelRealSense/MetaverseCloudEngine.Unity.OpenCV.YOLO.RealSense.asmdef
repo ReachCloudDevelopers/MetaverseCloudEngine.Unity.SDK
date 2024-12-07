@@ -29,6 +29,7 @@
     "autoReferenced": true,
     "defineConstraints": [
         "METAVERSE_CLOUD_ENGINE",
+        "METAVERSE_CLOUD_ENGINE_INITIALIZED",
         "MV_OPENCV",
         "MV_UNITASK"
     ],

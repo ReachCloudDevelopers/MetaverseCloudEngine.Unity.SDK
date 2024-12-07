@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if MV_XR_TOOLKIT
+using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit;
 
@@ -192,7 +193,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 return;
 
             var xrInteractionManagers = 
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
                 FindObjectsByType<XRInteractionManager>(FindObjectsSortMode.None);
 #else
                 FindObjectsOfType<XRInteractionManager>();
@@ -280,3 +281,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
     }
 }
+#endif

@@ -4,7 +4,9 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.XR;
 using MetaverseCloudEngine.Unity.XR.Components;
 using TriInspectorMVCE;
+#if MV_XRCOREUTILS
 using Unity.XR.CoreUtils;
+#endif
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.XR;
@@ -172,6 +174,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                 trackXRControllersForOffline &&
                 bone is HumanBodyBones.LeftHand or HumanBodyBones.RightHand)
             {
+#if MV_XRCOREUTILS
                 var xrOrigin = avatar.GetNearestComponent<XROrigin>();
                 if (xrOrigin)
                 {
@@ -191,6 +194,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                             break;
                     }
                 }
+#endif
             }
             else
             {

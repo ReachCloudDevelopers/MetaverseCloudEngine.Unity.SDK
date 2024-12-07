@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿#if MV_XR_TOOLKIT
+using System.Linq;
 using MetaverseCloudEngine.Unity.Async;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -61,7 +62,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     _singletonManager.enabled = true;
                 }
 
-                #if UNITY_6000_0_OR_NEWER
+                #if UNITY_2023_1_OR_NEWER
                 FindObjectsByType<XRBaseInteractor>(FindObjectsSortMode.None)
                     .ForEach(x => x.enabled = false)
                     .ForEach(x => x.enabled = true);
@@ -82,3 +83,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         }
     }
 }
+#endif

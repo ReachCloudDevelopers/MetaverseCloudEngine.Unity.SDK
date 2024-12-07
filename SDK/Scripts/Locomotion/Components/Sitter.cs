@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if MV_XR_TOOLKIT
+using System;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using TriInspectorMVCE;
 using UnityEngine;
@@ -143,3 +144,4 @@ namespace MetaverseCloudEngine.Unity.Locomotion.Components
         }
     }
 }
+#endif

@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if MV_XR_TOOLKIT
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using TriInspectorMVCE;
@@ -140,3 +141,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         }
     }
 }
+#endif

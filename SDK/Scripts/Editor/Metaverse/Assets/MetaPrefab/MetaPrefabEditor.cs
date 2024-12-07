@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using MetaverseCloudEngine.Common.Enumerations;
+#pragma warning disable CS0162 // Unreachable code detected
 
 namespace MetaverseCloudEngine.Unity.Editors
 {

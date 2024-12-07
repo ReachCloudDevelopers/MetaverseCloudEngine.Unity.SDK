@@ -1,7 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+#if MV_XR_TOOLKIT
 using UnityEngine.XR.Interaction.Toolkit.UI;
+#endif
 
 namespace MetaverseCloudEngine.Unity.UI
 {
@@ -33,7 +35,11 @@ namespace MetaverseCloudEngine.Unity.UI
             SceneManager.MoveGameObjectToScene(go, SceneManager.GetActiveScene());
             go.AddComponent<EventSystem>();
             if (Application.platform == RuntimePlatform.WebGLPlayer) go.AddComponent<StandaloneInputModule>();
+#if MV_XR_TOOLKIT
             else go.AddComponent<XRUIInputModule>();
+#else
+            else go.AddComponent<StandaloneInputModule>();
+#endif
         }
     }
 }

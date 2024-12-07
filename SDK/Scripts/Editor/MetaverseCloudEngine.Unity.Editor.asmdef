@@ -56,8 +56,10 @@
     "autoReferenced": true,
     "defineConstraints": [
         "UNITY_EDITOR",
+        "METAVERSE_CLOUD_ENGINE_INITIALIZED",
         "METAVERSE_CLOUD_ENGINE",
-        "MV_EDITOR_COROUTINES"
+        "MV_EDITOR_COROUTINES",
+        "MV_CORE"
     ],
     "versionDefines": [
         {
@@ -99,6 +101,21 @@
             "name": "com.unity.editorcoroutines",
             "expression": "1.0.0",
             "define": "MV_EDITOR_COROUTINES"
+        },
+        {
+            "name": "com.reachcloud.metaverse-cloud-sdk",
+            "expression": "",
+            "define": "MV_CORE"
+        },
+        {
+            "name": "com.unity.xr.interaction.toolkit",
+            "expression": "",
+            "define": "MV_XR_TOOLKIT"
+        },
+        {
+            "name": "com.unity.xr.arfoundation",
+            "expression": "",
+            "define": "MV_AR_FOUNDATION"
         }
     ],
     "noEngineReferences": false

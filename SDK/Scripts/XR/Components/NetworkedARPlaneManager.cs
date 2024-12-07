@@ -1,3 +1,4 @@
+#if MV_UNITY_AR_FOUNDATION
 using System.Collections.Generic;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
@@ -184,3 +185,4 @@ namespace MetaverseCloudEngine.Unity
         }
     }
 }
+#endif

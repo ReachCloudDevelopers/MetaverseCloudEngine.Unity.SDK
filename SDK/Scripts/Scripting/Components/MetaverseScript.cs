@@ -162,7 +162,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
-        [SerializeField] private TextAsset[] includes;
+        [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
         [SerializeField] private Variables variables;
 
         private bool _ready;
@@ -186,7 +186,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             
             if (_methods != null && _ready)
             {
-                if (_methods?.TryGetValue(ScriptFunctions.OnDestroy, out var method) == true)
+                JsValue method = null;
+                if (_methods?.TryGetValue(ScriptFunctions.OnDestroy, out method) == true)
                     _ = _engine.Invoke(method);
             }
 
@@ -196,14 +197,16 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private void OnEnable()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnDisable()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnDisable, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnDisable, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
@@ -218,10 +221,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
                 if (MetaSpace.Instance)
                 {
-                    MetaSpace.OnReady(() => OnMetaSpaceReady());
+                    MetaSpace.OnReady(OnMetaSpaceReady);
                     return;
                 }
-
                 OnMetaSpaceReady();
             }
             catch(Exception e)
@@ -246,8 +248,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         void CallAwake()
                         {
                             _ready = true;
-                            
-                            if (_methods?.TryGetValue(ScriptFunctions.Awake, out var awakeMethod) == true)
+
+                            JsValue awakeMethod = null;
+                            if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
                                 _ = _engine.Invoke(awakeMethod);   
                             
                             while (_initializationMethodQueue.Count > 0)
@@ -278,10 +281,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         
                         void CallOnEnabled()
                         {
-                            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out var onEnableMethod) == true)
+                            JsValue onEnableMethod = null;
+                            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
                                 _ = _engine.Invoke(onEnableMethod);
 
-                            if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out var startMethod) == true)
+                            JsValue startMethod = null;
+                            if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
                                 _ = _engine.Invoke(startMethod);
                         }
 
@@ -310,119 +315,136 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private void Update()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.Update, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.Update, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void LateUpdate()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.LateUpdate, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.LateUpdate, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void FixedUpdate()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.FixedUpdate, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.FixedUpdate, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnTriggerEnter(Collider other)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter, out method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerExit(Collider other)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit, out method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerStay(Collider other)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay, out method) == true)
                 _ = _engine.Invoke(method, other);
         }
 
         private void OnTriggerEnter2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerExit2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnTriggerStay2D(Collider2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnAnimatorIK(int layer)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorIK, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorIK, out method) == true)
                 _ = _engine.Invoke(method, layer);
         }
 
         private void OnAnimatorMove()
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorMove, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorMove, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
         private void OnCollisionEnter(Collision collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit(Collision collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay(Collision collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionEnter2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionExit2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
         private void OnCollisionStay2D(Collision2D collision)
         {
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay2D, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay2D, out method) == true)
                 _ = _engine.Invoke(method, collision);
         }
 
@@ -431,7 +453,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnNetworkReady(offline);
             OnEngineReady(() =>
             {
-                if (_methods?.TryGetValue(ScriptFunctions.OnNetworkReady, out var method) == true)
+                JsValue method = null;
+                if (_methods?.TryGetValue(ScriptFunctions.OnNetworkReady, out method) == true)
                     _ = _engine.Invoke(method, offline); 
             });
         }
@@ -441,7 +464,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.RegisterNetworkRPCs();
             OnEngineReady(() =>
             {
-                if (_methods?.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out var method) == true)
+                JsValue method = null;
+                if (_methods?.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out method) == true)
                     _ = _engine.Invoke(method); 
             });
         }
@@ -450,7 +474,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             base.UnRegisterNetworkRPCs();
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
@@ -459,7 +484,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnMetaSpaceBehaviourInitialize();
             OnEngineReady(() =>
             {
-                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out var method) == true)
+                JsValue method = null;
+                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out method) == true)
                     _ = _engine.Invoke(method);
             });
         }
@@ -469,7 +495,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             base.OnMetaSpaceServicesRegistered();
             OnEngineReady(() =>
             {
-                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out var method) == true)
+                JsValue method = null;
+                if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out method) == true)
                     _ = _engine.Invoke(method); 
             });
         }
@@ -478,7 +505,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             base.OnMetaSpaceBehaviourDestroyed();
             if (!_ready) return;
-            if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out var method) == true)
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out method) == true)
                 _ = _engine.Invoke(method);
         }
 
@@ -752,7 +780,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         e.SetValue(m.Key, d);
                         return;
                     }
-
                     e.SetValue(m.Key, m.Value);
                 }));
             
@@ -1048,7 +1075,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(InputSystem).Assembly /* New Input System */,
                 typeof(CinemachineCore).Assembly /* Cinema-chine */,
                 typeof(Variables).Assembly /* Visual Scripting */,
+#if MV_XR_TOOLKIT
                 typeof(UnityEngine.XR.Interaction.Toolkit.ActionBasedController).Assembly /* XR Interaction Toolkit */,
+#endif
                 typeof(Task).Assembly /* System.Threading.Tasks */,
                 typeof(UniTask).Assembly /* UniTask */,
                 typeof(UniTaskExtensions).Assembly, /* UniTask */

@@ -16,7 +16,8 @@
     "autoReferenced": true,
     "defineConstraints": [
         "METAVERSE_CLOUD_ENGINE",
-        "PLAYMAKER"
+        "PLAYMAKER",
+        "METAVERSE_CLOUD_ENGINE_INITIALIZED"
     ],
     "versionDefines": [],
     "noEngineReferences": false

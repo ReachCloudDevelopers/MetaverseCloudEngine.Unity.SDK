@@ -1,4 +1,5 @@
-﻿using TriInspectorMVCE;
+﻿#if MV_XR_TOOLKIT
+using TriInspectorMVCE;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.Events;
 using UnityEngine;
@@ -57,3 +58,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         }
     }
 }
+#endif

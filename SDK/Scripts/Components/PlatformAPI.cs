@@ -9,7 +9,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
 using UnityEngine.XR;
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+#if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
 using UnityEngine.XR.ARFoundation;
 #endif
 
@@ -132,7 +132,7 @@ namespace MetaverseCloudEngine.Unity.Components
         private bool _enabledStateChanged;
         private bool _firstTime = true;
         private bool? _isCurrentPlatformSupported;
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+#if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
         private ARSessionState? _lastARSessionState;
 #endif
 
@@ -195,7 +195,7 @@ namespace MetaverseCloudEngine.Unity.Components
             else
                 Check();
 
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+#if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
             ARSession.stateChanged += OnARSessionStateChanged;
 #endif
 
@@ -210,7 +210,7 @@ namespace MetaverseCloudEngine.Unity.Components
             }
         }
 
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID 
+#if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
         private void OnARSessionStateChanged(ARSessionStateChangedEventArgs e)
         {
             UniTask.Void(async c =>
@@ -236,7 +236,7 @@ namespace MetaverseCloudEngine.Unity.Components
             if (MetaverseProgram.IsQuitting) return;
             XRInputTrackingAPI.HmdConnected -= OnDeviceConnected;
             XRInputTrackingAPI.HmdDisconnected -= OnDeviceDisconnected;
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
+#if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
             ARSession.stateChanged -= OnARSessionStateChanged;
 #endif
         }

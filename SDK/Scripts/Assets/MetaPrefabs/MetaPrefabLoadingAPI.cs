@@ -728,7 +728,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
             }
 
             const bool isCurrentlyUnity6000 =
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
                 true;
 #else
                 false;

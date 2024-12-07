@@ -35,7 +35,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
         {
             if (!_mainCamera)
             {
-                Camera mainCam = Camera.main;
+                var mainCam = Camera.main;
                 _mainCamera = mainCam ? mainCam.transform : null;
             }
             else FaceCamera();
@@ -43,11 +43,10 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
         private void FaceCamera()
         {
-            Vector3 up = _transform.root ? _transform.root.up : _transform.up;
-
+            var up = _transform.root != _transform ? _transform.root.up : Vector3.up;
             if (facePositionInVr && XRSettings.isDeviceActive)
             {
-                Vector3 dir = _mainCamera.position - _transform.position;
+                var dir = _mainCamera.position - _transform.position;
                 _transform.rotation = Quaternion.LookRotation(invert ? -dir.normalized : dir.normalized, up);
                 return;
             }

@@ -7,9 +7,12 @@ using MetaverseCloudEngine.Unity.XR;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+#pragma warning disable CS0168 // Variable is declared but never used
+#if MV_XR_MANAGEMENT
 using UnityEditor.XR.Management;
 using UnityEditor.XR.Management.Metadata;
-#if !UNITY_IOS
+#endif
+#if !UNITY_IOS && MV_OPENXR
 using UnityEngine.XR.OpenXR;
 using UnityEngine.XR.OpenXR.Features;
 using UnityEngine.XR.OpenXR.Features.Interactions;
@@ -217,6 +220,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             bool configured;
             AssetDatabase.StartAssetEditing();
 
+#if MV_XR_MANAGEMENT
             try
             {
                 foreach (var btg in (BuildTargetGroup[])Enum.GetValues(typeof(BuildTargetGroup)))
@@ -322,9 +326,12 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             return configured;
+#else
+            return false;
+#endif
         }
 
-#if !UNITY_IOS
+#if !UNITY_IOS && MV_OPENXR
         private static void ToggleOpenXRFeature<TFeature>(OpenXRSettings buildTargetInstance, bool enable)
             where TFeature : OpenXRFeature
         {
@@ -367,6 +374,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
+#if MV_XR_MANAGEMENT
         public static bool IsXrLoaderConfigured(BuildTargetGroup group, string name)
         {
             var settings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(group);
@@ -374,7 +382,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             var assignedSettingsActiveLoaders = settings.AssignedSettings.activeLoaders;
             return assignedSettingsActiveLoaders != null && assignedSettingsActiveLoaders.FirstOrDefault(x => x && x.GetType().FullName == name);
         }
-
+#endif
+        
         public static IEnumerable<BuildTargetGroup> GetSupportedBuildTargetGroups()
         {
             return ((BuildTarget[])Enum.GetValues(typeof(BuildTarget)))

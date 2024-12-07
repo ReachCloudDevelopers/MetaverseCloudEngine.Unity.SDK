@@ -149,7 +149,10 @@ namespace MetaverseCloudEngine.Unity
         private static void Main_Editor()
         {
             if (!Application.isPlaying && !UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                UnityEditor.EditorApplication.delayCall += Installer.ScriptingDefines.OnMainPackageInstalled;
                 Main();
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -159,6 +162,7 @@ namespace MetaverseCloudEngine.Unity
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AppQuitDetector()
         {
+            
             Application.wantsToQuit += () => IsQuitting = true;
             Application.quitting += () => IsQuitting = true;
         }

@@ -115,7 +115,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorUserBuildSettings.selectedBuildTargetGroup = group;
                     if (group == BuildTargetGroup.Standalone)
                         EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
                     //UnityEditor.QNX.Settings.architecture = EmbeddedArchitecture.Arm64;
 #else
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
@@ -145,8 +145,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                         Directory.CreateDirectory(outputFolder);
 
                     // Configure editor and settings.
+#if MV_ARFOUNDATION
                     if (buildTarget != BuildTarget.WebGL)
                         UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
+#endif
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
                     ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);

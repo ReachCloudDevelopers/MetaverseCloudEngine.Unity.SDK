@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿#if MV_XR_TOOLKIT
+using System.Linq;
 using MetaverseCloudEngine.Unity.XR.Components;
 using TriInspectorMVCE.Utilities;
 using UnityEditor;
@@ -15,11 +16,6 @@ namespace MetaverseCloudEngine.Unity.Editors
     [CustomPropertyDrawer(typeof(FocusExitEvent))]
     [CustomPropertyDrawer(typeof(ActivateEvent))]
     [CustomPropertyDrawer(typeof(DeactivateEvent))]
-#pragma warning disable CS0618 // Type or member is obsolete
-#if UNITY_6000_0_OR_NEWER
-#else
-    [CustomPropertyDrawer(typeof(XRInteractableEvent))]
-#endif
 #pragma warning restore CS0618 // Type or member is obsolete
     public class MetaverseInteractableHideEventsPropertyDrawer : PropertyDrawer
     {
@@ -74,8 +70,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Interaction Physics", EditorStyles.largeLabel);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("m_InteractionLayerMask"), true);
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("m_InteractionLayers"), true);
+            var interactionLayerMask = serializedObject.FindProperty("m_InteractionLayerMask") ?? serializedObject.FindProperty("m_InteractionLayers");
+            EditorGUILayout.PropertyField(interactionLayerMask, true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("m_DistanceCalculationMode"), true);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Colliders"), true);
             
@@ -208,3 +204,4 @@ namespace MetaverseCloudEngine.Unity.Editors
         }
     }
 }
+#endif

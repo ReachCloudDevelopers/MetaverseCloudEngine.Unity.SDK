@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿#if MV_XR_TOOLKIT
+using System.Linq;
 using MetaverseCloudEngine.Unity.Inputs.Components;
 using MetaverseCloudEngine.Unity.Locomotion.Components;
 using UnityEngine;
@@ -170,3 +171,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             blockWhileSitting && _sitter && _sitter.CurrentSeat;
     }
 }
+#endif

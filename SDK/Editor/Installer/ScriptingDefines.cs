@@ -32,6 +32,20 @@ namespace MetaverseCloudEngine.Unity.Installer
         {
             Add(new[] { DefaultSymbols });
         }
+
+        public static void OnMainPackageInstalled()
+        {
+            if (IsDefined("METAVERSE_CLOUD_ENGINE_INITIALIZED"))
+                return;
+            Add(new[] { "METAVERSE_CLOUD_ENGINE_INITIALIZED" });
+        }
+
+        public static void OnMainPackageUninstalled()
+        {
+            if (!IsDefined("METAVERSE_CLOUD_ENGINE_INITIALIZED"))
+                return;
+            Remove(new[] { "METAVERSE_CLOUD_ENGINE_INITIALIZED" });
+        }
         
         public static void RemoveDefaultSymbols(bool includeAdditional = true)
         {

@@ -1,4 +1,5 @@
-﻿using MetaverseCloudEngine.Unity.Attributes;
+﻿#if MV_XR_TOOLKIT
+using MetaverseCloudEngine.Unity.Attributes;
 using MetaverseCloudEngine.Unity.XR.Components;
 using System;
 using System.Collections.Generic;
@@ -191,3 +192,4 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
         }
     }
 }
+#endif

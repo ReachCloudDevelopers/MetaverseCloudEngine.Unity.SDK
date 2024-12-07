@@ -3,16 +3,18 @@ using MetaverseCloudEngine.Unity.Physix.Abstract;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
-#if UNITY_6000_0_OR_NEWER
+#if UNITY_2023_1_OR_NEWER
 using PhysicMaterial = UnityEngine.PhysicsMaterial;
 #else
 using PhysicMaterial = UnityEngine.PhysicMaterial;
 #endif
 
+#if MV_XR_TOOLKIT
 #if MV_XR_TOOLKIT_3
 using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.Interactables.XRBaseInteractable;
 #else
 using XRBaseInteractable = UnityEngine.XR.Interaction.Toolkit.XRBaseInteractable;
+#endif
 #endif
 
 namespace MetaverseCloudEngine.Unity.Physix.Components
@@ -337,9 +339,11 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
                     if (groundHit.distance > nearestHitDistance)
                         continue;
 
+#if MV_XR_TOOLKIT
                     if ((hitCollider.attachedRigidbody ? hitCollider.attachedRigidbody.gameObject : hitCollider.gameObject).TryGetComponent(out XRBaseInteractable interactable) && interactable.isSelected)
                         continue;
-
+#endif
+                    
                     if (groundHit.transform.IsChildOf(m_Transform))
                         continue;
 

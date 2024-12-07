@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if MV_UNITY_AR_FOUNDATION
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.XR.ARFoundation;
 
@@ -44,3 +45,4 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         }
     }
 }
+#endif
