@@ -1997,7 +1997,9 @@ namespace MetaverseCloudEngine.Unity
             return copy;
         }
 
-        public static TValue GetOrAdd<TKey, TValue>(this IDictionary<TKey, TValue> dict, TKey key,
+        public static TValue GetOrAdd<TKey, TValue>(
+            this IDictionary<TKey, TValue> dict, 
+            TKey key,
             Func<TKey, TValue> valueFactory)
         {
             if (dict.TryGetValue(key, out var value)) return value;
@@ -2006,8 +2008,10 @@ namespace MetaverseCloudEngine.Unity
             return value;
         }
 
-        public static Dictionary<HumanBodyBones, Transform> GetBones(this Animator animator,
-            HumanBodyBones[] ignoredBones = null, HumanBodyBones[] specificBones = null)
+        public static Dictionary<HumanBodyBones, Transform> GetBones(
+            this Animator animator,
+            HumanBodyBones[] ignoredBones = null, 
+            HumanBodyBones[] specificBones = null)
         {
             var ignoredBonesList = ignoredBones != null ? ignoredBones.ToList() : new List<HumanBodyBones>();
             var specificBonesList = specificBones != null ? specificBones.ToList() : new List<HumanBodyBones>();
@@ -2060,8 +2064,12 @@ namespace MetaverseCloudEngine.Unity
             return o ? o : null;
         }
 
-        public static UniTask<IEnumerable<T>> ForEachPerFrame<T>(this IEnumerable<T> e, int perFrame, int frameDelay,
-            Action<T> f, CancellationToken cancellationToken = default)
+        public static UniTask<IEnumerable<T>> ForEachPerFrame<T>(
+            this IEnumerable<T> e, 
+            int perFrame,
+            int frameDelay,
+            Action<T> f,
+            CancellationToken cancellationToken = default)
         {
             return UniTask.Create(async () =>
             {
@@ -2089,6 +2097,19 @@ namespace MetaverseCloudEngine.Unity
         public static TOut Return<TIn, TOut>(this TIn o, Func<TIn, TOut> f)
         {
             return f(o);
+        }
+        
+        public static IEnumerable<TIn> DistinctBy<TIn, TOut>(this IEnumerable<TIn> e, Func<TIn, TOut> f)
+        {
+            return e.GroupBy(f).Select(x => x.First());
+        }
+        
+        public static bool IsStatic(this MemberInfo member)
+        {
+            return member is FieldInfo { IsStatic: true } || 
+                   member is PropertyInfo property && property.GetMethod.IsStatic ||
+                   member is MethodInfo { IsStatic: true } ||
+                   member is TypeInfo { IsAbstract: true, IsSealed: true };
         }
 
         public static Dictionary<TKey, TVal> Map<TKey, TVal>(this IEnumerable<TKey> keys, IEnumerable<TVal> values,
