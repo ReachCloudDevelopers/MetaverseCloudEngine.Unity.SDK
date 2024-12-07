@@ -1832,7 +1832,7 @@ namespace MetaverseCloudEngine.Unity
             if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings &&
                 XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
             {
-#if UNITY_ANDROID || UNITY_EDITOR
+#if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(
                         x => x is ARCoreLoader))
                     return true;
@@ -1860,7 +1860,9 @@ namespace MetaverseCloudEngine.Unity
             return await task;
         }
 
-        public static async Task<bool> AwaitSemaphore(SemaphoreSlim semaphore, int? timeout = null,
+        public static async Task<bool> AwaitSemaphore(
+            SemaphoreSlim semaphore, 
+            int? timeout = null,
             CancellationToken cancellationToken = default)
         {
             // ReSharper disable MethodHasAsyncOverload
