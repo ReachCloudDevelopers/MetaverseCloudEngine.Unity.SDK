@@ -174,7 +174,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                 trackXRControllersForOffline &&
                 bone is HumanBodyBones.LeftHand or HumanBodyBones.RightHand)
             {
-#if MV_XRCOREUTILS
+#if MV_XRCOREUTILS && MV_XR_TOOLKIT
                 var xrOrigin = avatar.GetNearestComponent<XROrigin>();
                 if (xrOrigin)
                 {

@@ -1760,11 +1760,9 @@ namespace MetaverseCloudEngine.Unity
                 return false;
             if (XRGeneralSettings.Instance && XRGeneralSettings.Instance.AssignedSettings &&
                 XRGeneralSettings.Instance.AssignedSettings.activeLoaders != null)
-                return XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(x => x
-                        is OpenXRLoader
-#if MV_OCULUS_PLUGIN
-                        or OculusLoader
-#endif
+                return XRGeneralSettings.Instance.AssignedSettings.activeLoaders.Any(x =>
+                        x.GetType().Name.Contains("OpenXRLoader")
+                        || x.GetType().Name.Contains("OculusLoader")
                 );
 #endif
 #endif
@@ -1782,11 +1780,11 @@ namespace MetaverseCloudEngine.Unity
                 XRGeneralSettings.Instance.AssignedSettings &&
                 XRGeneralSettings.Instance.AssignedSettings.activeLoader != null)
             {
-#if MV_OCULUS_PLUGIN
+#if MV_OCULUS_PLUGIN 
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoader is OculusLoader)
                     return true;
 #endif
-#if UNITY_2022_2_OR_NEWER
+#if UNITY_2022_2_OR_NEWER && MV_OPENXR
                 if (XRGeneralSettings.Instance.AssignedSettings.activeLoader is OpenXRLoader)
                 {
                     OpenXRFeature feature = OpenXRSettings.ActiveBuildTargetInstance.GetFeature<MetaQuestFeature>();
