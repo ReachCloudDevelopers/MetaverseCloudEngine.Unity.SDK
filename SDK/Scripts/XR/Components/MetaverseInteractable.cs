@@ -1,5 +1,4 @@
-﻿
-#if MV_XR_TOOLKIT
+﻿#if MV_XR_TOOLKIT
 using System;
 using System.Linq;
 using System.Collections.Generic;
