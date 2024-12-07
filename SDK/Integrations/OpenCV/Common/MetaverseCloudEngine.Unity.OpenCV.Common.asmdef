@@ -16,7 +16,8 @@
     "defineConstraints": [
         "METAVERSE_CLOUD_ENGINE",
         "MV_OPENCV",
-        "MV_UNITASK"
+        "MV_UNITASK",
+        "METAVERSE_CLOUD_ENGINE_INITIALIZED"
     ],
     "versionDefines": [
         {
