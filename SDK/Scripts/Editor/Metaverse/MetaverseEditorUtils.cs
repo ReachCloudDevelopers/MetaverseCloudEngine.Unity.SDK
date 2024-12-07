@@ -245,7 +245,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (changed)
                         EditorUtility.SetDirty(settings);
 
-#if !UNITY_IOS
+#if !UNITY_IOS && MV_OPENXR
                     var openXRSettings = OpenXRSettings.GetSettingsForBuildTargetGroup(btg);
                     if (openXRSettings != null)
                     {
@@ -278,7 +278,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 configured = xrLoaders is not { Length: > 0 } || xrLoaders.All(loader => XRPackageMetadataStore.AssignLoader(xrSettings.Manager, loader, group));
                 if (configured)
                 {
-#if !UNITY_IOS
+#if !UNITY_IOS && MV_OPENXR
                     var openXRSettings = OpenXRSettings.GetSettingsForBuildTargetGroup(group);
                     if (openXRSettings != null)
                     {
@@ -291,12 +291,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                             BuildTargetGroup.Standalone, "com.meta.openxr.featureset.metaxr");
                         metaXRFeatureSet.isEnabled = false;
                         UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
-#if MV_OPENXR
                         ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, false);
                         ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, false);
-#endif
 #endif
 #if MV_XR_HANDS
                         ToggleOpenXRFeature<UnityEngine.XR.Hands.OpenXR.MetaHandTrackingAim>(openXRSettings, usingOpenXR);
