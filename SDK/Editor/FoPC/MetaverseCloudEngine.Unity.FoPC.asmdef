@@ -1,7 +1,9 @@
 ﻿{
   "name": "MetaverseCloudEngine.Unity.FoPC",
   "rootNamespace": "MetaverseCloudEngine.Unity.FixingOtherPeoplesCode",
-  "references": [],
+  "references": [
+    "GUID:36796cdf0b177bd40b75ac45f74d1378"
+  ],
   "includePlatforms": [
     "Editor"
   ],

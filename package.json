@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.80.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine",
+  "version": "2.81.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.81.0\n- Added automatic Open CV script define symbols.\n\nUpdated on December 08, 2024",
   "author": "Reach Cloud",
   "unity": "2022.1",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -99,22 +99,6 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
         }
 
-        [MenuItem(MetaverseConstants.ProductName + "/Project/Integrations/Enable OpenCV Integration")]
-        private static void EnableOpenCVIntegration_MenuItem()
-        {
-            if (EditorUtility.DisplayDialog(
-                    "Enable OpenCV Integration", 
-                    "Would you like to enable the Open CV integration?", 
-                    "Enable", "Disable"))
-            {
-                ScriptingDefines.Add(new [] { "MV_OPENCV" });
-            }
-            else
-            {
-                ScriptingDefines.Remove(new [] { "MV_OPENCV" });
-            }
-        }
-
         [MenuItem(MetaverseConstants.ProductName + "/Project/Allow Project Configuration")]
         private static void CanConfigureProject_MenuItem() => CanConfigureProject(true);
 

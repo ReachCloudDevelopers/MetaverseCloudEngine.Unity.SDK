@@ -34,6 +34,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 
 using TriInspectorMVCE;
+// ReSharper disable RedundantUnsafeContext
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
@@ -178,7 +179,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         public VariableDeclarations Vars => variables ? variables.declarations : null;
 
-        protected override void OnDestroy()
+        protected override unsafe void OnDestroy()
         {
             _initializationMethodQueue.Clear(); // Make sure no initialization methods are triggered.
             
@@ -194,7 +195,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             _engine?.Dispose();
         }
 
-        private void OnEnable()
+        private unsafe void OnEnable()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -202,7 +203,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void OnDisable()
+        private unsafe void OnDisable()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -210,7 +211,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void Start()
+        private unsafe void Start()
         {
             try
             {
@@ -245,7 +246,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             return;
                         }
 
-                        void CallAwake()
+                        unsafe void CallAwake()
                         {
                             _ready = true;
 
@@ -279,7 +280,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             });
                         }
                         
-                        void CallOnEnabled()
+                        unsafe void CallOnEnabled()
                         {
                             JsValue onEnableMethod = null;
                             if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
@@ -312,7 +313,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             }
         }
 
-        private void Update()
+        private unsafe void Update()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -320,7 +321,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void LateUpdate()
+        private unsafe void LateUpdate()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -328,7 +329,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void FixedUpdate()
+        private unsafe void FixedUpdate()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -336,7 +337,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void OnTriggerEnter(Collider other)
+        private unsafe void OnTriggerEnter(Collider other)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -344,7 +345,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, other);
         }
 
-        private void OnTriggerExit(Collider other)
+        private unsafe void OnTriggerExit(Collider other)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -352,7 +353,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, other);
         }
 
-        private void OnTriggerStay(Collider other)
+        private unsafe void OnTriggerStay(Collider other)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -360,7 +361,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, other);
         }
 
-        private void OnTriggerEnter2D(Collider2D collision)
+        private unsafe void OnTriggerEnter2D(Collider2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -368,7 +369,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnTriggerExit2D(Collider2D collision)
+        private unsafe void OnTriggerExit2D(Collider2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -376,7 +377,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnTriggerStay2D(Collider2D collision)
+        private unsafe void OnTriggerStay2D(Collider2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -384,7 +385,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnAnimatorIK(int layer)
+        private unsafe void OnAnimatorIK(int layer)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -392,7 +393,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, layer);
         }
 
-        private void OnAnimatorMove()
+        private unsafe void OnAnimatorMove()
         {
             if (!_ready) return;
             JsValue method = null;
@@ -400,7 +401,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        private void OnCollisionEnter(Collision collision)
+        private unsafe void OnCollisionEnter(Collision collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -408,7 +409,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnCollisionExit(Collision collision)
+        private unsafe void OnCollisionExit(Collision collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -416,7 +417,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnCollisionStay(Collision collision)
+        private unsafe void OnCollisionStay(Collision collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -424,7 +425,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnCollisionEnter2D(Collision2D collision)
+        private unsafe void OnCollisionEnter2D(Collision2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -432,7 +433,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnCollisionExit2D(Collision2D collision)
+        private unsafe void OnCollisionExit2D(Collision2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -440,7 +441,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        private void OnCollisionStay2D(Collision2D collision)
+        private unsafe void OnCollisionStay2D(Collision2D collision)
         {
             if (!_ready) return;
             JsValue method = null;
@@ -448,7 +449,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method, collision);
         }
 
-        public override void OnNetworkReady(bool offline)
+        public override unsafe void OnNetworkReady(bool offline)
         {
             base.OnNetworkReady(offline);
             OnEngineReady(() =>
@@ -459,7 +460,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             });
         }
 
-        protected override void RegisterNetworkRPCs()
+        protected override unsafe void RegisterNetworkRPCs()
         {
             base.RegisterNetworkRPCs();
             OnEngineReady(() =>
@@ -470,7 +471,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             });
         }
 
-        protected override void UnRegisterNetworkRPCs()
+        protected override unsafe void UnRegisterNetworkRPCs()
         {
             base.UnRegisterNetworkRPCs();
             if (!_ready) return;
@@ -479,7 +480,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _ = _engine.Invoke(method);
         }
 
-        protected override void OnMetaSpaceBehaviourInitialize()
+        protected override unsafe void OnMetaSpaceBehaviourInitialize()
         {
             base.OnMetaSpaceBehaviourInitialize();
             OnEngineReady(() =>
@@ -490,7 +491,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             });
         }
 
-        protected override void OnMetaSpaceServicesRegistered()
+        protected override unsafe void OnMetaSpaceServicesRegistered()
         {
             base.OnMetaSpaceServicesRegistered();
             OnEngineReady(() =>
@@ -501,7 +502,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             });
         }
 
-        protected override void OnMetaSpaceBehaviourDestroyed()
+        protected override unsafe void OnMetaSpaceBehaviourDestroyed()
         {
             base.OnMetaSpaceBehaviourDestroyed();
             if (!_ready) return;
@@ -521,7 +522,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Executes a javascript function.
         /// </summary>
         /// <param name="fn">The function to execute.</param>
-        public void ExecuteVoid(string fn)
+        public unsafe void ExecuteVoid(string fn)
         {
             if (string.IsNullOrEmpty(fn))
                 return;
@@ -544,7 +545,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="fn">The function to execute.</param>
         /// <param name="args">The arguments to pass to the function.</param>
-        public void ExecuteVoid(string fn, object[] args)
+        public unsafe void ExecuteVoid(string fn, object[] args)
         {
             if (string.IsNullOrEmpty(fn))
                 return;
@@ -568,7 +569,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="fn">The function to execute.</param>
         /// <param name="arguments">The arguments to pass to the function.</param>
         /// <returns>The result of the function.</returns>
-        public JsValue Execute(string fn, object[] arguments)
+        public unsafe JsValue Execute(string fn, object[] arguments)
         {
             if (string.IsNullOrEmpty(fn))
                 return null;
@@ -593,7 +594,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="fn">The function to execute.</param>
         /// <returns>The result of the function.</returns>
-        public JsValue Execute(string fn)
+        public unsafe JsValue Execute(string fn)
         {
             if (string.IsNullOrEmpty(fn))
                 return null;
@@ -618,7 +619,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="variableName">The name of the variable.</param>
         /// <returns>The variable value.</returns>
-        public object GetVar(string variableName)
+        public unsafe object GetVar(string variableName)
         {
             return TryGetVar(variableName, null);
         }
@@ -629,7 +630,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="variableName">The name of the variable.</param>
         /// <param name="defaultValue">The default value to return if the variable doesn't exist.</param>
         /// <returns>The variable value.</returns>
-        public object TryGetVar(string variableName, object defaultValue)
+        public unsafe object TryGetVar(string variableName, object defaultValue)
         {
             if (variables == null) return defaultValue;
             return variables.declarations.IsDefined(variableName) ? variables.declarations.Get(variableName) : defaultValue;
@@ -640,7 +641,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="variableName">The name of the variable.</param>
         /// <param name="value">The value to set it to.</param>
-        public void SetVar(string variableName, object value)
+        public unsafe void SetVar(string variableName, object value)
         {
             if (variables == null) return;
             variables.declarations.Set(variableName, value);
@@ -652,7 +653,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="variableName">The name of the variable.</param>
         /// <param name="value">The value to set it to.</param>
         /// <returns>true if the variable was set, false otherwise.</returns>
-        public bool TrySetVar(string variableName, object value)
+        public unsafe bool TrySetVar(string variableName, object value)
         {
             if (variables == null) return false;
             if (!variables.declarations.IsDefined(variableName)) return false;
@@ -665,7 +666,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="propertyName">The name of the property.</param>
         /// <returns>The property value.</returns>
-        public JsValue GetProperty(string propertyName)
+        public unsafe JsValue GetProperty(string propertyName)
         {
             return GetProperty(propertyName, JsValue.Undefined);
         }
@@ -676,7 +677,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="propertyName">The name of the property.</param>
         /// <param name="defaultValue">The default value to return if the property doesn't exist.</param>
         /// <returns>The property value.</returns>
-        public JsValue GetProperty(string propertyName, JsValue defaultValue)
+        public unsafe JsValue GetProperty(string propertyName, JsValue defaultValue)
         {
             var v = _engine?.GetValue(propertyName);
             if (v == null || v.IsUndefined())
@@ -690,7 +691,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="propertyName">The name of the property to set.</param>
         /// <param name="value">The value to set it to.</param>
         /// <returns></returns>
-        public bool SetProperty(string propertyName, object value)
+        public unsafe bool SetProperty(string propertyName, object value)
         {
             if (_engine == null)
                 return false;
@@ -704,7 +705,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="member">The member to check.</param>
         /// <returns>true if the member is allowed, false otherwise.</returns>
-        public static bool FilterAllowedMembers(MemberInfo member)
+        public static unsafe bool FilterAllowedMembers(MemberInfo member)
         {
             if (member is null)
                 return false;
@@ -719,7 +720,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="member">The type to check.</param>
         /// <returns>true if the type is blacklisted, false otherwise.</returns>
-        public static bool IsInBlackListedNamespace(MemberInfo member)
+        public static unsafe bool IsInBlackListedNamespace(MemberInfo member)
         {
             if (member.DeclaringType == null || string.IsNullOrEmpty(member.DeclaringType.Namespace))
             {
@@ -735,17 +736,17 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="value">The member name to check.</param>
         /// <param name="isType">true if the member name is a type name, false otherwise.</param>
         /// <returns>true if the member name is blacklisted, false otherwise.</returns>
-        public static bool IsBlackListedMemberName(string value, bool isType = false)
+        public static unsafe bool IsBlackListedMemberName(string value, bool isType = false)
         {
             return BlackListedNames.Contains(value) || (isType && BlackListedTypes.Contains(value));
         }
 
-        private Func<object> DefineVar(string variableName, object defaultValue)
+        private unsafe Func<object> DefineVar(string variableName, object defaultValue)
         {
             return () => TryGetVar(variableName, defaultValue);
         }
         
-        private Func<object> DefineTypedVar(string variableName, string typePath, object defaultValue)
+        private unsafe Func<object> DefineTypedVar(string variableName, string typePath, object defaultValue)
         {
             return () =>
             {
@@ -756,7 +757,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             };
         }
 
-        private void OnEngineReady(Action a)
+        private unsafe void OnEngineReady(Action a)
         {
             if (_ready)
             {
@@ -767,7 +768,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             _initializationMethodQueue.Enqueue(a);
         }
         
-        private bool TryInitializeEngine()
+        private unsafe bool TryInitializeEngine()
         {
             if (!javascriptFile)
                 return false;
@@ -795,7 +796,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return _methods != null;
         }
 
-        private static void DefaultEngineOptions(Options options, bool strict)
+        private static unsafe void DefaultEngineOptions(Options options, bool strict)
         {
             options.AllowClr(GetAssemblies())
                 .AllowClrWrite()
@@ -810,7 +811,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             options.Interop.TrackObjectWrapperIdentity = false;
         }
 
-        private static bool OnJavaScriptCLRException(Exception exception)
+        private static unsafe bool OnJavaScriptCLRException(Exception exception)
         {
             MetaverseProgram.Logger.LogError("Error in JavaScript CLR: " + exception);
             return true;
@@ -841,7 +842,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             void Next() => val = foo?.Invoke();
         }
 
-        private void CacheMethod(ScriptFunctions method)
+        private unsafe void CacheMethod(ScriptFunctions method)
         {
             if (_methods != null && _methods.TryGetValue(method, out _))
                 return;
@@ -863,7 +864,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// </summary>
         /// <param name="context">The context to get the members for.</param>
         /// <returns>The global members.</returns>
-        public static Dictionary<string, object> GetEmbeddedGlobalMembers(MetaverseScript context) => new()
+        public static unsafe Dictionary<string, object> GetEmbeddedGlobalMembers(MetaverseScript context) => new()
         {
             // Context Properties and Methods
             { ThisProperty, context },
@@ -976,7 +977,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Gets the global member types that are accessible within any given javascript file.
         /// </summary>
         /// <returns>The global member types.</returns>
-        public static Dictionary<string, Type> GetEmbeddedGlobalMemberTypeMap() => new()
+        public static unsafe Dictionary<string, Type> GetEmbeddedGlobalMemberTypeMap() => new()
         {
             // Context Properties and Methods
             { ThisProperty, typeof(MetaverseScript) },
@@ -1037,7 +1038,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Gets the types that contain extension methods.
         /// </summary>
         /// <returns>The types that contain extension methods.</returns>
-        public static Type[] GetExtensionMethodTypes()
+        public static unsafe Type[] GetExtensionMethodTypes()
         {
             return new [] { typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
@@ -1050,7 +1051,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Gets the assemblies to allow access to from javascript.
         /// </summary>
         /// <returns>The assemblies to allow access to.</returns>
-        public static Assembly[] GetAssemblies()
+        public static unsafe Assembly[] GetAssemblies()
         {
             var assemblies = new [] { 
                 typeof(DateTime).Assembly,

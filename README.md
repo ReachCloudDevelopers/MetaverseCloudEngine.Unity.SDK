@@ -9,3 +9,10 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 * Latest version of .NET: https://dotnet.microsoft.com/en-us/download
 
 ![image](https://user-images.githubusercontent.com/14853489/188254018-453aae49-a6a3-4e6e-8fd2-fe4bbf6310d1.png)
+
+# Changelog
+
+## 2.81.0
+- Added automatic Open CV script define symbols.
+
+Updated on December 08, 2024

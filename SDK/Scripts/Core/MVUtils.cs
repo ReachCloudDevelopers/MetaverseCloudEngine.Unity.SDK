@@ -1724,34 +1724,38 @@ namespace MetaverseCloudEngine.Unity
                 // This function returns in an async context, so we need to make sure we're on the main thread.
                 MetaverseDispatcher.AtEndOfFrame(() =>
                 {
-                    var createdFile = false;
-                    try
+                    // ReSharper disable once RedundantUnsafeContext
+                    unsafe
                     {
-                        if (r != ARWorldMapRequestStatus.Success || !map.valid)
+                        var createdFile = false;
+                        try
                         {
-                            if (map.valid) map.Dispose();
-                            onFailed?.Invoke(r);
-                            return;
-                        }
+                            if (r != ARWorldMapRequestStatus.Success || !map.valid)
+                            {
+                                if (map.valid) map.Dispose();
+                                onFailed?.Invoke(r);
+                                return;
+                            }
                         
-                        using var nativeData = map.Serialize(Allocator.Temp);
-                        if (!Directory.Exists(WorldMapSavePath))
-                            Directory.CreateDirectory(WorldMapSavePath);
-                        var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                        using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
-                        fs.Write(nativeData);
-                        createdFile = true;
-                        onSaved?.Invoke(map);
-                    }
-                    catch (Exception e)
-                    {
-                        if (createdFile)
-                            File.Delete(Path.Combine(WorldMapSavePath, $"{key}.worldmap"));
-                        onFailed?.Invoke(e);
-                    }
-                    finally
-                    {
-                        MetaSpace.Instance.RemoveFromCache(key);
+                            using var nativeData = map.Serialize(Allocator.Temp);
+                            if (!Directory.Exists(WorldMapSavePath))
+                                Directory.CreateDirectory(WorldMapSavePath);
+                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                            using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                            fs.Write(nativeData);
+                            createdFile = true;
+                            onSaved?.Invoke(map);
+                        }
+                        catch (Exception e)
+                        {
+                            if (createdFile)
+                                File.Delete(Path.Combine(WorldMapSavePath, $"{key}.worldmap"));
+                            onFailed?.Invoke(e);
+                        }
+                        finally
+                        {
+                            MetaSpace.Instance.RemoveFromCache(key);
+                        }
                     }
                 });
             });
