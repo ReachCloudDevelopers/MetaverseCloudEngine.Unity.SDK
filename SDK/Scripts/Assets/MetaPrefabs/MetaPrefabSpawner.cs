@@ -586,7 +586,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
 
             if (requireStateAuthority)
             {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 networkObject.InternalController.NetworkView.LocalStateAuthority += OnAuthority;
 #endif
             }

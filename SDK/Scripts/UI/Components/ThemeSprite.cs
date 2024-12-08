@@ -18,7 +18,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         }
 
         public Theme Theme => overrideTheme
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             ? overrideTheme : MetaverseInternalResources.Instance.defaultTheme
 #endif
             ;

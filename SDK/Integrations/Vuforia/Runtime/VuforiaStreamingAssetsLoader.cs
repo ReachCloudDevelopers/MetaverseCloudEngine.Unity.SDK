@@ -19,7 +19,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         
         private void Awake()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (_initialized)
                 return;
             
@@ -34,7 +34,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
 
         private void OnDestroy()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             // Clean out the StreamingAssets folder
             VuforiaStreamingAssets.Clear();
 #endif

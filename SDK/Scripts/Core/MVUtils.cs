@@ -148,7 +148,7 @@ namespace MetaverseCloudEngine.Unity
                 return;
             }
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (MetaverseInternalResources.Instance.blackListedDomains.Any(x =>
                     url.StartsWith(x) || url.Replace("www.", string.Empty).StartsWith(x)))
             {

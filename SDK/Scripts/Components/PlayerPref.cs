@@ -92,7 +92,7 @@ namespace MetaverseCloudEngine.Unity.Components
             {
                 MetaverseDispatcher.AtEndOfFrame(() =>
                 {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                     MetaverseDispatcher.WaitUntil(() => 
                     !MetaverseDeepLinkAPI.IsActivating, () =>
                     {
@@ -101,7 +101,7 @@ namespace MetaverseCloudEngine.Unity.Components
                         playerPrefFloatValue.onGetValue?.Invoke(FloatValue);
                         playerPrefIntValue.onGetValue?.Invoke(IntValue);
                         playerPrefBoolValue.onGetValue?.Invoke(BoolValue);
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                     });
 #endif
                 });

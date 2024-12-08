@@ -133,7 +133,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                         }
 
                         _container = new GameObject(_uri.AbsolutePath);
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                         _container.hideFlags = HideFlags.HideInHierarchy | HideFlags.NotEditable | HideFlags.HideInInspector;
 #endif
                         if (_unloadOnDestroy)
@@ -247,7 +247,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
 
         private void AddLandPlotProperties(AnimationClip[] clips)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _container.AddComponent<LandPlotObjectCollisionProperty>();
             if (clips != null && clips.Length > 0) _container.AddComponent<LandPlotObjectAnimationProperty>().WithClips(clips);
             _container.AddComponent<LandPlotObjectScaleProperty>();
@@ -256,7 +256,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
 
         private void AddSeats()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (MetaverseInternalResources.Instance.seatPrefab)
             {
                 var seatTransforms = _container.GetComponentsInChildren<Transform>().Where(x => x.name.EndsWith("__Seat", StringComparison.OrdinalIgnoreCase));

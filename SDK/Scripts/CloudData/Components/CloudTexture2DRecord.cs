@@ -107,7 +107,7 @@ namespace MetaverseCloudEngine.Unity.CloudData.Components
 
             MetaverseCursorAPI.UnlockCursor();
 
-#if !METAVERSE_CLOUD_ENGINE_INTERNAL && UNITY_EDITOR
+#if !METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && UNITY_EDITOR
             OnPicked(UnityEditor.EditorUtility.OpenFilePanel(filePickerTitle, "", "|Image Files|*.BMP;*.bmp;*.JPG;*.JPEG*.jpg;*.jpeg;*.PNG;*.png;*.GIF;*.gif;*.tif;*.tiff;"), null);
 #else
             PickInternal(OnPicked);

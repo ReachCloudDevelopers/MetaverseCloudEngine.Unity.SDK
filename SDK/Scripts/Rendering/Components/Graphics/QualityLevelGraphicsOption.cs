@@ -20,7 +20,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
             QualitySettings.SetQualityLevel(CurrentGraphicsSubOption.intValue, true);
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
 #endif
         }
 

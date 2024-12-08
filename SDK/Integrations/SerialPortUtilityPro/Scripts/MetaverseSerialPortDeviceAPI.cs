@@ -143,7 +143,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private static void SpupDestroyed()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
                 "Device Open Error", 
                 "The device serial communication was destroyed.", 
@@ -153,7 +153,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private static void AlreadyOpening()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
                 "Device Open Error", 
                 "A device serial communication is already being opened.", 
@@ -313,7 +313,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 OnStoppedOpening?.Invoke();
             if (_opening == this)
                 _opening = null;
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (showDialog && !IsThisDeviceOpened())
                 MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
                     "Device Open Error", 

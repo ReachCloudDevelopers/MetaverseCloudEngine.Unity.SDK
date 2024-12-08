@@ -42,12 +42,12 @@ namespace MetaverseCloudEngine.Unity.XR
             QualitySettings.activeQualityLevelChanged += OnQualityLevelChanged;
             UpdateXRApplicationState();
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && MV_META_CORE
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && MV_META_CORE
             OVRManager.HMDMounted += OnOvrManagerHmdMounted;
 #endif
         }
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && MV_META_CORE
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && MV_META_CORE
         private static void OnOvrManagerHmdMounted()
         {
             if (OVRManager.instance && OVRManager.display is not null)
@@ -99,7 +99,7 @@ namespace MetaverseCloudEngine.Unity.XR
         /// </summary>
         public static void CenterOrigin()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && MV_META_CORE
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && MV_META_CORE
             if (OVRManager.instance && OVRManager.display is not null)
                 OVRManager.display.RecenterPose();
 #endif

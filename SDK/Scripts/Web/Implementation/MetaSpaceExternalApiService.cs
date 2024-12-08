@@ -112,7 +112,7 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
 
         private static Guid GetCurrentUserID()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             return MetaverseProgram.RuntimeServices.InternalMatchmakingSystem.LocalUserID;
 #else
             return Guid.Empty;

@@ -37,7 +37,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             qualityLevelGraphicsOption.Apply();
             Save();
             
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
                 "Graphic Settings",
                 "Graphic settings applied successfully!", 

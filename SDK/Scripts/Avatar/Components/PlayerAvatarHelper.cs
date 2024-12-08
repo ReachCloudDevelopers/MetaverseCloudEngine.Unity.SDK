@@ -38,7 +38,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                 MetaverseProgram.ApiClient.Account.LoggedOut += OnLoggedOut;
                 MetaverseProgram.ApiClient.Account.UserAvatarUpdated += OnUserAvatarUpdated;
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 MetaverseProgram.RuntimeServices.InternalAvatarManager.AvatarUrlUpdated += OnAvatarUpdated;
                 MetaverseProgram.RuntimeServices.InternalAvatarManager.BeginUpdate += OnAvatarBeginUpdate;
                 MetaverseProgram.RuntimeServices.InternalAvatarManager.EndUpdate += OnAvatarEndUpdate;
@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                 MetaverseProgram.ApiClient.Account.UserAvatarUpdated -= OnUserAvatarUpdated;
             }
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (MetaverseProgram.RuntimeServices?.InternalAvatarManager != null)
             {
                 MetaverseProgram.RuntimeServices.InternalAvatarManager.AvatarUrlUpdated -= OnAvatarUpdated;
@@ -76,7 +76,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
 
         public void SetReadyPlayerMeAvatarUrl(string url)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (!this || !isActiveAndEnabled) return;
             MetaverseProgram.RuntimeServices.InternalAvatarManager.UpdateAvatarUrl(url, AvatarType.ReadyPlayerMe);
 #endif
@@ -84,7 +84,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
 
         public void SetAvaturnAvatarUrl(string url)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (!this || !isActiveAndEnabled) return;
             MetaverseProgram.RuntimeServices.InternalAvatarManager.UpdateAvatarUrl(url, AvatarType.Avaturn);
 #endif
@@ -92,7 +92,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
 
         public void SetMetaAvatarUrl(string url)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (!this || !isActiveAndEnabled) return;
             MetaverseProgram.RuntimeServices.InternalAvatarManager.UpdateAvatarUrl(url, AvatarType.Prefab);
 #endif

@@ -285,7 +285,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         openXRSettings.renderMode = OpenXRSettings.RenderMode.MultiPass; // Enforce multi pass rendering.
                         var usingOpenXR = xrLoaders?.Contains(typeof(OpenXRLoader).FullName) == true;
                         
-#if MV_META_CORE && METAVERSE_CLOUD_ENGINE_INTERNAL
+#if MV_META_CORE && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                         ToggleOpenXRFeature<MetaQuestFeature>(openXRSettings, usingOpenXR && group == BuildTargetGroup.Android);
                         var metaXRFeatureSet = UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.GetFeatureSetWithId(
                             BuildTargetGroup.Standalone, "com.meta.openxr.featureset.metaxr");

@@ -1,4 +1,4 @@
-﻿#if PLAYMAKER && METAVERSE_CLOUD_ENGINE
+﻿#if PLAYMAKER && METAVERSE_CLOUD_ENGINE && METAVERSE_CLOUD_ENGINE_INITIALIZED
 using MetaverseCloudEngine.Unity.Editors;
 using UnityEditor;
 using UnityEngine;

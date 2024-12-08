@@ -150,7 +150,7 @@ namespace MetaverseCloudEngine.Unity.XR
             {
                 MetaverseProgram.Logger.Log("Initializing XR Failed");
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 MetaverseProgram.OnInitialized(() =>
                 {
                     if (MetaverseProgram.AppUpdateRequired)

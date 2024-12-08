@@ -132,7 +132,7 @@ namespace MetaverseCloudEngine.Unity.Components
 
             if (string.IsNullOrWhiteSpace(organization) && defaultToCurrentOrganization)
             {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 organization = MetaverseProgram.RuntimeServices.InternalOrganizationManager.SelectedOrganization?.Id.ToString();
 #endif
             }
@@ -191,7 +191,7 @@ namespace MetaverseCloudEngine.Unity.Components
         {
             if (useCurrentInstanceID)
             {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 var currentInstance = MetaverseProgram.RuntimeServices.InternalSceneManager.CurrentJoinState.InstanceID;
                 if (!string.IsNullOrEmpty(currentInstance))
                     return currentInstance;

@@ -27,7 +27,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 
         public void Validate()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (Application.isPlaying)
                 return;
 #endif

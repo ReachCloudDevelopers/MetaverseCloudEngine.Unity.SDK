@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using MetaverseCloudEngine.Unity.XR;
 using MetaverseCloudEngine.Unity.XR.Components;
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
 using RootMotion.FinalIK;
 #endif
 using TriInspectorMVCE;
@@ -22,13 +22,13 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
         private readonly Dictionary<MetaverseXRTrackerType, float> _confidence = new();
         private bool _isTracking;
         
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         private VRIK _vrIk;
 #endif
 
         private void OnEnable()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             if (MetaverseXRTracker.InternalTrackerInterface != null)
                 MetaverseXRTracker.InternalTrackerInterface.ConfidenceChanged += OnHumanPoseConfidence;
             MetaverseXRTracker.InternalTrackerInterfaceChanged += OnInternalTrackingInterfaceChanged;
@@ -42,7 +42,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
             ZeroOutAllIkWeights();
         }
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         private void OnInternalTrackingInterfaceChanged(XR.Abstract.IMetaverseXRTrackerManager prev, XR.Abstract.IMetaverseXRTrackerManager current)
         {
             if (!this) return;
@@ -61,7 +61,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
         {
             _isTracking = false;
             
-    #if METAVERSE_CLOUD_ENGINE_INTERNAL
+    #if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             
             if (!_vrIk)
                 return;
@@ -151,7 +151,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnRightLegConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.rightLeg.positionWeight = Mathf.Lerp(_vrIk.solver.rightLeg.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.rightLeg.rotationWeight = Mathf.Lerp(_vrIk.solver.rightLeg.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif
@@ -159,7 +159,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnLeftLegConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.leftLeg.positionWeight = Mathf.Lerp(_vrIk.solver.leftLeg.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.leftLeg.rotationWeight = Mathf.Lerp(_vrIk.solver.leftLeg.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif
@@ -167,7 +167,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnRightArmConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.rightArm.positionWeight = Mathf.Lerp(_vrIk.solver.rightArm.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.rightArm.rotationWeight = Mathf.Lerp(_vrIk.solver.rightArm.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif
@@ -175,7 +175,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnLeftArmConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.leftArm.positionWeight = Mathf.Lerp(_vrIk.solver.leftArm.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.leftArm.rotationWeight = Mathf.Lerp(_vrIk.solver.leftArm.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif
@@ -183,7 +183,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnHipConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.spine.positionWeight = Mathf.Lerp(_vrIk.solver.spine.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.spine.rotationWeight = Mathf.Lerp(_vrIk.solver.spine.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif
@@ -191,7 +191,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
 
         private void OnHeadConfidence(float f)
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             _vrIk.solver.spine.positionWeight = Mathf.Lerp(_vrIk.solver.spine.positionWeight, f, interpolationSpeed * Time.deltaTime);
             _vrIk.solver.spine.rotationWeight = Mathf.Lerp(_vrIk.solver.spine.rotationWeight, f, interpolationSpeed * Time.deltaTime);
 #endif

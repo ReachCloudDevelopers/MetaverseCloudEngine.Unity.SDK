@@ -347,7 +347,7 @@ namespace MetaverseCloudEngine.Unity.Avatar.Components
                 {
                     if (!NetworkObject || !NetworkObject.Networking.IsOfflineMode)
                     {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                         TrySpawnUserAvatarInternal(
                             () => { },
                             () => SpawnPlayerGroupAvatar(playerGroup));

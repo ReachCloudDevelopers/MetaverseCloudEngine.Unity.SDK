@@ -29,7 +29,7 @@ namespace MetaverseCloudEngine.Unity.Components
                 value = false; // If the options don't match, then we're not in kiosk mode.
             if (options.HasFlag(KioskModeOptions.OrganizationLocked))
             {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 if (MetaverseInternalResources.Instance.proxy)
                     value = true; // White label mode forces organization lock.
 #endif

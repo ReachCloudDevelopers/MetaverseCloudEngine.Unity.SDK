@@ -12,7 +12,7 @@ namespace MetaverseCloudEngine.Unity.Blockchain.Components
     [HideMonoScript]
     public class BlockchainGlb : TriInspectorMonoBehaviour
     {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         private static readonly BlockchainObjectDownloader Downloader = new();
 #endif
 
@@ -76,7 +76,7 @@ namespace MetaverseCloudEngine.Unity.Blockchain.Components
             MetaverseProgram.OnInitialized(() =>
             {
                 onLoadStarted?.Invoke();
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 Downloader.Download($"blockchain://{type}__{assetID}", go =>
                 {
                     if (!this)

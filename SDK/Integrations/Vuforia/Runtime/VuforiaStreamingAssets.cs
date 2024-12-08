@@ -9,7 +9,7 @@ using Vuforia;
 
 namespace MetaverseCloudEngine.Unity.Vuforia
 {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
     [CreateAssetMenu(menuName = "Internal/" + nameof(VuforiaStreamingAssets))]
 #endif
     [HideMonoScript]
@@ -85,7 +85,7 @@ namespace MetaverseCloudEngine.Unity.Vuforia
         }
 #endif
 
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         [Button("Dump Files")]
         public void Dump()
         {

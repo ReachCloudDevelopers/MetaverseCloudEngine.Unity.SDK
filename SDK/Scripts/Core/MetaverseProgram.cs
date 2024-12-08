@@ -79,7 +79,7 @@ namespace MetaverseCloudEngine.Unity
             get => UnityEditor.SessionState.GetBool(IsBuildingAssetBundleKey, false);
             set => UnityEditor.SessionState.SetBool(IsBuildingAssetBundleKey, value);
         }
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         public static bool InternalIsPackagingSDK {
             get => UnityEditor.SessionState.GetBool(InternalIsIsPackagingSDKKey, false);
             set => UnityEditor.SessionState.SetBool(InternalIsIsPackagingSDKKey, value);
@@ -97,7 +97,7 @@ namespace MetaverseCloudEngine.Unity
                     return false;
                 if (AppUpdateRequired)
                     return false;
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
                 if (RuntimeServices.InternalOrganizationManager.SelectedOrganization != null &&
                     !RuntimeServices.InternalOrganizationManager.SelectedOrganization.SupportsCrypto)
                     return false;
@@ -124,7 +124,7 @@ namespace MetaverseCloudEngine.Unity
         /// This includes Unity Editor.
         /// </summary>
         public static bool IsCoreApp {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             get => true;
 #else
             get => false;
@@ -325,7 +325,7 @@ namespace MetaverseCloudEngine.Unity
             else InitializationCallbacks.Enqueue(action);
         }
 
-#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
         [System.Runtime.InteropServices.DllImport("__Internal")] private static extern bool IsAndroidWebGL();
         [System.Runtime.InteropServices.DllImport("__Internal")] private static extern bool IsIOSWebGL();
 #endif
@@ -336,7 +336,7 @@ namespace MetaverseCloudEngine.Unity
         /// <returns></returns>
         public static bool IsAndroidWebPlatform()
         {
-#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             return IsAndroidWebGL();
 #else
             return false;
@@ -349,7 +349,7 @@ namespace MetaverseCloudEngine.Unity
         /// <returns></returns>
         public static bool IsIOSWebPlatform()
         {
-#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL
+#if !UNITY_EDITOR && UNITY_WEBGL && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
             return IsIOSWebGL();
 #else
             return false;
