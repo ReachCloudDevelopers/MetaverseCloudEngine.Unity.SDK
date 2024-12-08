@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.81.0
-- Added automatic Open CV script define symbols.
+## 2.82.0
+- Set minimum unity version to 2022.3.x
 
 Updated on December 08, 2024
