@@ -1628,34 +1628,46 @@ namespace MetaverseCloudEngine.Unity
             }
             
             MetaSpace.Instance.SetCachedValue(key, null);
-            try
+            // ReSharper disable once RedundantUnsafeContext
+            unsafe // No idea why this fixes crashing.
             {
-                MetaverseProgram.Logger.Log("Loading world map from " + path + ". Opening FS...");
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-                using var ms = new MemoryStream();
-                fs.CopyTo(ms);
-                
-                MetaverseProgram.Logger.Log("Creating native array...");
-                using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
-                
-                MetaverseProgram.Logger.Log("Reading world map...");
-                nativeData.CopyFrom(ms.GetBuffer());
-
-                MetaverseProgram.Logger.Log("Deserializing world map...");
-                var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
-                if (worldMap.HasValue)
+                try
                 {
-                    MetaverseProgram.Logger.Log("Applying world map...");
-                    sessionSubsystem.ApplyWorldMap(worldMap.Value);
-                    onLoaded?.Invoke(worldMap.Value);
-                    return;
-                }
+                    MetaverseProgram.Logger.Log("Loading world map from " + path + ". Opening FS...");
+                    using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+                    using var ms = new MemoryStream();
+                    fs.CopyTo(ms);
+                    
+                    MetaverseProgram.Logger.Log("Creating native array...");
+                    using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
+                    
+                    MetaverseProgram.Logger.Log("Reading world map...");
+                    nativeData.CopyFrom(ms.GetBuffer());
 
-                onFailed?.Invoke("Failed to deserialize world map");
-            }
-            finally
-            {
-                MetaSpace.Instance.RemoveFromCache(key);
+                    fs.Close();
+                    ms.Close();
+
+                    MetaverseProgram.Logger.Log("Deserializing world map...");
+                    var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
+                    if (worldMap.HasValue)
+                    {
+                        MetaverseProgram.Logger.Log("Applying world map...");
+                        sessionSubsystem.ApplyWorldMap(worldMap.Value);
+                        onLoaded?.Invoke(worldMap.Value);
+                        return;
+                    }
+
+                    onFailed?.Invoke("Failed to deserialize world map");
+                    File.Delete(path);
+                }
+                catch (Exception e)
+                {
+                    onFailed?.Invoke(e);
+                }
+                finally
+                {
+                    MetaSpace.Instance.RemoveFromCache(key);
+                }
             }
         }
 
