@@ -1702,6 +1702,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 EditorUtility.DisplayProgressBar("Installing XR Interaction Toolkit", "Please wait...", 0);
                 System.Threading.Thread.Sleep(100);
             }
+            EditorUtility.ClearProgressBar();
         }
     }
 }
