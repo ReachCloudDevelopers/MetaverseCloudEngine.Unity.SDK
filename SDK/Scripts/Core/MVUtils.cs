@@ -20,6 +20,7 @@ using System.Reflection;
 using JetBrains.Annotations;
 using MetaverseCloudEngine.Unity.Scripting.Components;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Networking;
@@ -1580,7 +1581,7 @@ namespace MetaverseCloudEngine.Unity
         public static void LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
             string key, 
-            Action<ARWorldMap> onLoaded,
+            Action onLoaded,
             Action<object> onFailed, 
             CancellationToken cancellationToken = default)
         {
@@ -1614,7 +1615,8 @@ namespace MetaverseCloudEngine.Unity
                 return;
             }
 
-            if (sessionSubsystem.trackingState == TrackingState.None)
+            if (sessionSubsystem.trackingState != TrackingState.Tracking ||
+                sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
             {
                 MetaverseDispatcher.WaitForSeconds(1, () => LoadArKitWorldMapAsync(session, key, onLoaded, onFailed, cancellationToken));
                 return;
@@ -1629,7 +1631,7 @@ namespace MetaverseCloudEngine.Unity
             
             MetaSpace.Instance.SetCachedValue(key, null);
             // ReSharper disable once RedundantUnsafeContext
-            unsafe // No idea why this fixes crashing.
+            unsafe
             {
                 try
                 {
@@ -1649,20 +1651,29 @@ namespace MetaverseCloudEngine.Unity
 
                     MetaverseProgram.Logger.Log("Deserializing world map...");
                     var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
-                    if (worldMap.HasValue)
+                    if (worldMap is { valid: true } validMap)
                     {
                         MetaverseProgram.Logger.Log("Applying world map...");
-                        sessionSubsystem.ApplyWorldMap(worldMap.Value);
-                        onLoaded?.Invoke(worldMap.Value);
+                        sessionSubsystem.ApplyWorldMap(validMap);
+                        MetaverseDispatcher.AtEndOfFrame(() =>
+                        {
+                            onLoaded?.Invoke();
+                        });
                         return;
                     }
-
-                    onFailed?.Invoke("Failed to deserialize world map");
-                    File.Delete(path);
+                    
+                    MetaverseDispatcher.AtEndOfFrame(() =>
+                    {
+                        onFailed?.Invoke("Failed to deserialize world map");
+                        DeleteArKitWorldMap(key);
+                    });
                 }
                 catch (Exception e)
                 {
-                    onFailed?.Invoke(e);
+                    MetaverseDispatcher.AtEndOfFrame(() =>
+                    {
+                        onFailed?.Invoke(e);
+                    });
                 }
                 finally
                 {
@@ -1683,7 +1694,7 @@ namespace MetaverseCloudEngine.Unity
         public static void SaveArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session, 
             string key, 
-            Action<ARWorldMap> onSaved,
+            Action onSaved,
             Action<object> onFailed, 
             CancellationToken cancellationToken = default)
         {
@@ -1716,6 +1727,13 @@ namespace MetaverseCloudEngine.Unity
                 MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
                 return;
             }
+
+            if (sessionSubsystem.trackingState != TrackingState.Tracking ||
+                sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
+            {
+                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                return;
+            }
             
             MetaSpace.Instance.SetCachedValue(key, null);
 
@@ -1736,21 +1754,30 @@ namespace MetaverseCloudEngine.Unity
                                 onFailed?.Invoke(r);
                                 return;
                             }
-                        
-                            using var nativeData = map.Serialize(Allocator.Temp);
-                            if (!Directory.Exists(WorldMapSavePath))
-                                Directory.CreateDirectory(WorldMapSavePath);
-                            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                            using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
-                            fs.Write(nativeData);
-                            createdFile = true;
-                            onSaved?.Invoke(map);
+
+                            using (var nativeData = map.Serialize(Allocator.Temp))
+                            {
+                                if (!Directory.Exists(WorldMapSavePath))
+                                    Directory.CreateDirectory(WorldMapSavePath);
+                                var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                                using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                                fs.Write(nativeData);
+                                createdFile = true;
+                            }
+                            
+                            MetaverseDispatcher.AtEndOfFrame(() =>
+                            {
+                                onSaved?.Invoke();
+                            });
                         }
                         catch (Exception e)
                         {
-                            if (createdFile)
-                                File.Delete(Path.Combine(WorldMapSavePath, $"{key}.worldmap"));
-                            onFailed?.Invoke(e);
+                            MetaverseDispatcher.AtEndOfFrame(() =>
+                            {
+                                if (createdFile)
+                                    DeleteArKitWorldMap(key);       
+                                onFailed?.Invoke(e);
+                            });
                         }
                         finally
                         {

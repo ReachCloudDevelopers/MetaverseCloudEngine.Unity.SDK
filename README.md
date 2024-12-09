@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.82.0
-- Set minimum unity version to 2022.3.x
+## 2.83.0
+- Made AR world map load/save a little more safe to call by adding checks to the current tracking state and adding an extra frame delay before invoking the callbacks.
 
-Updated on December 08, 2024
+Updated on December 09, 2024
