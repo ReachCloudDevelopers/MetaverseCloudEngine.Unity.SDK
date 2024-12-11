@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.83.0
-- Made AR world map load/save a little more safe to call by adding checks to the current tracking state and adding an extra frame delay before invoking the callbacks.
+## 2.84.0
+- Updates to MetaverseScript for stability and improvements to error/null checking
 
-Updated on December 09, 2024
+Updated on December 11, 2024

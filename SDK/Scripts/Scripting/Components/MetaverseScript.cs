@@ -219,7 +219,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 {
                     return;
                 }
-
                 if (MetaSpace.Instance)
                 {
                     MetaSpace.OnReady(OnMetaSpaceReady);
@@ -229,25 +228,28 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             }
             catch(Exception e)
             {
-                MetaverseProgram.Logger.LogError("Failed to initialize Metaverse Script: " + e);
-                enabled = false;
+                MetaverseProgram.Logger.LogError($"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e.GetBaseException()}");
+                if (this) enabled = false;
             }
             return;
 
             void OnMetaSpaceReady()
             {
+                if (!this) return;
                 MetaverseDispatcher.AtEndOfFrame(() =>
                 {
+                    if (!this) return;
                     try
                     {
                         if (!TryInitializeEngine())
                         {
-                            enabled = false;
+                            if (this) enabled = false;
                             return;
                         }
 
                         unsafe void CallAwake()
                         {
+                            if (!this) return;
                             _ready = true;
 
                             JsValue awakeMethod = null;
@@ -262,12 +264,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                                 }
                                 catch (Exception e)
                                 {
-                                    MetaverseProgram.Logger.LogError("Failed to execute initialization method: " + e);
+                                    MetaverseProgram.Logger.LogError($"Failed to execute initialization method on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
                                 }
                             }
                         }
 
-                        if (gameObject.activeInHierarchy)
+                        if (this && gameObject.activeInHierarchy)
                         {
                             CallAwake();
                         }
@@ -275,23 +277,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         {
                             MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
                             {
-                                if (!this) return;
-                                CallAwake();
+                                if (this) CallAwake();
                             });
                         }
                         
                         unsafe void CallOnEnabled()
                         {
+                            if (!this) return;
                             JsValue onEnableMethod = null;
                             if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
                                 _ = _engine.Invoke(onEnableMethod);
-
                             JsValue startMethod = null;
                             if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
                                 _ = _engine.Invoke(startMethod);
                         }
 
-                        if (isActiveAndEnabled)
+                        if (this && isActiveAndEnabled)
                         {
                             CallOnEnabled();
                         }
@@ -299,15 +300,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         {
                             MetaverseDispatcher.WaitUntil(() => !this || isActiveAndEnabled, () =>
                             {
-                                if (!this) return;
-                                CallOnEnabled();
+                                if (this) CallOnEnabled();
                             });
                         }
                     }
                     catch (Exception e)
                     {
-                        MetaverseProgram.Logger.LogError("Failed to initialize MetaverseScript '" + name + "': " + e);
-                        enabled = false;
+                        MetaverseProgram.Logger.LogError($"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e.GetBaseException()}");
+                        if (this) enabled = false;
                     }
                 });
             }
@@ -524,6 +524,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="fn">The function to execute.</param>
         public unsafe void ExecuteVoid(string fn)
         {
+            if (!this)
+                return;
+
             if (string.IsNullOrEmpty(fn))
                 return;
 
@@ -547,6 +550,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="args">The arguments to pass to the function.</param>
         public unsafe void ExecuteVoid(string fn, object[] args)
         {
+            if (!this)
+                return;
+
             if (string.IsNullOrEmpty(fn))
                 return;
 
@@ -571,6 +577,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The result of the function.</returns>
         public unsafe JsValue Execute(string fn, object[] arguments)
         {
+            if (!this)
+                return null;
+
             if (string.IsNullOrEmpty(fn))
                 return null;
 
@@ -596,9 +605,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The result of the function.</returns>
         public unsafe JsValue Execute(string fn)
         {
-            if (string.IsNullOrEmpty(fn))
+            if (!this)
                 return null;
 
+            if (string.IsNullOrEmpty(fn))
+                return null;
+            
             if (!_ready)
             {
                 MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
@@ -632,8 +644,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The variable value.</returns>
         public unsafe object TryGetVar(string variableName, object defaultValue)
         {
-            if (variables == null) return defaultValue;
-            return variables.declarations.IsDefined(variableName) ? variables.declarations.Get(variableName) : defaultValue;
+            if (!variables) return defaultValue;
+            return variables.declarations?.IsDefined(variableName) == true ? variables.declarations.Get(variableName) : defaultValue;
         }
         
         /// <summary>
@@ -643,8 +655,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <param name="value">The value to set it to.</param>
         public unsafe void SetVar(string variableName, object value)
         {
-            if (variables == null) return;
-            variables.declarations.Set(variableName, value);
+            if (!variables) return;
+            variables.declarations?.Set(variableName, value);
         }
         
         /// <summary>
@@ -656,7 +668,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public unsafe bool TrySetVar(string variableName, object value)
         {
             if (variables == null) return false;
-            if (!variables.declarations.IsDefined(variableName)) return false;
+            if (variables.declarations?.IsDefined(variableName) != true) return false;
             variables.declarations.Set(variableName, value);
             return true;
         }
@@ -695,7 +707,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             if (_engine == null)
                 return false;
-
             _ = _engine.SetValue(propertyName, value);
             return true;
         }
@@ -707,7 +718,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>true if the member is allowed, false otherwise.</returns>
         public static unsafe bool FilterAllowedMembers(MemberInfo member)
         {
-            if (member is null)
+            if (member is null || 
+                string.IsNullOrEmpty(member.Name) ||
+                string.IsNullOrEmpty(member.DeclaringType?.FullName))
                 return false;
             return
                 !IsBlackListedMemberName(member.Name) &&
@@ -796,7 +809,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return _methods != null;
         }
 
-        private static unsafe void DefaultEngineOptions(Options options, bool strict)
+        private unsafe void DefaultEngineOptions(Options options, bool strict)
         {
             options.AllowClr(GetAssemblies())
                 .AllowClrWrite()
@@ -811,9 +824,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             options.Interop.TrackObjectWrapperIdentity = false;
         }
 
-        private static unsafe bool OnJavaScriptCLRException(Exception exception)
+        private unsafe bool OnJavaScriptCLRException(Exception exception)
         {
-            MetaverseProgram.Logger.LogError("Error in JavaScript CLR: " + exception);
+            MetaverseProgram.Logger.LogError($"An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
             return true;
         }
 
@@ -930,7 +943,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 context._timeoutHandles.Add(h);
                 MetaverseDispatcher.WaitForSeconds(t / 1000f, () => {
                     if (!context._timeoutHandles.Remove(h) || !context) return;
-                    try { a?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError($"Error in timeout ({h}): {e}"); }
+                    try { a?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError($"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
                 });
                 return h;
             }) },
