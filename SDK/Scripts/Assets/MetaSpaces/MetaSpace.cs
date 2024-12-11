@@ -291,20 +291,37 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 
         public static void OnReady(Action<MetaSpace> action, Action onFailed = null)
         {
-            if (Instance is null)
+            try
             {
-                onFailed?.Invoke();
-                return;
-            }
+                if (Instance is null)
+                {
+                    onFailed?.Invoke();
+                    return;
+                }
 
-            if (Instance.IsInitialized)
+                if (Instance.IsInitialized)
+                {
+                    action?.Invoke(Instance);
+                    return;
+                }
+
+                Instance.Initialized += () => MetaverseDispatcher.AtEndOfFrame(() => action?.Invoke(Instance));
+                Instance._initializationFailureActions.Add(onFailed);
+            }
+            catch (Exception e)
             {
-                action?.Invoke(Instance);
-                return;
+                if (e.GetBaseException() is NullReferenceException nrf)
+                {
+                    if (!Instance)
+                    {
+                        try { onFailed?.Invoke(); } catch (Exception e2) { /* ignored */ }
+                        return;
+                    }
+                }
+                
+                MetaverseProgram.Logger.LogError(
+                    $"Failed to register action for MetaSpace.OnReady: {e.GetBaseException()}");
             }
-
-            Instance.Initialized += () => MetaverseDispatcher.AtEndOfFrame(() => action?.Invoke(Instance));
-            Instance._initializationFailureActions.Add(onFailed);
         }
 
         #endregion

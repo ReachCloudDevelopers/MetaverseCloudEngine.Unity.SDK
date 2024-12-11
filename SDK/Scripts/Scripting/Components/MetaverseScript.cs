@@ -256,12 +256,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
                                 _ = _engine.Invoke(awakeMethod);   
                             
-                            while (_initializationMethodQueue.Count > 0)
+                            while (_initializationMethodQueue.TryDequeue(out var a))
                             {
-                                try
-                                {
-                                    _initializationMethodQueue.Dequeue()?.Invoke();
-                                }
+                                try { a?.Invoke(); }
                                 catch (Exception e)
                                 {
                                     MetaverseProgram.Logger.LogError($"Failed to execute initialization method on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
@@ -787,15 +784,16 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 return false;
 
             _engine = new Engine(o => DefaultEngineOptions(o, true))
-                .Do(e => GetEmbeddedGlobalMembers(this).ForEach(m =>
-                {
-                    if (m.Value is Delegate d)
+                .Do(e => GetEmbeddedGlobalMembers(this)
+                    .ForEach(m =>
                     {
-                        e.SetValue(m.Key, d);
-                        return;
-                    }
-                    e.SetValue(m.Key, m.Value);
-                }));
+                        if (m.Value is Delegate d)
+                        {
+                            e.SetValue(m.Key, d);
+                            return;
+                        }
+                        e.SetValue(m.Key, m.Value);
+                    }));
             
             foreach (var include in includes)
                 if (include && !string.IsNullOrEmpty(include.text))
