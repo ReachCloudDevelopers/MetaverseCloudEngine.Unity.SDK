@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.85.0
-- Improve metaverse script error handling
+## 2.86.0
+- Updated implementation to properly track mouse/touch position over time
 
-Updated on December 11, 2024
+Updated on December 12, 2024

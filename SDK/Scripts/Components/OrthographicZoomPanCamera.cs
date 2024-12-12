@@ -23,6 +23,7 @@ namespace MetaverseCloudEngine.Unity.Components
         [SerializeField] private int m_PanMouseButton = 1;
 
         private Vector2 m_LastTouchPosition;
+        private float m_InitialPinchDistance;
         private bool m_Initiated;
 
         public Camera Camera
@@ -67,11 +68,16 @@ namespace MetaverseCloudEngine.Unity.Components
         {
             var isOverUI = MVUtils.IsPointerOverUI();
             if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
+            {
                 m_Initiated = true;
+                m_LastTouchPosition = Input.mousePosition;
+            }
 
             if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
             {
-                Vector3 pan = new Vector3(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"), 0) * (m_Camera.orthographicSize * m_PanSpeed);
+                Vector3 pan = new Vector3(
+                    Input.mousePosition.x - m_LastTouchPosition.x,
+                    Input.mousePosition.y - m_LastTouchPosition.y, 0) * (m_Camera.orthographicSize * m_PanSpeed);
                 pan = m_Camera.transform.rotation * pan;
                 m_Camera.transform.position -= pan;
             }
@@ -128,18 +134,16 @@ namespace MetaverseCloudEngine.Unity.Components
         {
             var touch0 = Input.GetTouch(0);
             var touch1 = Input.GetTouch(1);
-            var pinchDistance = Vector2.Distance(touch0.position, touch1.position);
-
             if (touch1.phase == TouchPhase.Began || touch0.phase == TouchPhase.Began)
             {
-                m_LastTouchPosition = Vector2.zero;
+                m_InitialPinchDistance = Vector2.Distance(touch0.position, touch1.position);
                 m_Initiated = !MVUtils.IsPointerOverUI();
                 return;
             }
 
             if (touch0.phase == TouchPhase.Moved || touch1.phase == TouchPhase.Moved)
             {
-                float delta = (Vector2.Distance(touch0.position, touch1.position) - pinchDistance) * m_ZoomSpeed;
+                var delta = (Vector2.Distance(touch0.position, touch1.position) - m_InitialPinchDistance) * m_ZoomSpeed;
                 m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - delta, m_MinZoom, m_MaxZoom);
             }
         }
