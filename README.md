@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.86.0
-- Updated implementation to properly track mouse/touch position over time
+## 2.87.0
+- Updated serial port device UI
 
-Updated on December 12, 2024
+Updated on December 13, 2024

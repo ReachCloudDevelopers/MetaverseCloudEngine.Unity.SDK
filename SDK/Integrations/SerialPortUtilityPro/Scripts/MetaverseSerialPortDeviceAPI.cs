@@ -94,13 +94,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             if (_opening != null)
             {
-                AlreadyOpening();
+                //AlreadyOpening();
                 return;
             }
 
             if (!_spup)
             {
-                SpupDestroyed();
+                //SpupDestroyed();
                 return;
             }
 
@@ -143,22 +143,22 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private static void SpupDestroyed()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
-            MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
-                "Device Open Error", 
-                "The device serial communication was destroyed.", 
-                "OK");
-#endif
+// #if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
+//             MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+//                 "Device Open Error", 
+//                 "The device serial communication was destroyed.", 
+//                 "OK");
+// #endif
         }
 
         private static void AlreadyOpening()
         {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
-            MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
-                "Device Open Error", 
-                "A device serial communication is already being opened.", 
-                "OK");
-#endif
+// #if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
+//             MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+//                 "Device Open Error", 
+//                 "A device serial communication is already being opened.", 
+//                 "OK");
+// #endif
         }
 
         private void OpenInternal()
@@ -313,13 +313,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 OnStoppedOpening?.Invoke();
             if (_opening == this)
                 _opening = null;
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
-            if (showDialog && !IsThisDeviceOpened())
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
-                    "Device Open Error", 
-                    "Failed to open device", 
-                    "OK");
-#endif
+// #if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
+//             if (showDialog && !IsThisDeviceOpened())
+//                 MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(
+//                     "Device Open Error", 
+//                     "Failed to open device", 
+//                     "OK");
+// #endif
         }
 
         public bool IsThisDeviceOpened()
