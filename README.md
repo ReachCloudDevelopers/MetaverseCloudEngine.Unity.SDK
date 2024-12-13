@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.90.0
-- Added better ARKit map error handling
+## 2.91.0
+- Added CheckForUpdates API to MetaverseRuntimeServices class.
 
 Updated on December 13, 2024
