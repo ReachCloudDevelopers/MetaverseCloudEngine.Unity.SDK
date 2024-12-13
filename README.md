@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.87.0
-- Updated serial port device UI
+## 2.88.0
+- Added better life-cycle management to AR Foundation ARSession
 
 Updated on December 13, 2024
