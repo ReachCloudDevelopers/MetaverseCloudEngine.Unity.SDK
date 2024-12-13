@@ -89,7 +89,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         /// </summary>
         public UnityEvent<ARSession> OnAwake => awake;
 
-#if MV_AR_CORE_EXTENSIONS
+#if MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR)
         [SerializeField]
         [InfoBox("To supply the ARSession to ARCoreExtensions, assign the ARCoreExtensions component to this field.")]
         private Google.XR.ARCoreExtensions.ARCoreExtensions _arCoreExtensions;
@@ -105,7 +105,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             MetaverseARSessionInstance.ARSession.attemptUpdate = _initialAttemptUpdate;
             MetaverseARSessionInstance.ARSession.matchFrameRateRequested = _initialMatchFrameRate;
             MetaverseARSessionInstance.ARSession.requestedTrackingMode = _initialRequestedTrackingMode;
-#if MV_AR_CORE_EXTENSIONS
+#if MV_AR_CORE_EXTENSIONS && (UNITY_ANDROID || UNITY_EDITOR)
             if (_arCoreExtensions) _arCoreExtensions.Session = MetaverseARSessionInstance.ARSession;
 #endif
             awake?.Invoke(MetaverseARSessionInstance.ARSession);

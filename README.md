@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.88.0
-- Added better life-cycle management to AR Foundation ARSession
+## 2.89.0
+- Update to fix error referencing ARCoreExtensions when on wrong platform
 
 Updated on December 13, 2024
