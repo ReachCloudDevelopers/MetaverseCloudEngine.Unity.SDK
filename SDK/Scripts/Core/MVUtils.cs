@@ -1655,7 +1655,7 @@ namespace MetaverseCloudEngine.Unity
                     {
                         MetaverseProgram.Logger.Log("Applying world map...");
                         sessionSubsystem.ApplyWorldMap(validMap);
-                        MetaverseDispatcher.AtEndOfFrame(() =>
+                        MetaverseDispatcher.WaitForSeconds(0.5f, () =>
                         {
                             onLoaded?.Invoke();
                         });
@@ -1664,8 +1664,8 @@ namespace MetaverseCloudEngine.Unity
                     
                     MetaverseDispatcher.AtEndOfFrame(() =>
                     {
-                        onFailed?.Invoke("Failed to deserialize world map");
                         DeleteArKitWorldMap(key);
+                        onFailed?.Invoke("Failed to deserialize world map");
                     });
                 }
                 catch (Exception e)
@@ -1745,42 +1745,77 @@ namespace MetaverseCloudEngine.Unity
                     // ReSharper disable once RedundantUnsafeContext
                     unsafe
                     {
-                        var createdFile = false;
-                        try
+                        var finishedWrite = false;
+                        if (r != ARWorldMapRequestStatus.Success || !map.valid)
                         {
-                            if (r != ARWorldMapRequestStatus.Success || !map.valid)
+                            try
                             {
                                 if (map.valid) map.Dispose();
-                                onFailed?.Invoke(r);
-                                return;
+                                MetaverseDispatcher.AtEndOfFrame(() =>
+                                {
+                                    try
+                                    {
+                                        onFailed?.Invoke(r);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        MetaverseProgram.Logger.LogError(e.GetBaseException());
+                                    }
+                                });
                             }
-
+                            catch (Exception e)
+                            {
+                                MetaverseProgram.Logger.LogError(e.GetBaseException());
+                            }
+                            
+                            return;
+                        }
+                        
+                        try
+                        {
                             using (var nativeData = map.Serialize(Allocator.Temp))
                             {
                                 if (!Directory.Exists(WorldMapSavePath))
                                     Directory.CreateDirectory(WorldMapSavePath);
-                                var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                                using var fs = new FileStream(path, FileMode.OpenOrCreate, FileAccess.Write);
+                                var outputPath = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+                                if (File.Exists(outputPath))
+                                    File.Delete(outputPath);
+                                using var fs = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write);
                                 fs.Write(nativeData);
-                                createdFile = true;
+                                finishedWrite = true;
                             }
-                            
+
                             MetaverseDispatcher.AtEndOfFrame(() =>
                             {
-                                onSaved?.Invoke();
+                                try
+                                {
+                                    onSaved?.Invoke();
+                                }
+                                catch (Exception e)
+                                {
+                                    MetaverseProgram.Logger.LogError(e.GetBaseException());
+                                }
                             });
                         }
                         catch (Exception e)
                         {
                             MetaverseDispatcher.AtEndOfFrame(() =>
                             {
-                                if (createdFile)
-                                    DeleteArKitWorldMap(key);       
-                                onFailed?.Invoke(e);
+                                try
+                                {
+                                    if (finishedWrite)
+                                        DeleteArKitWorldMap(key);
+                                    onFailed?.Invoke(e);
+                                }
+                                catch (Exception ex)
+                                {
+                                    MetaverseProgram.Logger.Log(ex.GetBaseException());
+                                }
                             });
                         }
                         finally
                         {
+                            if (map.valid) map.Dispose();
                             MetaSpace.Instance.RemoveFromCache(key);
                         }
                     }

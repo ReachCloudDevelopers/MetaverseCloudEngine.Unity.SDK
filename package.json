@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.89.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.89.0\n- Update to fix error referencing ARCoreExtensions when on wrong platform\n\nUpdated on December 13, 2024",
+  "version": "2.90.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.90.0\n- Added better ARKit map error handling\n\nUpdated on December 13, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
