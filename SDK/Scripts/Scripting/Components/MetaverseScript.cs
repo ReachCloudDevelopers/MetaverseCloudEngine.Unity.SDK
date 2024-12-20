@@ -65,8 +65,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             nameof(FindObjectsOfType),
             nameof(FindObjectsOfTypeAll),
             nameof(FindObjectsOfTypeIncludingAssets),
-            nameof(DontDestroyOnLoad),
-            nameof(Input.location),
+            nameof(DontDestroyOnLoad)
         };
 #pragma warning restore CS0618
 

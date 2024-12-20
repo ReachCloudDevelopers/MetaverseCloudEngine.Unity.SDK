@@ -1662,6 +1662,8 @@ namespace MetaverseCloudEngine.Unity
                         return;
                     }
                     
+                    worldMap?.Dispose();
+                    
                     MetaverseDispatcher.AtEndOfFrame(() =>
                     {
                         DeleteArKitWorldMap(key);

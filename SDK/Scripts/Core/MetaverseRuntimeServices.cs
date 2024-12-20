@@ -6,6 +6,7 @@ using MetaverseCloudEngine.Unity.Services.Abstract;
 using MetaverseCloudEngine.Unity.Account.Abstract;
 using MetaverseCloudEngine.Unity.Account.Poco;
 
+// ReSharper disable once CheckNamespace
 namespace MetaverseCloudEngine.Unity
 {
     public partial class MetaverseRuntimeServices
@@ -19,7 +20,9 @@ namespace MetaverseCloudEngine.Unity
             _prefs = prefs;
         }
 
+        [UsedImplicitly]
         public bool UpdateRequired { get; private set; }
+        [UsedImplicitly]
         public ILoginStore LoginStore { get; private set; }
 
         public async Task InitializeAsync()

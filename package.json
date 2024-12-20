@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.91.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.91.0\n- Added CheckForUpdates API to MetaverseRuntimeServices class.\n\nUpdated on December 13, 2024",
+  "version": "2.92.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.92.0\n- Added support to Input.location to SDK\n- Properly dispose world map in ARKit\n\nUpdated on December 20, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
