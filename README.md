@@ -12,8 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.92.0
-- Added support to Input.location to SDK
-- Properly dispose world map in ARKit
+## 2.93.0
+- Updated MetaverseCloudEngine API Client and Common modules
 
-Updated on December 20, 2024
+Updated on December 21, 2024
