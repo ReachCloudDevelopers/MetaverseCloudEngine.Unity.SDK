@@ -148,7 +148,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     using (_ = new EditorGUILayout.HorizontalScope())
                     {
                         _password = MetaverseEditorUtils.TextField("Password", _password, !_revealPassword);
-                        if (GUILayout.Button("View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
+                        if (GUILayout.Button(_revealPassword ? "Hide" : "View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
                             _revealPassword = !_revealPassword;
                     }
                     if (_page is LoginPage.LogIn)
@@ -160,7 +160,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     using (_ = new EditorGUILayout.HorizontalScope())
                     {
                         _confirmPassword = MetaverseEditorUtils.TextField("Confirm Password", _confirmPassword, !_revealConfirmPassword);
-                        if (GUILayout.Button("View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
+                        if (GUILayout.Button(_revealConfirmPassword ? "Hide" : "View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
                             _revealConfirmPassword = !_revealConfirmPassword;
                     }
 

@@ -12,8 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.96.0
-- Renamed MetaverseAccountEditor.cs to MetaverseAccountWindow.cs
-- Added ability to reveal password on account window
+## 2.96.1
+- Made it so that View button says Hide when password is revealed
+- Added better handling for package install failure
 
 Updated on December 23, 2024
