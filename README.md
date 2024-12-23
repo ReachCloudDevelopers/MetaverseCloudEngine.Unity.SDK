@@ -12,8 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.94.0
-- Removed unnecessary logging from MetaverseWebClient
-- Fixed error being thrown in MetaSpaceNetworkOptions.InitSpawnablePrefabsCache
+## 2.95.0
+- Updated styling of MetaSpaceNetworkOptions
+- Fix null reference exception in MetaSpaceNetworkOptions when dictionary was null
 
 Updated on December 23, 2024

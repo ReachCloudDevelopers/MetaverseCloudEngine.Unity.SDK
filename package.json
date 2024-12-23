@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.94.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.94.0\n- Removed unnecessary logging from MetaverseWebClient\n- Fixed error being thrown in MetaSpaceNetworkOptions.InitSpawnablePrefabsCache\n\nUpdated on December 23, 2024",
+  "version": "2.95.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.95.0\n- Updated styling of MetaSpaceNetworkOptions\n- Fix null reference exception in MetaSpaceNetworkOptions when dictionary was null\n\nUpdated on December 23, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

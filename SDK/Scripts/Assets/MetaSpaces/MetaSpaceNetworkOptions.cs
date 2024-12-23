@@ -128,7 +128,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             _spawnablePrefabKeyMap ??= new Dictionary<Guid, (Guid, Guid)>();
 
             var key = (resourceID: prefab.ID.Value, metaPrefabID: prefab.SourcePrefabID.GetValueOrDefault());
-            if (_spawnablePrefabs.TryGetValue(key, out var pf))
+            if (_spawnablePrefabs.TryGetValue(key, out _))
                 return;
 
             _spawnablePrefabKeyMap[prefab.ID.Value] = key;
@@ -137,7 +137,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             if (_spawnableCallbacks == null ||
                 !_spawnableCallbacks.TryGetValue(prefab.ID.Value, out var callbacks)) return;
             foreach (var cb in callbacks)
-                try { cb?.Invoke(key.resourceID, key.metaPrefabID, prefab.gameObject); } catch(Exception e) { Debug.LogException(e); };
+                try { cb?.Invoke(key.resourceID, key.metaPrefabID, prefab.gameObject); } catch(Exception e) { Debug.LogException(e); }
             _spawnableCallbacks.Remove(prefab.ID.Value);
             if (_spawnableCallbacks.Count == 0)
                 _spawnableCallbacks = null;
@@ -149,16 +149,12 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         /// <param name="id">The ID of the spawnable prefab.</param>
         public void UnregisterSpawnable(Guid id)
         {
-            if (_spawnablePrefabKeyMap != null && _spawnablePrefabKeyMap.TryGetValue(id, out var key))
-            {
-                if (_spawnablePrefabs?.Remove(key) == true)
-                {
-                    _spawnablePrefabKeyMap.Remove(id);
-                    _spawnableCallbacks?.Remove(id);
-                    if (_spawnableCallbacks.Count == 0)
-                        _spawnableCallbacks = null;
-                }
-            }
+            if (_spawnablePrefabKeyMap == null || !_spawnablePrefabKeyMap.TryGetValue(id, out var key)) return;
+            if (_spawnablePrefabs?.Remove(key) != true) return;
+            _spawnablePrefabKeyMap.Remove(id);
+            _spawnableCallbacks?.Remove(id);
+            if (_spawnableCallbacks?.Count == 0)
+                _spawnableCallbacks = null;
         }
 
         public void RegisterSpawnableCallback(Guid id, SpawnableResourceCallback callback)
@@ -181,30 +177,19 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             if (_spawnableCallbacks == null)
                 return;
 
-            if (_spawnableCallbacks.TryGetValue(id, out var actions))
-            {
-                actions.Remove(callback);
-                if (actions.Count == 0)
-                {
-                    _spawnableCallbacks.Remove(id);
-                    if (_spawnableCallbacks.Count == 0)
-                        _spawnableCallbacks = null;
-                }
-            }
+            if (!_spawnableCallbacks.TryGetValue(id, out var actions)) return;
+            actions.Remove(callback);
+            if (actions.Count != 0) return;
+            _spawnableCallbacks.Remove(id);
+            if (_spawnableCallbacks.Count == 0)
+                _spawnableCallbacks = null;
         }
 
         public GameObject GetSpawnablePrefab(Guid id)
         {
             if (_spawnablePrefabs == null)
                 return null;
-
-            if (_spawnablePrefabKeyMap.TryGetValue(id, out var key))
-            {
-                if (_spawnablePrefabs.TryGetValue(key, out var go))
-                    return go;
-            }
-
-            return null;
+            return !_spawnablePrefabKeyMap.TryGetValue(id, out var key) ? null : _spawnablePrefabs.GetValueOrDefault(key);
         }
     }
 }
