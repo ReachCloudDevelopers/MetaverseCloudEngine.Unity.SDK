@@ -403,7 +403,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 EditorGUILayout.HelpBox("Please log in to upload.", MessageType.Info);
 
                 if (GUILayout.Button("Log In"))
-                    MetaverseAccountEditor.Open();
+                    MetaverseAccountWindow.Open();
 
                 return;
             }

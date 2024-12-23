@@ -12,8 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.95.0
-- Updated styling of MetaSpaceNetworkOptions
-- Fix null reference exception in MetaSpaceNetworkOptions when dictionary was null
+## 2.96.0
+- Renamed MetaverseAccountEditor.cs to MetaverseAccountWindow.cs
+- Added ability to reveal password on account window
 
 Updated on December 23, 2024

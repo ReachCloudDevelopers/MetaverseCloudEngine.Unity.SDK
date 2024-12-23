@@ -44,7 +44,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     EditorGUILayout.HelpBox("Please log in to view your assets.", MessageType.Info);
                     if (GUILayout.Button("Log In"))
-                        MetaverseAccountEditor.Open();
+                        MetaverseAccountWindow.Open();
                     return;
                 }
 

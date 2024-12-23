@@ -54,7 +54,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
             {
-                MetaverseAccountEditor.LoginButton();
+                MetaverseAccountWindow.LoginButton();
                 return;
             }
 

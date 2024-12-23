@@ -24,7 +24,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
             {
                 Close();
-                MetaverseAccountEditor.LoginRequired();
+                MetaverseAccountWindow.LoginRequired();
                 return false;
             }
 

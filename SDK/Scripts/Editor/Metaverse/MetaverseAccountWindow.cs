@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
-    public class MetaverseAccountEditor : EditorWindow
+    public class MetaverseAccountWindow : EditorWindow
     {
         private enum LoginPage
         {
@@ -24,6 +24,8 @@ namespace MetaverseCloudEngine.Unity.Editors
         private static string _password;
         private static bool _rememberMe = true;
         private static string _confirmPassword;
+        private static bool _revealPassword;
+        private static bool _revealConfirmPassword;
         private static bool _makingRequest;
         private Vector2 _scroll;
 
@@ -32,7 +34,10 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             _page = LoginPage.LogIn;
             _password = string.Empty;
-            var window = GetWindow<MetaverseAccountEditor>();
+            _confirmPassword = string.Empty;
+            _revealPassword = false;
+            _revealConfirmPassword = false;
+            var window = GetWindow<MetaverseAccountWindow>();
             window.titleContent = new GUIContent("Account", MetaverseEditorUtils.EditorIcon);
             window.maxSize = window.minSize = new Vector2(400, 300);
             window.ShowUtility();
@@ -48,14 +53,15 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             EditorGUILayout.HelpBox(!string.IsNullOrEmpty(messageOverride) ? messageOverride : "Please log in.", MessageType.Info);
             if (GUILayout.Button("Log In"))
-            {
                 Open();
-            }
         }
 
         private void OnDisable()
         {
             _password = string.Empty;
+            _confirmPassword = string.Empty;
+            _revealPassword = false;
+            _revealConfirmPassword = false;
         }
 
         private void OnGUI()
@@ -68,24 +74,16 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorGUILayout.EndScrollView();
         }
 
-        private void Update()
-        {
-            Repaint();
-        }
+        private void Update() => Repaint();
 
         private static void Draw()
         {
             if (MetaverseProgram.ApiClient == null)
                 return;
-
             if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
-            {
                 DrawLogin();
-            }
             else
-            {
                 DrawLoggedIn();
-            }
         }
 
         private static void DrawLoggedIn()
@@ -147,12 +145,26 @@ namespace MetaverseCloudEngine.Unity.Editors
                     _email = MetaverseEditorUtils.TextField("Email", _email);
                 if (_page is LoginPage.LogIn or LoginPage.Register)
                 {
-                    _password = MetaverseEditorUtils.TextField("Password", _password, true);
+                    using (_ = new EditorGUILayout.HorizontalScope())
+                    {
+                        _password = MetaverseEditorUtils.TextField("Password", _password, !_revealPassword);
+                        if (GUILayout.Button("View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
+                            _revealPassword = !_revealPassword;
+                    }
                     if (_page is LoginPage.LogIn)
                         _rememberMe = EditorGUILayout.Toggle("Remember Me", _rememberMe);
                 }
+
                 if (_page == LoginPage.Register)
-                    _confirmPassword = MetaverseEditorUtils.TextField("Confirm Password", _confirmPassword, true);
+                {
+                    using (_ = new EditorGUILayout.HorizontalScope())
+                    {
+                        _confirmPassword = MetaverseEditorUtils.TextField("Confirm Password", _confirmPassword, !_revealConfirmPassword);
+                        if (GUILayout.Button("View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
+                            _revealConfirmPassword = !_revealConfirmPassword;
+                    }
+
+                }
             });
 
             GUILayout.FlexibleSpace();
