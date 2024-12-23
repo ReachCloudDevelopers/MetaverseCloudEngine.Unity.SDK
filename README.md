@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.93.0
-- Updated MetaverseCloudEngine API Client and Common modules
+## 2.94.0
+- Removed unnecessary logging from MetaverseWebClient
+- Fixed error being thrown in MetaSpaceNetworkOptions.InitSpawnablePrefabsCache
 
-Updated on December 21, 2024
+Updated on December 23, 2024

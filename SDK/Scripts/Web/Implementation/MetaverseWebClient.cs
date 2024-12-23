@@ -63,8 +63,6 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                 {
                     await UniTask.SwitchToMainThread(cancellationToken);
 
-                    MetaverseProgram.Logger.Log($"{request.Method} {request.RequestUri}");
-
                     var uploadHandler = request.Content != null
                         ? new UploadHandlerRaw(await request.Content.ReadAsByteArrayAsync())
                         : null;
@@ -125,13 +123,6 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             responseMessage.Content = new StringContent("Please log in to perform this action.");
                             await responseMessage.Content.LoadIntoBufferAsync();
                         }
-
-                        if (responseMessage.IsSuccessStatusCode)
-                            MetaverseProgram.Logger.Log(
-                                $"{request.Method} {request.RequestUri} ({responseMessage.StatusCode})");
-                        else
-                            MetaverseProgram.Logger.LogError(
-                                $"{request.Method} {request.RequestUri} ({responseMessage.StatusCode})");
 
                         return responseMessage;
                     }
