@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.96.2
-- Fixed pan functionality in OrthographicZoomPanCamera on standalone platforms
+## 2.96.3
+- Fix OrthographicZoomPanCamera logic so that mouse delta is properly calculated.
 
 Updated on December 26, 2024

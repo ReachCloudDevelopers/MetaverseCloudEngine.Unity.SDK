@@ -70,8 +70,6 @@ namespace MetaverseCloudEngine.Unity.Components
             if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
                 m_Initiated = true;
             
-            m_LastTouchPosition = Input.mousePosition;
-
             if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
             {
                 Vector3 pan = new Vector3(
@@ -85,7 +83,9 @@ namespace MetaverseCloudEngine.Unity.Components
                 m_Initiated = false;
 
             if (Input.mouseScrollDelta.y != 0 && (!isOverUI || m_Initiated))
-                m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - Input.mouseScrollDelta.y * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
+                m_Camera.orthographicSize = Mathf.Clamp(m_Camera.orthographicSize - (Input.mouseScrollDelta.y * 100) * m_ZoomSpeed, m_MinZoom, m_MaxZoom);
+            
+            m_LastTouchPosition = Input.mousePosition;
         }
 
         private void HandleTouchInput()
