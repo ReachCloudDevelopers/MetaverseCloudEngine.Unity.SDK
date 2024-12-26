@@ -68,10 +68,9 @@ namespace MetaverseCloudEngine.Unity.Components
         {
             var isOverUI = MVUtils.IsPointerOverUI();
             if (Input.GetMouseButtonDown(m_PanMouseButton) && !isOverUI)
-            {
                 m_Initiated = true;
-                m_LastTouchPosition = Input.mousePosition;
-            }
+            
+            m_LastTouchPosition = Input.mousePosition;
 
             if (Input.GetMouseButton(m_PanMouseButton) && m_Initiated)
             {

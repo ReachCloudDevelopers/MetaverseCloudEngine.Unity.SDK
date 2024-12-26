@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.96.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.96.1\n- Made it so that View button says Hide when password is revealed\n- Added better handling for package install failure\n\nUpdated on December 23, 2024",
+  "version": "2.96.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.96.2\n- Fixed pan functionality in OrthographicZoomPanCamera on standalone platforms\n\nUpdated on December 26, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

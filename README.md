@@ -12,8 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.96.1
-- Made it so that View button says Hide when password is revealed
-- Added better handling for package install failure
+## 2.96.2
+- Fixed pan functionality in OrthographicZoomPanCamera on standalone platforms
 
-Updated on December 23, 2024
+Updated on December 26, 2024
