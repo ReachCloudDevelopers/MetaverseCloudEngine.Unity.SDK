@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.96.3
-- Fix OrthographicZoomPanCamera logic so that mouse delta is properly calculated.
+## 2.97.0
+- Added ability to easily call TryGet and TryAcquire methods using MVUtils for better support in MetaverseScripts
 
-Updated on December 26, 2024
+Updated on December 28, 2024

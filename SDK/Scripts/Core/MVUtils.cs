@@ -1561,6 +1561,99 @@ namespace MetaverseCloudEngine.Unity
             rigidbody.angularDrag = damping;
 #endif
         }
+        
+#if MV_UNITY_AR_FOUNDATION
+        /// <summary>
+        /// Gets the latest camera image from the AR camera subsystem.
+        /// </summary>
+        /// <param name="subsystem">The AR camera subsystem.</param>
+        /// <param name="onGetImage">Invoked when the image has been retrieved.</param>
+        /// <param name="onFailed">Invoked when the image failed to be retrieved.</param>
+        public static void AcquireLatestCpuImage(this XRCameraSubsystem subsystem, Action<XRCpuImage> onGetImage, Action onFailed)
+        {
+            // ReSharper disable once RedundantUnsafeContext
+            unsafe
+            {
+                try
+                {
+                    if (!subsystem.TryAcquireLatestCpuImage(out var frame))
+                    {
+                        onFailed?.Invoke();
+                        return;
+                    }
+                    onGetImage?.Invoke(frame);
+                }
+                catch (NotSupportedException)
+                {
+                    onFailed?.Invoke();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the camera intrinsics from the AR camera subsystem.
+        /// </summary>
+        /// <param name="subsystem">The AR camera subsystem.</param>
+        /// <param name="onGetIntrinsics">Invoked when the intrinsics have been retrieved.</param>
+        /// <param name="onFailed">Invoked when the intrinsics failed to be retrieved.</param>
+        public static void GetIntrinsics(this XRCameraSubsystem subsystem, Action<XRCameraIntrinsics> onGetIntrinsics, Action onFailed)
+        {
+            // ReSharper disable once RedundantUnsafeContext
+            unsafe
+            {
+                if (!subsystem.TryGetIntrinsics(out var intrinsics))
+                {
+                    onFailed?.Invoke();
+                    return;
+                }
+                onGetIntrinsics?.Invoke(intrinsics);
+            }
+        }
+        
+        /// <summary>
+        /// Gets the latest camera frame from the AR camera subsystem.
+        /// </summary>
+        /// <param name="subsystem">The AR camera subsystem.</param>
+        /// <param name="xrCameraParams">Parameters to use for the desired camera frame.</param>
+        /// <param name="onGetFrame">Invoked when the frame has been retrieved.</param>
+        /// <param name="onFailed">Invoked when the frame failed to be retrieved.</param>
+        public static void GetLatestFrame(this XRCameraSubsystem subsystem, XRCameraParams xrCameraParams, Action<XRCameraFrame> onGetFrame, Action onFailed)
+        {
+            // ReSharper disable once RedundantUnsafeContext
+            unsafe
+            {
+                if (!subsystem.TryGetLatestFrame(xrCameraParams, out var frame))
+                {
+                    onFailed?.Invoke();
+                    return;
+                }
+                onGetFrame?.Invoke(frame);
+            }
+        }
+        
+#if MV_UNITY_AR_FOUNDATION_6
+        /// <summary>
+        /// Gets the rendering parameters from the AR camera subsystem.
+        /// </summary>
+        /// <param name="subsystem">The AR camera subsystem.</param>
+        /// <param name="onGetParameters">Invoked when the rendering parameters have been retrieved.</param>
+        /// <param name="onFailed">Invoked when the rendering parameters failed to be retrieved.</param>
+        /// <remarks>Only available in AR Foundation 6.</remarks>
+        public static void GetRenderingParameters(this XRCameraSubsystem subsystem, Action<XRCameraBackgroundRenderingParams> onGetParameters, Action onFailed)
+        {
+            // ReSharper disable once RedundantUnsafeContext
+            unsafe
+            {
+                if (!subsystem.TryGetRenderingParameters(out var parameters))
+                {
+                    onFailed?.Invoke();
+                    return;
+                }
+                onGetParameters?.Invoke(parameters);
+            }
+        }
+#endif
+#endif
 
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
         

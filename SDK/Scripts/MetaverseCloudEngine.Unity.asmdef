@@ -141,6 +141,11 @@
             "define": "MV_UNITY_AR_FOUNDATION"
         },
         {
+            "name": "com.unity.xr.arfoundation",
+            "expression": "6.0.0",
+            "define": "MV_UNITY_AR_FOUNDATION_6"
+        },
+        {
             "name": "com.unity.xr.arcore",
             "expression": "",
             "define": "MV_UNITY_AR_CORE"
