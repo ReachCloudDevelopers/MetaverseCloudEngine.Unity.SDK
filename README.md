@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.98.0
-- Add ability to post-process gradle bundles as a final step in the IPostGenerateGradleAndroidProject build phase
+## 2.99.0
+- Adjust namespace
 
 Updated on December 28, 2024

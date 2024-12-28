@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.98.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.98.0\n- Add ability to post-process gradle bundles as a final step in the IPostGenerateGradleAndroidProject build phase\n\nUpdated on December 28, 2024",
+  "version": "2.99.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.99.0\n- Adjust namespace\n\nUpdated on December 28, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

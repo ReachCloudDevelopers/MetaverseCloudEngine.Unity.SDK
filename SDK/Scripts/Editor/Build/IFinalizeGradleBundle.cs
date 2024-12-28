@@ -4,7 +4,7 @@ using UnityEditor.Android;
 using UnityEditor.Build;
 using UnityEngine;
 
-namespace MetaverseCloudEngine.Unity.Editor.Builds
+namespace MetaverseCloudEngine.Unity.Editors.Builds
 {
     public interface IFinalizeGradleBundle : IOrderedCallback
     {
