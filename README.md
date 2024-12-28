@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.97.0
-- Added ability to easily call TryGet and TryAcquire methods using MVUtils for better support in MetaverseScripts
+## 2.98.0
+- Add ability to post-process gradle bundles as a final step in the IPostGenerateGradleAndroidProject build phase
 
 Updated on December 28, 2024
