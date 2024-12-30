@@ -14,11 +14,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
     {
         [Required] [SerializeField] private Component serialPortUtilityPro;
         [SerializeField] private bool detectDevicesOnStart;
-        public UnityEvent onAnyDeviceFound;
-        public UnityEvent onNoDevicesFound;
-        public UnityEvent onSerialPortClosed;
-        public UnityEvent onSerialPortOpened;
-        public UnityEvent<string, MetaverseSerialPortUtilityInterop.DeviceInfo, MetaverseSerialPortUtilityInterop.OpenSystem> onDeviceFound;
+        public UnityEvent onAnyDeviceFound = new();
+        public UnityEvent onNoDevicesFound = new();
+        public UnityEvent onSerialPortClosed = new();
+        public UnityEvent onSerialPortOpened = new();
+        public UnityEvent<string, MetaverseSerialPortUtilityInterop.DeviceInfo, MetaverseSerialPortUtilityInterop.OpenSystem> onDeviceFound = new();
 
         private bool _listAfterPermissionsGranted;
         private MethodInfo _isOpenProcessingMethod;

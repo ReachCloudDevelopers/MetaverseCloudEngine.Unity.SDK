@@ -389,6 +389,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    Component spupComponent,
 		    UnityAction<object, string> callback)
 		{
+			if (!spupComponent)
+			{
+				MetaverseProgram.Logger.LogWarning("AddSystemListener: SerialPortUtilityPro component is null");
+				return;
+			}
+			
 		    if (delegateCall is not null)
 		        RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
 
@@ -399,7 +405,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
 
 		    // Create the UnityAction<SerialPortUtilityPro, string> dynamically
-		    var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
+		    var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public);
+		    if (addListenerCallFunction == null)
+		    {
+			    MetaverseProgram.Logger.LogError("Could not find AddListener method in UnityEvent");
+			    return;
+		    }
 
 		    // Dynamically create the correct delegate
 		    var dynamicDelegate = Delegate.CreateDelegate(
@@ -407,6 +418,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		        callback.Target,
 		        callback.Method
 		    );
+		    if (dynamicDelegate == null) throw new InvalidOperationException("Could not create dynamic delegate");
 
 		    addListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
 		    delegateCall = callback;
@@ -414,13 +426,30 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
 		private static void RemoveSystemListener(UnityAction<object, string> delegateCall, ref FieldInfo systemEventObjectField, Component spupComponent)
 		{
+			if (!spupComponent)
+			{
+				MetaverseProgram.Logger.LogWarning("RemoveSystemListener: SerialPortUtilityPro component is null");
+				return;
+			}
+			
 		    if (delegateCall is null) return;
 
 		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
+		    if (readCompleteEvent == null)
+		    {
+			    MetaverseProgram.Logger.LogError("Could not find SystemEventObject field in SerialPortUtilityPro component");
+			    return;
+		    }
+		    
 		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
 		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
 
-		    var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
+		    var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public);
+		    if (removeListenerCallFunction == null)
+		    {
+			    MetaverseProgram.Logger.LogError("Could not find RemoveListener method in UnityEvent");
+			    return;
+		    }
 
 		    // Dynamically create the correct delegate for removal
 		    var dynamicDelegate = Delegate.CreateDelegate(
@@ -428,6 +457,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		        delegateCall.Target,
 		        delegateCall.Method
 		    );
+		    if (dynamicDelegate == null) throw new InvalidOperationException("Could not create dynamic delegate");
 
 		    removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
 		}
