@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.99.0
-- Adjust namespace
+## 2.99.1
+- Ensure that events for serial port utility are buffered and dispatched when MetaverseSerialPortDeviceListAPI is re-enabled
+- Handled license error event callback for serialPortUtilityPro in MetaverseSerialPortDeviceListAPI
 
-Updated on December 28, 2024
+Updated on December 30, 2024

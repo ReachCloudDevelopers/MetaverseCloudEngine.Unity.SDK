@@ -24,41 +24,36 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private MethodInfo _isOpenProcessingMethod;
         private UnityAction<object, string> _onSystemEventCallback;
         private FieldInfo _onSystemEventField;
-
-        private void OnValidate()
-        {
-            MetaverseSerialPortUtilityInterop.EnsureComponent(ref serialPortUtilityPro, gameObject);
-        }
-
-        private void OnEventCallback(object spup, string eventType)
-        {
-            MetaverseDispatcher.AtEndOfFrame(() =>
-            {
-                if (!this || !isActiveAndEnabled) return;
-                switch (eventType)
-                {
-                    case "OPENED":
-                        onSerialPortOpened?.Invoke();
-                        break;
-                    case "CLOSED":
-                    case "OPEN_ERROR":
-                    case "BT_DISCONNECT_TO_SERVERMODE":
-                        onSerialPortClosed?.Invoke();
-                        break;
-                }
-            });
-        }
+        private string _bufferedEvent;
+        private bool? _isOpened;
 
         private void Reset()
         {
             MetaverseSerialPortUtilityInterop.EnsureComponent(ref serialPortUtilityPro, gameObject);
         }
 
-        private void Start()
+        private void OnValidate()
+        {
+            MetaverseSerialPortUtilityInterop.EnsureComponent(ref serialPortUtilityPro, gameObject);
+        }
+
+        private void Awake()
         {
             if (serialPortUtilityPro)
-                MetaverseSerialPortUtilityInterop.AddSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, OnEventCallback, ref _onSystemEventCallback);
+                MetaverseSerialPortUtilityInterop.AddSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, OnSystemEventCallback, ref _onSystemEventCallback);
+        }
 
+        private void OnEnable()
+        {
+            if (string.IsNullOrEmpty(_bufferedEvent))
+                return;
+            var e = _bufferedEvent;
+            _bufferedEvent = null;
+            OnSystemEventCallback(serialPortUtilityPro, e);
+        }
+
+        private void Start()
+        {
             if (detectDevicesOnStart)
                 ListDevices();
         }
@@ -67,6 +62,34 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (serialPortUtilityPro)
                 MetaverseSerialPortUtilityInterop.RemoveSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, _onSystemEventCallback);
+        }
+
+        private void OnSystemEventCallback(object sender, string e)
+        {
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (!this || !isActiveAndEnabled)
+                {
+                    _bufferedEvent = e;
+                    return;
+                }
+                switch (e.ToUpper())
+                {
+                    case "OPENED":
+                        if (_isOpened is null || !_isOpened.Value)
+                            onSerialPortOpened?.Invoke();
+                        _isOpened = true;
+                        break;
+                    case "CLOSED":
+                    case "OPEN_ERROR":
+                    case "BT_DISCONNECT_TO_SERVERMODE":
+                    case "LICENSE_ERROR":
+                        if (_isOpened is null || _isOpened.Value)
+                            onSerialPortClosed?.Invoke();
+                        _isOpened = false;
+                        break;
+                }
+            });
         }
 
         public void ListDevices()
