@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.99.2
-- Added better error checking and handling to MetaverseSerialPortDeviceListAPI and MetaverseSerialPortUtilityInterop
+## 2.99.3
+- Moved FinalizeGradleBundle to it's own cs file
+- Updated MetaverseSerialPortUtilityInterop so it captures the AddListener method directly from the Base Type
 
-Updated on December 30, 2024
+Updated on December 31, 2024

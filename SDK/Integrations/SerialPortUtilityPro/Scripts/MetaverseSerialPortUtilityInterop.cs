@@ -399,26 +399,32 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		        RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
 
 		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
-
-		    // Get the event type, which should be UnityEvent<SerialPortUtilityPro, string>
-		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0]; // Get SerialPortUtilityPro type
-		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
-
-		    // Create the UnityAction<SerialPortUtilityPro, string> dynamically
-		    var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public);
+		    if (readCompleteEvent == null)
+		    {
+			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
+			    return;
+		    }
+		    
+		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
+		    if (eventType == null)
+		    {
+			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not determine event type");
+			    return;
+		    }
+		    
+			const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+		    var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethod("AddListener", bindingFlags);
 		    if (addListenerCallFunction == null)
 		    {
-			    MetaverseProgram.Logger.LogError("Could not find AddListener method in UnityEvent");
+			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find AddListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
 			    return;
 		    }
 
-		    // Dynamically create the correct delegate
 		    var dynamicDelegate = Delegate.CreateDelegate(
 		        typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
 		        callback.Target,
 		        callback.Method
 		    );
-		    if (dynamicDelegate == null) throw new InvalidOperationException("Could not create dynamic delegate");
 
 		    addListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
 		    delegateCall = callback;
@@ -437,17 +443,21 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
 		    if (readCompleteEvent == null)
 		    {
-			    MetaverseProgram.Logger.LogError("Could not find SystemEventObject field in SerialPortUtilityPro component");
+			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
 			    return;
 		    }
 		    
 		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
-		    if (eventType == null) throw new InvalidOperationException("Could not determine event type");
+		    if (eventType == null)
+		    {
+			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not determine event type");
+			    return;
+		    }
 
-		    var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public);
+		    var removeListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public);
 		    if (removeListenerCallFunction == null)
 		    {
-			    MetaverseProgram.Logger.LogError("Could not find RemoveListener method in UnityEvent");
+			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not find RemoveListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
 			    return;
 		    }
 
@@ -457,8 +467,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		        delegateCall.Target,
 		        delegateCall.Method
 		    );
-		    if (dynamicDelegate == null) throw new InvalidOperationException("Could not create dynamic delegate");
-
+		    
 		    removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
 		}
     }

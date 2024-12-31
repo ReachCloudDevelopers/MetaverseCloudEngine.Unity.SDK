@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.99.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.99.2\n- Added better error checking and handling to MetaverseSerialPortDeviceListAPI and MetaverseSerialPortUtilityInterop\n\nUpdated on December 30, 2024",
+  "version": "2.99.3",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.99.3\n- Moved FinalizeGradleBundle to it's own cs file\n- Updated MetaverseSerialPortUtilityInterop so it captures the AddListener method directly from the Base Type\n\nUpdated on December 31, 2024",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
