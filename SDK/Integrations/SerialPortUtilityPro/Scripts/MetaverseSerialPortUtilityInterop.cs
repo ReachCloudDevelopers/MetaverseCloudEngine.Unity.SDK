@@ -413,7 +413,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    }
 		    
 			const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
-		    var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethod("AddListener", bindingFlags);
+		    var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
+			    .FirstOrDefault(x => x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
 		    if (addListenerCallFunction == null)
 		    {
 			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find AddListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
@@ -454,7 +455,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			    return;
 		    }
 
-		    var removeListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public);
+		    var removeListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+			    .FirstOrDefault(x => x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
 		    if (removeListenerCallFunction == null)
 		    {
 			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not find RemoveListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
