@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.101.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.101.0\n- Updated serial port auto connect to allow connecting to previously open device automatically\n\nUpdated on January 08, 2025",
+  "version": "2.102.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.102.0\n- Added CoordinateSharp and CoordinateSharp.Magnetic libraries\n\nUpdated on January 08, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

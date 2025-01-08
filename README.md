@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.101.0
-- Updated serial port auto connect to allow connecting to previously open device automatically
+## 2.102.0
+- Added CoordinateSharp and CoordinateSharp.Magnetic libraries
 
 Updated on January 08, 2025
