@@ -442,8 +442,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 group == BuildTargetGroup.Android || group == BuildTargetGroup.iOS
                                     ? textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
                                     TextureImporterAlphaSource.FromGrayScale
-                                        ? TextureImporterFormat.ETC2_RGBA8
-                                        : TextureImporterFormat.ETC2_RGB4
+                                        ? TextureImporterFormat.RGBA32
+                                        : TextureImporterFormat.RGB24
                                     : textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
                                     TextureImporterAlphaSource.FromGrayScale
                                         ? TextureImporterFormat.DXT5
