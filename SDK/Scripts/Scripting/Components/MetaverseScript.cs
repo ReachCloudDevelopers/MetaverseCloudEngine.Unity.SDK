@@ -1123,6 +1123,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
                 ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
 #endif
+                ,typeof(CoordinateSharp.Coordinate).Assembly
+                ,typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())

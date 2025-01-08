@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.102.0
-- Added CoordinateSharp and CoordinateSharp.Magnetic libraries
+## 2.103.0
+- Updated coordinatesharp meta files and added support for CoordinateSharp in MetaverseScript
 
 Updated on January 08, 2025
