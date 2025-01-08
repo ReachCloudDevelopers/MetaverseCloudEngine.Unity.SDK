@@ -194,6 +194,11 @@
             "name": "com.unity.xr.interaction.toolkit",
             "expression": "",
             "define": "MV_XR_TOOLKIT"
+        },
+        {
+            "name": "com.unity.xr.legacyinputhelpers",
+            "expression": "",
+            "define": "MV_XR_LEGACY_INPUT_HELPERS"
         }
     ],
     "noEngineReferences": false

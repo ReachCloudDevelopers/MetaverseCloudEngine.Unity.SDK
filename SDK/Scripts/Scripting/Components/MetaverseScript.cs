@@ -1087,7 +1087,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(CinemachineCore).Assembly /* Cinema-chine */,
                 typeof(Variables).Assembly /* Visual Scripting */,
 #if MV_XR_TOOLKIT
+#pragma warning disable CS0618 // Type or member is obsolete
                 typeof(UnityEngine.XR.Interaction.Toolkit.ActionBasedController).Assembly /* XR Interaction Toolkit */,
+#pragma warning restore CS0618 // Type or member is obsolete
 #endif
                 typeof(Task).Assembly /* System.Threading.Tasks */,
                 typeof(UniTask).Assembly /* UniTask */,
@@ -1095,6 +1097,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
 #if MV_XRCOREUTILS
                 ,typeof(XROrigin).Assembly
+#endif
+#if MV_XR_LEGACY_INPUT_HELPERS
+                ,typeof(UnityEngine.SpatialTracking.TrackedPoseDriver).Assembly /* UnityEngine.SpatialTracking.dll */
 #endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                 ,typeof(Vuforia.VuforiaApplication).Assembly

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.99.4
-- Added better resolution for finding AddListener and RemoveListener methods in MetaverseSerialPortUtilityInterop
+## 2.100.0
+- Added support for UnityEngine.SpatialTracking
 
-Updated on December 31, 2024
+Updated on January 08, 2025

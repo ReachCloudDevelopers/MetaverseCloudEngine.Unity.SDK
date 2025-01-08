@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.99.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.99.4\n- Added better resolution for finding AddListener and RemoveListener methods in MetaverseSerialPortUtilityInterop\n\nUpdated on December 31, 2024",
+  "version": "2.100.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.100.0\n- Added support for UnityEngine.SpatialTracking\n\nUpdated on January 08, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
