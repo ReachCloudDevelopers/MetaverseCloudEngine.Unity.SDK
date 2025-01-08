@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.100.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.100.1\n- Disabled crunch compression for readable textures so that ReadPixels can be used\n\nUpdated on January 08, 2025",
+  "version": "2.100.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.100.2\n- Fix texture settings not being properly overridden\n\nUpdated on January 08, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

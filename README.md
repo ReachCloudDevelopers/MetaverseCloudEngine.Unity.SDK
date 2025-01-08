@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.100.1
-- Disabled crunch compression for readable textures so that ReadPixels can be used
+## 2.100.2
+- Fix texture settings not being properly overridden
 
 Updated on January 08, 2025
