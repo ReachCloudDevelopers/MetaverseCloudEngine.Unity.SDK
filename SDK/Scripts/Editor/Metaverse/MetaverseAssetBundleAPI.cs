@@ -419,7 +419,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                     _ => TextureImporterFormat.DXT5
                                 };
 
-                            var format = useCrunchedCompression ? nonCrunchedFormat : crunchedFormat;
+                            var format = useCrunchedCompression ? crunchedFormat : nonCrunchedFormat;
                             if (currentSettings.format != format)
                             {
                                 currentSettings.format = format;
@@ -449,7 +449,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                         ? TextureImporterFormat.DXT5
                                         : TextureImporterFormat.DXT1;
 
-                            var format = useCrunchedCompression ? nonCrunchedFormat : crunchedFormat;
+                            var format = useCrunchedCompression ? crunchedFormat : nonCrunchedFormat;
                             if (currentSettings.format != format)
                             {
                                 currentSettings.format = format;

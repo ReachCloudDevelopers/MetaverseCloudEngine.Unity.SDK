@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.100.2
-- Fix texture settings not being properly overridden
+## 2.100.3
+- Fixed reversed logic in texture importer compression handling
 
 Updated on January 08, 2025
