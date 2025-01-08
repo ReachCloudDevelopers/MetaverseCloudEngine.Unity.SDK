@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.100.4
-- Fixed unsupported texture read format
+## 2.100.5
+- Fixed issues with texture compression formats
 
 Updated on January 08, 2025
