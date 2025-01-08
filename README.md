@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.100.0
-- Added support for UnityEngine.SpatialTracking
+## 2.100.1
+- Disabled crunch compression for readable textures so that ReadPixels can be used
 
 Updated on January 08, 2025

@@ -373,15 +373,17 @@ namespace MetaverseCloudEngine.Unity.Editors
                             changed = true;
                         }
 
+                        var useCrunchedCompression = 
+                            options.compressTextures && options.compressorQuality < 100 && !textureImporter.isReadable;
                         if (currentSettings.crunchedCompression != options.compressTextures)
                         {
-                            currentSettings.crunchedCompression = options.compressTextures;
+                            currentSettings.crunchedCompression = useCrunchedCompression;
                             changed = true;
                         }
 
                         if (currentSettings.compressionQuality != options.compressorQuality)
                         {
-                            currentSettings.compressionQuality = options.compressorQuality;
+                            currentSettings.compressionQuality = useCrunchedCompression ? options.compressorQuality : 100;
                             changed = true;
                         }
 
@@ -397,7 +399,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                             if (textureImporter.textureType == TextureImporterType.NormalMap)
                             {
-                                var format =
+                                var crunchedFormat =
                                     group switch
                                     {
                                         BuildTargetGroup.Android or BuildTargetGroup.iOS => textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
@@ -407,16 +409,26 @@ namespace MetaverseCloudEngine.Unity.Editors
                                         BuildTargetGroup.WebGL => TextureImporterFormat.ETC2_RGBA8Crunched,
                                         _ => TextureImporterFormat.DXT5Crunched
                                     };
+                                var nonCrunchedFormat =
+                                    group switch
+                                    {
+                                        BuildTargetGroup.Android or BuildTargetGroup.iOS => textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
+                                            TextureImporterAlphaSource.FromGrayScale
+                                                ? TextureImporterFormat.ETC2_RGBA8
+                                                : TextureImporterFormat.ETC_RGB4,
+                                        BuildTargetGroup.WebGL => TextureImporterFormat.ETC2_RGBA8,
+                                        _ => TextureImporterFormat.DXT5
+                                    };
 
-                                if (currentSettings.format != format)
+                                if (currentSettings.format != crunchedFormat)
                                 {
-                                    currentSettings.format = format;
+                                    currentSettings.format = useCrunchedCompression ? nonCrunchedFormat : crunchedFormat;
                                     changed = true;
                                 }
                             }
                             else
                             {
-                                var format =
+                                var crunchedFormat =
                                     group == BuildTargetGroup.Android || group == BuildTargetGroup.iOS
                                         ? textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
                                         TextureImporterAlphaSource.FromGrayScale
@@ -426,10 +438,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                                         TextureImporterAlphaSource.FromGrayScale
                                             ? TextureImporterFormat.DXT5Crunched
                                             : TextureImporterFormat.DXT1Crunched;
+                                var nonCrunchedFormat =
+                                    group == BuildTargetGroup.Android || group == BuildTargetGroup.iOS
+                                        ? textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
+                                        TextureImporterAlphaSource.FromGrayScale
+                                            ? TextureImporterFormat.ETC2_RGBA8
+                                            : TextureImporterFormat.ETC2_RGB4
+                                        : textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
+                                        TextureImporterAlphaSource.FromGrayScale
+                                            ? TextureImporterFormat.DXT5
+                                            : TextureImporterFormat.DXT1;
 
-                                if (currentSettings.format != format)
+                                if (currentSettings.format != crunchedFormat)
                                 {
-                                    currentSettings.format = format;
+                                    currentSettings.format = useCrunchedCompression ? nonCrunchedFormat : crunchedFormat;
                                     changed = true;
                                 }
                             }
