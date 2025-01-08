@@ -27,6 +27,28 @@ namespace MetaverseCloudEngine.Unity.SPUP
             public string Product;
             public string SerialNumber;
             public string PortName;
+            public OpenSystem? ParsedOpenSystem;
+            
+            public override string ToString()
+			{
+				return $"{Vendor},{Product},{SerialNumber},{PortName}";
+			}
+            
+            public static bool TryParse(string deviceInfoString, out DeviceInfo deviceInfo)
+			{
+				deviceInfo = new DeviceInfo();
+				var deviceInfoParts = deviceInfoString.Split(',');
+				if (deviceInfoParts.Length < 4)
+					return false;
+				deviceInfo.Vendor = deviceInfoParts[0];
+				deviceInfo.Product = deviceInfoParts[1];
+				deviceInfo.SerialNumber = deviceInfoParts[2];
+				deviceInfo.PortName = deviceInfoParts[3];
+				if (deviceInfoParts.Length != 5) return true;
+				if (Enum.TryParse(deviceInfoParts[4], out OpenSystem openSystem))
+					deviceInfo.ParsedOpenSystem = openSystem;
+				return true;
+			}
         }
         
         private static Type GetSerialPortUtilityProType()

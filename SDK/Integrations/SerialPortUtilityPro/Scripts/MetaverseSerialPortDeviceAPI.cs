@@ -33,6 +33,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private static MethodInfo _isOpenedMethod;
         
         public bool IsInitialized => _spup && _data != null;
+        public string DeviceString => $"{(_data?.ToString() ?? "")},{_openSystem}";
 
         /// <summary>
         /// Initializes the device with the specified data.

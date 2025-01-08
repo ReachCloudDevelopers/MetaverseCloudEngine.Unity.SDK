@@ -29,16 +29,22 @@ namespace MetaverseCloudEngine.Unity.SPUP
             Pci = 4
         }
 
-        [Required]
-        [SerializeField] private Component serialPortUtilityPro;
+        [Required] [SerializeField] private Component serialPortUtilityPro;
         [SerializeField] private bool onStart = true;
-        [InfoBox("You can use https://regexr.com/ to test your regex.")]
-        [SerializeField] private string regexSearchString = "<Enter Search String>";
+        [SerializeField] private bool saveLastDevice = true;
+
+        [ShowIf(nameof(saveLastDevice))] [SerializeField]
+        private string saveKey = Guid.NewGuid().ToString()[..6].ToUpper();
+
+        [InfoBox("You can use https://regexr.com/ to test your regex.")] [SerializeField]
+        private string regexSearchString = "<Enter Search String>";
+
         [SerializeField] private DeviceField searchField = (DeviceField)(-1);
         [SerializeField] private DeviceType searchType = (DeviceType)(-1);
         [SerializeField] private bool debugLog = true;
 
         private FieldInfo _isAutoOpenField;
+        private bool _triedToOpenSavedDevice;
         private readonly MetaverseSerialPortDeviceAPI _deviceAPI = new();
 
         private void OnValidate()
@@ -54,6 +60,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void Awake()
         {
             MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, "IsAutoOpen", true);
+            _deviceAPI.OnDeviceOpen.AddListener(() =>
+            {
+                if (saveLastDevice && !string.IsNullOrWhiteSpace(saveKey))
+                    MetaverseProgram.Prefs.SetString(GetSaveKey(), _deviceAPI.DeviceString);
+            });
         }
 
         private void OnDestroy()
@@ -87,13 +98,38 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
 
+                if (!_triedToOpenSavedDevice)
+                {
+                    _triedToOpenSavedDevice = true;
+                    if (!string.IsNullOrEmpty(saveKey))
+                    {
+                        var deviceInfoString = MetaverseProgram.Prefs.GetString(GetSaveKey(), string.Empty);
+                        if (!string.IsNullOrEmpty(deviceInfoString) && 
+                            MetaverseSerialPortUtilityInterop.DeviceInfo.TryParse(deviceInfoString, out var i) &&
+                            i.ParsedOpenSystem is not null)
+                        {
+                            if (debugLog)
+                                MetaverseProgram.Logger.Log(
+                                    $"AutoConnect found a saved device: {i.SerialNumber}");
+
+                            _deviceAPI.Initialize(
+                                serialPortUtilityPro,
+                                i.SerialNumber,
+                                i,
+                                i.ParsedOpenSystem.Value);
+                            _deviceAPI.Open();
+                            return;
+                        }
+                    }
+                }
+
                 var btDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp);
                 var usbDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Usb);
                 var pciDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
-                
+
                 if (debugLog)
                     MetaverseProgram.Logger.Log(
                         "Connected Bluetooth Devices: " + (btDevices?.Length ?? 0) + " | " +
@@ -120,19 +156,19 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     MetaverseSerialPortUtilityInterop.OpenSystem)>())
                         .ToArray()
                         .FirstOrDefault(device =>
-                            device.Item1 != null &&
-                            (!string.IsNullOrWhiteSpace(device.Item1.SerialNumber) &&
-                                Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_")) &&
-                                searchField.HasFlag(DeviceField.SerialNumber)) ||
-                            (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
-                                Regex.IsMatch(device.Item1.Product, regexSearchString.Replace("\\_", "_")) &&
-                                searchField.HasFlag(DeviceField.Product)) ||
-                            (!string.IsNullOrWhiteSpace(device.Item1.PortName) &&
-                                Regex.IsMatch(device.Item1.PortName, regexSearchString.Replace("\\_", "_")) &&
-                                searchField.HasFlag(DeviceField.PortName)) ||
-                            (!string.IsNullOrWhiteSpace(device.Item1.Vendor) &&
-                                Regex.IsMatch(device.Item1.Vendor, regexSearchString.Replace("\\_", "_")) &&
-                                searchField.HasFlag(DeviceField.Vendor)));
+                            device.Item1 != null && (
+                                (!string.IsNullOrWhiteSpace(device.Item1.SerialNumber) &&
+                                 Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_")) &&
+                                 searchField.HasFlag(DeviceField.SerialNumber)) ||
+                                (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
+                                 Regex.IsMatch(device.Item1.Product, regexSearchString.Replace("\\_", "_")) &&
+                                 searchField.HasFlag(DeviceField.Product)) ||
+                                (!string.IsNullOrWhiteSpace(device.Item1.PortName) &&
+                                 Regex.IsMatch(device.Item1.PortName, regexSearchString.Replace("\\_", "_")) &&
+                                 searchField.HasFlag(DeviceField.PortName)) ||
+                                (!string.IsNullOrWhiteSpace(device.Item1.Vendor) &&
+                                 Regex.IsMatch(device.Item1.Vendor, regexSearchString.Replace("\\_", "_")) &&
+                                 searchField.HasFlag(DeviceField.Vendor))));
 
                 if (deviceInfo.Item1 != null)
                 {
@@ -151,7 +187,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (debugLog)
                         MetaverseProgram.Logger.Log(
                             "AutoConnect did not find a device for: " + regexSearchString +
-                            " | " + searchField + 
+                            " | " + searchField +
                             " | " + searchType);
                 }
 
@@ -174,6 +210,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
             else if (!IsInvoking(nameof(WatchConnection)))
                 Invoke(nameof(WatchConnection), 5f);
+        }
+
+        private string GetSaveKey()
+        {
+            return $"{nameof(MetaverseSerialPortAutoConnect)}_{saveKey}";
         }
     }
 }
