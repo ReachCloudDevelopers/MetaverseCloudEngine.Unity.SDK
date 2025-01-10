@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.103.0
-- Updated coordinatesharp meta files and added support for CoordinateSharp in MetaverseScript
+## 2.103.1
+- Fixed crash with AppUI in Unity 6
 
-Updated on January 08, 2025
+Updated on January 10, 2025

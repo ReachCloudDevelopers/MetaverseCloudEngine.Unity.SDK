@@ -35,6 +35,9 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
         public void UpdateColor()
         {
+            if (!Application.isPlaying)
+                return;
+            
             MetaverseDispatcher.AtEndOfFrame(() =>
             {
                 if (!this)
