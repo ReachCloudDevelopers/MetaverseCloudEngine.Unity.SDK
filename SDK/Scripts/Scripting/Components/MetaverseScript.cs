@@ -1086,6 +1086,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(InputSystem).Assembly /* New Input System */,
                 typeof(CinemachineCore).Assembly /* Cinema-chine */,
                 typeof(Variables).Assembly /* Visual Scripting */,
+                typeof(System.Collections.Concurrent.BlockingCollection<>).Assembly /* System.Collections.Concurrent */,
 #if MV_XR_TOOLKIT
 #pragma warning disable CS0618 // Type or member is obsolete
                 typeof(UnityEngine.XR.Interaction.Toolkit.ActionBasedController).Assembly /* XR Interaction Toolkit */,

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.103.1
-- Fixed crash with AppUI in Unity 6
+## 2.104.0
+- Added support for System.Collections.Concurrent
 
-Updated on January 10, 2025
+Updated on January 20, 2025
