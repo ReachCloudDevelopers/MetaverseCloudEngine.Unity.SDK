@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.104.0
-- Added support for System.Collections.Concurrent
+## 2.104.1
+- Added better handling for SPUP auto connection.
 
-Updated on January 20, 2025
+Updated on January 22, 2025

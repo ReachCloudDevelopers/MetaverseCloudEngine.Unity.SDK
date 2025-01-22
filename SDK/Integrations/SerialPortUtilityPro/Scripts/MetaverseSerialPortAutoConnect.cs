@@ -59,7 +59,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void Awake()
         {
-            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, "IsAutoOpen", true);
+            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, "IsAutoOpen", false);
             _deviceAPI.OnDeviceOpen.AddListener(() =>
             {
                 if (saveLastDevice && !string.IsNullOrWhiteSpace(saveKey))
@@ -89,7 +89,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// </summary>
         public void AutoConnect()
         {
-            MetaverseDispatcher.AtEndOfFrame(() =>
+            MetaverseDispatcher.WaitForSeconds(0.5f, () =>
             {
                 if (!this || !isActiveAndEnabled)
                 {
@@ -98,6 +98,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
 
+                if (serialPortUtilityPro is Behaviour { isActiveAndEnabled: false })
+                {
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log("AutoConnect cancelled because the SerialPortUtilityPro component is disabled.");
+                    return;
+                }
+                
                 if (!_triedToOpenSavedDevice)
                 {
                     _triedToOpenSavedDevice = true;
@@ -129,12 +136,19 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseSerialPortUtilityInterop.OpenSystem.Usb);
                 var pciDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
+                
+                if (btDevices is null or { Length: 0 } &&
+                    usbDevices is null or { Length: 0 } &&
+                    pciDevices is null or { Length: 0 })
+                {
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log("AutoConnect cancelled because no devices are connected.");
+                    return;
+                }
 
                 if (debugLog)
                     MetaverseProgram.Logger.Log(
-                        "Connected Bluetooth Devices: " + (btDevices?.Length ?? 0) + " | " +
-                        "Connected USB Devices: " + (usbDevices?.Length ?? 0) + " | " +
-                        "Connected PCI Devices: " + (pciDevices?.Length ?? 0));
+                        $"Connected Bluetooth Devices: {(btDevices?.Length ?? 0)} | Connected USB Devices: {(usbDevices?.Length ?? 0)} | Connected PCI Devices: {(pciDevices?.Length ?? 0)}");
 
                 var deviceInfo =
                     Array.Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
@@ -174,7 +188,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log("AutoConnect found a device: " + deviceInfo.Item1.SerialNumber);
-
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
                         deviceInfo.Item1.SerialNumber,
