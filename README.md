@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.104.1
-- Added better handling for SPUP auto connection.
+## 2.104.2
+- Disabled type resolution in MetaverseScript. This may be a temporary change.
 
-Updated on January 22, 2025
+Updated on January 23, 2025

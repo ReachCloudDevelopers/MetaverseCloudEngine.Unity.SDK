@@ -811,7 +811,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             options.AllowClr(GetAssemblies())
                 .AllowClrWrite()
                 .AllowOperatorOverloading()
-                .SetTypeResolver(new Jint.Runtime.Interop.TypeResolver { MemberFilter = FilterAllowedMembers })
+                //.SetTypeResolver(new Jint.Runtime.Interop.TypeResolver { MemberFilter = FilterAllowedMembers })
                 .AddExtensionMethods(GetExtensionMethodTypes())
                 .CatchClrExceptions(OnJavaScriptCLRException);
 
