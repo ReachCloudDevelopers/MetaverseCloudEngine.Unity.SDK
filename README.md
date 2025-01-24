@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.105.1
-- Fix error handling in setting video recording device in VideoCameraAPI
+## 2.105.2
+- Improvements to async editor requests.
 
 Updated on January 24, 2025

@@ -48,7 +48,7 @@ namespace MetaverseCloudEngine.Unity.Async
         }
 
         private static readonly ConcurrentQueue<Action> MainThreadQueue = new();
-        private static readonly List<Func<bool>> EditorTasksToUpdate = new();
+        private static readonly ConcurrentQueue<Func<bool>> EditorTasksToUpdate = new();
 
         /// <summary>
         /// We pool all wait until actions in a list
@@ -106,9 +106,8 @@ namespace MetaverseCloudEngine.Unity.Async
 
             for (var i = EditorTasksToUpdate.Count - 1; i >= 0; i--)
             {
-                var t = EditorTasksToUpdate[i];
-                if (t == null || t())
-                    EditorTasksToUpdate.RemoveAt(i);
+                if (EditorTasksToUpdate.TryDequeue(out var t))
+                    t?.Invoke();
             }
         }
 #endif
@@ -153,7 +152,11 @@ namespace MetaverseCloudEngine.Unity.Async
 
         private static void CreateInstance()
         {
+#if UNITY_2023_1_OR_NEWER
+            _instance = FindFirstObjectByType<MetaverseDispatcher>();
+#else
             _instance = FindObjectOfType<MetaverseDispatcher>();
+#endif
             if (_instance)
                 return;
 
@@ -234,7 +237,7 @@ namespace MetaverseCloudEngine.Unity.Async
                 }
                 else
                 {
-                    EditorTasksToUpdate.Add(() =>
+                    EditorTasksToUpdate.Enqueue(() =>
                     {
                         if (!task.IsCompleted && !cancel.IsCancellationRequested) return false;
                         OnTaskCompleted(task, onSuccess, onError, cancel.IsCancellationRequested);
@@ -261,7 +264,7 @@ namespace MetaverseCloudEngine.Unity.Async
                 }
                 else
                 {
-                    EditorTasksToUpdate.Add(() =>
+                    EditorTasksToUpdate.Enqueue(() =>
                     {
                         if (!task.IsCompleted && !cancel.IsCancellationRequested) return false;
                         OnTaskCompleted(task, onSuccess, onError, cancel.IsCancellationRequested);
@@ -292,7 +295,7 @@ namespace MetaverseCloudEngine.Unity.Async
             }
             else
             {
-                EditorTasksToUpdate.Add(() =>
+                EditorTasksToUpdate.Enqueue(() =>
                 {
                     if (!func()) return false;
                     onSuccess?.Invoke();
@@ -318,7 +321,7 @@ namespace MetaverseCloudEngine.Unity.Async
             if (UseUniTaskThreading)
                 MainThreadQueue.Enqueue(action);
             else
-                EditorTasksToUpdate.Add(() =>
+                EditorTasksToUpdate.Enqueue(() =>
                 {
                     try
                     {

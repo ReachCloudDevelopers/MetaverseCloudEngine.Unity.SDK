@@ -124,7 +124,7 @@ namespace MetaverseCloudEngine.Unity.Video.Components
             SetVideoDisabled(!value);
         }
 
-        public void SetResolution(string value)
+        public void SetResolution(string res)
         {
             MetaSpace.OnReady(() =>
             {
@@ -135,14 +135,20 @@ namespace MetaverseCloudEngine.Unity.Video.Components
                     return;
                 }
 
-                var xy = value.Split("x");
+                if (string.IsNullOrWhiteSpace(res))
+                {
+                    MetaverseProgram.Logger.LogWarning("Invalid resolution format. Expected format: 1920x1080");
+                    return;
+                }
+
+                var xy = res.Trim().Split("x");
                 if (xy.Length != 2)
                 {
                     MetaverseProgram.Logger.LogWarning("Invalid resolution format. Expected format: 1920x1080");
                     return;
                 }
 
-                if (!int.TryParse(xy[0], out var x) || !int.TryParse(xy[1], out var y))
+                if (!int.TryParse(xy[0].Trim(), out var x) || !int.TryParse(xy[1].Trim(), out var y))
                 {
                     MetaverseProgram.Logger.LogWarning("Invalid resolution format. Expected format: 1920x1080");
                     return;
