@@ -196,20 +196,18 @@ namespace MetaverseCloudEngine.Unity.Video.Components
                     return;
                 }
 
-                try
+                var devices = VideoService.ConnectedVideoRecordingDevices.ToArray();
+                if (devices.Length == 0)
                 {
-                    var devices = VideoService.ConnectedVideoRecordingDevices.ToArray();
-                    if (index < 0)
-                        index = 0;
-                    if (index >= devices.Length)
-                        index = devices.Length - 1;
-                    VideoService.SetActiveVideoRecordingDevice(devices[index]);
+                    MetaverseProgram.Logger.LogWarning("No video recording devices found.");
+                    return;
                 }
-                catch
-                {
-                    MetaverseProgram.Logger.LogWarning(
-                        "Cannot set active video recording device because service does not exist in the scene.");
-                }
+                
+                if (index < 0)
+                    index = 0;
+                if (index >= devices.Length)
+                    index = devices.Length - 1;
+                VideoService.SetActiveVideoRecordingDevice(devices[index]);
             });
         }
     }
