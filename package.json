@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.104.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.104.2\n- Disabled type resolution in MetaverseScript. This may be a temporary change.\n\nUpdated on January 23, 2025",
+  "version": "2.105.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.105.0\n- Allow to set the active video recording device either by name or by index.\n\nUpdated on January 24, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

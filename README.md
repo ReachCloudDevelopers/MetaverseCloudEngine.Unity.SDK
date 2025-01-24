@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.104.2
-- Disabled type resolution in MetaverseScript. This may be a temporary change.
+## 2.105.0
+- Allow to set the active video recording device either by name or by index.
 
-Updated on January 23, 2025
+Updated on January 24, 2025
