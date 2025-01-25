@@ -104,10 +104,18 @@ namespace MetaverseCloudEngine.Unity.Async
 
             Dequeue();
 
-            for (var i = EditorTasksToUpdate.Count - 1; i >= 0; i--)
+            while (EditorTasksToUpdate.TryPeek(out var t))
             {
-                if (EditorTasksToUpdate.TryDequeue(out var t))
-                    t?.Invoke();
+                try
+                {
+                    if (t?.Invoke() != true)
+                        return;
+                }
+                catch (Exception e)
+                {
+                    MetaverseProgram.Logger.LogError(e);
+                }
+                EditorTasksToUpdate.TryDequeue(out _);
             }
         }
 #endif
