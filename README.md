@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.107.0
-- Improved performance of editor task updates.
+## 2.107.1
+- Fixed misspelled script define in MVGeoSpatialUtils
 
 Updated on January 27, 2025

@@ -154,7 +154,7 @@ namespace MetaverseCloudEngine.Unity.ARCoreExtensions
             return new double3(lat, lon, height);
         }
         
-#if MV_CESIUM
+#if MV_CESIUM_UNITY
         public static double3 GetGeospatialLatitudeLongitudeHeight(
             this CesiumGeoreference originPoint, Transform transform)
         {
