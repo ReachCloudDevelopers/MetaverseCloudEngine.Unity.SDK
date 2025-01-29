@@ -25,9 +25,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             _onConfirm = onConfirm;
             _onCancel = onCancel;
             _window = GetWindow<TypeToConfirmEditorWindow>();
-            _window.titleContent = new GUIContent("Confirm", MetaverseEditorUtils.EditorIcon);
             _window.maxSize = _window.minSize = new Vector2(400, 300);
             _window.ShowModalUtility();
+        }
+
+        private void OnEnable()
+        {
+            titleContent = new GUIContent("Confirm", MetaverseEditorUtils.EditorIcon);
         }
 
         private void OnGUI()

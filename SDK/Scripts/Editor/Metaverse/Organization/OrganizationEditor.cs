@@ -45,7 +45,6 @@ namespace MetaverseCloudEngine.Unity.Editors
         public static void Open()
         {
             var window = GetWindow<OrganizationEditor>();
-            window.titleContent = new GUIContent(window.Header, MetaverseEditorUtils.EditorIcon);
             window.Show();
         }
 
@@ -57,6 +56,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         private void OnEnable()
         {
             Initialize();
+            titleContent = new GUIContent(Header, MetaverseEditorUtils.EditorIcon);
         }
 
         private void Initialize()

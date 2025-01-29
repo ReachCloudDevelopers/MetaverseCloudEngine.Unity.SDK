@@ -31,13 +31,14 @@ namespace MetaverseCloudEngine.Unity.Editors
             size.y = 400;
             window.maxSize = size;
 
-            window.titleContent = new GUIContent(window.Title);
             window.Show();
             window._onSelectedAction = onSelectedAction;
         }
 
         private void OnEnable()
         {
+            titleContent = new GUIContent(Title, MetaverseEditorUtils.EditorIcon);
+            
             _paginatedEditor = new PaginatedEditor<object>(GUIContent.none)
             {
                 DisplayAddButton = false

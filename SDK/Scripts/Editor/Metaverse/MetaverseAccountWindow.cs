@@ -38,9 +38,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             _revealPassword = false;
             _revealConfirmPassword = false;
             var window = GetWindow<MetaverseAccountWindow>();
-            window.titleContent = new GUIContent("Account", MetaverseEditorUtils.EditorIcon);
             window.maxSize = window.minSize = new Vector2(400, 300);
             window.ShowUtility();
+        }
+
+        private void OnEnable()
+        {
+            titleContent = new GUIContent("Account", MetaverseEditorUtils.EditorIcon);
         }
 
         public static void LoginRequired(string messageOverride = null)

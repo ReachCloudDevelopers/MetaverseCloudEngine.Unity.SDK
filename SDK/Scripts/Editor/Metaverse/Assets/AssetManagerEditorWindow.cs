@@ -29,7 +29,11 @@ namespace MetaverseCloudEngine.Unity.Editors
         public static void Open()
         {
             var window = GetWindow<AssetManagerEditorWindow>();
-            window.titleContent = new GUIContent("Asset Manager", MetaverseEditorUtils.EditorIcon);
+        }
+
+        private void OnEnable()
+        {
+            titleContent = new GUIContent("Asset Manager", MetaverseEditorUtils.EditorIcon);
         }
 
         private void OnGUI()
