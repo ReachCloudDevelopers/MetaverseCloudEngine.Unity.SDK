@@ -43,8 +43,9 @@ namespace MetaverseCloudEngine.Unity.Components
         [ShowIf(nameof(ShowBehavioursToDisable))]
         [SerializeField] private Behaviour[] behavioursToDisable;
         
-#if UNITY_EDITOR
         private bool ShowBehavioursToDisable => mode.HasFlag(StartDisabledMode.DisableBehaviours);
+        
+#if UNITY_EDITOR
         
         // On before enter play mode, disable the game object.
         [UnityEditor.InitializeOnLoadMethod]

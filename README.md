@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.107.3
-- Improved StartDisabled editor
+## 2.108.0
+- Fixed error when building and UNITY_EDITOR is not defined.
 
 Updated on January 29, 2025
