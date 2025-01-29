@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using MetaverseCloudEngine.Unity.Attributes;
+using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -12,7 +13,8 @@ namespace MetaverseCloudEngine.Unity.Components
     [DefaultExecutionOrder(-int.MaxValue)]
     [ExecuteAlways]
     [HierarchyIcon("animationvisibilitytoggleoff@2x")]
-    public class StartDisabled : MonoBehaviour
+    [HideMonoScript]
+    public class StartDisabled : TriInspectorMonoBehaviour
     {
         /// <summary>
         /// The mode to use when disabling the game object or components.
@@ -34,12 +36,16 @@ namespace MetaverseCloudEngine.Unity.Components
             DisableBehaviours = 2,
         }
         
+        [InfoBox("Use this component to force the game object or script(s) to start in a disabled state.")]
         [Tooltip("The mode to use when disabling the game object or components.")]
         [SerializeField] private StartDisabledMode mode = StartDisabledMode.DisableGameObject;
         [Tooltip("The behaviours to disable when the game object is started.")]
+        [ShowIf(nameof(ShowBehavioursToDisable))]
         [SerializeField] private Behaviour[] behavioursToDisable;
         
 #if UNITY_EDITOR
+        private bool ShowBehavioursToDisable => mode.HasFlag(StartDisabledMode.DisableBehaviours);
+        
         // On before enter play mode, disable the game object.
         [UnityEditor.InitializeOnLoadMethod]
         private static void OnBeforeEnterPlayMode()

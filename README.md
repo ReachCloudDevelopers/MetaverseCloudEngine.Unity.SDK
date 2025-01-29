@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.107.2
-- Updated editors to properly handle title content.
+## 2.107.3
+- Improved StartDisabled editor
 
 Updated on January 29, 2025
