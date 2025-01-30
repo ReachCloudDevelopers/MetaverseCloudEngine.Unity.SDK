@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.108.0
-- Fixed error when building and UNITY_EDITOR is not defined.
+## 2.109.0
+- Added support for OnGUI to MetaverseScripts.
 
-Updated on January 29, 2025
+Updated on January 30, 2025

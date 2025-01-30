@@ -126,6 +126,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             OnNetworkReady = 33554432,
             RegisterNetworkRPCs = 67108864,
             UnRegisterNetworkRPCs = 134217728,
+            
+            OnGUI = 268435456,
         }
 
         private const string ThisProperty = "_this";
@@ -307,6 +309,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }
                 });
             }
+        }
+
+        private void OnGUI()
+        {
+            if (!_ready) return;
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnGUI, out method) == true)
+                _ = _engine.Invoke(method);
         }
 
         private unsafe void Update()
