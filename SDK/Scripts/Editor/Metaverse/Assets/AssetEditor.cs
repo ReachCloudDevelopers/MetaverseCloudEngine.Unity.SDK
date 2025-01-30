@@ -1232,25 +1232,35 @@ namespace MetaverseCloudEngine.Unity.Editors
         protected void ApplyMetaData(SerializedObject obj, TAssetDto dto)
         {
             var idProperty = obj.FindProperty("id");
-            idProperty.stringValue = dto?.Id.ToString();
+            if (idProperty.stringValue != dto?.Id.ToString())
+                idProperty.stringValue = dto?.Id.ToString();
 
             var blockchainSourceProperty = obj.FindProperty("blockchainSource");
             var blockchainTypeProperty = obj.FindProperty("blockchainType");
-
             var objTargetObject = obj.targetObject as TAsset;
             
             if (dto != null)
             {
-                blockchainSourceProperty.stringValue = dto.BlockchainSource;
-                blockchainTypeProperty.enumValueIndex = (int)dto.BlockchainSourceType;
+                if (blockchainSourceProperty.stringValue != dto.BlockchainSource)
+                    blockchainSourceProperty.stringValue = dto.BlockchainSource;
+                if (blockchainTypeProperty.enumValueIndex != (int)dto.BlockchainSourceType)
+                    blockchainTypeProperty.enumValueIndex = (int)dto.BlockchainSourceType;
 
                 var metaDataProperty = obj.FindProperty("metaData");
                 if (metaDataProperty != null)
                 {
-                    metaDataProperty.FindPropertyRelative("name").stringValue = dto.Name;
-                    metaDataProperty.FindPropertyRelative("description").stringValue = dto.Description;
-                    metaDataProperty.FindPropertyRelative("listings").intValue = (int)dto.Listings;
-                    metaDataProperty.FindPropertyRelative("private").boolValue = dto.Private;
+                    var nameProperty = metaDataProperty.FindPropertyRelative("name");
+                    if (nameProperty.stringValue != dto.Name)
+                        nameProperty.stringValue = dto.Name;
+                    var descriptionProperty = metaDataProperty.FindPropertyRelative("description");
+                    if (descriptionProperty.stringValue != dto.Description)
+                        descriptionProperty.stringValue = dto.Description;
+                    var listingsProperty = metaDataProperty.FindPropertyRelative("listings");
+                    if ((int)dto.Listings != listingsProperty.intValue)
+                        listingsProperty.intValue = (int)dto.Listings;
+                    var privateProperty = metaDataProperty.FindPropertyRelative("private");
+                    if (privateProperty.boolValue != dto.Private)
+                        privateProperty.boolValue = dto.Private;
 
                     UpdateBlockchainReferences(dto, obj);
                 }
@@ -1279,31 +1289,78 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static void UpdateBlockchainReferences(AssetDto dto, SerializedObject serObj)
         {
-            var blockchainCategoriesProp = serObj.FindProperty("metaData").FindPropertyRelative("blockchainReferences").FindPropertyRelative("categories");
-            blockchainCategoriesProp.ClearArray();
-
             if (dto.BlockchainReferences == null)
                 return;
 
-            foreach (var category in dto.BlockchainReferences.Categories)
+            var blockchainCategoriesProp = serObj.FindProperty("metaData").FindPropertyRelative("blockchainReferences").FindPropertyRelative("categories");
+            var isDifferent = blockchainCategoriesProp.arraySize != dto.BlockchainReferences.Categories.Count;
+            if (!isDifferent)
             {
-                blockchainCategoriesProp.InsertArrayElementAtIndex(0);
+                foreach (var category in dto.BlockchainReferences.Categories)
+                {
+                    if (isDifferent)
+                        break;
+                    for (var i = 0; i < blockchainCategoriesProp.arraySize; i++)
+                    {
+                        var prop = blockchainCategoriesProp.GetArrayElementAtIndex(i);
+                        if (prop.FindPropertyRelative("category").stringValue == category.Category &&
+                            prop.FindPropertyRelative("type").enumValueIndex == (int)category.Type)
+                            continue;
 
-                var prop = blockchainCategoriesProp.GetArrayElementAtIndex(0);
-                prop.FindPropertyRelative("category").stringValue = category.Category;
-                prop.FindPropertyRelative("type").enumValueIndex = (int)category.Type;
+                        isDifferent = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isDifferent)
+            {
+                blockchainCategoriesProp.ClearArray();
+
+                foreach (var category in dto.BlockchainReferences.Categories)
+                {
+                    blockchainCategoriesProp.InsertArrayElementAtIndex(0);
+
+                    var prop = blockchainCategoriesProp.GetArrayElementAtIndex(0);
+                    prop.FindPropertyRelative("category").stringValue = category.Category;
+                    prop.FindPropertyRelative("type").enumValueIndex = (int)category.Type;
+                }
             }
 
             var blockchainAssetsProp = serObj.FindProperty("metaData").FindPropertyRelative("blockchainReferences").FindPropertyRelative("assets");
-            blockchainAssetsProp.ClearArray();
-
-            foreach (var asset in dto.BlockchainReferences.Assets)
+            isDifferent = blockchainAssetsProp.arraySize != dto.BlockchainReferences.Assets.Count;
+            
+            if (!isDifferent)
             {
-                blockchainAssetsProp.InsertArrayElementAtIndex(0);
+                foreach (var asset in dto.BlockchainReferences.Assets)
+                {
+                    if (isDifferent)
+                        break;
+                    for (var i = 0; i < blockchainAssetsProp.arraySize; i++)
+                    {
+                        var prop = blockchainAssetsProp.GetArrayElementAtIndex(i);
+                        if (prop.FindPropertyRelative("asset").stringValue == asset.Asset &&
+                            prop.FindPropertyRelative("type").enumValueIndex == (int)asset.Type)
+                            continue;
 
-                var prop = blockchainAssetsProp.GetArrayElementAtIndex(0);
-                prop.FindPropertyRelative("asset").stringValue = asset.Asset;
-                prop.FindPropertyRelative("type").enumValueIndex = (int)asset.Type;
+                        isDifferent = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isDifferent)
+            {
+                blockchainAssetsProp.ClearArray();
+
+                foreach (var asset in dto.BlockchainReferences.Assets)
+                {
+                    blockchainAssetsProp.InsertArrayElementAtIndex(0);
+
+                    var prop = blockchainAssetsProp.GetArrayElementAtIndex(0);
+                    prop.FindPropertyRelative("asset").stringValue = asset.Asset;
+                    prop.FindPropertyRelative("type").enumValueIndex = (int)asset.Type;
+                }
             }
         }
     }

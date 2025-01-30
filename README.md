@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.109.0
-- Added support for OnGUI to MetaverseScripts.
+## 2.109.1
+- Fixed uploading causing unnecessary dirtying of scene after upload.
 
 Updated on January 30, 2025

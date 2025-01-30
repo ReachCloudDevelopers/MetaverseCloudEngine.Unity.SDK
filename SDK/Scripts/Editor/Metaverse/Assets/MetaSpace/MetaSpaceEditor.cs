@@ -68,13 +68,27 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             var metaData = assetSerializedObject.FindProperty("metaData");
             UpdateLoadOnStartMetaPrefabs(assetDto, metaData);
-            metaData.FindPropertyRelative("vrSupport").enumValueFlag = (int)assetDto.VRSupport;
-            metaData.FindPropertyRelative("arRequired").boolValue = assetDto.ARRequired;
-            metaData.FindPropertyRelative("requiredTrackingDetails").enumValueFlag = (int)assetDto.RequiredUserTrackingDetails;
-            metaData.FindPropertyRelative("joinBehavior").enumValueFlag = (int)assetDto.SceneJoinBehavior;
-            metaData.FindPropertyRelative("joinRequirements").enumValueFlag = (int)assetDto.SceneJoinRequirements;
-            metaData.FindPropertyRelative("allowConcurrentLogins").boolValue = assetDto.AllowConcurrentLogins;
-            metaData.FindPropertyRelative("tags").enumValueFlag = (int)assetDto.Tags;
+            var vrSupport = metaData.FindPropertyRelative("vrSupport");
+            if (vrSupport.enumValueIndex != (int)assetDto.VRSupport)
+                vrSupport.enumValueFlag = (int)assetDto.VRSupport;
+            var arRequired = metaData.FindPropertyRelative("arRequired");
+            if (arRequired.boolValue != assetDto.ARRequired)
+                arRequired.boolValue = assetDto.ARRequired;
+            var requiredTrackingDetails = metaData.FindPropertyRelative("requiredTrackingDetails");
+            if (requiredTrackingDetails.enumValueIndex != (int)assetDto.RequiredUserTrackingDetails)
+                requiredTrackingDetails.enumValueFlag = (int)assetDto.RequiredUserTrackingDetails;
+            var joinBehavior = metaData.FindPropertyRelative("joinBehavior");
+            if (joinBehavior.enumValueIndex != (int)assetDto.SceneJoinBehavior)
+                joinBehavior.enumValueFlag = (int)assetDto.SceneJoinBehavior;
+            var joinRequirements = metaData.FindPropertyRelative("joinRequirements");
+            if (joinRequirements.enumValueIndex != (int)assetDto.SceneJoinRequirements)
+                joinRequirements.enumValueFlag = (int)assetDto.SceneJoinRequirements;
+            var allowConcurrentLogins = metaData.FindPropertyRelative("allowConcurrentLogins");
+            if (allowConcurrentLogins.boolValue != assetDto.AllowConcurrentLogins)
+                allowConcurrentLogins.boolValue = assetDto.AllowConcurrentLogins;
+            var tags = metaData.FindPropertyRelative("tags");
+            if (tags.enumValueIndex != (int)assetDto.Tags)
+                tags.enumValueFlag = (int)assetDto.Tags;
         }
 
         protected override void DrawUploadControls()
@@ -91,6 +105,34 @@ namespace MetaverseCloudEngine.Unity.Editors
         private static void UpdateLoadOnStartMetaPrefabs(MetaSpaceDto dto, SerializedProperty metaDataProperty)
         {
             var loadOnStartPrefabsProperty = metaDataProperty.FindPropertyRelative("loadOnStartPrefabs");
+            var isDifferent = dto.LoadOnStartPrefabs.Count != loadOnStartPrefabsProperty.arraySize;
+            if (!isDifferent)
+            {
+                foreach (var loadOnStartPrefab in dto.LoadOnStartPrefabs)
+                {
+                    for (var i = 0; i < loadOnStartPrefabsProperty.arraySize; i++)
+                    {
+                        var prop = loadOnStartPrefabsProperty.GetArrayElementAtIndex(i);
+                        if (prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.prefab)).stringValue == loadOnStartPrefab.PrefabId.ToString())
+                        {
+                            var spawnAuth = loadOnStartPrefab.RequireMasterClient
+                                ? (int)MetaPrefabToLoadOnStart.SpawnMode.MasterClient
+                                : loadOnStartPrefab.DontSpawn
+                                    ? (int)MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly 
+                                    : (int)MetaPrefabToLoadOnStart.SpawnMode.Local;
+                            isDifferent = 
+                                prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.spawnAuthority)).enumValueIndex != spawnAuth ||
+                                prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.disabled)).boolValue != !loadOnStartPrefab.Enabled;
+                            if (isDifferent)
+                                break;
+                        }
+                    }
+                }
+            }
+            
+            if (!isDifferent)
+                return;
+            
             loadOnStartPrefabsProperty.ClearArray();
 
             foreach (var loadOnStartPrefabs in dto.LoadOnStartPrefabs)
@@ -98,7 +140,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                 loadOnStartPrefabsProperty.InsertArrayElementAtIndex(0);
                 var prop = loadOnStartPrefabsProperty.GetArrayElementAtIndex(0);
                 prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.prefab)).stringValue = loadOnStartPrefabs.PrefabId.ToString();
-                prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.spawnAuthority)).enumValueIndex = loadOnStartPrefabs.RequireMasterClient ? 0 : loadOnStartPrefabs.DontSpawn ? 2 : 1; 
+                prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.spawnAuthority)).enumValueIndex = loadOnStartPrefabs.RequireMasterClient 
+                    ? (int)MetaPrefabToLoadOnStart.SpawnMode.MasterClient
+                    : loadOnStartPrefabs.DontSpawn 
+                        ? (int)MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly
+                        : (int)MetaPrefabToLoadOnStart.SpawnMode.Local;
                 prop.FindPropertyRelative(nameof(MetaPrefabToLoadOnStart.disabled)).boolValue = !loadOnStartPrefabs.Enabled;
             }
         }

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.109.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.109.0\n- Added support for OnGUI to MetaverseScripts.\n\nUpdated on January 30, 2025",
+  "version": "2.109.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.109.1\n- Fixed uploading causing unnecessary dirtying of scene after upload.\n\nUpdated on January 30, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

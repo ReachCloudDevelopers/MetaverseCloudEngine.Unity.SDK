@@ -116,20 +116,25 @@ namespace MetaverseCloudEngine.Unity.Editors
             var metaDataProperty = assetSerializedObject.FindProperty("metaData");
 
             var isBuildableProperty = metaDataProperty.FindPropertyRelative(nameof(MetaPrefabMetadata.isBuildable));
-            isBuildableProperty.boolValue = assetDto.IsBuildable;
+            if (isBuildableProperty.boolValue != assetDto.IsBuildable)
+                isBuildableProperty.boolValue = assetDto.IsBuildable;
 
             var categoriesProperty = metaDataProperty.FindPropertyRelative(nameof(MetaPrefabMetadata.builderCategories));
-            categoriesProperty.enumValueFlag = (int)assetDto.PrefabBuildingCategory;
+            if (categoriesProperty.enumValueFlag != (int)assetDto.PrefabBuildingCategory)
+                categoriesProperty.enumValueFlag = (int)assetDto.PrefabBuildingCategory;
 
             var isAvatar = metaDataProperty.FindPropertyRelative(nameof(MetaPrefabMetadata.isAvatar));
-            isAvatar.boolValue = assetDto.IsAvatar;
+            if (isAvatar.boolValue != assetDto.IsAvatar)
+                isAvatar.boolValue = assetDto.IsAvatar;
 
             var loadRangeProperty = metaDataProperty.FindPropertyRelative(nameof(MetaPrefabMetadata.loadRange));
             var loadDistanceProperty = loadRangeProperty.FindPropertyRelative(nameof(ObjectLoadRange.loadDistance));
             var unloadDistanceProperty = loadRangeProperty.FindPropertyRelative(nameof(ObjectLoadRange.unloadDistance));
 
-            loadDistanceProperty.floatValue = assetDto.PrefabLoadDistance;
-            unloadDistanceProperty.floatValue = assetDto.PrefabUnloadDistance;
+            if (!Mathf.Approximately(loadDistanceProperty.floatValue, assetDto.PrefabLoadDistance))
+                loadDistanceProperty.floatValue = assetDto.PrefabLoadDistance;
+            if (!Mathf.Approximately(unloadDistanceProperty.floatValue, assetDto.PrefabUnloadDistance))
+                unloadDistanceProperty.floatValue = assetDto.PrefabUnloadDistance;
 
             var childPrefabs = GetChildPrefabs(asset);
             if (childPrefabs.Length == 0)
