@@ -25,7 +25,7 @@ namespace MetaverseCloudEngine.Unity
     /// </summary>
     public static class MetaverseProgram
     {
-        private static readonly Queue<Action> InitializationCallbacks = new();
+        private readonly static Queue<Action> InitializationCallbacks = new();
 
         static MetaverseProgram()
         {
@@ -142,7 +142,11 @@ namespace MetaverseCloudEngine.Unity
         private static void UnloadAllAssetBundles() => AssetBundle.UnloadAllAssetBundles(true);
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void Main_Runtime() => Main();
+        private static void Main_Runtime()
+        {
+            Logger.Log("MetaverseProgram.Main_Runtime");
+            Main();
+        }
 
 #if UNITY_EDITOR
         [UnityEditor.InitializeOnLoadMethod]
@@ -181,10 +185,12 @@ namespace MetaverseCloudEngine.Unity
 
             MVUtils.FreeUpMemory(() =>
             {
+                Logger.Log("Initializing Metaverse Cloud Engine...");
+
                 ConfigureUnityApplication();
 
                 Prefs ??= new EncryptedPrefs();
-
+                
                 try
                 {
                     var webClient = MetaverseWebClient.CreateNew();

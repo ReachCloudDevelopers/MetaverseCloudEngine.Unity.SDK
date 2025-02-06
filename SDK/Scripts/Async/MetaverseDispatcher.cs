@@ -47,8 +47,8 @@ namespace MetaverseCloudEngine.Unity.Async
             public Action Success;
         }
 
-        private static readonly ConcurrentQueue<Action> MainThreadQueue = new();
-        private static readonly ConcurrentBag<Func<bool>> EditorTasksToUpdate = new();
+        private readonly static ConcurrentQueue<Action> MainThreadQueue = new();
+        private readonly static ConcurrentBag<Func<bool>> EditorTasksToUpdate = new();
 
         /// <summary>
         /// We pool all wait until actions in a list
@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.Async
         /// intensive. This is just a much more efficient
         /// way.
         /// </summary>
-        private static readonly List<DispatcherWaitUntilAction> WaitUntilActions = new();
+        private readonly static List<DispatcherWaitUntilAction> WaitUntilActions = new();
 
         private static MetaverseDispatcher _instance;
 

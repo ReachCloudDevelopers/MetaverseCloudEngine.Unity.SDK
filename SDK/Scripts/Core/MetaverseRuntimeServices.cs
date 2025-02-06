@@ -27,6 +27,8 @@ namespace MetaverseCloudEngine.Unity
 
         public async Task InitializeAsync()
         {
+            MetaverseProgram.Logger.Log("Initializing Metaverse Runtime Services...");
+            
             LoginStore = new LoginStore(_prefs, _client);
             await LoginStore.InitializeAsync();
 
@@ -37,6 +39,8 @@ namespace MetaverseCloudEngine.Unity
             if (internalInitTask != null)
                 // ReSharper disable once HeuristicUnreachableCode
                 await internalInitTask;
+            
+            MetaverseProgram.Logger.Log("Metaverse Runtime Services initialized.");
         }
 
         // ReSharper disable once PartialMethodWithSinglePart

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.109.1
-- Fixed uploading causing unnecessary dirtying of scene after upload.
+## 2.110.0
+- Improved logging of initialization process in MetaverseProgram and MetaverseRuntimeServices classes.
 
-Updated on January 30, 2025
+Updated on February 06, 2025
