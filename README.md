@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.110.0
-- Improved logging of initialization process in MetaverseProgram and MetaverseRuntimeServices classes.
+## 2.110.1
+- Added Linker for SerialPortUtilityPro so that AddListener methods are preserved during build.
+- Improved support for Unity 2023.1+ environments.
 
-Updated on February 06, 2025
+Updated on February 07, 2025

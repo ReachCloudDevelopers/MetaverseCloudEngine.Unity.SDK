@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.110.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.110.0\n- Improved logging of initialization process in MetaverseProgram and MetaverseRuntimeServices classes.\n\nUpdated on February 06, 2025",
+  "version": "2.110.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.110.1\n- Added Linker for SerialPortUtilityPro so that AddListener methods are preserved during build.\n- Improved support for Unity 2023.1+ environments.\n\nUpdated on February 07, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

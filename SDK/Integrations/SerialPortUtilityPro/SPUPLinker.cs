@@ -1,0 +1,25 @@
+using UnityEngine;
+
+namespace MetaverseCloudEngine.Unity.SPUP
+{
+    [Preserve]
+    [AddComponentMenu("")]
+    internal class SPUPLinker : MonoBehaviour
+    {
+        [Preserve]
+        private void Start()
+        {
+#if (METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED) || SERIAL_PORT_UTILITY_PRO
+            var spup = GetComponent<SerialPortUtility.SerialPortUtilityPro>();
+            spup.SystemEventObject.AddListener((s, s1) =>
+            {
+                Debug.Log($"SPUP Event: {s} {s1}");
+            });
+            spup.ReadCompleteEventObject.AddListener((o) =>
+            {
+                Debug.LogError($"SPUP Error: {o}");
+            });
+#endif
+        }
+    }
+}

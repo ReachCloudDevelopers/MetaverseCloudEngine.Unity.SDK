@@ -41,7 +41,13 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 #endif
 
             if (!applicationVariables)
+            {
+#if UNITY_EDITOR
+                if (UnityEditor.EditorApplication.isUpdating)
+                    return;
+#endif
                 applicationVariables = Resources.Load<VariablesAsset>(ApplicationVariables.assetPath);
+            }
         }
     }
 }
