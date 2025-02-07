@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.110.2
-- Support latest Cesium Ion fix
+## 2.111.1
+- Better handling for latest Cesium Ion version.
 
 Updated on February 07, 2025
