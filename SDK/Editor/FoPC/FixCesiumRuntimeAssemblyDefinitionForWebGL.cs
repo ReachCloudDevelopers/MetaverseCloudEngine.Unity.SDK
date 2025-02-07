@@ -16,7 +16,7 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             var file = files.FirstOrDefault(x => x.Replace("\\", "/").StartsWith("./Library/PackageCache/com.cesium.unity") && x.Replace("\\", "/").EndsWith("CesiumRuntime.asmdef"));
             if (file == null) return;
             var text = System.IO.File.ReadAllText(file);
-            if (text.Contains("\"excludePlatforms\": []"))
+            if (text.Contains("\"excludePlatforms\": []") && !text.Contains("\"includePlatforms\": [\n"))
             {
                 var newText = text.Replace("\"excludePlatforms\": []", "\"excludePlatforms\": [\"WebGL\",\"LinuxStandalone64\"]");
                 System.IO.File.WriteAllText(file, newText);
