@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.111.1
-- Better handling for latest Cesium Ion version.
+## 2.111.2
+- Added fix for AROcclusionManager throwing exception on Destroy
 
-Updated on February 07, 2025
+Updated on February 08, 2025
