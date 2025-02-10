@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.116.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.116.0\n- Fixed CalculateTriangulation being stripped from builds.\n\nUpdated on February 10, 2025",
+  "version": "2.117.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.117.0\n- Improved logging for SerialPortUtilityPro interop\n\nUpdated on February 10, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

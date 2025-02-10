@@ -436,12 +436,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    
 			const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
 		    var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
-			    .FirstOrDefault(x => 
-				    x.GetParameters().Length == 1 && 
-				    x.GetParameters()[0].ParameterType.BaseType == typeof(UnityAction<,>).BaseType);
+			    .FirstOrDefault(x => x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
 		    if (addListenerCallFunction == null)
 		    {
-			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find AddListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
+			    MetaverseProgram.Logger.LogError(
+				    "AddSystemListener: Could not find AddListener method in " + readCompleteEvent.GetType().BaseType?.FullName + " | " +
+			                                     string.Join(", ", readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags).Select(x => x.Name) ?? Array.Empty<string>()));
 			    return;
 		    }
 		    
