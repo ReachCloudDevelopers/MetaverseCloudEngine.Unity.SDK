@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.115.0
-- Fixed SPUPLinker
+## 2.116.0
+- Fixed CalculateTriangulation being stripped from builds.
 
 Updated on February 10, 2025

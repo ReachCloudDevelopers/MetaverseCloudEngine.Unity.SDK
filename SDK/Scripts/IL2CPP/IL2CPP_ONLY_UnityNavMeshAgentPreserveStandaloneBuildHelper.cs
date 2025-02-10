@@ -102,6 +102,10 @@ namespace MetaverseCloudEngine.Unity.Internal.IL2CPP
                 Vector3 dummySteeringTarget = agent.steeringTarget;
 
                 NavMesh.RemoveAllNavMeshData();
+                var triangulation = UnityEngine.AI.NavMesh.CalculateTriangulation();
+                var areas = triangulation.areas;
+                var indices = triangulation.indices;
+                var verts = triangulation.vertices;
             }
             catch
             {
