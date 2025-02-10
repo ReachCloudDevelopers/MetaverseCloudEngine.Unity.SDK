@@ -100,6 +100,8 @@ namespace MetaverseCloudEngine.Unity.Internal.IL2CPP
                 Vector3 dummyNextPosition = agent.nextPosition;
                 int dummyAgentTypeID = agent.agentTypeID;
                 Vector3 dummySteeringTarget = agent.steeringTarget;
+
+                NavMesh.RemoveAllNavMeshData();
             }
             catch
             {

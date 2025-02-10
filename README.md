@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.113.0
-- Improved IL2cpp preservation of navmesh agent properties.
+## 2.114.0
+- Fixed SPUP events not linking.
+- Fixed RemoveAllListeners being stripped from build.
 
 Updated on February 10, 2025

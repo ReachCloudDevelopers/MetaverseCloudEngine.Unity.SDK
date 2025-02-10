@@ -9,7 +9,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [Preserve]
         private void Start()
         {
-#if (METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED) || SERIAL_PORT_UTILITY_PRO
+#if METAVERSE_CLOUD_ENGINE_INTERNAL || SERIAL_PORT_UTILITY_PRO
             var spup = GetComponent<SerialPortUtility.SerialPortUtilityPro>();
             spup.SystemEventObject.AddListener((s, s1) =>
             {
