@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.112.0
-- Included more fields in IL2CPP/IL2CPP_ONLY_UnityNavMeshAgentPreserveStandaloneBuildHelper.cs
+## 2.113.0
+- Improved IL2cpp preservation of navmesh agent properties.
 
 Updated on February 10, 2025
