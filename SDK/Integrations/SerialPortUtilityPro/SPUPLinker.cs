@@ -4,7 +4,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 {
     [Preserve]
     [AddComponentMenu("")]
-    internal class SPUPLinker : MonoBehaviour
+    public class SPUPLinker : MonoBehaviour
     {
         [Preserve]
         private void Start()
