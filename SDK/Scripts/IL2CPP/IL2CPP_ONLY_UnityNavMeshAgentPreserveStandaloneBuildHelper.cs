@@ -18,20 +18,20 @@ namespace MetaverseCloudEngine.Unity.Internal.IL2CPP
             try
             {
                 NavMeshAgent navMeshAgent = GetComponent<NavMeshAgent>();
-                navMeshAgent.destination = new Vector3(0, 0, 0);
+                var dest = navMeshAgent.destination = new Vector3(0, 0, 0);
                 navMeshAgent.SetDestination(Vector3.zero);
                 navMeshAgent.velocity = Vector3.zero;
-                navMeshAgent.angularSpeed = 0;
-                navMeshAgent.acceleration = 0;
-                navMeshAgent.autoTraverseOffMeshLink = false;
+                var angular = navMeshAgent.angularSpeed = 0;
+                var accel = navMeshAgent.acceleration = 0;
+                var aitpTrav = navMeshAgent.autoTraverseOffMeshLink = false;
                 navMeshAgent.autoRepath = false;
                 navMeshAgent.autoBraking = false;
-                navMeshAgent.height = 0;
-                navMeshAgent.baseOffset = 0;
-                navMeshAgent.radius = 0;
-                navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
-                navMeshAgent.avoidancePriority = 0;
-                navMeshAgent.stoppingDistance = 0;
+                var height = navMeshAgent.height = 0;
+                var baseOffset = navMeshAgent.baseOffset = 0;
+                var rad = navMeshAgent.radius = 0;
+                var avoidance = navMeshAgent.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
+                var avoidancePrio = navMeshAgent.avoidancePriority = 0;
+                var stoppingDist = navMeshAgent.stoppingDistance = 0;
                 var r = navMeshAgent.remainingDistance;
                 var p = navMeshAgent.path;
                 var c = navMeshAgent.pathStatus;
@@ -44,6 +44,8 @@ namespace MetaverseCloudEngine.Unity.Internal.IL2CPP
                 var f = navMeshAgent.nextPosition;
                 var g = navMeshAgent.agentTypeID;
                 var v = navMeshAgent.velocity;
+                var ab= navMeshAgent.autoBraking;
+                var ac = navMeshAgent.autoRepath;
                 var steering = navMeshAgent.steeringTarget;
             }
             catch

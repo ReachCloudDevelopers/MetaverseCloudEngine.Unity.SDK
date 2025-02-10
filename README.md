@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.111.2
-- Added fix for AROcclusionManager throwing exception on Destroy
+## 2.112.0
+- Included more fields in IL2CPP/IL2CPP_ONLY_UnityNavMeshAgentPreserveStandaloneBuildHelper.cs
 
-Updated on February 08, 2025
+Updated on February 10, 2025
