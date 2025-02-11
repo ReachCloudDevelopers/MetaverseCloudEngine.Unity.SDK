@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.117.0
-- Improved logging for SerialPortUtilityPro interop
+## 2.118.0
+- Updated link.xml to include Unity.AI.Navigation
 
-Updated on February 10, 2025
+Updated on February 11, 2025
