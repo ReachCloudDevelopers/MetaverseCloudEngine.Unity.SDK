@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.118.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.118.0\n- Updated link.xml to include Unity.AI.Navigation\n\nUpdated on February 11, 2025",
+  "version": "2.119.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.119.0\n- Added new CursorIconAPI component.\n- Added new Dialog system functions to MetaverseScript\n\nUpdated on February 15, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

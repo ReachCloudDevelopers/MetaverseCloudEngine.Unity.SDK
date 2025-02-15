@@ -161,6 +161,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string GetHostIDFunction = "GetHostID";
         private const string SpawnNetworkPrefabFunction = "SpawnNetworkPrefab";
         private const string AwaitFunction = "await";
+        private const string ShowDialogFunction = "ShowDialog";
+        private const string ShowForcedDialogFunction = "ShowForcedDialog";
+        private const string ShowDialogComplexFunction = "ShowDialogComplex";
+        private const string ShowForcedDialogComplexFunction = "ShowForcedDialogComplex";
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
@@ -991,6 +995,28 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 if (continueWith == null) return;
                 _ = continueWith.Invoke(uniTask, new[] { uniTask, a });
             }) },
+            
+            // Show Dialog
+            { ShowDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) => {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback);
+#endif
+            }) },
+            { ShowForcedDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) => {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback, force: true);
+#endif
+            }) },
+            { ShowDialogComplexFunction, (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback, cancelCallback) => {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel, okCallback, cancelCallback);
+#endif
+            }) },
+            { ShowForcedDialogComplexFunction, (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback, cancelCallback) => {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel, okCallback, cancelCallback, force: true);
+#endif
+            }) },
         };
         
         /// <summary>
@@ -1003,7 +1029,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { ThisProperty, typeof(MetaverseScript) },
             { GameObjectProperty, typeof(GameObject) },
             { TransformProperty, typeof(Transform) },
-            { nameof(Vars), typeof(VariableDeclarations) }, // TODO: Confirm the exact type of context.Vars
+            { nameof(Vars), typeof(VariableDeclarations) },
             { GetEnabledFunction, typeof(Func<bool>) },
             { SetEnabledFunction, typeof(Action<bool>) },
             { nameof(GetVar), typeof(Func<string, object>) },
@@ -1052,6 +1078,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             // Async/Await Function
             { AwaitFunction, typeof(Action<object, Action<object>>) },
+            
+            // Show Dialog
+            { ShowDialogFunction, typeof(System.Action<string, string, string, Action>) },
+            { ShowForcedDialogFunction, typeof(System.Action<string, string, string, Action>) },
+            { ShowDialogComplexFunction, typeof(System.Action<string, string, string, string, Action, Action>) },
+            { ShowForcedDialogComplexFunction, typeof(System.Action<string, string, string, string, Action, Action>) },
         };
 
         /// <summary>
@@ -1079,6 +1111,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(GameObject).Assembly,
                 typeof(Component).Assembly /* UnityEngine.CoreModule */,
                 typeof(Rigidbody).Assembly /* UnityEngine.PhysicsModule */,
+                typeof(RaycastHit).Assembly /* UnityEngine.PhysicsModule */,
+                typeof(RaycastHit2D).Assembly /* UnityEngine.PhysicsModule */,
                 typeof(Terrain).Assembly /* UnityEngine.TerrainModule */,
                 typeof(AudioSource).Assembly /* UnityEngine.AudioModule */,
                 typeof(Canvas).Assembly /* UnityEngine.UIModule */,

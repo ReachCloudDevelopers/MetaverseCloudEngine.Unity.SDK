@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.118.0
-- Updated link.xml to include Unity.AI.Navigation
+## 2.119.0
+- Added new CursorIconAPI component.
+- Added new Dialog system functions to MetaverseScript
 
-Updated on February 11, 2025
+Updated on February 15, 2025
