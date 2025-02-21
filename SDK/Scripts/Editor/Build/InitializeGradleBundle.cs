@@ -6,9 +6,9 @@ using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Editors.Builds
 {
-    internal class FinalizeGradleBundle : IPostGenerateGradleAndroidProject
+    internal class InitializeGradleBundle : IPostGenerateGradleAndroidProject
     {
-        public int callbackOrder { get; } = int.MaxValue;
+        public int callbackOrder { get; } = -int.MaxValue;
 
         public void OnPostGenerateGradleAndroidProject(string path)
         {
@@ -19,7 +19,7 @@ namespace MetaverseCloudEngine.Unity.Editors.Builds
                     catch (Exception e) { return Array.Empty<Type>(); }
                 }).Where(x =>
                 {
-                    try { return typeof(IFinalizeGradleBundle).IsAssignableFrom(x) && x.IsClass && !x.IsAbstract; }
+                    try { return typeof(IInitializeGradleBundle).IsAssignableFrom(x) && x.IsClass && !x.IsAbstract; }
                     catch (Exception e) { return false; }
                 }).ToArray();
             
@@ -27,7 +27,7 @@ namespace MetaverseCloudEngine.Unity.Editors.Builds
             {
                 try
                 {
-                    return (IFinalizeGradleBundle) Activator.CreateInstance(type);
+                    return (IInitializeGradleBundle) Activator.CreateInstance(type);
                 }
                 catch (Exception e)
                 {
@@ -40,7 +40,7 @@ namespace MetaverseCloudEngine.Unity.Editors.Builds
             {
                 try
                 {
-                    instance.FinalizeGradleBundle(path);
+                    instance.InitializeGradleBundle(path);
                 }
                 catch (Exception e)
                 {

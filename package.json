@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.119.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.119.0\n- Added new CursorIconAPI component.\n- Added new Dialog system functions to MetaverseScript\n\nUpdated on February 15, 2025",
+  "version": "2.120.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.120.0\n- Fixed FinalizeGradleBundle not running after all processors.\n- Added IInitializeGradleBundle interface to run before gradle starts.\n\nUpdated on February 21, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
