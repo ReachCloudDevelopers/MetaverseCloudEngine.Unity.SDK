@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.120.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.120.0\n- Fixed FinalizeGradleBundle not running after all processors.\n- Added IInitializeGradleBundle interface to run before gradle starts.\n\nUpdated on February 21, 2025",
+  "version": "2.121.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.121.0\n- Updated API Client and Common libraries.\n\nUpdated on February 27, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

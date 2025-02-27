@@ -12,8 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.120.0
-- Fixed FinalizeGradleBundle not running after all processors.
-- Added IInitializeGradleBundle interface to run before gradle starts.
+## 2.121.0
+- Updated API Client and Common libraries.
 
-Updated on February 21, 2025
+Updated on February 27, 2025
