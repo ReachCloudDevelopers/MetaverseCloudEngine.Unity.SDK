@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.121.0
-- Updated API Client and Common libraries.
+## 2.122.0
+- Added new sampleData field in AIAgent prompt.
 
 Updated on February 27, 2025

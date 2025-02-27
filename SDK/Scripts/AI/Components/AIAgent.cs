@@ -23,6 +23,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             [LabelText("")]
             [TextArea(minLines: 5, maxLines: 5000)] 
             public string text;
+            [InfoBox("(Optional) A sample output that the AI agent can use for reference when generating responses.")]
+            public string sampleData;
         }
         
         [Serializable]
@@ -104,6 +106,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             get => prompt.text;
             set => prompt.text = value;
+        }
+
+        public string SampleData
+        {
+            get => prompt.sampleData;
+            set => prompt.sampleData = value;
         }
 
         [Obsolete("Use 'Prompt' instead.")]
