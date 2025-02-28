@@ -112,9 +112,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     }
                     
                     // Switch current build target before pre-processing assets.
-                    EditorUserBuildSettings.selectedBuildTargetGroup = group;
-                    if (group == BuildTargetGroup.Standalone)
-                        EditorUserBuildSettings.selectedStandaloneTarget = buildTarget;
+                    EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+                        
 #if UNITY_2023_1_OR_NEWER
                     //UnityEditor.QNX.Settings.architecture = EmbeddedArchitecture.Arm64;
 #else
