@@ -19,7 +19,7 @@ namespace MetaverseCloudEngine.Unity.Assets
         StandaloneWindows64 = 1,
         Android = 2,
         iOS = 4,
-        //StandaloneOSX = 8,
+        StandaloneOSX = 8,
         WebGL = 16,
         StandaloneLinux64 = 32,
         [InspectorName("Android VR (Oculus Quest)")]
@@ -161,8 +161,8 @@ namespace MetaverseCloudEngine.Unity.Assets
                         p |= Platform.AndroidVR;
                     if ((supportedPlatforms & AssetBuildPlatform.StandaloneLinux64) != 0)
                         p |= Platform.StandaloneLinux64;
-                    // if ((supportedPlatforms & AssetBuildPlatform.StandaloneOSX) != 0)
-                    //     p |= Platform.StandaloneOSX;
+                    if ((supportedPlatforms & AssetBuildPlatform.StandaloneOSX) != 0)
+                        p |= Platform.StandaloneOSX;
                     if ((supportedPlatforms & AssetBuildPlatform.iOS) != 0)
                         p |= Platform.iOS;
                     return p;
