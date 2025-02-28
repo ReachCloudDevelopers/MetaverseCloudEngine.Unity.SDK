@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.123.0
-- Updated API Client and Common libraries.
+## 2.124.0
+- Updated TriEditor to support dynamic width in public API.
 
 Updated on February 28, 2025

@@ -26,8 +26,13 @@ namespace TriInspectorMVCE
             _inspector?.Dispose();
             _inspector = null;
         }
-
+        
         public override void OnInspectorGUI()
+        {
+            OnInspectorGUI(null);
+        }
+
+        public void OnInspectorGUI(float? viewWidth)
         {
             if (serializedObject.targetObjects.Length == 0)
             {
@@ -62,7 +67,7 @@ namespace TriInspectorMVCE
 
             using (TriGuiHelper.PushEditorTarget(target))
             {
-                _inspector.Draw();
+                _inspector.Draw(viewWidth);
             }
 
             try
