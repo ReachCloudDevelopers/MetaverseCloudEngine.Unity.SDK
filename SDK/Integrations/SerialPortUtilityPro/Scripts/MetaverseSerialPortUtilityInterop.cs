@@ -20,6 +20,51 @@ namespace MetaverseCloudEngine.Unity.SPUP
             TcpSerialEmulatorClient = 10,
             TcpSerialEmulatorServer = 11,
         }
+
+        public enum InstanceMethodID
+        {
+	        IsOpenProcessing,
+	        IsOpened,
+	        Write,
+	        Open,
+	        Close,
+        }
+
+        public enum StaticMethodID
+        {
+	        
+        }
+
+        public enum SettableFieldID
+        {
+	        OpenMethod,
+	        IsAutoOpen,
+        }
+
+        public enum GettableFieldID
+        {
+	        SystemEventObject,
+	        ReadCompleteEventObject,
+        }
+        
+        public enum SettablePropertyID
+		{
+	        VendorID,
+	        Port,
+	        ProductID,
+	        SerialNumber,
+	        DeviceName,
+		}
+
+		public enum GettablePropertyID
+		{
+			SerialNumber,
+		}
+
+		public enum SerialPortEventName
+		{
+			
+		}
         
         public class DeviceInfo
         {
@@ -75,7 +120,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
         }
         
-        public static void SubscribeToEvent(Component spupComponent, ref EventInfo eventInfo, string eventName, Delegate handler)
+        public static void SubscribeToEvent(Component spupComponent, ref EventInfo eventInfo, SerialPortEventName eventName, Delegate handler)
 		{
 			if (!spupComponent) 
 				return;
@@ -83,13 +128,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			eventInfo ??= spupComponent
 				.GetType()
 				.GetEvents()
-				.FirstOrDefault(x => x.Name == eventName);
+				.FirstOrDefault(x => x.Name == eventName.ToString());
 				
 			eventInfo?.AddEventHandler(spupComponent, handler);
 		}
 
-		public static void UnsubscribeFromEvent(Component spupComponent, ref EventInfo eventInfo, string eventName,
-			Delegate handler)
+		public static void UnsubscribeFromEvent(Component spupComponent, ref EventInfo eventInfo, SerialPortEventName eventName, Delegate handler)
 		{
 			if (!spupComponent) 
 				return;
@@ -97,36 +141,36 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			eventInfo ??= spupComponent
 				.GetType()
 				.GetEvents()
-				.FirstOrDefault(x => x.Name == eventName);
+				.FirstOrDefault(x => x.Name == eventName.ToString());
 				
 			eventInfo?.RemoveEventHandler(spupComponent, handler);
 		}
 		
-        public static T CallStaticMethod<T>(ref MethodInfo method, string methodName, params object[] parameters)
+        public static T CallStaticMethod<T>(ref MethodInfo method, StaticMethodID methodName, params object[] parameters)
         {
             method ??= GetSerialPortUtilityProType()
                 .GetMethods()
                 .FirstOrDefault(x =>
-                    x.Name == methodName &&
+                    x.Name == methodName.ToString() &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
                 
             return (T) method?.Invoke(null, parameters);
         }
         
-        public static void CallStaticMethod(ref MethodInfo method, string methodName, params object[] parameters)
+        public static void CallStaticMethod(ref MethodInfo method, StaticMethodID methodName, params object[] parameters)
         {
             method ??= GetSerialPortUtilityProType()
                 .GetMethods()
                 .FirstOrDefault(x =>
-                    x.Name == methodName &&
+                    x.Name == methodName.ToString() &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
                 
             method?.Invoke(null, parameters);
         }
         
-        public static T CallInstanceMethod<T>(Component spupComponent, ref MethodInfo method, string methodName, params object[] parameters)
+        public static T CallInstanceMethod<T>(Component spupComponent, ref MethodInfo method, InstanceMethodID methodName, params object[] parameters)
         {
             if (!spupComponent) 
                 return default;
@@ -135,14 +179,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 .GetType()
                 .GetMethods()
                 .FirstOrDefault(x =>
-                    x.Name == methodName &&
+                    x.Name == methodName.ToString() &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
                 
             return (T) method?.Invoke(spupComponent, parameters);
         }
         
-        public static void CallInstanceMethod(Component spupComponent, ref MethodInfo method, string methodName, params object[] parameters)
+        public static void CallInstanceMethod(Component spupComponent, ref MethodInfo method, InstanceMethodID methodName, params object[] parameters)
         {
             if (!spupComponent) 
                 return;
@@ -151,14 +195,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 .GetType()
                 .GetMethods()
                 .FirstOrDefault(x =>
-                    x.Name == methodName &&
+                    x.Name == methodName.ToString() &&
                     x.GetParameters().Length == parameters.Length &&
                     x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
             
             method?.Invoke(spupComponent, parameters);
         }
         
-        public static T GetField<T>(Component spupComponent, ref FieldInfo field, string fieldName)
+        public static T GetField<T>(Component spupComponent, ref FieldInfo field, GettableFieldID fieldName)
 		{
 			if (!spupComponent) 
 				return default;
@@ -166,12 +210,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			field ??= spupComponent
 				.GetType()
 				.GetFields()
-				.FirstOrDefault(x => x.Name == fieldName);
+				.FirstOrDefault(x => x.Name == fieldName.ToString());
 				
 			return (T) field?.GetValue(spupComponent);
 		}
 
-		public static void SetField(Component spupComponent, ref FieldInfo field, string fieldName, object value)
+		public static void SetField(Component spupComponent, ref FieldInfo field, SettableFieldID fieldName, object value)
 		{
 			if (!spupComponent) 
 				return;
@@ -179,12 +223,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			field ??= spupComponent
 				.GetType()
 				.GetFields()
-				.FirstOrDefault(x => x.Name == fieldName);
+				.FirstOrDefault(x => x.Name == fieldName.ToString());
 				
 			field?.SetValue(spupComponent, value);
 		}
 		
-		public static T GetProperty<T>(Component spupComponent, ref PropertyInfo property, string propertyName)
+		public static T GetProperty<T>(Component spupComponent, ref PropertyInfo property, GettablePropertyID propertyName)
 		{
 			if (!spupComponent) 
 				return default;
@@ -192,12 +236,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			property ??= spupComponent
 				.GetType()
 				.GetProperties()
-				.FirstOrDefault(x => x.Name == propertyName);
+				.FirstOrDefault(x => x.Name == propertyName.ToString());
 				
 			return (T) property?.GetValue(spupComponent);
 		}
 		
-		public static void SetProperty(Component spupComponent, ref PropertyInfo property, string propertyName, object value)
+		public static void SetProperty(Component spupComponent, ref PropertyInfo property, SettablePropertyID propertyName, object value)
 		{
 			if (!spupComponent) 
 				return;
@@ -205,7 +249,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			property ??= spupComponent
 				.GetType()
 				.GetProperties()
-				.FirstOrDefault(x => x.Name == propertyName);
+				.FirstOrDefault(x => x.Name == propertyName.ToString());
 				
 			property?.SetValue(spupComponent, value);
 		}
@@ -420,7 +464,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    if (delegateCall is not null)
 		        RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
 
-		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
+		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, GettableFieldID.SystemEventObject);
 		    if (readCompleteEvent == null)
 		    {
 			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
@@ -457,7 +501,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
 		    delegateCall = callback;
 		}
 
-		private static void RemoveSystemListener(UnityAction<object, string> delegateCall, ref FieldInfo systemEventObjectField, Component spupComponent)
+		private static void RemoveSystemListener(
+			UnityAction<object, string> delegateCall, 
+			ref FieldInfo systemEventObjectField, 
+			Component spupComponent)
 		{
 			if (!spupComponent)
 			{
@@ -467,10 +514,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			
 		    if (delegateCall is null) return;
 
-		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, "SystemEventObject");
+		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, GettableFieldID.SystemEventObject);
 		    if (readCompleteEvent == null)
 		    {
-			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
+			    MetaverseProgram.Logger.LogError($"RemoveSystemListener: Could not find {GettableFieldID.SystemEventObject} field in SerialPortUtilityPro component");
 			    return;
 		    }
 		    
@@ -485,7 +532,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			    .FirstOrDefault(x => x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
 		    if (removeListenerCallFunction == null)
 		    {
-			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not find RemoveListener method in " + readCompleteEvent.GetType().BaseType?.FullName);
+			    MetaverseProgram.Logger.LogError(
+				    $"RemoveSystemListener: Could not find RemoveListener method in {readCompleteEvent.GetType().BaseType?.FullName}");
 			    return;
 		    }
 

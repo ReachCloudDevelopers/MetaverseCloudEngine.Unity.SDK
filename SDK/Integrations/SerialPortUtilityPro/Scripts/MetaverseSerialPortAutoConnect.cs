@@ -29,14 +29,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
             Pci = 4
         }
 
-        [Required] [SerializeField] private Component serialPortUtilityPro;
+        [Required]
+        [SerializeField] private Component serialPortUtilityPro;
         [SerializeField] private bool onStart = true;
         [SerializeField] private bool saveLastDevice = true;
 
-        [ShowIf(nameof(saveLastDevice))] [SerializeField]
+        [ShowIf(nameof(saveLastDevice))]
+        [SerializeField]
         private string saveKey = Guid.NewGuid().ToString()[..6].ToUpper();
 
-        [InfoBox("You can use https://regexr.com/ to test your regex.")] [SerializeField]
+        [InfoBox("You can use https://regexr.com/ to test your regex.")]
+        [SerializeField]
         private string regexSearchString = "<Enter Search String>";
 
         [SerializeField] private DeviceField searchField = (DeviceField)(-1);
@@ -59,7 +62,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void Awake()
         {
-            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, "IsAutoOpen", false);
+            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, MetaverseSerialPortUtilityInterop.SettableFieldID.IsAutoOpen, false);
             _deviceAPI.OnDeviceOpen.AddListener(() =>
             {
                 if (saveLastDevice && !string.IsNullOrWhiteSpace(saveKey))
@@ -187,7 +190,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (deviceInfo.Item1 != null)
                 {
                     if (debugLog)
-                        MetaverseProgram.Logger.Log("AutoConnect found a device: " + deviceInfo.Item1.SerialNumber);
+                        MetaverseProgram.Logger.Log($"AutoConnect found a device: {deviceInfo.Item1.SerialNumber}");
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
                         deviceInfo.Item1.SerialNumber,
@@ -199,9 +202,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log(
-                            "AutoConnect did not find a device for: " + regexSearchString +
-                            " | " + searchField +
-                            " | " + searchType);
+                            $"AutoConnect did not find a device for: {regexSearchString} | {searchField} | {searchType}");
                 }
 
                 if (!IsInvoking(nameof(WatchConnection)))

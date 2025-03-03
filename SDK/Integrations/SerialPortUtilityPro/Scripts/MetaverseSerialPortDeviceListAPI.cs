@@ -127,7 +127,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             MetaverseDispatcher.WaitForSeconds(0.1f, () =>
             {
                 MetaverseDispatcher.WaitUntil(
-                () => !MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(serialPortUtilityPro, ref _isOpenProcessingMethod, "IsOpenProcessing"),
+                () => !MetaverseSerialPortUtilityInterop.CallInstanceMethod<bool>(serialPortUtilityPro, ref _isOpenProcessingMethod, MetaverseSerialPortUtilityInterop.InstanceMethodID.IsOpenProcessing),
                 () =>
                 {
                     _listAfterPermissionsGranted = false;

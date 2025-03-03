@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             try
             {
-                MetaverseSerialPortUtilityInterop.CallInstanceMethod(spupComponent, ref _writeMethod, "Write", data);
+                MetaverseSerialPortUtilityInterop.CallInstanceMethod(spupComponent, ref _writeMethod, MetaverseSerialPortUtilityInterop.InstanceMethodID.Write, data);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -68,7 +68,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_delegateCall is not null)
                 RemoveListener();
             
-            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
+            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
             var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
             addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
         }
@@ -78,7 +78,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_delegateCall is null)
                 return;
             
-            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, "ReadCompleteEventObject");
+            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
             var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
             removeListenerCallFunction?.Invoke(readCompleteEvent, new object[] { _delegateCall });
         }
