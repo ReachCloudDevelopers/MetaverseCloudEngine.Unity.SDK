@@ -32,7 +32,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
-
+using JetBrains.Annotations;
 using TriInspectorMVCE;
 // ReSharper disable RedundantUnsafeContext
 
@@ -49,6 +49,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
     [ExecuteAlways]
     public class MetaverseScript : NetworkObjectBehaviour
     {
+        /// <summary>
+        /// An object wrapper that allows you to access the console from javascript.
+        /// </summary>
+        [UsedImplicitly]
+        public class ConsoleObject
+        {
+            // ReSharper disable once InconsistentNaming
+            public void log(object o) => MetaverseProgram.Logger.Log(o);
+            // ReSharper disable once InconsistentNaming
+            public void error(object o) => MetaverseProgram.Logger.LogError(o);
+            // ReSharper disable once InconsistentNaming
+            public void warn(object o) => MetaverseProgram.Logger.LogWarning(o);
+            // ReSharper disable once InconsistentNaming
+            public void info(object o) => MetaverseProgram.Logger.Log(o);
+        }
+        
 #pragma warning disable CS0618
         private static readonly List<string> BlackListedNames = new()
         {
@@ -133,6 +149,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string ThisProperty = "_this";
         private const string GameObjectProperty = "gameObject";
         private const string TransformProperty = "transform";
+        private const string ConsoleObjectProperty = "console";
         private const string IsUnityNullFunctionOld1 = "isUnityNull";
         private const string IsUnityNullFunctionOld2 = "NULL";
         private const string CoroutineFunction = "StartCoroutine";
@@ -143,8 +160,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string SetGlobalFunction = "SetStaticReference";
         private const string MetaSpaceProperty = "MetaSpace";
         private const string GetNetworkObjectFunction = "GetNetworkObject";
-        private const string IsInputAuthorityProperty = "GetIsInputAuthority";
-        private const string IsStateAuthorityProperty = "GetIsStateAuthority";
+        private const string IsInputAuthorityFunction = "GetIsInputAuthority";
+        private const string IsStateAuthorityFunction = "GetIsStateAuthority";
         private const string GetEnabledFunction = "GetEnabled";
         private const string SetEnabledFunction = "SetEnabled";
         private const string SetTimeoutFunction = "setTimeout";
@@ -161,6 +178,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string GetHostIDFunction = "GetHostID";
         private const string SpawnNetworkPrefabFunction = "SpawnNetworkPrefab";
         private const string AwaitFunction = "await";
+        private const string AlertFunction = "alert";
         private const string ShowDialogFunction = "ShowDialog";
         private const string ShowForcedDialogFunction = "ShowForcedDialog";
         private const string ShowDialogComplexFunction = "ShowDialogComplex";
@@ -174,10 +192,17 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private bool _ready;
         private Engine _engine;
         private Dictionary<ScriptFunctions, JsValue> _methods;
+        private ConsoleObject _console;
         private readonly Dictionary<string, JsValue> _functionLookup = new();
         private static int _timeoutHandleIndex;
         private readonly HashSet<int> _timeoutHandles = new();
         private readonly Queue<Action> _initializationMethodQueue = new(); 
+
+        // ReSharper disable once InconsistentNaming
+        /// <summary>
+        /// Retrieves the console object that is allowed to be accessed from javascript.
+        /// </summary>
+        private ConsoleObject console => _console ??= new ConsoleObject();
 
         /// <summary>
         /// Gets the variable declarations for the javascript file.
@@ -894,6 +919,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { ThisProperty, context },
             { GameObjectProperty, context.gameObject },
             { TransformProperty, context.transform },
+            { ConsoleObjectProperty, context.console },
             { nameof(Vars), context.Vars },
             { GetEnabledFunction, (Func<bool>)(() => context.enabled) },
             { SetEnabledFunction, (Action<bool>)(b => context.enabled = b) },
@@ -913,8 +939,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             // Networking Functions
             { GetNetworkObjectFunction, (Func<NetworkObject>)(() => context.NetworkObject.uNull()) },
-            { IsInputAuthorityProperty, (Func<bool>)(() => context.NetworkObject.uNull()?.IsInputAuthority ?? false) },
-            { IsStateAuthorityProperty, (Func<bool>)(() => context.NetworkObject.uNull()?.IsStateAuthority ?? false) },
+            { IsInputAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsInputAuthority ?? false) },
+            { IsStateAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsStateAuthority ?? false) },
             { GetHostIDFunction, (Func<int>)(() => context.NetworkObject.uNull()?.Networking.HostID ?? -1) },
             { RegisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.RegisterRPC(rpc, h)) },
             { UnregisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.UnregisterRPC(rpc, h)) },
@@ -997,6 +1023,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             }) },
             
             // Show Dialog
+            { AlertFunction, (System.Action<string>)(message => {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Alert", message, "OK", () => {}, force: true);
+#endif
+            }) },
             { ShowDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) => {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                 MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback);
@@ -1018,7 +1049,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #endif
             }) },
         };
-        
+
         /// <summary>
         /// Gets the global member types that are accessible within any given javascript file.
         /// </summary>
@@ -1029,6 +1060,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { ThisProperty, typeof(MetaverseScript) },
             { GameObjectProperty, typeof(GameObject) },
             { TransformProperty, typeof(Transform) },
+            { ConsoleObjectProperty, typeof(ConsoleObject) },
             { nameof(Vars), typeof(VariableDeclarations) },
             { GetEnabledFunction, typeof(Func<bool>) },
             { SetEnabledFunction, typeof(Action<bool>) },
@@ -1048,8 +1080,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             // Networking Functions
             { GetNetworkObjectFunction, typeof(Func<NetworkObject>) },
-            { IsInputAuthorityProperty, typeof(Func<bool>) },
-            { IsStateAuthorityProperty, typeof(Func<bool>) },
+            { IsInputAuthorityFunction, typeof(Func<bool>) },
+            { IsStateAuthorityFunction, typeof(Func<bool>) },
             { GetHostIDFunction, typeof(Func<int>) },
             { RegisterRPCFunction, typeof(Action<short, RpcEventDelegate>) },
             { UnregisterRPCFunction, typeof(Action<short, RpcEventDelegate>) },
@@ -1080,6 +1112,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { AwaitFunction, typeof(Action<object, Action<object>>) },
             
             // Show Dialog
+            { AlertFunction, typeof(System.Action<string>) },
             { ShowDialogFunction, typeof(System.Action<string, string, string, Action>) },
             { ShowForcedDialogFunction, typeof(System.Action<string, string, string, Action>) },
             { ShowDialogComplexFunction, typeof(System.Action<string, string, string, string, Action, Action>) },
