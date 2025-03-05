@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.125.0
-- Update
+## 2.126.0
+- Fixed SPAP being disabled for MacOS
 
-Updated on March 03, 2025
+Updated on March 05, 2025

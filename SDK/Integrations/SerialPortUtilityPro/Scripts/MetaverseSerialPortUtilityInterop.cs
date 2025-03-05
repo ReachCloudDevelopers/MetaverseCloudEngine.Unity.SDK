@@ -427,7 +427,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 			return deviceInfo;
 		}
     
-	#if UNITY_EDITOR_WIN || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX 
+#if UNITY_EDITOR_WIN || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
 		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 		private static extern int spapDeviceListAvailable();
 		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
