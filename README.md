@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.126.0
-- Fixed SPAP being disabled for MacOS
+## 2.127.0
+- Dispose ARKit world map after applying to test crash reduction.
 
-Updated on March 05, 2025
+Updated on March 06, 2025

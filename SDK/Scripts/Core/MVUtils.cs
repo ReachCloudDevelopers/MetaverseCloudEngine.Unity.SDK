@@ -1748,6 +1748,7 @@ namespace MetaverseCloudEngine.Unity
                     {
                         MetaverseProgram.Logger.Log("Applying world map...");
                         sessionSubsystem.ApplyWorldMap(validMap);
+                        validMap.Dispose();
                         MetaverseDispatcher.WaitForSeconds(0.5f, () =>
                         {
                             onLoaded?.Invoke();
@@ -1756,7 +1757,6 @@ namespace MetaverseCloudEngine.Unity
                     }
                     
                     worldMap?.Dispose();
-                    
                     MetaverseDispatcher.AtEndOfFrame(() =>
                     {
                         DeleteArKitWorldMap(key);

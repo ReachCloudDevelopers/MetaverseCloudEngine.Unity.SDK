@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.126.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.126.0\n- Fixed SPAP being disabled for MacOS\n\nUpdated on March 05, 2025",
+  "version": "2.127.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.127.0\n- Dispose ARKit world map after applying to test crash reduction.\n\nUpdated on March 06, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
