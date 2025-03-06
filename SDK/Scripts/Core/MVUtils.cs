@@ -1716,14 +1716,14 @@ namespace MetaverseCloudEngine.Unity
                     onFailed?.Invoke("World map not ready");
                     return;
                 }
-                
+
                 var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
                 if (!File.Exists(path))
                 {
                     onFailed?.Invoke("World map not found");
                     return;
                 }
-                
+
                 MetaSpace.Instance.SetCachedValue(key, null);
                 // ReSharper disable once RedundantUnsafeContext
                 unsafe
@@ -1748,30 +1748,17 @@ namespace MetaverseCloudEngine.Unity
                             MetaverseProgram.Logger.Log("Applying world map...");
                             sessionSubsystem.ApplyWorldMap(validMap);
                             validMap.Dispose();
-                            MetaverseDispatcher.WaitForSeconds(0.5f, () =>
-                            {
-                                // ReSharper disable once RedundantUnsafeContext
-                                unsafe
-                                {
-                                    onLoaded?.Invoke();
-                                }
-                            });
+                            onLoaded?.Invoke();
                             return;
                         }
-                        
+
                         worldMap?.Dispose();
-                        MetaverseDispatcher.AtEndOfFrame(() =>
-                        {
-                            DeleteArKitWorldMap(key);
-                            onFailed?.Invoke("Failed to deserialize world map");
-                        });
+                        DeleteArKitWorldMap(key);
+                        onFailed?.Invoke("Failed to deserialize world map");
                     }
                     catch (Exception e)
                     {
-                        MetaverseDispatcher.AtEndOfFrame(() =>
-                        {
-                            onFailed?.Invoke(e);
-                        });
+                        onFailed?.Invoke(e);
                     }
                     finally
                     {
