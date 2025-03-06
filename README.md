@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.128.0
-- Ensure that loading ARKit WorldMap happens on main thread.
+## 2.129.0
+- Improve flow of operations in LoadARKitWorldMap function in MVUtils
 
 Updated on March 06, 2025
