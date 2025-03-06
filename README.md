@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.127.0
-- Dispose ARKit world map after applying to test crash reduction.
+## 2.128.0
+- Ensure that loading ARKit WorldMap happens on main thread.
 
 Updated on March 06, 2025
