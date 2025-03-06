@@ -1811,14 +1811,14 @@ namespace MetaverseCloudEngine.Unity
         
             if (MetaSpace.Instance.TryGetCachedValue(key, out _))
             {
-                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                onFailed?.Invoke("World map already being saved");
                 return;
             }
 
             if (sessionSubsystem.trackingState != TrackingState.Tracking ||
                 sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
             {
-                MetaverseDispatcher.WaitForSeconds(1, () => SaveArKitWorldMapAsync(session, key, onSaved, onFailed, cancellationToken));
+                onFailed?.Invoke("World map not ready");
                 return;
             }
             
