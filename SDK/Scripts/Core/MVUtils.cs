@@ -1754,11 +1754,7 @@ namespace MetaverseCloudEngine.Unity
 
                         worldMap?.Dispose();
                         DeleteArKitWorldMap(key);
-                        onFailed?.Invoke("Failed to deserialize world map");
-                    }
-                    catch (Exception e)
-                    {
-                        onFailed?.Invoke(e);
+                        onLoaded?.Invoke();
                     }
                     finally
                     {
