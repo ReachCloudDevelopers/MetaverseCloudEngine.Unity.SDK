@@ -1739,8 +1739,7 @@ namespace MetaverseCloudEngine.Unity
                         using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
                         
                         MetaverseProgram.Logger.Log("Reading world map...");
-                        nativeData.CopyFrom(ms.GetBuffer());
-
+                        // Copy the data from the memory stream into the native array.
                         MetaverseProgram.Logger.Log("Deserializing world map...");
                         var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
                         if (worldMap is { valid: true } validMap)
