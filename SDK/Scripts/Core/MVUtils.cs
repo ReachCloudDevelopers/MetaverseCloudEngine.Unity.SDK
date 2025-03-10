@@ -1663,105 +1663,91 @@ namespace MetaverseCloudEngine.Unity
         private static string WorldMapSavePath => Application.persistentDataPath + "/ARKitWorldMaps";
         
         /// <summary>
-        /// Loads an ARKit world map from the device.
+        /// Loads an ARKit world map from disk and applies it to the AR session.
+        /// Follows the GitHub pattern (including their disposal patterns) while using UniTask.
         /// </summary>
-        /// <param name="session">The AR session to load the world map into.</param>
-        /// <param name="key">The key to load the world map under.</param>
-        /// <param name="onLoaded">Invoked when the world map has been loaded.</param>
-        /// <param name="onFailed">Invoked when the world map failed to load.</param>
-        /// <param name="cancellationToken">The cancellation token to cancel the operation.</param>
-        [UsedImplicitly]
-        public static void LoadArKitWorldMapAsync(
-            this UnityEngine.XR.ARFoundation.ARSession session, 
-            string key, 
-            Action onLoaded,
-            Action<object> onFailed, 
+        /// <param name="session">The ARSession to load the world map into.</param>
+        /// <param name="key">The key under which the world map was saved.</param>
+        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
+        /// <returns>A UniTask that completes when the operation is done or throws on error.</returns>
+        public static async UniTask LoadArKitWorldMapAsync(
+            this UnityEngine.XR.ARFoundation.ARSession session,
+            string key,
             CancellationToken cancellationToken = default)
         {
-            MetaverseDispatcher.AtEndOfFrame(() => 
+            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+
+            if (MetaSpace.Instance == null)
+                throw new Exception("MetaSpace destroyed");
+
+            if (MetaSpace.Instance.TryGetCachedValue(key, out _))
+                throw new Exception("World map already being loaded");
+
+            if (session == null)
+                throw new Exception("No AR session found");
+
+    #if UNITY_IOS
+            if (!ARKitSessionSubsystem.worldMapSupported)
+                throw new Exception("World map not supported");
+
+            if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
+                throw new Exception("ARKit session subsystem not found");
+
+            if (sessionSubsystem.trackingState != TrackingState.Tracking ||
+                sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
+                throw new Exception("World map not ready");
+    #else
+            throw new Exception("ARWorldMap loading is only supported on iOS.");
+    #endif
+
+            var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
+            if (!File.Exists(path))
+                throw new Exception("World map not found");
+
+            MetaSpace.Instance.SetCachedValue(key, null);
+
+            try
             {
-                if (!MetaSpace.Instance)
+                MetaverseProgram.Logger.Log($"Reading {path}...");
+
+                var allBytes = new List<byte>();
+                const int bytesPerFrame = 1024 * 10;
+
+                var file = File.Open(path, FileMode.Open);
+                var binaryReader = new BinaryReader(file);
+                var bytesRemaining = file.Length;
+                while (bytesRemaining > 0)
                 {
-                    onFailed?.Invoke("MetaSpace destroyed");
-                    return;
-                }
-                
-                if (MetaSpace.Instance.TryGetCachedValue(key, out _))
-                {
-                    onFailed?.Invoke("World map already being loaded");
-                    return;
-                }
-                
-                if (!session)
-                {
-                    onFailed?.Invoke("No AR session found");
-                    return;
-                }
-                
-                if (!ARKitSessionSubsystem.worldMapSupported)
-                {
-                    onFailed?.Invoke("World map not supported");
-                    return;
-                }
-                
-                if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
-                {
-                    onFailed?.Invoke("ARKit session subsystem not found");
-                    return;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var readCount = (int)Math.Min(bytesPerFrame, bytesRemaining);
+                    var chunk = binaryReader.ReadBytes(readCount);
+                    allBytes.AddRange(chunk);
+                    bytesRemaining -= chunk.Length;
+                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
                 }
 
-                if (sessionSubsystem.trackingState != TrackingState.Tracking ||
-                    sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
+                var data = new NativeArray<byte>(allBytes.Count, Allocator.Temp);
+                data.CopyFrom(allBytes.ToArray());
+
+                MetaverseProgram.Logger.Log($"Deserializing to ARWorldMap from {path}...");
+
+                if (!ARWorldMap.TryDeserialize(data, out var worldMap))
+                    throw new Exception("Deserialization to ARWorldMap failed.");
+
+                if (!worldMap.valid)
                 {
-                    onFailed?.Invoke("World map not ready");
-                    return;
+                    Debug.LogError("Data is not a valid ARWorldMap.");
+                    throw new Exception("Data is not a valid ARWorldMap.");
                 }
 
-                var path = Path.Combine(WorldMapSavePath, $"{key}.worldmap");
-                if (!File.Exists(path))
-                {
-                    onFailed?.Invoke("World map not found");
-                    return;
-                }
-
-                MetaSpace.Instance.SetCachedValue(key, null);
-                // ReSharper disable once RedundantUnsafeContext
-                unsafe
-                {
-                    try
-                    {
-                        MetaverseProgram.Logger.Log("Loading world map from " + path + ". Opening FS...");
-                        using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-                        using var ms = new MemoryStream();
-                        fs.CopyTo(ms);
-                        
-                        MetaverseProgram.Logger.Log("Creating native array...");
-                        using var nativeData = new NativeArray<byte>((int)fs.Length, Allocator.Temp);
-                        
-                        MetaverseProgram.Logger.Log("Reading world map...");
-                        // Copy the data from the memory stream into the native array.
-                        MetaverseProgram.Logger.Log("Deserializing world map...");
-                        var worldMap = ARWorldMap.TryDeserialize(nativeData, out var map) ? (ARWorldMap?)map : null;
-                        if (worldMap is { valid: true } validMap)
-                        {
-                            MetaverseProgram.Logger.Log("Applying world map...");
-                            sessionSubsystem.ApplyWorldMap(validMap);
-                            validMap.Dispose();
-                            onLoaded?.Invoke();
-                            return;
-                        }
-
-                        worldMap?.Dispose();
-                        DeleteArKitWorldMap(key);
-                        onLoaded?.Invoke();
-                    }
-                    finally
-                    {
-                        MetaSpace.Instance.RemoveFromCache(key);
-                    }
-                }
-
-            });
+                MetaverseProgram.Logger.Log("Deserialized successfully.");
+                MetaverseProgram.Logger.Log("Apply ARWorldMap to current session.");
+                sessionSubsystem.ApplyWorldMap(worldMap);
+            }
+            finally
+            {
+                MetaSpace.Instance.RemoveFromCache(key);
+            }
         }
 
         /// <summary>
