@@ -1742,7 +1742,9 @@ namespace MetaverseCloudEngine.Unity
 
                 MetaverseProgram.Logger.Log("Deserialized successfully.");
                 MetaverseProgram.Logger.Log("Apply ARWorldMap to current session.");
+#if UNITY_IOS
                 sessionSubsystem.ApplyWorldMap(worldMap);
+#endif
             }
             finally
             {
