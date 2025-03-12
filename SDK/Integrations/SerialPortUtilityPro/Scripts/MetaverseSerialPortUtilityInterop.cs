@@ -1,4 +1,6 @@
+#if UNITY_IOS
 #define ENABLE_IOS_INTEGRATION
+#endif
 
 using System;
 using System.Linq;
