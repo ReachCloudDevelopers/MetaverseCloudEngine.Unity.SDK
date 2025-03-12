@@ -1,7 +1,10 @@
+#define ENABLE_IOS_INTEGRATION
+
 using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -23,49 +26,49 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         public enum InstanceMethodID
         {
-	        IsOpenProcessing,
-	        IsOpened,
-	        Write,
-	        Open,
-	        Close,
+            IsOpenProcessing,
+            IsOpened,
+            Write,
+            Open,
+            Close,
         }
 
         public enum StaticMethodID
         {
-	        
+            // Define additional static methods if needed.
         }
 
         public enum SettableFieldID
         {
-	        OpenMethod,
-	        IsAutoOpen,
+            OpenMethod,
+            IsAutoOpen,
         }
 
         public enum GettableFieldID
         {
-	        SystemEventObject,
-	        ReadCompleteEventObject,
+            SystemEventObject,
+            ReadCompleteEventObject,
         }
-        
+
         public enum SettablePropertyID
-		{
-	        VendorID,
-	        Port,
-	        ProductID,
-	        SerialNumber,
-	        DeviceName,
-		}
+        {
+            VendorID,
+            Port,
+            ProductID,
+            SerialNumber,
+            DeviceName,
+        }
 
-		public enum GettablePropertyID
-		{
-			SerialNumber,
-		}
+        public enum GettablePropertyID
+        {
+            SerialNumber,
+        }
 
-		public enum SerialPortEventName
-		{
-			
-		}
-        
+        public enum SerialPortEventName
+        {
+            // Define event names if required.
+        }
+
         public class DeviceInfo
         {
             public string Vendor;
@@ -73,36 +76,35 @@ namespace MetaverseCloudEngine.Unity.SPUP
             public string SerialNumber;
             public string PortName;
             public OpenSystem? ParsedOpenSystem;
-            
+
             public override string ToString()
-			{
-				return $"{Vendor},{Product},{SerialNumber},{PortName}";
-			}
-            
+            {
+                return $"{Vendor},{Product},{SerialNumber},{PortName}";
+            }
+
             public static bool TryParse(string deviceInfoString, out DeviceInfo deviceInfo)
-			{
-				deviceInfo = new DeviceInfo();
-				var deviceInfoParts = deviceInfoString.Split(',');
-				if (deviceInfoParts.Length < 4)
-					return false;
-				deviceInfo.Vendor = deviceInfoParts[0];
-				deviceInfo.Product = deviceInfoParts[1];
-				deviceInfo.SerialNumber = deviceInfoParts[2];
-				deviceInfo.PortName = deviceInfoParts[3];
-				if (deviceInfoParts.Length != 5) return true;
-				if (Enum.TryParse(deviceInfoParts[4], out OpenSystem openSystem))
-					deviceInfo.ParsedOpenSystem = openSystem;
-				return true;
-			}
+            {
+                deviceInfo = new DeviceInfo();
+                var deviceInfoParts = deviceInfoString.Split(',');
+                if (deviceInfoParts.Length < 4)
+                    return false;
+                deviceInfo.Vendor = deviceInfoParts[0];
+                deviceInfo.Product = deviceInfoParts[1];
+                deviceInfo.SerialNumber = deviceInfoParts[2];
+                deviceInfo.PortName = deviceInfoParts[3];
+                if (deviceInfoParts.Length == 5 && Enum.TryParse(deviceInfoParts[4], out OpenSystem openSystem))
+                    deviceInfo.ParsedOpenSystem = openSystem;
+                return true;
+            }
         }
-        
+
         private static Type GetSerialPortUtilityProType()
         {
-	        return _spupType ??= AppDomain.CurrentDomain.GetAssemblies()
-		        .SelectMany(x => x.GetTypes())
-		        .FirstOrDefault(x => x.Name == "SerialPortUtilityPro");
-        } 
-        
+            return _spupType ??= AppDomain.CurrentDomain.GetAssemblies()
+                .SelectMany(x => x.GetTypes())
+                .FirstOrDefault(x => x.Name == "SerialPortUtilityPro");
+        }
+
         public static void EnsureComponent(ref Component spupComponent, GameObject gameObject)
         {
             if (!spupComponent)
@@ -110,156 +112,299 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 spupComponent = gameObject.GetComponentsInParent<Component>()
                     .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
             }
-            else
+            else if (spupComponent.GetType().Name != "SerialPortUtilityPro")
             {
-                if (spupComponent.GetType().Name != "SerialPortUtilityPro")
-                {
-	                spupComponent = spupComponent.GetComponents<Component>()
-		                .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
-                }
+                spupComponent = spupComponent.GetComponents<Component>()
+                    .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
             }
         }
-        
-        public static void SubscribeToEvent(Component spupComponent, ref EventInfo eventInfo, SerialPortEventName eventName, Delegate handler)
-		{
-			if (!spupComponent) 
-				return;
-			
-			eventInfo ??= spupComponent
-				.GetType()
-				.GetEvents()
-				.FirstOrDefault(x => x.Name == eventName.ToString());
-				
-			eventInfo?.AddEventHandler(spupComponent, handler);
-		}
 
-		public static void UnsubscribeFromEvent(Component spupComponent, ref EventInfo eventInfo, SerialPortEventName eventName, Delegate handler)
-		{
-			if (!spupComponent) 
-				return;
-			
-			eventInfo ??= spupComponent
-				.GetType()
-				.GetEvents()
-				.FirstOrDefault(x => x.Name == eventName.ToString());
-				
-			eventInfo?.RemoveEventHandler(spupComponent, handler);
-		}
-		
-        public static T CallStaticMethod<T>(ref MethodInfo method, StaticMethodID methodName, params object[] parameters)
+        public static void SubscribeToEvent(Component spupComponent, ref EventInfo eventInfo,
+            SerialPortEventName eventName, Delegate handler)
         {
-            method ??= GetSerialPortUtilityProType()
-                .GetMethods()
-                .FirstOrDefault(x =>
-                    x.Name == methodName.ToString() &&
-                    x.GetParameters().Length == parameters.Length &&
-                    x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
-                
-            return (T) method?.Invoke(null, parameters);
-        }
-        
-        public static void CallStaticMethod(ref MethodInfo method, StaticMethodID methodName, params object[] parameters)
-        {
-            method ??= GetSerialPortUtilityProType()
-                .GetMethods()
-                .FirstOrDefault(x =>
-                    x.Name == methodName.ToString() &&
-                    x.GetParameters().Length == parameters.Length &&
-                    x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
-                
-            method?.Invoke(null, parameters);
-        }
-        
-        public static T CallInstanceMethod<T>(Component spupComponent, ref MethodInfo method, InstanceMethodID methodName, params object[] parameters)
-        {
-            if (!spupComponent) 
-                return default;
-            
-            method ??= spupComponent
-                .GetType()
-                .GetMethods()
-                .FirstOrDefault(x =>
-                    x.Name == methodName.ToString() &&
-                    x.GetParameters().Length == parameters.Length &&
-                    x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
-                
-            return (T) method?.Invoke(spupComponent, parameters);
-        }
-        
-        public static void CallInstanceMethod(Component spupComponent, ref MethodInfo method, InstanceMethodID methodName, params object[] parameters)
-        {
-            if (!spupComponent) 
+            if (!spupComponent)
                 return;
-            
+
+            eventInfo ??= spupComponent
+                .GetType()
+                .GetEvents()
+                .FirstOrDefault(x => x.Name == eventName.ToString());
+
+            eventInfo?.AddEventHandler(spupComponent, handler);
+        }
+
+        public static void UnsubscribeFromEvent(Component spupComponent, ref EventInfo eventInfo,
+            SerialPortEventName eventName, Delegate handler)
+        {
+            if (!spupComponent)
+                return;
+
+            eventInfo ??= spupComponent
+                .GetType()
+                .GetEvents()
+                .FirstOrDefault(x => x.Name == eventName.ToString());
+
+            eventInfo?.RemoveEventHandler(spupComponent, handler);
+        }
+
+        public static T CallStaticMethod<T>(ref MethodInfo method, StaticMethodID methodName,
+            params object[] parameters)
+        {
+#if ENABLE_IOS_INTEGRATION
+            // If there are any iOS-specific static methods, implement them here using a switch.
+            // (Currently, the StaticMethodID enum is empty.)
+            switch (methodName)
+            {
+                default:
+                    return default;
+            }
+#else
+            method ??= GetSerialPortUtilityProType()
+                .GetMethods()
+                .FirstOrDefault(x =>
+                    x.Name == methodName.ToString() &&
+                    x.GetParameters().Length == parameters.Length &&
+                    x.GetParameters().Select(y => y.ParameterType)
+                        .SequenceEqual(parameters.Select(y => y.GetType())));
+
+            return (T)method?.Invoke(null, parameters);
+#endif
+        }
+
+        public static void CallStaticMethod(ref MethodInfo method, StaticMethodID methodName,
+            params object[] parameters)
+        {
+#if ENABLE_IOS_INTEGRATION
+            // iOS-specific static method implementations (if needed) can be handled here.
+            switch (methodName)
+            {
+                default:
+                    break;
+            }
+#else
+            method ??= GetSerialPortUtilityProType()
+                .GetMethods()
+                .FirstOrDefault(x =>
+                    x.Name == methodName.ToString() &&
+                    x.GetParameters().Length == parameters.Length &&
+                    x.GetParameters().Select(y => y.ParameterType)
+                        .SequenceEqual(parameters.Select(y => y.GetType())));
+
+            method?.Invoke(null, parameters);
+#endif
+        }
+
+        /// <summary>
+        /// iOS-specific implementation that maps instance method member IDs to actual calls.
+        /// </summary>
+        public static T CallInstanceMethod<T>(Component spupComponent, ref MethodInfo method,
+            InstanceMethodID methodName, params object[] parameters)
+        {
+#if ENABLE_IOS_INTEGRATION
+            switch (methodName)
+            {
+                case InstanceMethodID.IsOpenProcessing:
+                    // Example: return false if no asynchronous processing is taking place.
+                    return (T)(object)false;
+
+                case InstanceMethodID.IsOpened:
+                    // Return whether the Bluetooth connection is active.
+                    return (T)(object)IOSBluetoothSerialManager.Instance.IsConnected;
+
+                case InstanceMethodID.Write:
+                    // Expect parameters[0] to be a byte[] array.
+                    if (parameters.Length > 0 && parameters[0] is byte[] data)
+                    {
+                        IOSBluetoothSerialManager.Instance.WriteBytes(data);
+                    }
+                    return default;
+
+                case InstanceMethodID.Open:
+                    // Expect parameters[0] to be a DeviceInfo representing the device to open.
+                    if (parameters.Length > 0 && parameters[0] is DeviceInfo device)
+                    {
+                        IOSBluetoothSerialManager.Instance.ConnectToDevice(device);
+                    }
+                    return default;
+
+                case InstanceMethodID.Close:
+                    IOSBluetoothSerialManager.Instance.Disconnect();
+                    return default;
+
+                default:
+                    return default;
+            }
+#else
             method ??= spupComponent
                 .GetType()
                 .GetMethods()
                 .FirstOrDefault(x =>
                     x.Name == methodName.ToString() &&
                     x.GetParameters().Length == parameters.Length &&
-                    x.GetParameters().Select(y => y.ParameterType).SequenceEqual(parameters.Select(y => y.GetType())));
-            
-            method?.Invoke(spupComponent, parameters);
-        }
-        
-        public static T GetField<T>(Component spupComponent, ref FieldInfo field, GettableFieldID fieldName)
-		{
-			if (!spupComponent) 
-				return default;
-			
-			field ??= spupComponent
-				.GetType()
-				.GetFields()
-				.FirstOrDefault(x => x.Name == fieldName.ToString());
-				
-			return (T) field?.GetValue(spupComponent);
-		}
+                    x.GetParameters().Select(y => y.ParameterType)
+                        .SequenceEqual(parameters.Select(y => y.GetType())));
 
-		public static void SetField(Component spupComponent, ref FieldInfo field, SettableFieldID fieldName, object value)
-		{
-			if (!spupComponent) 
-				return;
-			
-			field ??= spupComponent
-				.GetType()
-				.GetFields()
-				.FirstOrDefault(x => x.Name == fieldName.ToString());
-				
-			field?.SetValue(spupComponent, value);
-		}
-		
-		public static T GetProperty<T>(Component spupComponent, ref PropertyInfo property, GettablePropertyID propertyName)
-		{
-			if (!spupComponent) 
-				return default;
-			
-			property ??= spupComponent
-				.GetType()
-				.GetProperties()
-				.FirstOrDefault(x => x.Name == propertyName.ToString());
-				
-			return (T) property?.GetValue(spupComponent);
-		}
-		
-		public static void SetProperty(Component spupComponent, ref PropertyInfo property, SettablePropertyID propertyName, object value)
-		{
-			if (!spupComponent) 
-				return;
-			
-			property ??= spupComponent
-				.GetType()
-				.GetProperties()
-				.FirstOrDefault(x => x.Name == propertyName.ToString());
-				
-			property?.SetValue(spupComponent, value);
-		}
-        
-		public static DeviceInfo[] GetConnectedDeviceList(OpenSystem deviceFormat)
-		{
-			if (!Application.isEditor && 
-			    Application.platform != RuntimePlatform.WindowsPlayer &&
-			    Application.platform != RuntimePlatform.Android)
-				return Array.Empty<DeviceInfo>();
+            return (T)method?.Invoke(spupComponent, parameters);
+#endif
+        }
+
+        public static void CallInstanceMethod(Component spupComponent, ref MethodInfo method,
+            InstanceMethodID methodName, params object[] parameters)
+        {
+#if ENABLE_IOS_INTEGRATION
+            switch (methodName)
+            {
+                case InstanceMethodID.Write:
+                    if (parameters.Length > 0 && parameters[0] is byte[] data)
+                    {
+                        IOSBluetoothSerialManager.Instance.WriteBytes(data);
+                    }
+                    break;
+
+                case InstanceMethodID.Open:
+                    if (parameters.Length > 0 && parameters[0] is DeviceInfo device)
+                    {
+                        IOSBluetoothSerialManager.Instance.ConnectToDevice(device);
+                    }
+                    break;
+
+                case InstanceMethodID.Close:
+                    IOSBluetoothSerialManager.Instance.Disconnect();
+                    break;
+
+                default:
+                    break;
+            }
+#else
+            method ??= spupComponent
+                .GetType()
+                .GetMethods()
+                .FirstOrDefault(x =>
+                    x.Name == methodName.ToString() &&
+                    x.GetParameters().Length == parameters.Length &&
+                    x.GetParameters().Select(y => y.ParameterType)
+                        .SequenceEqual(parameters.Select(y => y.GetType())));
+
+            method?.Invoke(spupComponent, parameters);
+#endif
+        }
+
+        public static T GetField<T>(Component spupComponent, ref FieldInfo field, GettableFieldID fieldName)
+        {
+#if ENABLE_IOS_INTEGRATION
+            // Example switch: for iOS you might return cached events or other iOS-specific objects.
+            switch (fieldName)
+            {
+                case GettableFieldID.SystemEventObject:
+                    // Return the system event object from your IOSBluetoothSerialManager if applicable.
+                    return (T)(object)null; // Replace with actual implementation if needed.
+
+                case GettableFieldID.ReadCompleteEventObject:
+                    return (T)(object)null;
+                default:
+                    return default;
+            }
+#else
+            field ??= spupComponent
+                .GetType()
+                .GetFields()
+                .FirstOrDefault(x => x.Name == fieldName.ToString());
+
+            return (T)field?.GetValue(spupComponent);
+#endif
+        }
+
+        public static void SetField(Component spupComponent, ref FieldInfo field, SettableFieldID fieldName,
+            object value)
+        {
+#if ENABLE_IOS_INTEGRATION
+            // Handle iOS-specific field setting if required.
+            switch (fieldName)
+            {
+                case SettableFieldID.OpenMethod:
+                    // Optionally, pass this to your iOS layer.
+                    break;
+                case SettableFieldID.IsAutoOpen:
+                    break;
+                default:
+                    break;
+            }
+#else
+            field ??= spupComponent
+                .GetType()
+                .GetFields()
+                .FirstOrDefault(x => x.Name == fieldName.ToString());
+
+            field?.SetValue(spupComponent, value);
+#endif
+        }
+
+        public static T GetProperty<T>(Component spupComponent, ref PropertyInfo property,
+            GettablePropertyID propertyName)
+        {
+#if ENABLE_IOS_INTEGRATION
+            switch (propertyName)
+            {
+                case GettablePropertyID.SerialNumber:
+                    // For example, return the serial number of the connected device.
+                    var devices = GetConnectedDeviceList(OpenSystem.BluetoothSsp);
+                    if (devices != null && devices.Length > 0)
+                        return (T)(object)devices[0].SerialNumber;
+                    return default;
+                default:
+                    return default;
+            }
+#else
+            property ??= spupComponent
+                .GetType()
+                .GetProperties()
+                .FirstOrDefault(x => x.Name == propertyName.ToString());
+
+            return (T)property?.GetValue(spupComponent);
+#endif
+        }
+
+        public static void SetProperty(Component spupComponent, ref PropertyInfo property,
+            SettablePropertyID propertyName, object value)
+        {
+#if ENABLE_IOS_INTEGRATION
+            // For iOS, you might route property sets to your iOS library or Bluetooth manager.
+            switch (propertyName)
+            {
+                case SettablePropertyID.VendorID:
+                case SettablePropertyID.Port:
+                case SettablePropertyID.ProductID:
+                case SettablePropertyID.SerialNumber:
+                case SettablePropertyID.DeviceName:
+                    // In this example these are read-only properties coming from the discovered device info.
+                    break;
+                default:
+                    break;
+            }
+#else
+            property ??= spupComponent
+                .GetType()
+                .GetProperties()
+                .FirstOrDefault(x => x.Name == propertyName.ToString());
+
+            property?.SetValue(spupComponent, value);
+#endif
+        }
+
+        /// <summary>
+        /// Returns a list of connected devices using the cached data.
+        /// On iOS, the native scan is started at runtime load and runs in the background.
+        /// </summary>
+        public static DeviceInfo[] GetConnectedDeviceList(OpenSystem deviceFormat)
+        {
+            // (Implementation remains as previously defined – it calls into the native iOS methods.)
+            if (!Application.isEditor &&
+                Application.platform != RuntimePlatform.WindowsPlayer &&
+                Application.platform != RuntimePlatform.Android &&
+                Application.platform != RuntimePlatform.IPhonePlayer)
+            {
+                return Array.Empty<DeviceInfo>();
+            }
 
 #if UNITY_ANDROID && !UNITY_EDITOR
 			DeviceInfo[] deviceInfo = null;
@@ -352,199 +497,299 @@ namespace MetaverseCloudEngine.Unity.SPUP
 					MetaverseProgram.Logger.Log(deviceFormat + ": GetConnectedDeviceList is not supported.");
 					break;
 			}
+#elif ENABLE_IOS_INTEGRATION
+            int deviceNum = spapDeviceListAvailable();
+            if (deviceNum <= 0)
+                return Array.Empty<DeviceInfo>();
+
+            StringBuilder[] deviceString = new StringBuilder[deviceNum];
+            int[] deviceKind = new int[deviceNum];
+            for (int i = 0; i < deviceNum; i++)
+            {
+                deviceString[i] = new StringBuilder(1024);
+                deviceKind[i] = spapDeviceList(i, deviceString[i], 1024);
+            }
+
+            int deviceInfoNum = 0;
+            for (int i = 0; i < deviceNum; i++)
+            {
+                int openMethod = (int)deviceFormat;
+                var dat = deviceString[i].ToString().Split(',');
+                if (openMethod != deviceKind[i])
+                    continue;
+                if (dat[0] == "null")
+                    continue;
+                deviceInfoNum++;
+            }
+
+            int di = 0;
+            DeviceInfo[] deviceInfo = new DeviceInfo[deviceInfoNum];
+            for (int i = 0; i < deviceNum; i++)
+            {
+                int openMethod = (int)deviceFormat;
+                var dat = deviceString[i].ToString().Split(',');
+                if (openMethod != deviceKind[i])
+                    continue;
+                if (dat[0] == "null")
+                    continue;
+                switch (deviceFormat)
+                {
+                    case OpenSystem.Usb:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = dat[0],
+                            Product = dat[1],
+                            SerialNumber = dat[2],
+                            PortName = dat[3]
+                        };
+                        break;
+                    case OpenSystem.Pci:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = dat[0],
+                            Product = dat[1],
+                            SerialNumber = "",
+                            PortName = dat[2]
+                        };
+                        break;
+                    case OpenSystem.BluetoothSsp:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = "",
+                            Product = "",
+                            SerialNumber = dat[0],
+                            PortName = dat[0]
+                        };
+                        break;
+                }
+                di++;
+            }
 #else
-			var deviceNum = spapDeviceListAvailable();
-			var deviceString = new System.Text.StringBuilder[deviceNum];
-			var deviceKind = new int[deviceNum];
-			for (var i = 0; i < deviceNum; i++)
-			{
-				deviceString[i] = new System.Text.StringBuilder(1024);
-				deviceKind[i] = spapDeviceList(i, deviceString[i], 1024);
-			}
+            // Fallback for other platforms.
+            int deviceNum = spapDeviceListAvailable();
+            StringBuilder[] deviceString = new StringBuilder[deviceNum];
+            int[] deviceKind = new int[deviceNum];
+            for (int i = 0; i < deviceNum; i++)
+            {
+                deviceString[i] = new StringBuilder(1024);
+                deviceKind[i] = spapDeviceList(i, deviceString[i], 1024);
+            }
 
-			// length
-			var deviceInfoNum = 0;
-			for (var i = 0; i < deviceNum; i++)
-			{
-				var openMethod = (int)deviceFormat;
-				var dat = deviceString[i].ToString().Split(',');
-				if (openMethod != deviceKind[i]) 
-					continue;
-				
-				if (dat[0] == "null")
-					continue;
+            int deviceInfoNum = 0;
+            for (int i = 0; i < deviceNum; i++)
+            {
+                int openMethod = (int)deviceFormat;
+                var dat = deviceString[i].ToString().Split(',');
+                if (openMethod != deviceKind[i])
+                    continue;
+                if (dat[0] == "null")
+                    continue;
+                deviceInfoNum++;
+            }
 
-				deviceInfoNum++;
-			}
+            int di = 0;
+            DeviceInfo[] deviceInfo = new DeviceInfo[deviceInfoNum];
+            for (int i = 0; i < deviceNum; i++)
+            {
+                int openMethod = (int)deviceFormat;
+                var dat = deviceString[i].ToString().Split(',');
+                if (openMethod != deviceKind[i])
+                    continue;
+                if (dat[0] == "null")
+                    continue;
+                switch (deviceFormat)
+                {
+                    case OpenSystem.Usb:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = dat[0],
+                            Product = dat[1],
+                            SerialNumber = dat[2],
+                            PortName = dat[3]
+                        };
+                        break;
+                    case OpenSystem.Pci:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = dat[0],
+                            Product = dat[1],
+                            SerialNumber = "",
+                            PortName = dat[2]
+                        };
+                        break;
+                    case OpenSystem.BluetoothSsp:
+                        deviceInfo[di] = new DeviceInfo
+                        {
+                            Vendor = "",
+                            Product = "",
+                            SerialNumber = dat[0],
+                            PortName = dat[0]
+                        };
+                        break;
+                }
 
-			var di = 0;
-			var deviceInfo = new DeviceInfo[deviceInfoNum];
-			for (var i = 0; i < deviceNum; i++)
-			{
-				var openMethod = (int)deviceFormat;
-				var dat = deviceString[i].ToString().Split(',');
-				if (openMethod != deviceKind[i]) 
-					continue;
-				
-				if (dat[0] == "null")
-					continue;
-
-				switch (deviceFormat)
-				{
-					case OpenSystem.Usb:
-						deviceInfo[di] = new DeviceInfo
-						{
-							Vendor = dat[0],
-							Product = dat[1],
-							SerialNumber = dat[2],
-							PortName = dat[3]
-						};
-						break;
-					case OpenSystem.Pci:
-						deviceInfo[di] = new DeviceInfo
-						{
-							Vendor = dat[0],
-							Product = dat[1],
-							SerialNumber = "",
-							PortName = dat[2]
-						};
-						break;
-					case OpenSystem.BluetoothSsp:
-						deviceInfo[di] = new DeviceInfo
-						{
-							Vendor = "",
-							Product = "",
-							SerialNumber = dat[0],
-							PortName = dat[0]
-						};
-						break;
-				}
-
-				di++;
-			}
-
+                di++;
+            }
 #endif
-			return deviceInfo;
-		}
-    
+            return deviceInfo;
+        }
+
 #if UNITY_EDITOR_WIN || UNITY_ANDROID || UNITY_STANDALONE_WIN || UNITY_STANDALONE_LINUX || UNITY_STANDALONE_OSX || UNITY_EDITOR_OSX
-		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-		private static extern int spapDeviceListAvailable();
-		[DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-		private static extern int spapDeviceList(int deviceNum, [MarshalAs(UnmanagedType.LPStr)] System.Text.StringBuilder deviceInfo, int bufferSize);
+        [DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int spapDeviceListAvailable();
+
+        [DllImport("spap", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int spapDeviceList(int deviceNum,
+            [MarshalAs(UnmanagedType.LPStr)] StringBuilder deviceInfo, int bufferSize);
+#elif ENABLE_IOS_INTEGRATION
+        // For iOS, import the native functions from your iOS library.
+        [DllImport("__Internal", EntryPoint = "ios_spapDeviceListAvailable")]
+        private static extern int spapDeviceListAvailable();
+        [DllImport("__Internal", EntryPoint = "ios_spapDeviceList")]
+        private static extern int spapDeviceList(int deviceNum, StringBuilder deviceInfo, int bufferSize);
 #else
-		private static int spapDeviceListAvailable() => 0;
-		private static int spapDeviceList(int deviceNum, System.Text.StringBuilder deviceInfo, int bufferSize) => 0;
+        private static int spapDeviceListAvailable() => 0;
+        private static int spapDeviceList(int deviceNum, StringBuilder deviceInfo, int bufferSize) => 0;
 #endif
-	    public static void AddSystemEventCallback(
-		    Component serialPortUtilityPro,
-		    ref FieldInfo systemEventObjectField,
-		    UnityAction<object, string> callback,
-		    ref UnityAction<object, string> callbackCache) =>
-		    AddSystemListener(ref callbackCache, ref systemEventObjectField, serialPortUtilityPro, callback);
 
-	    public static void RemoveSystemEventCallback(
-		    Component serialPortUtilityPro,
-		    ref FieldInfo onSystemEventField,
-		    UnityAction<object, string> onSystemEventCallback) => 
-		    RemoveSystemListener(onSystemEventCallback, ref onSystemEventField, serialPortUtilityPro);
+        // Existing Add/Remove event methods remain unchanged...
+        public static void AddSystemEventCallback(
+            Component serialPortUtilityPro,
+            ref FieldInfo systemEventObjectField,
+            UnityAction<object, string> callback,
+            ref UnityAction<object, string> callbackCache) =>
+            AddSystemListener(ref callbackCache, ref systemEventObjectField, serialPortUtilityPro, callback);
 
-		private static void AddSystemListener(
-		    ref UnityAction<object, string> delegateCall,
-		    ref FieldInfo systemEventObjectField,
-		    Component spupComponent,
-		    UnityAction<object, string> callback)
-		{
-			if (!spupComponent)
-			{
-				MetaverseProgram.Logger.LogWarning("AddSystemListener: SerialPortUtilityPro component is null");
-				return;
-			}
-			
-		    if (delegateCall is not null)
-		        RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
+        public static void RemoveSystemEventCallback(
+            Component serialPortUtilityPro,
+            ref FieldInfo onSystemEventField,
+            UnityAction<object, string> onSystemEventCallback) =>
+            RemoveSystemListener(onSystemEventCallback, ref onSystemEventField, serialPortUtilityPro);
 
-		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, GettableFieldID.SystemEventObject);
-		    if (readCompleteEvent == null)
-		    {
-			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
-			    return;
-		    }
-		    
-		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
-		    if (eventType == null)
-		    {
-			    MetaverseProgram.Logger.LogError("AddSystemListener: Could not determine event type");
-			    return;
-		    }
-		    
-			const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
-		    var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
-			    .FirstOrDefault(x => x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
-		    if (addListenerCallFunction == null)
-		    {
-			    MetaverseProgram.Logger.LogError(
-				    "AddSystemListener: Could not find AddListener method in " + readCompleteEvent.GetType().BaseType?.FullName + " | " +
-			                                     string.Join(", ", readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags).Select(x => x.Name) ?? Array.Empty<string>()));
-			    return;
-		    }
-		    
-		    MetaverseProgram.Logger.Log("AddSystemListener: Adding listener to " + addListenerCallFunction.Name + " in " + readCompleteEvent.GetType().BaseType?.FullName);
+        private static void AddSystemListener(
+            ref UnityAction<object, string> delegateCall,
+            ref FieldInfo systemEventObjectField,
+            Component spupComponent,
+            UnityAction<object, string> callback)
+        {
+            if (!spupComponent)
+            {
+                MetaverseProgram.Logger.LogWarning("AddSystemListener: SerialPortUtilityPro component is null");
+                return;
+            }
 
-		    var dynamicDelegate = Delegate.CreateDelegate(
-		        typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
-		        callback.Target,
-		        callback.Method
-		    );
+            if (delegateCall is not null)
+                RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
 
-		    addListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
-		    delegateCall = callback;
-		}
+            var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField,
+                GettableFieldID.SystemEventObject);
+            if (readCompleteEvent == null)
+            {
+                MetaverseProgram.Logger.LogError(
+                    "AddSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
+                return;
+            }
 
-		private static void RemoveSystemListener(
-			UnityAction<object, string> delegateCall, 
-			ref FieldInfo systemEventObjectField, 
-			Component spupComponent)
-		{
-			if (!spupComponent)
-			{
-				MetaverseProgram.Logger.LogWarning("RemoveSystemListener: SerialPortUtilityPro component is null");
-				return;
-			}
-			
-		    if (delegateCall is null) return;
+            var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
+            if (eventType == null)
+            {
+                MetaverseProgram.Logger.LogError("AddSystemListener: Could not determine event type");
+                return;
+            }
 
-		    var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField, GettableFieldID.SystemEventObject);
-		    if (readCompleteEvent == null)
-		    {
-			    MetaverseProgram.Logger.LogError($"RemoveSystemListener: Could not find {GettableFieldID.SystemEventObject} field in SerialPortUtilityPro component");
-			    return;
-		    }
-		    
-		    var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
-		    if (eventType == null)
-		    {
-			    MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not determine event type");
-			    return;
-		    }
+            const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+            var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
+                .FirstOrDefault(x =>
+                    x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase) &&
+                    x.GetParameters().Length == 1);
+            if (addListenerCallFunction == null)
+            {
+                MetaverseProgram.Logger.LogError(
+                    "AddSystemListener: Could not find AddListener method in " +
+                    readCompleteEvent.GetType().BaseType?.FullName + " | " +
+                    string.Join(", ",
+                        readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags).Select(x => x.Name) ??
+                        Array.Empty<string>()));
+                return;
+            }
 
-		    var removeListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(BindingFlags.Instance | BindingFlags.Public)
-			    .FirstOrDefault(x => x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase) && x.GetParameters().Length == 1);
-		    if (removeListenerCallFunction == null)
-		    {
-			    MetaverseProgram.Logger.LogError(
-				    $"RemoveSystemListener: Could not find RemoveListener method in {readCompleteEvent.GetType().BaseType?.FullName}");
-			    return;
-		    }
+            MetaverseProgram.Logger.Log("AddSystemListener: Adding listener to " + addListenerCallFunction.Name +
+                                        " in " + readCompleteEvent.GetType().BaseType?.FullName);
 
-		    // Dynamically create the correct delegate for removal
-		    var dynamicDelegate = Delegate.CreateDelegate(
-		        typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
-		        delegateCall.Target,
-		        delegateCall.Method
-		    );
-		    
-		    removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
-		}
+            var dynamicDelegate = Delegate.CreateDelegate(
+                typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
+                callback.Target,
+                callback.Method
+            );
+
+            addListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
+            delegateCall = callback;
+        }
+
+        private static void RemoveSystemListener(
+            UnityAction<object, string> delegateCall,
+            ref FieldInfo systemEventObjectField,
+            Component spupComponent)
+        {
+            if (!spupComponent)
+            {
+                MetaverseProgram.Logger.LogWarning("RemoveSystemListener: SerialPortUtilityPro component is null");
+                return;
+            }
+
+            if (delegateCall is null) return;
+
+            var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField,
+                GettableFieldID.SystemEventObject);
+            if (readCompleteEvent == null)
+            {
+                MetaverseProgram.Logger.LogError(
+                    $"RemoveSystemListener: Could not find {GettableFieldID.SystemEventObject} field in SerialPortUtilityPro component");
+                return;
+            }
+
+            var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
+            if (eventType == null)
+            {
+                MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not determine event type");
+                return;
+            }
+
+            var removeListenerCallFunction = readCompleteEvent.GetType().BaseType
+                ?.GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(x =>
+                    x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase) &&
+                    x.GetParameters().Length == 1);
+            if (removeListenerCallFunction == null)
+            {
+                MetaverseProgram.Logger.LogError(
+                    $"RemoveSystemListener: Could not find RemoveListener method in {readCompleteEvent.GetType().BaseType?.FullName}");
+                return;
+            }
+
+            var dynamicDelegate = Delegate.CreateDelegate(
+                typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
+                delegateCall.Target,
+                delegateCall.Method
+            );
+
+            removeListenerCallFunction.Invoke(readCompleteEvent, new object[] { dynamicDelegate });
+        }
     }
+
+#if ENABLE_IOS_INTEGRATION
+    // Start the Bluetooth scan at runtime load.
+    public static class IOSBluetoothInitializer
+    {
+        [DllImport("__Internal", EntryPoint = "ios_startScan")]
+        private static extern void ios_startScan();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Initialize()
+        {
+            ios_startScan();
+            Debug.Log("IOSBluetoothInitializer: Started Bluetooth scan.");
+        }
+    }
+#endif
 }

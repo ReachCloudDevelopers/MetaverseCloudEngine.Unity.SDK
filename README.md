@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.132.0
+## 2.133.0
 - Soft iOS support for Serial Port
 
 Updated on March 12, 2025
