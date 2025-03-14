@@ -702,8 +702,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
             var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
                 .FirstOrDefault(x =>
-                    x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase) &&
-                    x.GetParameters().Length == 1);
+                    x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase));
             if (addListenerCallFunction == null)
             {
                 MetaverseProgram.Logger.LogError(
@@ -760,8 +759,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             var removeListenerCallFunction = readCompleteEvent.GetType().BaseType
                 ?.GetMethods(BindingFlags.Instance | BindingFlags.Public)
                 .FirstOrDefault(x =>
-                    x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase) &&
-                    x.GetParameters().Length == 1);
+                    x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase));
             if (removeListenerCallFunction == null)
             {
                 MetaverseProgram.Logger.LogError(
@@ -786,7 +784,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [DllImport("__Internal", EntryPoint = "ios_startScan")]
         private static extern void ios_startScan();
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        //[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
         {
             ios_startScan();

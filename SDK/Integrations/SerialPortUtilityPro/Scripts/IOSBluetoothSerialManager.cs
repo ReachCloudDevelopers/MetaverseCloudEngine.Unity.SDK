@@ -108,16 +108,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
         public void WriteBytes(byte[] data)
         {
             if (!IsConnected)
-            {
-                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Not connected to any device.");
                 return;
-            }
             if (data == null || data.Length == 0)
-            {
-                MetaverseProgram.Logger.LogWarning("IOSBluetoothSerialManager: No data provided to write.");
                 return;
-            }
-
             int bytesWritten = ios_writeData(data, data.Length);
             MetaverseProgram.Logger.Log("IOSBluetoothSerialManager: Wrote " + bytesWritten + " bytes.");
         }
@@ -130,10 +123,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         public byte[] ReadBytes()
         {
             if (!IsConnected)
-            {
-                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Not connected to any device.");
                 return Array.Empty<byte>();
-            }
 
             const int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];

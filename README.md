@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.136.0
-- Added new device rank API component.
+## 2.137.0
+- Further improvements to bluetooth support on iOS and MacOS platforms.
 
-Updated on March 13, 2025
+Updated on March 14, 2025
