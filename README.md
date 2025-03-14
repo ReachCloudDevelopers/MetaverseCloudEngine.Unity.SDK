@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.137.0
-- Further improvements to bluetooth support on iOS and MacOS platforms.
+## 2.138.0
+- Fixed error when building for non-iOS platforms like Android.
 
 Updated on March 14, 2025

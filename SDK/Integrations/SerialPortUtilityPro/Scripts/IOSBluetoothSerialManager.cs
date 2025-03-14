@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
+#if UNITY_IOS || UNITY_EDITOR
 namespace MetaverseCloudEngine.Unity.SPUP
 {
     /// <summary>
@@ -139,3 +140,4 @@ namespace MetaverseCloudEngine.Unity.SPUP
         }
     }
 }
+#endif
