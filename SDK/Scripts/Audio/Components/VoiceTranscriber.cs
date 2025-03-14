@@ -8,6 +8,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [Experimental]
     public partial class VoiceTranscriber : TriInspectorMonoBehaviour
     {
+        [Tooltip("Whether to use offline voice recognition, or cloud-based if unchecked.")]
+        [SerializeField] private bool offline = true;
         [SerializeField] private UnityEvent onListeningStarted = new();
         [SerializeField] private UnityEvent onListeningFinished = new();
         [SerializeField] private UnityEvent<string> onListeningSucceeded = new();

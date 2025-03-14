@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.138.0
-- Fixed error when building for non-iOS platforms like Android.
+## 2.139.0
+- Add ability to use offline voice transcriptions.
 
 Updated on March 14, 2025
