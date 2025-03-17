@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.139.2
+## 2.139.3
 - Removed cancellation token from LoadArKitWorldMapAsync
 
 Updated on March 17, 2025

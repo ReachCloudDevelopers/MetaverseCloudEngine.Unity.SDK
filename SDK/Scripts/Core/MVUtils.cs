@@ -1717,7 +1717,6 @@ namespace MetaverseCloudEngine.Unity
                 var bytesRemaining = file.Length;
                 while (bytesRemaining > 0)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
                     var readCount = (int)Math.Min(bytesPerFrame, bytesRemaining);
                     var chunk = binaryReader.ReadBytes(readCount);
                     allBytes.AddRange(chunk);
