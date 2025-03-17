@@ -1674,7 +1674,7 @@ namespace MetaverseCloudEngine.Unity
             this UnityEngine.XR.ARFoundation.ARSession session,
             string key)
         {
-            await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+            await UniTask.Yield(PlayerLoopTiming.Update);
 
             if (MetaSpace.Instance == null)
                 throw new Exception("MetaSpace destroyed");
@@ -1722,7 +1722,7 @@ namespace MetaverseCloudEngine.Unity
                     var chunk = binaryReader.ReadBytes(readCount);
                     allBytes.AddRange(chunk);
                     bytesRemaining -= chunk.Length;
-                    await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                 }
 
                 var data = new NativeArray<byte>(allBytes.Count, Allocator.Temp);
