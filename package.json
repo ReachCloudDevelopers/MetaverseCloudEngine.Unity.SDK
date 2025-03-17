@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.139.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.139.0\n- Add ability to use offline voice transcriptions.\n\nUpdated on March 14, 2025",
+  "version": "2.139.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.139.1\n- Removed cancellation token from LoadArKitWorldMapAsync\n\nUpdated on March 17, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

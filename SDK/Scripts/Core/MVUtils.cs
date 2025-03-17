@@ -1672,8 +1672,7 @@ namespace MetaverseCloudEngine.Unity
         /// <returns>A UniTask that completes when the operation is done or throws on error.</returns>
         public static async UniTask LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session,
-            string key,
-            CancellationToken cancellationToken = default)
+            string key)
         {
             await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken);
 

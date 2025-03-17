@@ -536,24 +536,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     continue;
                 switch (deviceFormat)
                 {
-                    case OpenSystem.Usb:
-                        deviceInfo[di] = new DeviceInfo
-                        {
-                            Vendor = dat[0],
-                            Product = dat[1],
-                            SerialNumber = dat[2],
-                            PortName = dat[3]
-                        };
-                        break;
-                    case OpenSystem.Pci:
-                        deviceInfo[di] = new DeviceInfo
-                        {
-                            Vendor = dat[0],
-                            Product = dat[1],
-                            SerialNumber = "",
-                            PortName = dat[2]
-                        };
-                        break;
                     case OpenSystem.BluetoothSsp:
                         deviceInfo[di] = new DeviceInfo
                         {
@@ -784,7 +766,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [DllImport("__Internal", EntryPoint = "ios_startScan")]
         private static extern void ios_startScan();
 
-        //[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Initialize()
         {
             ios_startScan();

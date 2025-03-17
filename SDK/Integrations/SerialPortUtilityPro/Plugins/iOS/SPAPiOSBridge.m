@@ -157,18 +157,28 @@ int ios_spapDeviceListAvailable(void) {
 }
 
 // Fills the provided buffer with device info for the device at the given index.
-// The string format is: Vendor,Product,SerialNumber,PortName
+// For iOS Bluetooth devices, we output a single token (the device's UUID).
+// The expected format for BluetoothSsp (as per the C# code) is that dat[0] contains the SerialNumber.
 int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
-    if (deviceNum < [manager.discoveredPeripherals count]) {
-        CBPeripheral *peripheral = manager.discoveredPeripherals[deviceNum];
-        NSString *serialNumber = peripheral.identifier.UUIDString;
-        NSString *portName = peripheral.name ? peripheral.name : @"Unknown";
-        NSString *info = [NSString stringWithFormat:@",,%@,%@", serialNumber, portName];
-        const char *cInfo = [info UTF8String];
+    [manager purgeStalePeripherals];
+    
+    // Convert the dictionary values to an array and sort by lastSeen time.
+    NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
+        return [obj1.lastSeen compare:obj2.lastSeen];
+    }];
+    
+    if (deviceNum < [allDevices count]) {
+        SPAPDiscoveredPeripheral *dp = allDevices[deviceNum];
+        CBPeripheral *peripheral = dp.peripheral;
+        
+        // For iOS Bluetooth devices, output a single token string: the device's UUID.
+        NSString *token = peripheral.identifier.UUIDString;
+        const char *cInfo = [token UTF8String];
         strncpy(deviceInfo, cInfo, bufferSize);
         deviceInfo[bufferSize - 1] = '\0'; // Ensure null termination.
-        // Return BluetoothSsp (3)
+        
+        // Return the open method as BluetoothSsp (3).
         return 3;
     }
     return -1;
