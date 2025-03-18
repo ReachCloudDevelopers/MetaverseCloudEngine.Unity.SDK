@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.140.5
+## 2.140.6
 - Improved support for bluetooth device detection
 
 Updated on March 18, 2025

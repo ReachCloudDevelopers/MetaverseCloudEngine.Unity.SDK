@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using UnityEngine;
 
 #if UNITY_IOS || UNITY_EDITOR
@@ -32,15 +33,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// <summary>
         /// Indicates whether a Bluetooth device is currently connected.
         /// </summary>
-        public bool IsConnected { get; private set; } = false;
-        
-        public string SerialNumber { get; private set; }
-        
-        public string DeviceName { get; private set; }
-        
-        public string Port { get; private set; }
-        public string VendorID { get; private set; }
-        public string ProductID { get; private set; }
+        [UsedImplicitly]
+        public bool IsConnected { get; private set; }
+        [UsedImplicitly]
+        public string SerialNumber { get; set; }
+        [UsedImplicitly]
+        public string DeviceName { get; set; }
+        [UsedImplicitly]
+        public string Port { get; set; }
+        [UsedImplicitly]
+        public string VendorID { get; set; }
+        [UsedImplicitly]
+        public string ProductID { get; set; }
 
         /// <summary>
         /// Information about the currently connected device.
