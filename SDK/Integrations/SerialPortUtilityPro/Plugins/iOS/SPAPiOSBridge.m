@@ -30,8 +30,6 @@
 @property (nonatomic, strong) NSMutableData *incomingData;
 + (instancetype)sharedManager;
 - (void)startScan;
-// Purge peripherals not seen in the last 60 seconds.
-- (void)purgeStalePeripherals;
 @end
 
 @implementation SPAPBluetoothManager
@@ -58,23 +56,6 @@
     if (self.centralManager.state == CBManagerStatePoweredOn) {
         NSLog(@"SPAPBluetoothManager: Starting scan...");
         [self.centralManager scanForPeripheralsWithServices:nil options:nil];
-    }
-}
-
-// Purge peripherals that haven't been updated in the last 60 seconds.
-- (void)purgeStalePeripherals {
-    NSTimeInterval threshold = 60.0; // seconds
-    NSDate *now = [NSDate date];
-    NSMutableArray *keysToRemove = [NSMutableArray array];
-    for (NSString *key in self.discoveredPeripherals) {
-        SPAPDiscoveredPeripheral *dp = self.discoveredPeripherals[key];
-        if ([now timeIntervalSinceDate:dp.lastSeen] > threshold) {
-            [keysToRemove addObject:key];
-        }
-    }
-    if ([keysToRemove count] > 0) {
-        NSLog(@"SPAPBluetoothManager: Purging stale peripherals: %@", keysToRemove);
-        [self.discoveredPeripherals removeObjectsForKeys:keysToRemove];
     }
 }
 
@@ -191,7 +172,6 @@ void ios_startScan(void) {
 // Purges stale entries first.
 int ios_spapDeviceListAvailable(void) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
-    [manager purgeStalePeripherals];
     
     // Get all discovered SPAPDiscoveredPeripheral objects.
     NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
@@ -218,7 +198,6 @@ int ios_spapDeviceListAvailable(void) {
 //   - PortName is empty.
 int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
-    [manager purgeStalePeripherals];
     
     // Get all discovered devices sorted by lastSeen.
     NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
@@ -259,7 +238,6 @@ int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
 int ios_connectToDevice(const char *serialNumber) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
     NSString *targetUUID = [NSString stringWithUTF8String:serialNumber];
-    [manager purgeStalePeripherals];
     for (NSString *key in manager.discoveredPeripherals) {
         SPAPDiscoveredPeripheral *dp = manager.discoveredPeripherals[key];
         if ([dp.peripheral.identifier.UUIDString isEqualToString:targetUUID]) {
