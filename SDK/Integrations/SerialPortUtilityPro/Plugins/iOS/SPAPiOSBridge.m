@@ -187,33 +187,68 @@ void ios_startScan(void) {
     NSLog(@"ios_startScan: Scan started.");
 }
 
-// Returns the number of discovered Bluetooth devices.
-// Before returning, purge stale entries.
+// Returns the number of discovered Bluetooth devices that have a valid name.
+// Purges stale entries first.
 int ios_spapDeviceListAvailable(void) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
     [manager purgeStalePeripherals];
-    return (int)[manager.discoveredPeripherals count];
-}
-
-// Fills the provided buffer with device info for the device at the given index.
-// For iOS Bluetooth devices, we output a single token string (the device's UUID)
-// since the C# side expects dat[0] to contain the SerialNumber.
-int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
-    SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
-    [manager purgeStalePeripherals];
-    // Get all discovered devices (as SPAPDiscoveredPeripheral objects) sorted by lastSeen.
+    
+    // Get all discovered SPAPDiscoveredPeripheral objects.
     NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
         return [obj1.lastSeen compare:obj2.lastSeen];
     }];
-    if (deviceNum < [allDevices count]) {
-        SPAPDiscoveredPeripheral *dp = allDevices[deviceNum];
+    
+    // Filter out devices with nil peripheral.name.
+    NSMutableArray *filteredDevices = [NSMutableArray array];
+    for (SPAPDiscoveredPeripheral *dp in allDevices) {
+        if (dp.peripheral.name != nil) {
+            [filteredDevices addObject:dp];
+        }
+    }
+    
+    return (int)[filteredDevices count];
+}
+
+// Fills the provided buffer with device info for the device at the given index.
+// The expected format is: Vendor,Product,SerialNumber,PortName
+// For iOS Bluetooth devices:
+//   - Vendor is empty.
+//   - Product is the Bluetooth device's name.
+//   - SerialNumber is the device's UUID.
+//   - PortName is empty.
+int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
+    SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
+    [manager purgeStalePeripherals];
+    
+    // Get all discovered devices sorted by lastSeen.
+    NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
+        return [obj1.lastSeen compare:obj2.lastSeen];
+    }];
+    
+    // Filter out devices without a name.
+    NSMutableArray *filteredDevices = [NSMutableArray array];
+    for (SPAPDiscoveredPeripheral *dp in allDevices) {
+        if (dp.peripheral.name != nil) {
+            [filteredDevices addObject:dp];
+        }
+    }
+    
+    if (deviceNum < [filteredDevices count]) {
+        SPAPDiscoveredPeripheral *dp = filteredDevices[deviceNum];
         CBPeripheral *peripheral = dp.peripheral;
-        // Output a single token: the device's UUID.
-        NSString *token = peripheral.identifier.UUIDString;
-        const char *cInfo = [token UTF8String];
+        
+        NSString *vendor = @"";                    // No vendor information.
+        NSString *product = peripheral.name;         // Bluetooth device name.
+        NSString *serialNumber = peripheral.identifier.UUIDString; // Device UUID.
+        NSString *portName = @"";                    // No port information.
+        
+        // Format the string as: Vendor,Product,SerialNumber,PortName
+        NSString *info = [NSString stringWithFormat:@"%@,%@,%@,%@", vendor, product, serialNumber, portName];
+        const char *cInfo = [info UTF8String];
         strncpy(deviceInfo, cInfo, bufferSize);
         deviceInfo[bufferSize - 1] = '\0'; // Ensure null termination.
-        // Return BluetoothSsp (3) to indicate the open method.
+        
+        // Return BluetoothSsp (3) as the open method.
         return 3;
     }
     return -1;
