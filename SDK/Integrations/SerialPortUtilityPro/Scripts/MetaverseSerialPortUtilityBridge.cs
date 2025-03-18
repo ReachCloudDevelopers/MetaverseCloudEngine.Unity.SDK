@@ -67,20 +67,40 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (_delegateCall is not null)
                 RemoveListener();
-            
-            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
-            var addListenerCallFunction = readCompleteEvent.GetType().GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
-            addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
+
+            try
+            {
+                var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent,
+                    ref _readCompleteEventObjectField,
+                    MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
+                var addListenerCallFunction = readCompleteEvent.GetType()
+                    .GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
+                addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
+            }
+            catch(Exception e)
+            {
+                MetaverseProgram.Logger.LogError(e);
+            }
         }
 
         private void RemoveListener()
         {
             if (_delegateCall is null)
                 return;
-            
-            var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent, ref _readCompleteEventObjectField, MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
-            var removeListenerCallFunction = readCompleteEvent.GetType().GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
-            removeListenerCallFunction?.Invoke(readCompleteEvent, new object[] { _delegateCall });
+
+            try
+            {
+                var readCompleteEvent = MetaverseSerialPortUtilityInterop.GetField<UnityEventBase>(spupComponent,
+                    ref _readCompleteEventObjectField,
+                    MetaverseSerialPortUtilityInterop.GettableFieldID.ReadCompleteEventObject);
+                var removeListenerCallFunction = readCompleteEvent.GetType()
+                    .GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
+                removeListenerCallFunction?.Invoke(readCompleteEvent, new object[] { _delegateCall });
+            }
+            catch (Exception e)
+            {
+                MetaverseProgram.Logger.LogError(e);
+            }
         }
 
         private void OnStream(object message)
