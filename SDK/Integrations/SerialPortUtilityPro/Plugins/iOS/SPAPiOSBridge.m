@@ -4,18 +4,34 @@
 #import <string.h>
 
 // ---------------------------------------------------------------------
+// SPAPDiscoveredPeripheral: A helper class to store a peripheral and
+// its last seen timestamp.
+@interface SPAPDiscoveredPeripheral : NSObject
+@property (nonatomic, strong) CBPeripheral *peripheral;
+@property (nonatomic, strong) NSDate *lastSeen;
+@end
+
+@implementation SPAPDiscoveredPeripheral
+@end
+
+// ---------------------------------------------------------------------
 // SPAPBluetoothManager: A singleton manager that uses CoreBluetooth
 // to continuously scan for peripherals, connect/disconnect, and handle
-// data transfer (write/read).
+// data transfer (write/read). The discovered peripherals are maintained
+// in a dictionary keyed by UUID to ensure uniqueness and to allow stale
+// entries to be purged.
 @interface SPAPBluetoothManager : NSObject <CBCentralManagerDelegate, CBPeripheralDelegate>
 @property (nonatomic, strong) CBCentralManager *centralManager;
-@property (nonatomic, strong) NSMutableArray<CBPeripheral *> *discoveredPeripherals;
+// A dictionary mapping UUID strings to SPAPDiscoveredPeripheral objects.
+@property (nonatomic, strong) NSMutableDictionary<NSString *, SPAPDiscoveredPeripheral *> *discoveredPeripherals;
 @property (nonatomic, strong) CBPeripheral *connectedPeripheral;
 @property (nonatomic, strong) CBCharacteristic *writeCharacteristic;
 @property (nonatomic, strong) CBCharacteristic *readCharacteristic;
 @property (nonatomic, strong) NSMutableData *incomingData;
 + (instancetype)sharedManager;
 - (void)startScan;
+// Purge peripherals not seen in the last 60 seconds.
+- (void)purgeStalePeripherals;
 @end
 
 @implementation SPAPBluetoothManager
@@ -31,7 +47,7 @@
 
 - (instancetype)init {
     if (self = [super init]) {
-        _discoveredPeripherals = [NSMutableArray array];
+        _discoveredPeripherals = [NSMutableDictionary dictionary];
         _incomingData = [NSMutableData data];
         _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:dispatch_get_main_queue()];
     }
@@ -45,6 +61,23 @@
     }
 }
 
+// Purge peripherals that haven't been updated in the last 60 seconds.
+- (void)purgeStalePeripherals {
+    NSTimeInterval threshold = 60.0; // seconds
+    NSDate *now = [NSDate date];
+    NSMutableArray *keysToRemove = [NSMutableArray array];
+    for (NSString *key in self.discoveredPeripherals) {
+        SPAPDiscoveredPeripheral *dp = self.discoveredPeripherals[key];
+        if ([now timeIntervalSinceDate:dp.lastSeen] > threshold) {
+            [keysToRemove addObject:key];
+        }
+    }
+    if ([keysToRemove count] > 0) {
+        NSLog(@"SPAPBluetoothManager: Purging stale peripherals: %@", keysToRemove);
+        [self.discoveredPeripherals removeObjectsForKeys:keysToRemove];
+    }
+}
+
 #pragma mark - CBCentralManagerDelegate
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
@@ -55,21 +88,28 @@
     }
 }
 
-- (void)centralManager:(CBCentralManager *)central 
- didDiscoverPeripheral:(CBPeripheral *)peripheral 
-     advertisementData:(NSDictionary<NSString *,id> *)advertisementData 
+- (void)centralManager:(CBCentralManager *)central
+ didDiscoverPeripheral:(CBPeripheral *)peripheral
+     advertisementData:(NSDictionary<NSString *,id> *)advertisementData
                   RSSI:(NSNumber *)RSSI {
-    if (![self.discoveredPeripherals containsObject:peripheral]) {
-        [self.discoveredPeripherals addObject:peripheral];
+    NSString *uuid = peripheral.identifier.UUIDString;
+    SPAPDiscoveredPeripheral *existing = self.discoveredPeripherals[uuid];
+    if (existing) {
+        // Update last seen time.
+        existing.lastSeen = [NSDate date];
+    } else {
+        SPAPDiscoveredPeripheral *newEntry = [[SPAPDiscoveredPeripheral alloc] init];
+        newEntry.peripheral = peripheral;
+        newEntry.lastSeen = [NSDate date];
+        self.discoveredPeripherals[uuid] = newEntry;
         peripheral.delegate = self;
-        NSLog(@"SPAPBluetoothManager: Discovered peripheral: %@, UUID: %@", peripheral.name, peripheral.identifier.UUIDString);
+        NSLog(@"SPAPBluetoothManager: Discovered peripheral: %@, UUID: %@", peripheral.name, uuid);
     }
 }
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
     NSLog(@"SPAPBluetoothManager: Connected to peripheral: %@, UUID: %@", peripheral.name, peripheral.identifier.UUIDString);
     self.connectedPeripheral = peripheral;
-    // Discover services; here you could provide specific UUIDs if known.
     [peripheral discoverServices:nil];
 }
 
@@ -96,7 +136,6 @@
     }
     for (CBService *service in peripheral.services) {
         NSLog(@"SPAPBluetoothManager: Discovered service: %@", service.UUID.UUIDString);
-        // Discover all characteristics for this service.
         [peripheral discoverCharacteristics:nil forService:service];
     }
 }
@@ -108,13 +147,11 @@
     }
     for (CBCharacteristic *characteristic in service.characteristics) {
         NSLog(@"SPAPBluetoothManager: Discovered characteristic: %@", characteristic.UUID.UUIDString);
-        // Assign a write characteristic if available.
         if ((characteristic.properties & CBCharacteristicPropertyWrite) ||
             (characteristic.properties & CBCharacteristicPropertyWriteWithoutResponse)) {
             self.writeCharacteristic = characteristic;
             NSLog(@"SPAPBluetoothManager: Assigned writeCharacteristic: %@", characteristic.UUID.UUIDString);
         }
-        // Assign a notify characteristic for reading data.
         if (characteristic.properties & CBCharacteristicPropertyNotify) {
             self.readCharacteristic = characteristic;
             [peripheral setNotifyValue:YES forCharacteristic:characteristic];
@@ -151,34 +188,32 @@ void ios_startScan(void) {
 }
 
 // Returns the number of discovered Bluetooth devices.
+// Before returning, purge stale entries.
 int ios_spapDeviceListAvailable(void) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
+    [manager purgeStalePeripherals];
     return (int)[manager.discoveredPeripherals count];
 }
 
 // Fills the provided buffer with device info for the device at the given index.
-// For iOS Bluetooth devices, we output a single token (the device's UUID).
-// The expected format for BluetoothSsp (as per the C# code) is that dat[0] contains the SerialNumber.
+// For iOS Bluetooth devices, we output a single token string (the device's UUID)
+// since the C# side expects dat[0] to contain the SerialNumber.
 int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
     [manager purgeStalePeripherals];
-    
-    // Convert the dictionary values to an array and sort by lastSeen time.
+    // Get all discovered devices (as SPAPDiscoveredPeripheral objects) sorted by lastSeen.
     NSArray *allDevices = [[manager.discoveredPeripherals allValues] sortedArrayUsingComparator:^NSComparisonResult(SPAPDiscoveredPeripheral *obj1, SPAPDiscoveredPeripheral *obj2) {
         return [obj1.lastSeen compare:obj2.lastSeen];
     }];
-    
     if (deviceNum < [allDevices count]) {
         SPAPDiscoveredPeripheral *dp = allDevices[deviceNum];
         CBPeripheral *peripheral = dp.peripheral;
-        
-        // For iOS Bluetooth devices, output a single token string: the device's UUID.
+        // Output a single token: the device's UUID.
         NSString *token = peripheral.identifier.UUIDString;
         const char *cInfo = [token UTF8String];
         strncpy(deviceInfo, cInfo, bufferSize);
         deviceInfo[bufferSize - 1] = '\0'; // Ensure null termination.
-        
-        // Return the open method as BluetoothSsp (3).
+        // Return BluetoothSsp (3) to indicate the open method.
         return 3;
     }
     return -1;
@@ -189,11 +224,12 @@ int ios_spapDeviceList(int deviceNum, char *deviceInfo, int bufferSize) {
 int ios_connectToDevice(const char *serialNumber) {
     SPAPBluetoothManager *manager = [SPAPBluetoothManager sharedManager];
     NSString *targetUUID = [NSString stringWithUTF8String:serialNumber];
-    for (CBPeripheral *peripheral in manager.discoveredPeripherals) {
-        if ([peripheral.identifier.UUIDString isEqualToString:targetUUID]) {
-            NSLog(@"ios_connectToDevice: Found matching peripheral: %@", peripheral.name);
-            [manager.centralManager connectPeripheral:peripheral options:nil];
-            // For simplicity, assume connection is immediate.
+    [manager purgeStalePeripherals];
+    for (NSString *key in manager.discoveredPeripherals) {
+        SPAPDiscoveredPeripheral *dp = manager.discoveredPeripherals[key];
+        if ([dp.peripheral.identifier.UUIDString isEqualToString:targetUUID]) {
+            NSLog(@"ios_connectToDevice: Found matching peripheral: %@", dp.peripheral.name);
+            [manager.centralManager connectPeripheral:dp.peripheral options:nil];
             return 0;
         }
     }
@@ -221,10 +257,9 @@ int ios_writeData(const uint8_t *data, int length) {
         return -1;
     }
     NSData *dataToWrite = [NSData dataWithBytes:data length:length];
-    // Write with response. (The actual result is asynchronous.)
     [manager.connectedPeripheral writeValue:dataToWrite forCharacteristic:manager.writeCharacteristic type:CBCharacteristicWriteWithResponse];
     NSLog(@"ios_writeData: Wrote %d bytes.", length);
-    return length; // Assume success.
+    return length;
 }
 
 // Reads data from the connected Bluetooth device.
@@ -237,7 +272,6 @@ int ios_readData(uint8_t *buffer, int bufferSize) {
     }
     int bytesToCopy = MIN(availableBytes, bufferSize);
     [manager.incomingData getBytes:buffer length:bytesToCopy];
-    // Remove the copied bytes from the incoming data buffer.
     NSRange range = NSMakeRange(0, bytesToCopy);
     [manager.incomingData replaceBytesInRange:range withBytes:NULL length:0];
     NSLog(@"ios_readData: Read %d bytes.", bytesToCopy);

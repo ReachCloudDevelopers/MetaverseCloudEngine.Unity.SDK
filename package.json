@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.140.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.140.0\n- Added ability to load ARKit world map before mapping status is tracking.\n\nUpdated on March 18, 2025",
+  "version": "2.140.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.140.1\n- Improved support for bluetooth device detection\n\nUpdated on March 18, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

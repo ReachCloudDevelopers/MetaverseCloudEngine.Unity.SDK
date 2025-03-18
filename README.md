@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.140.0
-- Added ability to load ARKit world map before mapping status is tracking.
+## 2.140.1
+- Improved support for bluetooth device detection
 
 Updated on March 18, 2025
