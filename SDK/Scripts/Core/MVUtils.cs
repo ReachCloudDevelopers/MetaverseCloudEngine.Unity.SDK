@@ -1691,10 +1691,6 @@ namespace MetaverseCloudEngine.Unity
 
             if (session.subsystem is not ARKitSessionSubsystem sessionSubsystem)
                 throw new Exception("ARKit session subsystem not found");
-
-            if (sessionSubsystem.trackingState != TrackingState.Tracking ||
-                sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
-                throw new Exception("World map not ready");
     #else
             throw new Exception("ARWorldMap loading is only supported on iOS.");
     #endif

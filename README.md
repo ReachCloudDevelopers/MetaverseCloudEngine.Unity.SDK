@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.139.3
-- Removed cancellation token from LoadArKitWorldMapAsync
+## 2.140.0
+- Added ability to load ARKit world map before mapping status is tracking.
 
-Updated on March 17, 2025
+Updated on March 18, 2025
