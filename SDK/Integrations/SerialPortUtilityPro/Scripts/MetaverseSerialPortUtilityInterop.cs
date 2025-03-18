@@ -225,7 +225,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     // Expect parameters[0] to be a DeviceInfo representing the device to open.
                     if (parameters.Length > 0 && parameters[0] is DeviceInfo device)
                     {
-                        IOSBluetoothSerialManager.Instance.ConnectToDevice(device);
+                        IOSBluetoothSerialManager.Instance.ConnectToDevice();
                     }
                     return default;
 
@@ -258,16 +258,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 case InstanceMethodID.Write:
                     if (parameters.Length > 0 && parameters[0] is byte[] data)
-                    {
                         IOSBluetoothSerialManager.Instance.WriteBytes(data);
-                    }
                     break;
 
                 case InstanceMethodID.Open:
-                    if (parameters.Length > 0 && parameters[0] is DeviceInfo device)
-                    {
-                        IOSBluetoothSerialManager.Instance.ConnectToDevice(device);
-                    }
+                    IOSBluetoothSerialManager.Instance.ConnectToDevice();
                     break;
 
                 case InstanceMethodID.Close:
@@ -300,7 +295,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 case GettableFieldID.SystemEventObject:
                     // Return the system event object from your IOSBluetoothSerialManager if applicable.
                     return (T)(object)null; // Replace with actual implementation if needed.
-
                 case GettableFieldID.ReadCompleteEventObject:
                     return (T)(object)null;
                 default:
@@ -348,11 +342,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             switch (propertyName)
             {
                 case GettablePropertyID.SerialNumber:
-                    // For example, return the serial number of the connected device.
-                    var devices = GetConnectedDeviceList(OpenSystem.BluetoothSsp);
-                    if (devices != null && devices.Length > 0)
-                        return (T)(object)devices[0].SerialNumber;
-                    return default;
+                    return (T)(object)IOSBluetoothSerialManager.Instance.SerialNumber;
                 default:
                     return default;
             }
@@ -374,11 +364,19 @@ namespace MetaverseCloudEngine.Unity.SPUP
             switch (propertyName)
             {
                 case SettablePropertyID.VendorID:
+                    IOSBluetoothSerialManager.Instance.VendorID = (string)value;
+                    break;
                 case SettablePropertyID.Port:
+                    IOSBluetoothSerialManager.Instance.Port = (string)value;
+                    break;
                 case SettablePropertyID.ProductID:
+                    IOSBluetoothSerialManager.Instance.ProductID = (string)value;
+                    break;
                 case SettablePropertyID.SerialNumber:
+                    IOSBluetoothSerialManager.Instance.SerialNumber = (string)value;
+                    break;
                 case SettablePropertyID.DeviceName:
-                    // In this example these are read-only properties coming from the discovered device info.
+                    IOSBluetoothSerialManager.Instance.DeviceName = (string)value;
                     break;
                 default:
                     break;

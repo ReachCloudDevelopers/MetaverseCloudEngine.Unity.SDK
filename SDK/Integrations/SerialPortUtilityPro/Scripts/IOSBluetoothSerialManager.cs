@@ -33,6 +33,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// Indicates whether a Bluetooth device is currently connected.
         /// </summary>
         public bool IsConnected { get; private set; } = false;
+        
+        public string SerialNumber { get; private set; }
+        
+        public string DeviceName { get; private set; }
+        
+        public string Port { get; private set; }
+        public string VendorID { get; private set; }
+        public string ProductID { get; private set; }
 
         /// <summary>
         /// Information about the currently connected device.
@@ -57,30 +65,39 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// Uses the device's SerialNumber for connecting.
         /// </summary>
         /// <param name="device">Device information used for connection.</param>
-        public void ConnectToDevice(MetaverseSerialPortUtilityInterop.DeviceInfo device)
+        public void ConnectToDevice()
         {
-            if (IsConnected)
+            if (string.IsNullOrEmpty(SerialNumber))
             {
-                MetaverseProgram.Logger.LogWarning("IOSBluetoothSerialManager: Already connected to a device.");
+                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Serial number is empty.");
                 return;
             }
-            if (device == null)
+            
+            if (IsConnected)
             {
-                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Provided device is null.");
-                return;
+                Disconnect();
+                IsConnected = false;
             }
 
             // Attempt connection via native call.
-            int result = ios_connectToDevice(device.SerialNumber);
+            int result = ios_connectToDevice(SerialNumber);
             if (result == 0) // Assuming 0 indicates success.
             {
                 IsConnected = true;
-                ConnectedDevice = device;
-                MetaverseProgram.Logger.Log("IOSBluetoothSerialManager: Successfully connected to device: " + device.ToString());
+                ConnectedDevice = new MetaverseSerialPortUtilityInterop.DeviceInfo
+                {
+                    SerialNumber = SerialNumber,
+                    PortName = Port,
+                    Vendor = VendorID,
+                    Product = ProductID
+                };
+                MetaverseProgram.Logger.Log(
+                    $"IOSBluetoothSerialManager: Successfully connected to device: {ConnectedDevice}");
             }
             else
             {
-                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Failed to connect to device: " + device.ToString());
+                MetaverseProgram.Logger.LogError(
+                    $"IOSBluetoothSerialManager: Failed to connect to device: {ConnectedDevice}");
             }
         }
 
