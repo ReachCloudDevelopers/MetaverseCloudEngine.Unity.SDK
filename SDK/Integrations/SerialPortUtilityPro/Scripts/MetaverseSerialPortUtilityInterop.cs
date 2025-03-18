@@ -519,7 +519,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 var dat = deviceString[i].ToString().Split(',');
                 if (openMethod != deviceKind[i])
                     continue;
-                if (dat[0] == "null")
+                // Check that the Product field (dat[1]) is not empty.
+                if (string.IsNullOrEmpty(dat[1]))
                     continue;
                 deviceInfoNum++;
             }
@@ -532,17 +533,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 var dat = deviceString[i].ToString().Split(',');
                 if (openMethod != deviceKind[i])
                     continue;
-                if (dat[0] == "null")
+                if (string.IsNullOrEmpty(dat[1]))
                     continue;
                 switch (deviceFormat)
                 {
                     case OpenSystem.BluetoothSsp:
                         deviceInfo[di] = new DeviceInfo
                         {
-                            Vendor = "",
-                            Product = "",
-                            SerialNumber = dat[0],
-                            PortName = dat[0]
+                            Vendor = "",           // No vendor info.
+                            Product = dat[1],      // Device name.
+                            SerialNumber = dat[2], // UUID.
+                            PortName = ""          // No port info.
                         };
                         break;
                 }
