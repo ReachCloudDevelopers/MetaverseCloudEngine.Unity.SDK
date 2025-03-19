@@ -34,11 +34,17 @@ namespace MetaverseCloudEngine.Unity.Robotics
         [SerializeField] private float pMax = 2200;
         [Tooltip("Automatically write to the servo in FixedUpdate().")]
         [SerializeField] private bool writeInFixedUpdate = true;
+        [Min(1)]
+        [Tooltip("The amount of writes per second.")]
+        [ShowIf(nameof(writeInFixedUpdate))]
+        [SerializeField] private int writesPerSecond = 10;
         [SerializeField] private UnityEvent<byte[]> onWriteBytes = new();
         [ShowIf(nameof(writeInFixedUpdate))]
         [Tooltip("Specify settings to do software based dampening.")]
         [SerializeField] private SmoothDamp smoothDampSettings = new();
 
+        private float _lastWriteTime;
+        
         [Serializable]
         public class SmoothDamp
         {
@@ -92,8 +98,12 @@ namespace MetaverseCloudEngine.Unity.Robotics
 
         private void FixedUpdate()
         {
-            if (writeInFixedUpdate)
+            if (!writeInFixedUpdate) return;
+            if (Time.time - _lastWriteTime > 1f / writesPerSecond)
+            {
                 WriteCommand();
+                _lastWriteTime = Time.time;
+            }
         }
 
         /// <summary>

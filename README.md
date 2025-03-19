@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.140.7
-- Improved support for bluetooth device detection
+## 2.141.0
+- Added writesPerSecond field to PololuServoSetTargetCommand component
 
-Updated on March 18, 2025
+Updated on March 19, 2025
