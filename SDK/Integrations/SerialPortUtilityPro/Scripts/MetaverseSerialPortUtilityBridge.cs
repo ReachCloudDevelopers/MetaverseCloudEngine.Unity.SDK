@@ -77,9 +77,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     .GetMethod("AddListener", BindingFlags.Instance | BindingFlags.Public)!;
                 addListenerCallFunction.Invoke(readCompleteEvent, new object[] { _delegateCall = OnStream });
             }
-            catch(Exception e)
+            catch(NullReferenceException)
             {
-                MetaverseProgram.Logger.LogError(e);
             }
         }
 
@@ -97,9 +96,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     .GetMethod("RemoveListener", BindingFlags.Instance | BindingFlags.Public)!;
                 removeListenerCallFunction?.Invoke(readCompleteEvent, new object[] { _delegateCall });
             }
-            catch (Exception e)
+            catch (NullReferenceException)
             {
-                MetaverseProgram.Logger.LogError(e);
             }
         }
 
