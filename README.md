@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.142.0
-- Added EnableScrollRectPersistentScrolling component.
+## 2.142.1
+- Updated editor icons with Reach logo.
 
 Updated on March 25, 2025
