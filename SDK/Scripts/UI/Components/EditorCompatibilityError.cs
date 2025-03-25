@@ -17,7 +17,7 @@ namespace MetaverseCloudEngine.Unity.UI
         private static readonly Dictionary<GameObject, string> ErrorMessageMap = new();
 
         /// <summary>
-        /// Add an error message overlay to the specified gameobject.
+        /// Add an error message overlay to the specified game-object.
         /// </summary>
         /// <param name="gameObject"></param>
         /// <param name="errorMessage"></param>

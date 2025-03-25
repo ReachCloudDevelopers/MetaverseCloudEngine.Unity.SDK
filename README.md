@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.141.1
-- Updated MetaverseSerialPortUtilityBridge to ignore null reference exceptions to reduce noisy logs.
+## 2.142.0
+- Added EnableScrollRectPersistentScrolling component.
 
-Updated on March 24, 2025
+Updated on March 25, 2025
