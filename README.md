@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.143.0
-- Added API for sending images to the AI Agent for processing.
+## 2.143.1
+- Updated AIAgent image API to allow for message.
 
 Updated on March 27, 2025
