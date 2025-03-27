@@ -181,11 +181,36 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <param name="base64EncodedImage">The base64 encoded image string.</param>
         public void SubmitImage(string message, string base64EncodedImage)
         {
+            if (string.IsNullOrEmpty(message)) message = "<base64_image>";
             SubmitImageInternal(message, base64EncodedImage);
         }
         
         partial void SubmitImageInternal(string message, string base64EncodedImage);
 
+        /// <summary>
+        /// Takes a screenshot of the game window and sends it to the AI for processing with an optional message input.
+        /// </summary>
+        /// <param name="message">The message to accompany the screenshot (optional).</param>
+        public void SubmitGameScreenshot(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message)) message = "<application_screenshot>";
+            SubmitGameScreenshotInternal(message);
+        }
+        
+        partial void SubmitGameScreenshotInternal(string message);
+
+        /// <summary>
+        /// Submit webcam image to the AI for processing with an optional message input.
+        /// </summary>
+        /// <param name="message">The message to accompany the webcam image (optional).</param>
+        public void SubmitWebcamImage(string message)
+        {
+            if (string.IsNullOrWhiteSpace(message)) message = "<webcam_image>";
+            SubmitWebcamImageInternal(message);
+        }
+        
+        partial void SubmitWebcamImageInternal(string message);
+        
         /// <summary>
         /// Cancels the current thought process.
         /// </summary>

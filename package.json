@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.143.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.143.1\n- Updated AIAgent image API to allow for message.\n\nUpdated on March 27, 2025",
+  "version": "2.144.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.144.0\n- Updated AIAgent image API to allow for game and webcam screenshots.\n\nUpdated on March 27, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
