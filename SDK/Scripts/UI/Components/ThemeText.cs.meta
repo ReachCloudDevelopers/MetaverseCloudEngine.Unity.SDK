@@ -4,8 +4,7 @@ MonoImporter:
   externalObjects: {}
   serializedVersion: 2
   defaultReferences:
-  - <Palette>k__BackingField: {fileID: 11400000, guid: a5005d9ca49227d4391ba60cb38a7aed,
-      type: 2}
+  - <Palette>k__BackingField: {fileID: 11400000, guid: a5005d9ca49227d4391ba60cb38a7aed, type: 2}
   executionOrder: 0
   icon: {fileID: 2800000, guid: 94ab66c5190d51f45ac7d9f88b9baef2, type: 3}
   userData: 

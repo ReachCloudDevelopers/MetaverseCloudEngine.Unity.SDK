@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.142.1
-- Updated editor icons with Reach logo.
+## 2.143.0
+- Added API for sending images to the AI Agent for processing.
 
-Updated on March 25, 2025
+Updated on March 27, 2025

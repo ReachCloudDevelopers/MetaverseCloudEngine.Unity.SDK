@@ -173,6 +173,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
         
         partial void SubmitDialogInternal(string userInput);
+        
+        /// <summary>
+        /// Submits an image to the AI agent for processing.
+        /// </summary>
+        /// <param name="base64EncodedImage">The base64 encoded image string.</param>
+        public void SubmitImage(string base64EncodedImage)
+        {
+            SubmitImageInternal(base64EncodedImage);
+        }
+        
+        partial void SubmitImageInternal(string base64EncodedImage);
 
         /// <summary>
         /// Cancels the current thought process.

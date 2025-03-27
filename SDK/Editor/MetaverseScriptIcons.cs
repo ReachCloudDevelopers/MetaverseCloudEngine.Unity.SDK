@@ -1,13 +1,13 @@
-#if METAVERSE_CLOUD_ENGINE && METAVERSE_CLOUD_ENGINE_INITIALIZED // <GENERATED>
+#if METAVERSE_CLOUD_ENGINE && METAVERSE_CLOUD_ENGINE_INITIALIZED && MV_SDK_DEV
 using System.Linq;
 using UnityEditor;
-using UnityEngine;
+using UnityEngine;  
 
 namespace MetaverseCloudEngine.Unity.Editors.Builds
 {
     public static class MetaverseScriptIcons
     {
-        [MenuItem(MetaverseConstants.MenuItems.InternalMenuRootPath + "Update Editor Icons")]
+        [MenuItem(MetaverseConstants.MenuItems.MenuRootPath + "Dev/Update Editor Icons")]
         public static void UpdateEditorIcons()
         {
             var editorIcon = AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GetAssetPath(MetaverseEditorUtils.EditorIcon));
