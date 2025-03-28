@@ -44,7 +44,8 @@
         "GUID:b649415412a3d4e8a83df256b07478bb",
         "GUID:8a015f4995fdb4fe592dfb7b3c09e505",
         "GUID:63cab5ddbd23cf34ca160a9b3d74438d",
-        "GUID:36796cdf0b177bd40b75ac45f74d1378"
+        "GUID:36796cdf0b177bd40b75ac45f74d1378",
+        "GUID:04376767bc1f3b428aefa3d20743e819"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -199,6 +200,11 @@
             "name": "com.unity.xr.legacyinputhelpers",
             "expression": "",
             "define": "MV_XR_LEGACY_INPUT_HELPERS"
+        },
+        {
+            "name": "com.endel.nativewebsocket",
+            "expression": "",
+            "define": "MV_NATIVE_WEBSOCKETS"
         }
     ],
     "noEngineReferences": false

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.144.0
-- Updated AIAgent image API to allow for game and webcam screenshots.
+## 2.145.0
+- Added endpoint for realtime AI communication capabilities.
 
-Updated on March 27, 2025
+Updated on March 28, 2025
