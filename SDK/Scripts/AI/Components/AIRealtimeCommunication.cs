@@ -222,7 +222,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (_isShuttingDown) return;
                 
-                await AquireEphemeralToken(); // Ensure we have a valid token before connecting
+                await AcquireEphemeralToken(); // Ensure we have a valid token before connecting
                 
                 if (string.IsNullOrEmpty(_ephemeralToken))
                 {
@@ -259,17 +259,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
 
-        private async Task AquireEphemeralToken()
+        private async Task AcquireEphemeralToken()
         {
             Task t = null;
-            AquireEphemeralTokenImplementation(ref t);
+            AcquireEphemeralTokenImplementation(ref t);
             if (t != null)
                 await t;
             if (string.IsNullOrEmpty(_ephemeralToken))
                 if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] No ephemeral token acquired.");
         }
 
-        partial void AquireEphemeralTokenImplementation(ref Task t);
+        partial void AcquireEphemeralTokenImplementation(ref Task t);
 
         private async void OnWebSocketOpen()
         {
