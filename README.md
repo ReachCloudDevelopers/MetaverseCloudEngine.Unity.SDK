@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.146.0
-- Added vision capabilities to the Realtime AI agent.
+## 2.147.0
+- Add event callbacks to AIRealtimeCommunication system, and more Public API methods.
 
 Updated on March 28, 2025

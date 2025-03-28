@@ -1,4 +1,5 @@
-#if MV_NATIVE_WEBSOCKETS
+#if MV_NATIVE_WEBSOCKETS && (!UNITY_WEBGL || UNITY_EDITOR)
+
 using UnityEngine;
 using UnityEngine.Events;
 using System;
@@ -14,6 +15,7 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
+using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -44,10 +46,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private const string BetaHeaderName = "OpenAI-Beta";
         private const string BetaHeaderValue = "realtime=v1";
-
-        [Header("OpenAI Realtime Settings")]
-        [SerializeField]
-        private string realtimeEndpoint = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview";
+        private const string RealtimeEndpoint = "wss://api.openai.com/v1/realtime";
 
         // Microphone Streaming
         [Range(8000, 48000)]
@@ -90,6 +89,24 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         private List<Function> availableFunctions = new();
 
+        [Header("Event Callbacks")] 
+        [SerializeField]
+        private UnityEvent onConnected = new();
+        [SerializeField]
+        private UnityEvent onDisconnected = new();
+        [SerializeField]
+        private UnityEvent onMicStarted = new();
+        [SerializeField]
+        private UnityEvent onMicStopped = new();
+        [SerializeField]
+        private UnityEvent onVisionRequested = new();
+        [SerializeField] 
+        private UnityEvent onVisionFinished = new();
+        [SerializeField]
+        private UnityEvent onAIResponseStarted = new();
+        [SerializeField]
+        private UnityEvent onAIResponseFinished = new();
+
         private WebSocket _websocket;
         private int _systemSampleRate;
         private AudioClip _micClip;
@@ -116,6 +133,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         // Flag to detect if the app/editor is shutting down
         private bool _isShuttingDown;
 
+        // Vision handler for processing vision requests
         private AIAgent _visionHandler;
 
         /// <summary>
@@ -149,6 +167,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
 
+        /// <summary>
+        /// This Agent allows the realtime communication system to process vision requests.
+        /// </summary>
         public AIAgent VisionHandler
         {
             get
@@ -162,6 +183,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (!_visionHandler)
                 {
                     _visionHandler = new GameObject("VISION_HANDLER").AddComponent<AIAgent>();
+                    _visionHandler.hideFlags = HideFlags.HideAndDontSave;
+                    _visionHandler.OnThinkingStarted.AddListener(() => onVisionRequested?.Invoke());
+                    _visionHandler.OnThinkingFinished.AddListener(() => onVisionFinished?.Invoke());
                     _visionHandler.OnResponse.AddListener(OnVisionResponse);
                     _visionHandler.OnResponseFailed.AddListener(OnVisionResponseFailed);
                     _visionHandler.Prompt = "You are assisting another AI model allowing it to process vision requests. " +
@@ -178,18 +202,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void Start()
         {
-            _systemSampleRate = AudioSettings.outputSampleRate;
-
-            // Create a dummy streaming clip to drive OnAudioFilterRead
-            if (outputVoiceSource != null)
-            {
-                var dummyLength = _systemSampleRate; // 1 second dummy clip
-                var dummyClip = AudioClip.Create("StreamingClip", dummyLength, 1, _systemSampleRate, true);
-                outputVoiceSource.clip = dummyClip;
-                outputVoiceSource.loop = true;
-                outputVoiceSource.Play();
-            }
-
             Connect();
         }
 
@@ -198,7 +210,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _websocket?.DispatchMessageQueue();
 
             // Only process mic frames if the mic is actually running
-            if (!_isMicRunning || _micClip == null) return;
+            if (!_isMicRunning || !_micClip) return;
 
             _sampleTimer += Time.deltaTime;
             if (_sampleTimer >= sampleInterval)
@@ -213,24 +225,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _isShuttingDown = true;
         }
 
-        private async void OnDestroy()
+        private void OnDestroy()
         {
             try
             {
-                _isShuttingDown = true; // block any further reconnect attempts
-
-                if (_visionHandler)
-                {
-                    Destroy(_visionHandler.gameObject);
-                    _visionHandler = null;
-                }
-
-                if (_websocket != null)
-                {
-                    await _websocket.Close();
-                }
-
-                StopMic();
+                _isShuttingDown = true;
+                Disconnect();
             }
             catch (Exception e)
             {
@@ -242,7 +242,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region WebSocket Connection
 
-        private async void Connect()
+        private async void ConnectAsync()
         {
             try
             {
@@ -264,7 +264,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
 
                 // Initialize new WebSocket
-                _websocket = new WebSocket(realtimeEndpoint, new Dictionary<string, string>
+                _websocket = new WebSocket(RealtimeEndpoint, new Dictionary<string, string>
                 {
                     { "Authorization", "Bearer " + _ephemeralToken },
                     { BetaHeaderName, BetaHeaderValue }
@@ -277,7 +277,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _websocket.OnMessage += OnWebSocketMessage;
 
                 await _websocket.Connect();
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Connecting to " + realtimeEndpoint);
+                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Connecting to " + RealtimeEndpoint);
             }
             catch (Exception e)
             {
@@ -317,6 +317,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
                     StartMic();
                 }
+                
+                onConnected?.Invoke();
             }
             catch (Exception e)
             {
@@ -340,7 +342,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnWebSocketClose(WebSocketCloseCode code)
         {
-            if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] WebSocket closed: " + code);
+            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] WebSocket closed: {code}");
 
             // Stop the audio source to avoid glitchy sound
             if (outputVoiceSource != null)
@@ -348,6 +350,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 outputVoiceSource.Stop();
                 outputVoiceSource.volume = 0f;
             }
+            
+            onDisconnected?.Invoke();
 
             // Attempt to reconnect unless we are shutting down
             if (!_isShuttingDown)
@@ -366,7 +370,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!_isShuttingDown)
             {
                 if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Reconnecting now...");
-                Connect();
+                ConnectAsync();
             }
         }
 
@@ -398,9 +402,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 type = "function",
                 name = "vision_request",
-                description = "If you are processing a user input that requires vision capabilities, " +
+                description = "Contrary to previous prompting, you now have the ability to see things directly using this function. " +
+                              "If you are processing a user input that requires vision capabilities, " +
                              "this function should be called with a vision_request parameter. " +
-                             "You will provide a short prompt describing the output you want from the vision AI.",
+                             "You will provide a short prompt describing the output you want from the vision AI. " +
+                              "You are to pretend that the information you receive from the vision agent is coming from you.",
                 parameters = new
                 {
                     type = "object",
@@ -464,6 +470,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _isMicRunning = true;
             _lastMicPos = 0;
             _sampleTimer = 0f;
+            onMicStarted?.Invoke();
+            
             if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Microphone started, streaming audio...");
         }
 
@@ -474,6 +482,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _isMicRunning = false;
             Microphone.End(_micDevice);
             _micClip = null;
+            _lastMicPos = 0;
+            onMicStopped?.Invoke();
 
             if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Microphone stopped.");
         }
@@ -570,6 +580,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         if (!_isSpeaking)
                         {
                             _isSpeaking = true;
+                            onAIResponseStarted?.Invoke();
                             StopMic();
                             if (logs)
                                 MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Stopping mic (AI is speaking).");
@@ -584,6 +595,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                     case "response.done":
                     {
+                        onAIResponseFinished?.Invoke();
+                        
                         // 1) The standard logic: GPT is done streaming audio. We'll eventually resume the mic.
                         if (logs)
                             MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] response.done received. Checking for function calls...");
@@ -892,6 +905,66 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             OnVisionResponse("I'm sorry, I couldn't process the vision request.");
         }
         
+        #endregion
+
+        #region Public API
+
+        public void Connect()
+        {
+            if (_isShuttingDown)
+                return;
+            
+            Disconnect();
+            
+            _systemSampleRate = AudioSettings.outputSampleRate;
+
+            // Create a dummy streaming clip to drive OnAudioFilterRead
+            if (outputVoiceSource != null)
+            {
+                var dummyLength = _systemSampleRate; // 1 second dummy clip
+                var dummyClip = AudioClip.Create("StreamingClip", dummyLength, 1, _systemSampleRate, true);
+                outputVoiceSource.clip = dummyClip;
+                outputVoiceSource.loop = true;
+                outputVoiceSource.Play();
+            }
+
+            ConnectAsync();
+        }
+
+        public void Disconnect()
+        {
+            if (_websocket != null)
+            {
+                if (_websocket.State == WebSocketState.Open)
+                    onDisconnected?.Invoke();
+                _websocket.OnOpen -= OnWebSocketOpen;
+                _websocket.OnMessage -= OnWebSocketMessage;
+                _websocket.OnError -= OnWebSocketError;
+                _websocket.OnClose -= OnWebSocketClose;
+                if (_websocket.State == WebSocketState.Open)
+                    _websocket.Close();
+                _isSpeaking = false;
+                _transcriptText = null;
+                _websocket = null;
+            }
+            
+            if (_visionHandler)
+            {
+                Destroy(_visionHandler.gameObject);
+                _visionHandler = null;
+            }
+
+            StopMic();
+            
+            if (outputVoiceSource)
+            {
+                outputVoiceSource.Stop();
+                if (outputVoiceSource.clip)
+                    Destroy(outputVoiceSource.clip);
+                outputVoiceSource.clip = null;
+            }
+        }
+
         #endregion
     }
 }
