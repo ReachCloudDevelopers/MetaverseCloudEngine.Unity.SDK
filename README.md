@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.145.0
-- Added endpoint for realtime AI communication capabilities.
+## 2.145.1
+- Updated Reach common and API client binaries.
 
 Updated on March 28, 2025

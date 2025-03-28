@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.145.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.145.0\n- Added endpoint for realtime AI communication capabilities.\n\nUpdated on March 28, 2025",
+  "version": "2.145.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.145.1\n- Updated Reach common and API client binaries.\n\nUpdated on March 28, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
