@@ -1,4 +1,4 @@
-#if MV_NATIVE_WEBSOCKETS && (!UNITY_WEBGL || UNITY_EDITOR)
+#if !UNITY_WEBGL || UNITY_EDITOR
 
 using UnityEngine;
 using UnityEngine.Events;
@@ -11,7 +11,9 @@ using System.IO;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Enumerations;
+#if MV_NATIVE_WEBSOCKETS
 using NativeWebSocket;
+#endif
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
@@ -113,7 +115,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         private UnityEvent onAIResponseFinished = new();
 
+#if MV_NATIVE_WEBSOCKETS
         private WebSocket _websocket;
+#endif
         private int _systemSampleRate;
         private AudioClip _micClip;
         private readonly string _micDevice = null; // default mic
@@ -167,11 +171,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
                 else
                 {
+#if MV_NATIVE_WEBSOCKETS
                     // User re-enabled the mic, try to start it if socket is open and GPT not speaking
                     if (_websocket is { State: WebSocketState.Open } && !_isSpeaking)
                     {
                         StartMic();
                     }
+#endif
                 }
             }
         }
@@ -219,7 +225,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void Update()
         {
+#if MV_NATIVE_WEBSOCKETS
             _websocket?.DispatchMessageQueue();
+#endif
 
             // Only process mic frames if the mic is actually running
             if (!_isMicRunning || !_micClip) return;
@@ -275,6 +283,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 
+#if MV_NATIVE_WEBSOCKETS
                 // If we're already connected, close first
                 if (_websocket is { State: WebSocketState.Open or WebSocketState.Connecting })
                 {
@@ -297,6 +306,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 await _websocket.Connect();
                 if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Connecting to {RealtimeEndpoint}");
+#endif
             }
             catch (Exception e)
             {
@@ -353,14 +363,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Attempt to reconnect unless we are shutting down
             if (!_isShuttingDown)
             {
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket is { State: WebSocketState.Open })
                     onDisconnected?.Invoke();
+#endif
                 if (logs)
                     MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Attempting to reconnect in 2s after error...");
                 StartCoroutine(TryReconnect());
             }
         }
 
+#if MV_NATIVE_WEBSOCKETS
         private void OnWebSocketClose(WebSocketCloseCode code)
         {
             if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] WebSocket closed: {code}");
@@ -381,6 +394,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 StartCoroutine(TryReconnect());
             }
         }
+#endif
 
         private IEnumerator TryReconnect()
         {
@@ -462,7 +476,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             // Serialize to JSON and send
             var json = JsonConvert.SerializeObject(sessionMsg);
+#if MV_NATIVE_WEBSOCKETS
             await _websocket.SendText(json);
+#endif
 
             if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Sent session update (with tools).");
         }
@@ -480,12 +496,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
 
+#if MV_NATIVE_WEBSOCKETS
             if (_websocket is not { State: WebSocketState.Open })
             {
                 if (logs)
                     MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot start mic. Socket not open.");
                 return;
             }
+#endif
 
             _micClip = Microphone.Start(_micDevice, true, 300, micSampleRate);
             _isMicRunning = true;
@@ -549,6 +567,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             try
             {
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket == null || _websocket.State != WebSocketState.Open) return;
 
                 var pcmBytes = ConvertFloatsToPCM16Bytes(samples);
@@ -566,6 +585,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (logs)
                     MetaverseProgram.Logger.Log(
                         $"[GPTRealtimeAudioClient] Sent audio chunk, length: {base64Chunk.Length}");
+#endif
             }
             catch (Exception e)
             {
@@ -904,6 +924,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
                 
                 var json = JsonConvert.SerializeObject(visionMsg);
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket is { State: WebSocketState.Open })
                 {
                     await _websocket.SendText(json);
@@ -934,6 +955,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
                     if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] WebSocket not open. Cannot send vision response.");
                 }
+#endif
             });
         }
         
@@ -981,6 +1003,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         public void Disconnect()
         {
+#if MV_NATIVE_WEBSOCKETS
             if (_websocket != null)
             {
                 if (_websocket.State == WebSocketState.Open)
@@ -995,6 +1018,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _transcriptText = null;
                 _websocket = null;
             }
+#endif
             
             if (_visionHandler)
             {
@@ -1038,11 +1062,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
                     if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot trigger response. Socket not open.");
                     return;
                 }
+#endif
 
                 // Trigger a response from GPT to process the current input
                 var responseMsg = new
@@ -1055,7 +1081,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
                 
                 var responseJson = JsonConvert.SerializeObject(responseMsg);
+#if MV_NATIVE_WEBSOCKETS
                 await _websocket.SendText(responseJson);
+#endif
             });
         }
 
@@ -1067,11 +1095,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
                     if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
                     return;
                 }
+#endif
 
                 var textMsg = new
                 {
@@ -1092,7 +1122,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
 
                 var json = JsonConvert.SerializeObject(textMsg);
+#if MV_NATIVE_WEBSOCKETS
                 await _websocket.SendText(json);
+#endif
                 
                 if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
                 
@@ -1107,7 +1139,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
                 
                 var responseJson = JsonConvert.SerializeObject(responseMsg);
+#if MV_NATIVE_WEBSOCKETS
                 await _websocket.SendText(responseJson);
+#endif
             });
         }
 
@@ -1119,11 +1153,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+#if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
                     if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
                     return;
                 }
+#endif
 
                 var textMsg = new
                 {
@@ -1144,7 +1180,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
 
                 var json = JsonConvert.SerializeObject(textMsg);
+#if MV_NATIVE_WEBSOCKETS
                 await _websocket.SendText(json);
+#endif
                 
                 if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
             });

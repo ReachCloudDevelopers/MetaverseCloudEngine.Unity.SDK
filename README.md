@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.147.1
-- Fixed Realtime AI vision agent not being initialized with an ID.
+## 2.147.2
+- Fixed Realtime AI component not appearing without native websockets package uninstalled.
 
 Updated on March 28, 2025
