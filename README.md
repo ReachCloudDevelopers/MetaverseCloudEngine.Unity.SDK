@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.145.2
-- Fixed spelling of internal methods.
+## 2.146.0
+- Added vision capabilities to the Realtime AI agent.
 
 Updated on March 28, 2025
