@@ -15,7 +15,6 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
-using UnityEngine.Serialization;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -28,6 +27,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     {
         #region Function Definition Class
 
+        /// <summary>
+        /// A class that represents a function that the AI can call.
+        /// </summary>
         [Serializable]
         public class Function
         {   
@@ -48,37 +50,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private const string BetaHeaderValue = "realtime=v1";
         private const string RealtimeEndpoint = "wss://api.openai.com/v1/realtime";
 
+        [Tooltip("If the AI should automatically connect on start/enable.")]
+        [SerializeField] private bool connectOnStart = true;
+
         // Microphone Streaming
+        [Header("Microphone")]
         [Range(8000, 48000)]
         [Tooltip("The approximate sample rate (in Hz) of the user's microphone.")]
         [SerializeField]
         private int micSampleRate = 16000;
-
         [Tooltip("How frequently the user's microphone is sampled and sent to the AI for processing.")]
         [SerializeField]
         private float sampleInterval = 0.2f;
-
         [Tooltip("Enables or disables the microphone of the user from sending audio.")]
         [SerializeField]
         [DisableInPlayMode]
         private bool micActive = true; // The user's setting in the Inspector.
 
-        // Audio Output (GPT Response)
+        // Output (GPT Response)
         [Header("Output (GPT Response)")]
+        [SerializeField]
+        [TextArea(5, 10)]
+        private string prompt;
         [SerializeField]
         [Required]
         private AudioSource outputVoiceSource;
         [Tooltip("The voice to use for the AI's audio output.")]
         [SerializeField] 
         private TextToSpeechVoicePreset outputVoice = TextToSpeechVoicePreset.Male;
-        [SerializeField]
-        [TextArea(5, 10)]
-        private string prompt;
-
-        [Tooltip("Enable to log debug messages to the console.")]
-        [SerializeField] 
-        private bool logs;
-
         [Range(8000, 48000)]
         [Tooltip("The sample rate (in Hz) of the GPT output audio. Adjust for speed/pitch of the AI's voice.")]
         [SerializeField] 
@@ -88,6 +87,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("List of functions that GPT can call. Each function has an ID (must match the AI) and a UnityEvent callback.")]
         [SerializeField]
         private List<Function> availableFunctions = new();
+        
+        [Header("Debugging")]
+        [Tooltip("Enable to log debug messages to the console.")]
+        [SerializeField] 
+        private bool logs = true;
 
         [Header("Event Callbacks")] 
         [SerializeField]
@@ -104,6 +108,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private UnityEvent onVisionFinished = new();
         [SerializeField]
         private UnityEvent onAIResponseStarted = new();
+        [SerializeField]
+        private UnityEvent<string> onAIResponseString = new();
         [SerializeField]
         private UnityEvent onAIResponseFinished = new();
 
@@ -135,6 +141,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         // Vision handler for processing vision requests
         private AIAgent _visionHandler;
+
+        private bool _isStarted;
+        private bool _connectCalled;
 
         /// <summary>
         /// Enables or disables the user's microphone.
@@ -183,7 +192,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (!_visionHandler)
                 {
                     _visionHandler = new GameObject("VISION_HANDLER").AddComponent<AIAgent>();
-                    _visionHandler.hideFlags = HideFlags.HideAndDontSave;
+                    _visionHandler.hideFlags = HideFlags.HideInHierarchy;
+                    _visionHandler.FlushMemory();
                     _visionHandler.OnThinkingStarted.AddListener(() => onVisionRequested?.Invoke());
                     _visionHandler.OnThinkingFinished.AddListener(() => onVisionFinished?.Invoke());
                     _visionHandler.OnResponse.AddListener(OnVisionResponse);
@@ -202,7 +212,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void Start()
         {
-            Connect();
+            _isStarted = true;
+            if (connectOnStart || _connectCalled)
+                Connect();
         }
 
         private void Update()
@@ -225,7 +237,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _isShuttingDown = true;
         }
 
-        private void OnDestroy()
+        private void OnEnable()
+        {
+            _isShuttingDown = false;
+            if (_isStarted && connectOnStart)
+                Connect();
+        }
+
+        private void OnDisable()
         {
             try
             {
@@ -234,7 +253,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             catch (Exception e)
             {
-                if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] OnDestroy error: " + e.Message);
+                if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] OnDestroy error: {e.Message}");
             }
         }
 
@@ -266,7 +285,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 // Initialize new WebSocket
                 _websocket = new WebSocket(RealtimeEndpoint, new Dictionary<string, string>
                 {
-                    { "Authorization", "Bearer " + _ephemeralToken },
+                    { "Authorization", $"Bearer {_ephemeralToken}" },
                     { BetaHeaderName, BetaHeaderValue }
                 });
 
@@ -277,11 +296,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _websocket.OnMessage += OnWebSocketMessage;
 
                 await _websocket.Connect();
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Connecting to " + RealtimeEndpoint);
+                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Connecting to {RealtimeEndpoint}");
             }
             catch (Exception e)
             {
-                if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] Connect error: " + e.Message);
+                if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] Connect error: {e.Message}");
             }
         }
 
@@ -323,17 +342,19 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             catch (Exception e)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] WebSocket open error: " + e.Message);
+                    MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] WebSocket open error: {e.Message}");
             }
         }
 
         private void OnWebSocketError(string errMsg)
         {
-            if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] WebSocket error: " + errMsg);
+            if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] WebSocket error: {errMsg}");
 
-            // Attempt reconnect unless we are shutting down
+            // Attempt to reconnect unless we are shutting down
             if (!_isShuttingDown)
             {
+                if (_websocket is { State: WebSocketState.Open })
+                    onDisconnected?.Invoke();
                 if (logs)
                     MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Attempting to reconnect in 2s after error...");
                 StartCoroutine(TryReconnect());
@@ -543,12 +564,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 await _websocket.SendText(json);
 
                 if (logs)
-                    MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Sent audio chunk, length: " + base64Chunk.Length);
+                    MetaverseProgram.Logger.Log(
+                        $"[GPTRealtimeAudioClient] Sent audio chunk, length: {base64Chunk.Length}");
             }
             catch (Exception e)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] SendAudioChunk error: " + e.Message);
+                    MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] SendAudioChunk error: {e.Message}");
             }
         }
 
@@ -559,7 +581,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void OnWebSocketMessage(byte[] data)
         {
             var rawJson = Encoding.UTF8.GetString(data);
-            if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Received: " + rawJson);
+            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Received: {rawJson}");
 
             try
             {
@@ -571,8 +593,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     case "session.created":
                     case "session.updated":
                         if (logs)
-                            MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] " + msgType + " event. " +
-                                                        "Session ID: " + jObj["session_id"]);
+                            MetaverseProgram.Logger.Log(
+                                $"[GPTRealtimeAudioClient] {msgType} event. Session ID: {jObj["session_id"]}");
                         break;
 
                     case "response.audio.delta":
@@ -624,7 +646,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 if (functionName == "vision_request")
                                 {
                                     // Handle vision_request separately if needed
-                                    if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Vision request received: " + argumentsJson);
+                                    if (logs) MetaverseProgram.Logger.Log(
+                                        $"[GPTRealtimeAudioClient] Vision request received: {argumentsJson}");
                                     if (string.IsNullOrWhiteSpace(argumentsJson))
                                         continue;
                                     
@@ -647,8 +670,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 // after processing arguments.
                             }
                         }
+                        
+                        // 3) If we have a transcript from the AI, send it to the UnityEvent
+                        if (!string.IsNullOrEmpty(_transcriptText))
+                        {
+                            onAIResponseString?.Invoke(_transcriptText);
+                            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Final transcript: {_transcriptText}");
+                            _transcriptText = string.Empty; // reset for next response
+                        }
+                        else
+                        {
+                            onAIResponseString?.Invoke(string.Empty);
+                        }
 
-                        // 3) The normal “done” logic to resume mic once audio buffer empties
+                        // 4) The normal “done” logic to resume mic once audio buffer empties
                         //    (this was probably your existing code)
                         if (logs)
                             MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Will resume mic once buffer empties...");
@@ -688,20 +723,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         var eCode = jObj["error"]?["code"]?.ToString();
                         var eMsg = jObj["error"]?["message"]?.ToString();
                         if (logs)
-                            MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Error code=" + eCode + ", message=" + eMsg);
+                            MetaverseProgram.Logger.LogWarning(
+                                $"[GPTRealtimeAudioClient] Error code={eCode}, message={eMsg}");
                         break;
                     }
 
                     default:
                         if (logs)
-                            MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Unhandled message type: " + msgType);
+                            MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Unhandled message type: {msgType}");
                         break;
                 }
             }
             catch (Exception ex)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] JSON parse error: " + ex.Message);
+                    MetaverseProgram.Logger.LogWarning($"[GPTRealtimeAudioClient] JSON parse error: {ex.Message}");
             }
         }
 
@@ -731,7 +767,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!string.IsNullOrEmpty(delta))
             {
                 _transcriptText += delta;
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Transcript: " + _transcriptText);
+                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Transcript: {_transcriptText}");
             }
         }
 
@@ -847,7 +883,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Vision response received: " + visionResponse);
+                if (logs) MetaverseProgram.Logger.Log(
+                    $"[GPTRealtimeAudioClient] Vision response received: {visionResponse}");
                 var visionMsg = new
                 {
                     type = "conversation.item.create",
@@ -909,8 +946,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region Public API
 
+        /// <summary>
+        /// Starts the connection to the realtime AI.
+        /// </summary>
         public void Connect()
         {
+            _connectCalled = true;
+            if (!isActiveAndEnabled)
+                return;
+            if (!_isStarted)
+                return;
             if (_isShuttingDown)
                 return;
             
@@ -931,6 +976,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             ConnectAsync();
         }
 
+        /// <summary>
+        /// Disconnects from the realtime AI.
+        /// </summary>
         public void Disconnect()
         {
             if (_websocket != null)
@@ -963,6 +1011,143 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     Destroy(outputVoiceSource.clip);
                 outputVoiceSource.clip = null;
             }
+        }
+        
+        /// <summary>
+        /// Sets the microphone either active or inactive.
+        /// </summary>
+        /// <param name="active">The active state of the microphone.</param>
+        public void SetMicrophoneActive(bool active)
+        {
+            MicrophoneActive = active;
+        }
+
+        /// <summary>
+        /// Sets the inactive state of the microphone. The inverse of <see cref="SetMicrophoneActive"/>.
+        /// </summary>
+        /// <param name="inactive">The inactive state of the microphone.</param>
+        public void SetMicrophoneInactive(bool inactive)
+        {
+            MicrophoneActive = !inactive;
+        }
+
+        /// <summary>
+        /// Triggers a response without any input.
+        /// </summary>
+        public void TriggerResponse()
+        {
+            UniTask.Void(async () =>
+            {
+                if (_websocket is not { State: WebSocketState.Open })
+                {
+                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot trigger response. Socket not open.");
+                    return;
+                }
+
+                // Trigger a response from GPT to process the current input
+                var responseMsg = new
+                {
+                    type = "response.create",
+                    response = new
+                    {
+                        modalities = new[] { "text", "audio" }
+                    }
+                };
+                
+                var responseJson = JsonConvert.SerializeObject(responseMsg);
+                await _websocket.SendText(responseJson);
+            });
+        }
+
+        /// <summary>
+        /// Sends text data to the AI, and requires a response back.
+        /// </summary>
+        /// <param name="text">The text to send.</param>
+        public void SendTextWithResponse(string text)
+        {
+            UniTask.Void(async () =>
+            {
+                if (_websocket is not { State: WebSocketState.Open })
+                {
+                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
+                    return;
+                }
+
+                var textMsg = new
+                {
+                    type = "conversation.item.create",
+                    item = new
+                    {
+                        type = "message",
+                        role = "user",
+                        content = new[]
+                        {
+                            new
+                            {
+                                type = "input_text",
+                                text
+                            }
+                        }
+                    }
+                };
+
+                var json = JsonConvert.SerializeObject(textMsg);
+                await _websocket.SendText(json);
+                
+                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
+                
+                // Trigger a response from GPT to process the text input
+                var responseMsg = new
+                {
+                    type = "response.create",
+                    response = new
+                    {
+                        modalities = new[] { "text", "audio" }
+                    }
+                };
+                
+                var responseJson = JsonConvert.SerializeObject(responseMsg);
+                await _websocket.SendText(responseJson);
+            });
+        }
+
+        /// <summary>
+        /// Sends text data to the AI.
+        /// </summary>
+        /// <param name="text">The text to send.</param>
+        public void SendText(string text)
+        {
+            UniTask.Void(async () =>
+            {
+                if (_websocket is not { State: WebSocketState.Open })
+                {
+                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
+                    return;
+                }
+
+                var textMsg = new
+                {
+                    type = "conversation.item.create",
+                    item = new
+                    {
+                        type = "message",
+                        role = "user",
+                        content = new[]
+                        {
+                            new
+                            {
+                                type = "input_text",
+                                text
+                            }
+                        }
+                    }
+                };
+
+                var json = JsonConvert.SerializeObject(textMsg);
+                await _websocket.SendText(json);
+                
+                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
+            });
         }
 
         #endregion

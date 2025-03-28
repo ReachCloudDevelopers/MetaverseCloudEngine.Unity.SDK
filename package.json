@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.147.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.147.0\n- Add event callbacks to AIRealtimeCommunication system, and more Public API methods.\n\nUpdated on March 28, 2025",
+  "version": "2.147.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.147.1\n- Fixed Realtime AI vision agent not being initialized with an ID.\n\nUpdated on March 28, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
