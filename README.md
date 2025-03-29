@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.148.0
-- Added support for function parameters to Realtime AI communication component.
+## 2.148.1
+- Ensure that public unity events are properly initialized to avoid null reference errors in Realtime AI communication component.
 
 Updated on March 29, 2025

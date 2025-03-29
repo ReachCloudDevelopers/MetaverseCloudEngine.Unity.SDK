@@ -100,9 +100,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Description to help the AI decide when to call this function.")]
         public string functionDescription;
         [Tooltip("The parameters that this function accepts. Each parameter has a type, description, and optional enum values.")]
-        public AIRealtimeCommunicationFunctionParameter[] parameters = Array.Empty<AIRealtimeCommunicationFunctionParameter>();
+        public List<AIRealtimeCommunicationFunctionParameter> parameters = new ();
         [Tooltip("Event invoked when the AI calls this functionID.")]
-        public UnityEvent onCalled;
+        public UnityEvent onCalled = new();
     }
 
     #endregion
@@ -137,49 +137,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         // Output (GPT Response)
         [Header("Output (GPT Response)")]
-        [SerializeField]
-        [TextArea(5, 10)]
-        private string prompt;
-        [SerializeField]
-        [Required]
-        private AudioSource outputVoiceSource;
+        [TextArea(5, 10)] 
+        [SerializeField] private string prompt;
+        [Required] 
+        [SerializeField] private AudioSource outputVoiceSource;
         [Tooltip("The voice to use for the AI's audio output.")]
-        [SerializeField] 
-        private TextToSpeechVoicePreset outputVoice = TextToSpeechVoicePreset.Male;
+        [SerializeField] private TextToSpeechVoicePreset outputVoice = TextToSpeechVoicePreset.Male;
         [Range(8000, 48000)]
         [Tooltip("The sample rate (in Hz) of the GPT output audio. Adjust for speed/pitch of the AI's voice.")]
-        [SerializeField] 
-        private int gptOutputRate = 11025;
+        [SerializeField] private int gptOutputRate = 11025;
 
         [Header("Function Calling")]
         [Tooltip("List of functions that GPT can call. Each function has an ID (must match the AI) and a UnityEvent callback.")]
-        [SerializeField]
-        private List<AIRealtimeCommunicationFunction> availableFunctions = new();
+        [SerializeField] private List<AIRealtimeCommunicationFunction> availableFunctions = new();
         
         [Header("Debugging")]
         [Tooltip("Enable to log debug messages to the console.")]
-        [SerializeField] 
-        private bool logs = true;
+        [SerializeField] private bool logs = true;
 
         [Header("Event Callbacks")] 
-        [SerializeField]
-        private UnityEvent onConnected = new();
-        [SerializeField]
-        private UnityEvent onDisconnected = new();
-        [SerializeField]
-        private UnityEvent onMicStarted = new();
-        [SerializeField]
-        private UnityEvent onMicStopped = new();
-        [SerializeField]
-        private UnityEvent onVisionRequested = new();
-        [SerializeField] 
-        private UnityEvent onVisionFinished = new();
-        [SerializeField]
-        private UnityEvent onAIResponseStarted = new();
-        [SerializeField]
-        private UnityEvent<string> onAIResponseString = new();
-        [SerializeField]
-        private UnityEvent onAIResponseFinished = new();
+        [SerializeField] private UnityEvent onConnected = new();
+        [SerializeField] private UnityEvent onDisconnected = new();
+        [SerializeField] private UnityEvent onMicStarted = new();
+        [SerializeField] private UnityEvent onMicStopped = new();
+        [SerializeField] private UnityEvent onVisionRequested = new();
+        [SerializeField] private UnityEvent onVisionFinished = new();
+        [SerializeField] private UnityEvent onAIResponseStarted = new();
+        [SerializeField] private UnityEvent<string> onAIResponseString = new();
+        [SerializeField] private UnityEvent onAIResponseFinished = new();
 
 #if MV_NATIVE_WEBSOCKETS
         private WebSocket _websocket;
@@ -214,6 +199,47 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private bool _isStarted;
         private bool _connectCalled;
+        
+        /// <summary>
+        /// Invoked when the component is connected to the server.
+        /// </summary>
+        public UnityEvent OnConnected => onConnected;
+        /// <summary>
+        /// Invoked when the component is disconnected from the server.
+        /// </summary>
+        public UnityEvent OnDisconnected => onDisconnected;
+        /// <summary>
+        /// Invoked when the microphone starts.
+        /// </summary>
+        public UnityEvent OnMicStarted => onMicStarted;
+        /// <summary>
+        /// Invoked when the microphone stops.
+        /// </summary>
+        public UnityEvent OnMicStopped => onMicStopped;
+        /// <summary>
+        /// Invoked when a vision request is made.
+        /// </summary>
+        public UnityEvent OnVisionRequested => onVisionRequested;
+        /// <summary>
+        /// Invoked when the vision request is finished.
+        /// </summary>
+        public UnityEvent OnVisionFinished => onVisionFinished;
+        /// <summary>
+        /// Invoked when the AI starts responding.
+        /// </summary>
+        public UnityEvent OnAIResponseStarted => onAIResponseStarted;
+        /// <summary>
+        /// Invoked when the AI responds with a string.
+        /// </summary>
+        public UnityEvent<string> OnAIResponseString => onAIResponseString;
+        /// <summary>
+        /// Invoked when the AI response is finished.
+        /// </summary>
+        public UnityEvent OnAIResponseFinished => onAIResponseFinished;
+        /// <summary>
+        /// Invoked when the AI is speaking.
+        /// </summary>
+        public List<AIRealtimeCommunicationFunction> AvailableFunctions => availableFunctions;
 
         /// <summary>
         /// Enables or disables the user's microphone.
@@ -383,13 +409,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private async Task AcquireEphemeralToken()
         {
             Task t = null;
+            // ReSharper disable once InvocationIsSkipped
             AcquireEphemeralTokenImplementation(ref t);
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (t != null)
+                // ReSharper disable once HeuristicUnreachableCode
                 await t;
             if (string.IsNullOrEmpty(_ephemeralToken))
                 if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] No ephemeral token acquired.");
         }
 
+        // ReSharper disable once PartialMethodWithSinglePart
         partial void AcquireEphemeralTokenImplementation(ref Task t);
 
         private async void OnWebSocketOpen()
@@ -494,7 +524,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     description = string.IsNullOrEmpty(f.functionDescription)
                         ? "Please infer use based on context and function ID."
                         : f.functionDescription,
-                    parameters = f.parameters.Length > 0 ? new
+                    parameters = f.parameters.Count > 0 ? new
                     {
                         type = "object",
                         properties = f.parameters.ToDictionary(p => p.parameterID, p => new
