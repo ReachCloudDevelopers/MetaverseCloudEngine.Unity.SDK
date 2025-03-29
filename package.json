@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.147.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.147.2\n- Fixed Realtime AI component not appearing without native websockets package uninstalled.\n\nUpdated on March 28, 2025",
+  "version": "2.148.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.148.0\n- Added support for function parameters to Realtime AI communication component.\n\nUpdated on March 29, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

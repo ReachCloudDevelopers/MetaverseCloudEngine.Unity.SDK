@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.147.2
-- Fixed Realtime AI component not appearing without native websockets package uninstalled.
+## 2.148.0
+- Added support for function parameters to Realtime AI communication component.
 
-Updated on March 28, 2025
+Updated on March 29, 2025

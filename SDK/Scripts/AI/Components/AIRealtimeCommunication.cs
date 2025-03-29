@@ -20,6 +20,93 @@ using TriInspectorMVCE;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
+    #region Function Definition Class
+
+    public enum AIRealtimeCommunicationFunctionParameterType
+    {
+        String,
+        Float,
+        Integer,
+        Boolean,
+        Vector2,
+        Vector3,
+        Vector4,
+        Quaternion,
+        Color,
+        Color32,
+        Enum,
+    }
+
+    [Serializable]
+    public class AIRealtimeCommunicationFunctionParameter
+    {
+        [Required]
+        public string parameterID = "";
+        [Required]
+        public string description = "";
+        public AIRealtimeCommunicationFunctionParameterType type = AIRealtimeCommunicationFunctionParameterType.String;
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Enum)]
+        public List<string> enumValues = new();
+
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.String)]
+        public UnityEvent<string> onStringValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Float)]
+        public UnityEvent<float> onFloatValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Integer)]
+        public UnityEvent<int> onIntValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Boolean)]
+        public UnityEvent<bool> onBoolValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Vector2)]
+        public UnityEvent<Vector2> onVector2Value = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Vector3)]
+        public UnityEvent<Vector3> onVector3Value = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Vector4)]
+        public UnityEvent<Vector4> onVector4Value = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Quaternion)]
+        public UnityEvent<Quaternion> onQuaternionValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Color)]
+        public UnityEvent<Color> onColorValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Color32)]
+        public UnityEvent<Color32> onColor32Value = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Enum)]
+        public UnityEvent<int> onEnumValue = new();
+        [ShowIf(nameof(type), AIRealtimeCommunicationFunctionParameterType.Enum)]
+        public UnityEvent<string> onEnumValueString = new();
+
+        public string GetFormattingGuidance()
+        {
+            return type switch
+            {
+                AIRealtimeCommunicationFunctionParameterType.Vector2 => "x,y",
+                AIRealtimeCommunicationFunctionParameterType.Vector3 => "x,y,z",
+                AIRealtimeCommunicationFunctionParameterType.Vector4 => "x,y,z,w",
+                AIRealtimeCommunicationFunctionParameterType.Quaternion => "x,y,z,w",
+                AIRealtimeCommunicationFunctionParameterType.Color => "#RRGGBB",
+                AIRealtimeCommunicationFunctionParameterType.Color32 => "#RRGGBBAA",
+                _ => null,
+            };
+        }
+    }
+
+    /// <summary>
+    /// A class that represents a function that the AI can call.
+    /// </summary>
+    [Serializable]
+    public class AIRealtimeCommunicationFunction
+    {   
+        [Tooltip("Identifier/name of the function as recognized by the AI.")]
+        public string functionID;
+        [TextArea]
+        [Tooltip("Description to help the AI decide when to call this function.")]
+        public string functionDescription;
+        [Tooltip("The parameters that this function accepts. Each parameter has a type, description, and optional enum values.")]
+        public AIRealtimeCommunicationFunctionParameter[] parameters = Array.Empty<AIRealtimeCommunicationFunctionParameter>();
+        [Tooltip("Event invoked when the AI calls this functionID.")]
+        public UnityEvent onCalled;
+    }
+
+    #endregion
+
     /// <summary>
     /// A Unity MonoBehaviour to stream audio from the microphone to OpenAI's GPT-4o Realtime API,
     /// including function-calling support.
@@ -27,27 +114,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [HideMonoScript]
     public partial class AIRealtimeCommunication : TriInspectorMonoBehaviour
     {
-        #region Function Definition Class
-
-        /// <summary>
-        /// A class that represents a function that the AI can call.
-        /// </summary>
-        [Serializable]
-        public class Function
-        {   
-            [Tooltip("Identifier/name of the function as recognized by the AI.")]
-            public string functionID;
-
-            [TextArea]
-            [Tooltip("Description to help the AI decide when to call this function.")]
-            public string functionDescription;
-
-            [Tooltip("Event invoked when the AI calls this functionID.")]
-            public UnityEvent onCalled;
-        }
-
-        #endregion
-
         private const string BetaHeaderName = "OpenAI-Beta";
         private const string BetaHeaderValue = "realtime=v1";
         private const string RealtimeEndpoint = "wss://api.openai.com/v1/realtime";
@@ -88,7 +154,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Header("Function Calling")]
         [Tooltip("List of functions that GPT can call. Each function has an ID (must match the AI) and a UnityEvent callback.")]
         [SerializeField]
-        private List<Function> availableFunctions = new();
+        private List<AIRealtimeCommunicationFunction> availableFunctions = new();
         
         [Header("Debugging")]
         [Tooltip("Enable to log debug messages to the console.")]
@@ -162,7 +228,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (micActive == value) return;  // No change
 
                 micActive = value;
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] MicrophoneActive set to: {micActive}");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] MicrophoneActive set to: {micActive}");
 
                 if (!micActive)
                 {
@@ -261,7 +327,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             catch (Exception e)
             {
-                if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] OnDestroy error: {e.Message}");
+                if (logs) MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] OnDestroy error: {e.Message}");
             }
         }
 
@@ -279,7 +345,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 
                 if (string.IsNullOrEmpty(_ephemeralToken))
                 {
-                    if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] No valid token found. Cannot connect.");
+                    if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] No valid token found. Cannot connect.");
                     return;
                 }
 
@@ -287,7 +353,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 // If we're already connected, close first
                 if (_websocket is { State: WebSocketState.Open or WebSocketState.Connecting })
                 {
-                    if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Closing existing socket...");
+                    if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Closing existing socket...");
                     await _websocket.Close();
                 }
 
@@ -305,12 +371,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _websocket.OnMessage += OnWebSocketMessage;
 
                 await _websocket.Connect();
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Connecting to {RealtimeEndpoint}");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Connecting to {RealtimeEndpoint}");
 #endif
             }
             catch (Exception e)
             {
-                if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] Connect error: {e.Message}");
+                if (logs) MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] Connect error: {e.Message}");
             }
         }
 
@@ -321,7 +387,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (t != null)
                 await t;
             if (string.IsNullOrEmpty(_ephemeralToken))
-                if (logs) MetaverseProgram.Logger.LogError("[GPTRealtimeAudioClient] No ephemeral token acquired.");
+                if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] No ephemeral token acquired.");
         }
 
         partial void AcquireEphemeralTokenImplementation(ref Task t);
@@ -330,7 +396,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             try
             {
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] WebSocket connected!");
+                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] WebSocket connected!");
 
                 // Ensure volume is unmuted if it was previously set to 0
                 if (outputVoiceSource)
@@ -352,13 +418,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             catch (Exception e)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] WebSocket open error: {e.Message}");
+                    MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] WebSocket open error: {e.Message}");
             }
         }
 
         private void OnWebSocketError(string errMsg)
         {
-            if (logs) MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] WebSocket error: {errMsg}");
+            if (logs) MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] WebSocket error: {errMsg}");
 
             // Attempt to reconnect unless we are shutting down
             if (!_isShuttingDown)
@@ -368,7 +434,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     onDisconnected?.Invoke();
 #endif
                 if (logs)
-                    MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Attempting to reconnect in 2s after error...");
+                    MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Attempting to reconnect in 2s after error...");
                 StartCoroutine(TryReconnect());
             }
         }
@@ -376,7 +442,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #if MV_NATIVE_WEBSOCKETS
         private void OnWebSocketClose(WebSocketCloseCode code)
         {
-            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] WebSocket closed: {code}");
+            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] WebSocket closed: {code}");
 
             // Stop the audio source to avoid glitchy sound
             if (outputVoiceSource != null)
@@ -390,7 +456,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Attempt to reconnect unless we are shutting down
             if (!_isShuttingDown)
             {
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Attempting to reconnect in 2s...");
+                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Attempting to reconnect in 2s...");
                 StartCoroutine(TryReconnect());
             }
         }
@@ -404,7 +470,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Only reconnect if not shutting down
             if (!_isShuttingDown)
             {
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Reconnecting now...");
+                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Reconnecting now...");
                 ConnectAsync();
             }
         }
@@ -426,8 +492,23 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     type = "function",
                     name = f.functionID,
                     description = string.IsNullOrEmpty(f.functionDescription)
-                        ? "No description provided"
+                        ? "Please infer use based on context and function ID."
                         : f.functionDescription,
+                    parameters = f.parameters.Length > 0 ? new
+                    {
+                        type = "object",
+                        properties = f.parameters.ToDictionary(p => p.parameterID, p => new
+                        {
+                            type = p.type is AIRealtimeCommunicationFunctionParameterType.Float or AIRealtimeCommunicationFunctionParameterType.Integer
+                                ? "number"
+                                : "string",
+                            description =
+                                $"{p.description + (!string.IsNullOrEmpty(p.GetFormattingGuidance()) ? "\nParsable Format:" + p.GetFormattingGuidance() : "")}\nThis parameter type is parsed as '{p.type}'.",
+                            enum_values = p.type == AIRealtimeCommunicationFunctionParameterType.Enum
+                                ? p.enumValues.ToArray()
+                                : null
+                        })
+                    } : null,
                 })
                 .Cast<object>()
                 .ToList();
@@ -480,7 +561,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             await _websocket.SendText(json);
 #endif
 
-            if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Sent session update (with tools).");
+            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Sent session update (with tools).");
         }
 
         #endregion
@@ -492,7 +573,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // If user has mic off or the socket isn't open, we skip
             if (!micActive)
             {
-                if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Mic is disabled by user.");
+                if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Mic is disabled by user.");
                 return;
             }
 
@@ -500,7 +581,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_websocket is not { State: WebSocketState.Open })
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot start mic. Socket not open.");
+                    MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot start mic. Socket not open.");
                 return;
             }
 #endif
@@ -511,7 +592,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _sampleTimer = 0f;
             onMicStarted?.Invoke();
             
-            if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Microphone started, streaming audio...");
+            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone started, streaming audio...");
         }
 
         private void StopMic()
@@ -524,7 +605,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _lastMicPos = 0;
             onMicStopped?.Invoke();
 
-            if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Microphone stopped.");
+            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone stopped.");
         }
 
         private void ProcessAudioFrame()
@@ -584,13 +665,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 if (logs)
                     MetaverseProgram.Logger.Log(
-                        $"[GPTRealtimeAudioClient] Sent audio chunk, length: {base64Chunk.Length}");
+                        $"[AIRealtimeCommunication] Sent audio chunk, length: {base64Chunk.Length}");
 #endif
             }
             catch (Exception e)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogError($"[GPTRealtimeAudioClient] SendAudioChunk error: {e.Message}");
+                    MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] SendAudioChunk error: {e.Message}");
             }
         }
 
@@ -601,7 +682,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void OnWebSocketMessage(byte[] data)
         {
             var rawJson = Encoding.UTF8.GetString(data);
-            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Received: {rawJson}");
+            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Received: {rawJson}");
 
             try
             {
@@ -614,7 +695,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     case "session.updated":
                         if (logs)
                             MetaverseProgram.Logger.Log(
-                                $"[GPTRealtimeAudioClient] {msgType} event. Session ID: {jObj["session_id"]}");
+                                $"[AIRealtimeCommunication] {msgType} event. Session ID: {jObj["session_id"]}");
                         break;
 
                     case "response.audio.delta":
@@ -625,7 +706,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                             onAIResponseStarted?.Invoke();
                             StopMic();
                             if (logs)
-                                MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Stopping mic (AI is speaking).");
+                                MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Stopping mic (AI is speaking).");
                         }
 
                         HandleAudioDelta(jObj);
@@ -641,7 +722,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         
                         // 1) The standard logic: GPT is done streaming audio. We'll eventually resume the mic.
                         if (logs)
-                            MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] response.done received. Checking for function calls...");
+                            MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
 
                         // 2) Check if there's a function_call in response.output array
                         var responseObj = jObj["response"];
@@ -659,7 +740,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 if (logs)
                                 {
                                     MetaverseProgram.Logger.Log(
-                                        $"[GPTRealtimeAudioClient] Found function_call '{functionName}' with call_id='{callId}' and arguments={argumentsJson}"
+                                        $"[AIRealtimeCommunication] Found function_call '{functionName}' with call_id='{callId}' and arguments={argumentsJson}"
                                     );
                                 }
                                 
@@ -667,7 +748,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 {
                                     // Handle vision_request separately if needed
                                     if (logs) MetaverseProgram.Logger.Log(
-                                        $"[GPTRealtimeAudioClient] Vision request received: {argumentsJson}");
+                                        $"[AIRealtimeCommunication] Vision request received: {argumentsJson}");
                                     if (string.IsNullOrWhiteSpace(argumentsJson))
                                         continue;
                                     
@@ -682,7 +763,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 else
                                 {
                                     // Invoke the callback (UnityEvent) matching this function name
-                                    TriggerFunctionCall(functionName);
+                                    TriggerFunctionCall(functionName, argumentsJson);
                                 }
                     
                                 // If you need to do something with argumentsJson, parse it here
@@ -695,7 +776,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         if (!string.IsNullOrEmpty(_transcriptText))
                         {
                             onAIResponseString?.Invoke(_transcriptText);
-                            if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Final transcript: {_transcriptText}");
+                            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Final transcript: {_transcriptText}");
                             _transcriptText = string.Empty; // reset for next response
                         }
                         else
@@ -706,35 +787,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         // 4) The normal “done” logic to resume mic once audio buffer empties
                         //    (this was probably your existing code)
                         if (logs)
-                            MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Will resume mic once buffer empties...");
+                            MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Will resume mic once buffer empties...");
                         StartCoroutine(ResumeMicAfterPlayback());
-                        break;
-                    }
-
-                    /*
-                     * Detect if the model is calling a custom function we defined in session.tools.
-                     *  Example server JSON:
-                     *  {
-                     *    "type": "function_call",
-                     *    "event_id": "...",
-                     *    "function": {
-                     *      "name": "generate_horoscope"
-                     *    },
-                     *    "arguments": "{\"sign\":\"Aquarius\"}",
-                     *    "call_id": "call_sHlR7iaFwQ2YQOqm"
-                     *  }
-                     */
-                    case "function_call":
-                    {
-                        // The GPT model decided to call one of our tools
-                        var functionName = jObj["function"]?["name"]?.ToString();
-                        if (!string.IsNullOrEmpty(functionName))
-                        {
-                            TriggerFunctionCall(functionName);
-                            // If you need to pass function call OUTPUT back to the model, you'll
-                            // parse "arguments" and do your custom logic. Then you'd do something like:
-                            // conversation.item.create => function_call_output => ...
-                        }
                         break;
                     }
 
@@ -744,20 +798,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         var eMsg = jObj["error"]?["message"]?.ToString();
                         if (logs)
                             MetaverseProgram.Logger.LogWarning(
-                                $"[GPTRealtimeAudioClient] Error code={eCode}, message={eMsg}");
+                                $"[AIRealtimeCommunication] Error code={eCode}, message={eMsg}");
                         break;
                     }
 
                     default:
                         if (logs)
-                            MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Unhandled message type: {msgType}");
+                            MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Unhandled message type: {msgType}");
                         break;
                 }
             }
             catch (Exception ex)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogWarning($"[GPTRealtimeAudioClient] JSON parse error: {ex.Message}");
+                    MetaverseProgram.Logger.LogWarning($"[AIRealtimeCommunication] JSON parse error: {ex.Message}");
             }
         }
 
@@ -787,7 +841,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!string.IsNullOrEmpty(delta))
             {
                 _transcriptText += delta;
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Transcript: {_transcriptText}");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Transcript: {_transcriptText}");
             }
         }
 
@@ -799,19 +853,116 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// Looks up the function by name and invokes its UnityEvent (if found).
         /// You can expand this to parse arguments as well.
         /// </summary>
-        private void TriggerFunctionCall(string functionID)
+        private void TriggerFunctionCall(string functionID, string argumentsJson)
         {
             var fn = availableFunctions.FirstOrDefault(f => f.functionID == functionID);
             if (fn != null)
             {
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Invoking function '{functionID}'.");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Invoking function '{functionID}'.");
                 fn.onCalled?.Invoke();
+
+                // Parse arguments if needed
+                if (!string.IsNullOrEmpty(argumentsJson))
+                {
+                    var arguments = JObject.Parse(argumentsJson);
+                    foreach (var param in fn.parameters)
+                    {
+                        var paramValue = arguments[param.parameterID]?.ToString();
+                        if (string.IsNullOrEmpty(paramValue)) continue;
+
+                        // Call the appropriate UnityEvent based on the parameter type
+                        switch (param.type)
+                        {
+                            case AIRealtimeCommunicationFunctionParameterType.String:
+                                param.onStringValue?.Invoke(paramValue);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Float:
+                                if (float.TryParse(paramValue, out var floatValue))
+                                    param.onFloatValue?.Invoke(floatValue);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Integer:
+                                if (int.TryParse(paramValue, out var intValue))
+                                    param.onIntValue?.Invoke(intValue);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Boolean:
+                                if (bool.TryParse(paramValue, out var boolValue))
+                                    param.onBoolValue?.Invoke(boolValue);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Vector2:
+                                param.onVector2Value?.Invoke(ParseVector2(paramValue));
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Vector3:
+                                param.onVector3Value?.Invoke(ParseVector3(paramValue));
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Vector4:
+                                param.onVector4Value?.Invoke(ParseVector4(paramValue));
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Quaternion:
+                                param.onQuaternionValue?.Invoke(ParseQuaternion(paramValue));
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Color:
+                                if (ColorUtility.TryParseHtmlString(paramValue, out var colorValue))
+                                    param.onColorValue?.Invoke(colorValue);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Color32:
+                                if (ColorUtility.TryParseHtmlString(paramValue, out var color32Value))
+                                    param.onColor32Value?.Invoke(color32Value);
+                                break;
+                            case AIRealtimeCommunicationFunctionParameterType.Enum:
+                                if (int.TryParse(paramValue, out var enumValue))
+                                    param.onEnumValue?.Invoke(enumValue);
+                                if (param.enumValues != null && enumValue >= 0 && enumValue < param.enumValues.Count)
+                                    param.onEnumValueString?.Invoke(param.enumValues[enumValue]);
+                                break;
+                        }
+                    }
+                }
             }
             else
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogWarning($"[GPTRealtimeAudioClient] No function found with ID='{functionID}'.");
+                    MetaverseProgram.Logger.LogWarning($"[AIRealtimeCommunication] No function found with ID='{functionID}'.");
             }
+        }
+        
+        private Vector2 ParseVector2(string value)
+        {
+            value = value.Replace("(", string.Empty).Replace(")", string.Empty);
+            var parts = value.Split(',');
+            if (parts.Length != 2) return Vector2.zero;
+            if (float.TryParse(parts[0], out var x) && float.TryParse(parts[1], out var y))
+                return new Vector2(x, y);
+            return Vector2.zero;
+        }
+        
+        private Vector3 ParseVector3(string value)
+        {
+            value = value.Replace("(", string.Empty).Replace(")", string.Empty);
+            var parts = value.Split(',');
+            if (parts.Length != 3) return Vector3.zero;
+            if (float.TryParse(parts[0], out var x) && float.TryParse(parts[1], out var y) && float.TryParse(parts[2], out var z))
+                return new Vector3(x, y, z);
+            return Vector3.zero;
+        }
+        
+        private Vector4 ParseVector4(string value)
+        {
+            value = value.Replace("(", string.Empty).Replace(")", string.Empty);
+            var parts = value.Split(',');
+            if (parts.Length != 4) return Vector4.zero;
+            if (float.TryParse(parts[0], out var x) && float.TryParse(parts[1], out var y) && float.TryParse(parts[2], out var z) && float.TryParse(parts[3], out var w))
+                return new Vector4(x, y, z, w);
+            return Vector4.zero;
+        }
+        
+        private Quaternion ParseQuaternion(string value)
+        {
+            value = value.Replace("(", string.Empty).Replace(")", string.Empty);
+            var parts = value.Split(',');
+            if (parts.Length != 4) return Quaternion.identity;
+            if (float.TryParse(parts[0], out var x) && float.TryParse(parts[1], out var y) && float.TryParse(parts[2], out var z) && float.TryParse(parts[3], out var w))
+                return new Quaternion(x, y, z, w);
+            return Quaternion.identity;
         }
 
         #endregion
@@ -836,11 +987,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (micActive)
             {
                 StartMic();
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Mic resumed.");
+                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Mic resumed.");
             }
             else
             {
-                if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Mic is still disabled by user.");
+                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Mic is still disabled by user.");
             }
         }
 
@@ -898,13 +1049,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (string.IsNullOrWhiteSpace(visionResponse))
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Vision response is empty.");
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Vision response is empty.");
                     OnVisionResponseFailed();
                     return;
                 }
 
                 if (logs) MetaverseProgram.Logger.Log(
-                    $"[GPTRealtimeAudioClient] Vision response received: {visionResponse}");
+                    $"[AIRealtimeCommunication] Vision response received: {visionResponse}");
                 var visionMsg = new
                 {
                     type = "conversation.item.create",
@@ -928,7 +1079,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (_websocket is { State: WebSocketState.Open })
                 {
                     await _websocket.SendText(json);
-                    if (logs) MetaverseProgram.Logger.Log("[GPTRealtimeAudioClient] Sent vision response to GPT.");
+                    if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Sent vision response to GPT.");
                     
                     // Trigger a response from GPT to process the vision response
                     /*
@@ -953,7 +1104,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
                 else
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] WebSocket not open. Cannot send vision response.");
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] WebSocket not open. Cannot send vision response.");
                 }
 #endif
             });
@@ -1065,7 +1216,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot trigger response. Socket not open.");
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot trigger response. Socket not open.");
                     return;
                 }
 #endif
@@ -1098,7 +1249,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
                     return;
                 }
 #endif
@@ -1126,7 +1277,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 await _websocket.SendText(json);
 #endif
                 
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
                 
                 // Trigger a response from GPT to process the text input
                 var responseMsg = new
@@ -1156,7 +1307,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[GPTRealtimeAudioClient] Cannot send text. Socket not open.");
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
                     return;
                 }
 #endif
@@ -1184,7 +1335,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 await _websocket.SendText(json);
 #endif
                 
-                if (logs) MetaverseProgram.Logger.Log($"[GPTRealtimeAudioClient] Sent text: {text}");
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
             });
         }
 
