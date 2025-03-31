@@ -617,6 +617,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 #endif
 
+#if UNITY_ANDROID
             if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
             {
                 var callbacks = new PermissionCallbacks();
@@ -640,6 +641,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 };
                 Permission.RequestUserPermission(Permission.Microphone);
             }
+#endif
 
             StartMicClip();
             return;

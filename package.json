@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.149.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.149.1\n- Fix issues with the microphone initialization on android, ensuring that permissions are appropriately requested before accessing the Microphone data. For the Realtime AI component.\n\nUpdated on March 31, 2025",
+  "version": "2.149.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.149.2\n- Fix compilation errors on non-android platforms\n\nUpdated on March 31, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
