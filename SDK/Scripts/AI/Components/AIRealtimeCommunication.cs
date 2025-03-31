@@ -617,6 +617,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #endif
 
             _micClip = Microphone.Start(_micDevice, true, 300, micSampleRate);
+            if (!_micClip)
+            {
+                if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] Failed to start microphone. It's probably in use.");
+                return;
+            }
+            
             _isMicRunning = true;
             _lastMicPos = 0;
             _sampleTimer = 0f;
@@ -640,7 +646,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void ProcessAudioFrame()
         {
-            if (_micClip == null) return;
+            if (!_micClip) return;
 
             var currentPos = Microphone.GetPosition(_micDevice);
             var samplesToRead = currentPos - _lastMicPos;
