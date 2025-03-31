@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.149.0
-- Ensure microphone is properly started before invoking the onMicStarted event handler.
+## 2.149.1
+- Fix issues with the microphone initialization on android, ensuring that permissions are appropriately requested before accessing the Microphone data. For the Realtime AI component.
 
 Updated on March 31, 2025

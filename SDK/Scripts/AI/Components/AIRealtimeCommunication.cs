@@ -17,6 +17,7 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
+using UnityEngine.Android;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -616,19 +617,51 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 #endif
 
-            _micClip = Microphone.Start(_micDevice, true, 300, micSampleRate);
-            if (!_micClip)
+            if (!Permission.HasUserAuthorizedPermission(Permission.Microphone))
             {
-                if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] Failed to start microphone. It's probably in use.");
-                return;
+                var callbacks = new PermissionCallbacks();
+                callbacks.PermissionGranted += (p) =>
+                {
+                    if (p != Permission.Microphone) return;
+                    if (!_isMicRunning) return;
+                    StartMicClip();
+                };
+                callbacks.PermissionDenied += (p) =>
+                {
+                    if (p != Permission.Microphone) return;
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Mic permission denied.");
+                    StopMic();
+                };
+                callbacks.PermissionDeniedAndDontAskAgain += (p) =>
+                {
+                    if (p != Permission.Microphone) return;
+                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Mic permission denied. User selected 'Don't ask again'.");
+                    StopMic();
+                };
+                Permission.RequestUserPermission(Permission.Microphone);
             }
-            
-            _isMicRunning = true;
-            _lastMicPos = 0;
-            _sampleTimer = 0f;
-            onMicStarted?.Invoke();
-            
-            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone started, streaming audio...");
+
+            StartMicClip();
+            return;
+
+            void StartMicClip()
+            {
+                _micClip = Microphone.Start(_micDevice, true, 300, micSampleRate);
+                if (!_micClip)
+                {
+                    if (logs) MetaverseProgram.Logger.LogError("[AIRealtimeCommunication] Failed to start microphone. It's probably in use.");
+                    return;
+                }
+
+                if (!_isMicRunning)
+                {
+                    _lastMicPos = 0;
+                    _sampleTimer = 0f;
+                    onMicStarted?.Invoke();
+                    _isMicRunning = true;
+                    if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone started, streaming audio...");
+                }
+            }
         }
 
         private void StopMic()
