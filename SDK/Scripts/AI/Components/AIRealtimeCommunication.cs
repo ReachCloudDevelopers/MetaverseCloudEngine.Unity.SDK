@@ -309,6 +309,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return _visionHandler;
             }
         }
+        
+        /// <summary>
+        /// A bool indicating whether the AI is currently processing a request or speaking.
+        /// </summary>
+        public bool IsResponding => _isSpeaking || _responsesInProgress.Count > 0;
 
         #region Unity Lifecycle
 
@@ -793,6 +798,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     {
                         // Invoked when the AI is done responding.
                         _responsesInProgress.Remove(jObj["response"]?["id"]?.ToString());
+                        _responsesInProgress.Remove(jObj["event_id"]?.ToString());
                         if (_responsesInProgress.Count == 0)
                             onAIResponseFinished?.Invoke();
                         
@@ -1017,7 +1023,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return Vector2.zero;
         }
         
-        private Vector3 ParseVector3(string value)
+        private static Vector3 ParseVector3(string value)
         {
             value = value.Replace("(", string.Empty).Replace(")", string.Empty);
             var parts = value.Split(',');
@@ -1027,7 +1033,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return Vector3.zero;
         }
         
-        private Vector4 ParseVector4(string value)
+        private static Vector4 ParseVector4(string value)
         {
             value = value.Replace("(", string.Empty).Replace(")", string.Empty);
             var parts = value.Split(',');
@@ -1219,6 +1225,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             OnVisionResponse("I'm sorry, I couldn't process the vision request.");
         }
         
+        private string NewEvent()
+        {
+            var eventId = "event_" + Guid.NewGuid().ToString().Replace("-", "")[..7];
+            _responsesInProgress.Add(eventId);
+            if (_responsesInProgress.Count == 1)
+                StartResponse();
+            return eventId;
+        }
+
         #endregion
 
         #region Public API
@@ -1318,6 +1333,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
+                
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
@@ -1325,10 +1342,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 #endif
-
+                
                 // Trigger a response from GPT to process the current input
                 var responseMsg = new
                 {
+                    event_id = NewEvent(),
                     type = "response.create",
                     response = new
                     {
@@ -1351,6 +1369,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
+
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
@@ -1358,9 +1378,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 #endif
-
+                
                 var textMsg = new
                 {
+                    event_id = NewEvent(),
                     type = "conversation.item.create",
                     item = new
                     {
@@ -1387,6 +1408,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 // Trigger a response from GPT to process the text input
                 var responseMsg = new
                 {
+                    event_id = NewEvent(),
                     type = "response.create",
                     response = new
                     {
@@ -1409,6 +1431,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
+
 #if MV_NATIVE_WEBSOCKETS
                 if (_websocket is not { State: WebSocketState.Open })
                 {
@@ -1416,9 +1440,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 #endif
-
                 var textMsg = new
                 {
+                    event_id = NewEvent(),
                     type = "conversation.item.create",
                     item = new
                     {

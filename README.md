@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.150.0
-- Remove mic activation check after vision processing
+## 2.150.1
+- Add event ID handling to AI response processing
 
 Updated on April 01, 2025
