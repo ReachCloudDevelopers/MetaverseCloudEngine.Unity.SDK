@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.149.2
-- Fix compilation errors on non-android platforms
+## 2.149.3
+- Add vision response handling and improve mic control logic
 
-Updated on March 31, 2025
+Updated on April 01, 2025

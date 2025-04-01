@@ -175,6 +175,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private readonly string _micDevice = null; // default mic
 
         private string _ephemeralToken;
+        private bool _awaitingVisionResponse;
 
         // Tracks whether the mic is *actually running* at the moment
         private bool _isMicRunning; 
@@ -266,7 +267,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
 #if MV_NATIVE_WEBSOCKETS
                     // User re-enabled the mic, try to start it if socket is open and GPT not speaking
-                    if (_websocket is { State: WebSocketState.Open } && !_isSpeaking)
+                    if (_websocket is { State: WebSocketState.Open } && !_isSpeaking && !_awaitingVisionResponse)
                     {
                         StartMic();
                     }
@@ -439,7 +440,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 await SendSessionUpdate();
 
                 // Only start the mic if the user setting is true (and GPT isn't already speaking)
-                if (micActive && !_isSpeaking)
+                if (micActive && !_isSpeaking && !_awaitingVisionResponse)
                 {
                     StartMic();
                 }
@@ -720,7 +721,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             try
             {
 #if MV_NATIVE_WEBSOCKETS
-                if (_websocket == null || _websocket.State != WebSocketState.Open) return;
+                if (_websocket is not { State: WebSocketState.Open }) return;
 
                 var pcmBytes = ConvertFloatsToPCM16Bytes(samples);
                 var base64Chunk = Convert.ToBase64String(pcmBytes);
@@ -768,81 +769,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                             MetaverseProgram.Logger.Log(
                                 $"[AIRealtimeCommunication] {msgType} event. Session ID: {jObj["session_id"]}");
                         break;
-
                     case "response.audio.delta":
+                    {
                         // GPT just started sending audio. Stop the mic so it won't hear itself.
-                        if (!_isSpeaking)
-                        {
-                            _isSpeaking = true;
-                            onAIResponseStarted?.Invoke();
-                            StopMic();
-                            if (logs)
-                                MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Stopping mic (AI is speaking).");
-                        }
-
+                        StartResponse();
                         HandleAudioDelta(jObj);
                         break;
-
+                    }
                     case "response.audio_transcript.delta":
                         HandleAudioTranscriptDelta(jObj);
+                        break;
+                    
+                    case "response.created":
+                        // GPT just started sending a response. Stop the mic so it won't hear itself, and the user knows
+                        // not to speak during this time.
+                        StartResponse();
                         break;
 
                     case "response.done":
                     {
+                        // Invoked when the AI is done responding.
                         onAIResponseFinished?.Invoke();
                         
-                        // 1) The standard logic: GPT is done streaming audio. We'll eventually resume the mic.
-                        if (logs)
-                            MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
+                        // 1) The standard logic: GPT is done responding. Parse response data.
+                        if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
 
                         // 2) Check if there's a function_call in response.output array
-                        var responseObj = jObj["response"];
-                        if (responseObj?["output"] is JArray outputArray)
-                        {
-                            foreach (var item in outputArray)
-                            {
-                                var itemType = item["type"]?.ToString();
-                                if (itemType != "function_call") continue;
-                                // Found a function call item
-                                var functionName = item["name"]?.ToString();
-                                var callId = item["call_id"]?.ToString();
-                                var argumentsJson = item["arguments"]?.ToString(); 
-                    
-                                if (logs)
-                                {
-                                    MetaverseProgram.Logger.Log(
-                                        $"[AIRealtimeCommunication] Found function_call '{functionName}' with call_id='{callId}' and arguments={argumentsJson}"
-                                    );
-                                }
-                                
-                                if (functionName == "vision_request")
-                                {
-                                    // Handle vision_request separately if needed
-                                    if (logs) MetaverseProgram.Logger.Log(
-                                        $"[AIRealtimeCommunication] Vision request received: {argumentsJson}");
-                                    if (string.IsNullOrWhiteSpace(argumentsJson))
-                                        continue;
-                                    
-                                    // Parse vision request.
-                                    var visionRequest = JObject.Parse(argumentsJson);
-                                    var visionPrompt = visionRequest["vision_request"]?.ToString();
-                                    if (!string.IsNullOrWhiteSpace(visionPrompt))
-                                    {
-                                        VisionHandler.SubmitGameScreenshot(visionPrompt);
-                                    }
-                                }
-                                else
-                                {
-                                    // Invoke the callback (UnityEvent) matching this function name
-                                    TriggerFunctionCall(functionName, argumentsJson);
-                                }
-                    
-                                // If you need to do something with argumentsJson, parse it here
-                                // If you need to send "function_call_output" back, you do so
-                                // after processing arguments.
-                            }
-                        }
-                        
+                        HandleResponseOutput(jObj);
+
                         // 3) If we have a transcript from the AI, send it to the UnityEvent
                         if (!string.IsNullOrEmpty(_transcriptText))
                         {
@@ -862,7 +816,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         StartCoroutine(ResumeMicAfterPlayback());
                         break;
                     }
-
                     case "error":
                     {
                         var eCode = jObj["error"]?["code"]?.ToString();
@@ -872,7 +825,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 $"[AIRealtimeCommunication] Error code={eCode}, message={eMsg}");
                         break;
                     }
-
                     default:
                         if (logs)
                             MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Unhandled message type: {msgType}");
@@ -883,6 +835,64 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (logs)
                     MetaverseProgram.Logger.LogWarning($"[AIRealtimeCommunication] JSON parse error: {ex.Message}");
+            }
+        }
+
+        private void StartResponse()
+        {
+            if (_isSpeaking) return;
+            _isSpeaking = true;
+            onAIResponseStarted?.Invoke();
+            StopMic();
+            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Stopping mic (AI is speaking).");
+        }
+
+        private void HandleResponseOutput(JObject jObj)
+        {
+            var responseObj = jObj["response"];
+            if (responseObj?["output"] is not JArray outputArray)
+                return;
+            foreach (var item in outputArray)
+            {
+                var itemType = item["type"]?.ToString();
+                if (itemType != "function_call") continue;
+                // Found a function call item
+                var functionName = item["name"]?.ToString();
+                var callId = item["call_id"]?.ToString();
+                var argumentsJson = item["arguments"]?.ToString(); 
+                    
+                if (logs)
+                {
+                    MetaverseProgram.Logger.Log(
+                        $"[AIRealtimeCommunication] Found function_call '{functionName}' with call_id='{callId}' and arguments={argumentsJson}"
+                    );
+                }
+                                
+                if (functionName == "vision_request")
+                {
+                    // Handle vision_request separately if needed
+                    if (logs) MetaverseProgram.Logger.Log(
+                        $"[AIRealtimeCommunication] Vision request received: {argumentsJson}");
+                    if (string.IsNullOrWhiteSpace(argumentsJson))
+                        continue;
+                                    
+                    // Parse vision request.
+                    var visionRequest = JObject.Parse(argumentsJson);
+                    var visionPrompt = visionRequest["vision_request"]?.ToString();
+                    if (string.IsNullOrWhiteSpace(visionPrompt)) continue;
+                    _awaitingVisionResponse = true;
+                    StopMic();
+                    VisionHandler.SubmitGameScreenshot(visionPrompt);
+                }
+                else
+                {
+                    // Invoke the callback (UnityEvent) matching this function name
+                    TriggerFunctionCall(functionName, argumentsJson);
+                }
+                    
+                // If you need to do something with argumentsJson, parse it here
+                // If you need to send "function_call_output" back, you do so
+                // after processing arguments.
             }
         }
 
@@ -909,11 +919,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void HandleAudioTranscriptDelta(JObject jObj)
         {
             var delta = jObj["delta"]?.ToString();
-            if (!string.IsNullOrEmpty(delta))
-            {
-                _transcriptText += delta;
-                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Transcript: {_transcriptText}");
-            }
+            if (string.IsNullOrEmpty(delta)) return;
+            _transcriptText += delta;
+            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Transcript: {_transcriptText}");
         }
 
         #endregion
@@ -933,59 +941,57 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 fn.onCalled?.Invoke();
 
                 // Parse arguments if needed
-                if (!string.IsNullOrEmpty(argumentsJson))
+                if (string.IsNullOrEmpty(argumentsJson)) return;
+                var arguments = JObject.Parse(argumentsJson);
+                foreach (var param in fn.parameters)
                 {
-                    var arguments = JObject.Parse(argumentsJson);
-                    foreach (var param in fn.parameters)
-                    {
-                        var paramValue = arguments[param.parameterID]?.ToString();
-                        if (string.IsNullOrEmpty(paramValue)) continue;
+                    var paramValue = arguments[param.parameterID]?.ToString();
+                    if (string.IsNullOrEmpty(paramValue)) continue;
 
-                        // Call the appropriate UnityEvent based on the parameter type
-                        switch (param.type)
-                        {
-                            case AIRealtimeCommunicationFunctionParameterType.String:
-                                param.onStringValue?.Invoke(paramValue);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Float:
-                                if (float.TryParse(paramValue, out var floatValue))
-                                    param.onFloatValue?.Invoke(floatValue);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Integer:
-                                if (int.TryParse(paramValue, out var intValue))
-                                    param.onIntValue?.Invoke(intValue);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Boolean:
-                                if (bool.TryParse(paramValue, out var boolValue))
-                                    param.onBoolValue?.Invoke(boolValue);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Vector2:
-                                param.onVector2Value?.Invoke(ParseVector2(paramValue));
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Vector3:
-                                param.onVector3Value?.Invoke(ParseVector3(paramValue));
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Vector4:
-                                param.onVector4Value?.Invoke(ParseVector4(paramValue));
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Quaternion:
-                                param.onQuaternionValue?.Invoke(ParseQuaternion(paramValue));
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Color:
-                                if (ColorUtility.TryParseHtmlString(paramValue, out var colorValue))
-                                    param.onColorValue?.Invoke(colorValue);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Color32:
-                                if (ColorUtility.TryParseHtmlString(paramValue, out var color32Value))
-                                    param.onColor32Value?.Invoke(color32Value);
-                                break;
-                            case AIRealtimeCommunicationFunctionParameterType.Enum:
-                                if (int.TryParse(paramValue, out var enumValue))
-                                    param.onEnumValue?.Invoke(enumValue);
-                                if (param.enumValues != null && enumValue >= 0 && enumValue < param.enumValues.Count)
-                                    param.onEnumValueString?.Invoke(param.enumValues[enumValue]);
-                                break;
-                        }
+                    // Call the appropriate UnityEvent based on the parameter type
+                    switch (param.type)
+                    {
+                        case AIRealtimeCommunicationFunctionParameterType.String:
+                            param.onStringValue?.Invoke(paramValue);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Float:
+                            if (float.TryParse(paramValue, out var floatValue))
+                                param.onFloatValue?.Invoke(floatValue);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Integer:
+                            if (int.TryParse(paramValue, out var intValue))
+                                param.onIntValue?.Invoke(intValue);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Boolean:
+                            if (bool.TryParse(paramValue, out var boolValue))
+                                param.onBoolValue?.Invoke(boolValue);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Vector2:
+                            param.onVector2Value?.Invoke(ParseVector2(paramValue));
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Vector3:
+                            param.onVector3Value?.Invoke(ParseVector3(paramValue));
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Vector4:
+                            param.onVector4Value?.Invoke(ParseVector4(paramValue));
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Quaternion:
+                            param.onQuaternionValue?.Invoke(ParseQuaternion(paramValue));
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Color:
+                            if (ColorUtility.TryParseHtmlString(paramValue, out var colorValue))
+                                param.onColorValue?.Invoke(colorValue);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Color32:
+                            if (ColorUtility.TryParseHtmlString(paramValue, out var color32Value))
+                                param.onColor32Value?.Invoke(color32Value);
+                            break;
+                        case AIRealtimeCommunicationFunctionParameterType.Enum:
+                            if (int.TryParse(paramValue, out var enumValue))
+                                param.onEnumValue?.Invoke(enumValue);
+                            if (param.enumValues != null && enumValue >= 0 && enumValue < param.enumValues.Count)
+                                param.onEnumValueString?.Invoke(param.enumValues[enumValue]);
+                            break;
                     }
                 }
             }
@@ -996,7 +1002,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
         
-        private Vector2 ParseVector2(string value)
+        private static Vector2 ParseVector2(string value)
         {
             value = value.Replace("(", string.Empty).Replace(")", string.Empty);
             var parts = value.Split(',');
@@ -1125,59 +1131,78 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return;
                 }
 
-                if (logs) MetaverseProgram.Logger.Log(
-                    $"[AIRealtimeCommunication] Vision response received: {visionResponse}");
-                var visionMsg = new
+                try
                 {
-                    type = "conversation.item.create",
-                    item = new
+                    if (logs) MetaverseProgram.Logger.Log(
+                        $"[AIRealtimeCommunication] Vision response received: {visionResponse}");
+                    var visionMsg = new
                     {
-                        type = "message",
-                        role = "system",
-                        content = new[]
+                        type = "conversation.item.create",
+                        item = new
                         {
-                            new
+                            type = "message",
+                            role = "system",
+                            content = new[]
                             {
-                                type = "input_text",
-                                text = visionResponse
+                                new
+                                {
+                                    type = "input_text",
+                                    text = visionResponse
+                                }
                             }
                         }
-                    }
-                };
-                
-                var json = JsonConvert.SerializeObject(visionMsg);
-#if MV_NATIVE_WEBSOCKETS
-                if (_websocket is { State: WebSocketState.Open })
-                {
-                    await _websocket.SendText(json);
-                    if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Sent vision response to GPT.");
-                    
-                    // Trigger a response from GPT to process the vision response
-                    /*
-                     * const event = {
-                         type: "response.create",
-                         response: {
-                           modalities: [ "text", "audio" ]
-                         },
-                       };
-                     */
-
-                    var responseMsg = new
-                    {
-                        type = "response.create",
-                        response = new
-                        {
-                            modalities = new[] { "text", "audio" }
-                        }
                     };
-                    var responseJson = JsonConvert.SerializeObject(responseMsg);
-                    await _websocket.SendText(responseJson);
+                    
+                    var json = JsonConvert.SerializeObject(visionMsg);
+    #if MV_NATIVE_WEBSOCKETS
+                    if (_websocket is { State: WebSocketState.Open })
+                    {
+                        await _websocket.SendText(json);
+                        if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Sent vision response to GPT.");
+                        
+                        // Trigger a response from GPT to process the vision response
+                        /*
+                         * const event = {
+                             type: "response.create",
+                             response: {
+                               modalities: [ "text", "audio" ]
+                             },
+                           };
+                         */
+
+                        var responseMsg = new
+                        {
+                            type = "response.create",
+                            response = new
+                            {
+                                modalities = new[] { "text", "audio" }
+                            }
+                        };
+                        var responseJson = JsonConvert.SerializeObject(responseMsg);
+                        await _websocket.SendText(responseJson);
+                    }
+                    else
+                    {
+                        if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] WebSocket not open. Cannot send vision response.");
+                    }
+    #endif
                 }
-                else
+                finally
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] WebSocket not open. Cannot send vision response.");
+                    _awaitingVisionResponse = false;
+                    try
+                    {
+                        onVisionFinished?.Invoke();
+                        if (micActive && !_isSpeaking)
+                            StartMic(); // Resume mic if user has it enabled
+                        if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Vision response processing finished.");
+                    }
+                    catch (Exception e)
+                    {
+                        if (logs)
+                            MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] Vision onVisionFinished() error: {e.Message}");
+                    }
                 }
-#endif
             });
         }
         
