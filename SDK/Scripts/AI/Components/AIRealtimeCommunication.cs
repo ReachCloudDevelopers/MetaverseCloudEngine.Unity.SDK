@@ -1203,8 +1203,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     try
                     {
                         onVisionFinished?.Invoke();
-                        if (micActive && !_isSpeaking)
-                            StartMic(); // Resume mic if user has it enabled
                         if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Vision response processing finished.");
                     }
                     catch (Exception e)

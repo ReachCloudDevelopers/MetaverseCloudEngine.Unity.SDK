@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.149.4
-- Add response tracking to manage audio interactions
+## 2.150.0
+- Remove mic activation check after vision processing
 
 Updated on April 01, 2025
