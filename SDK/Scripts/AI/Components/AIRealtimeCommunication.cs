@@ -202,6 +202,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _isStarted;
         private bool _connectCalled;
         
+        private readonly HashSet<string> _responsesInProgress = new();
+        
         /// <summary>
         /// Invoked when the component is connected to the server.
         /// </summary>
@@ -772,24 +774,27 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     case "response.audio.delta":
                     {
                         // GPT just started sending audio. Stop the mic so it won't hear itself.
-                        StartResponse();
                         HandleAudioDelta(jObj);
                         break;
                     }
                     case "response.audio_transcript.delta":
                         HandleAudioTranscriptDelta(jObj);
                         break;
-                    
                     case "response.created":
+                    {
                         // GPT just started sending a response. Stop the mic so it won't hear itself, and the user knows
                         // not to speak during this time.
-                        StartResponse();
+                        _responsesInProgress.Add(jObj["response"]?["id"]?.ToString());
+                        if (_responsesInProgress.Count == 1)
+                            StartResponse();
                         break;
-
+                    }
                     case "response.done":
                     {
                         // Invoked when the AI is done responding.
-                        onAIResponseFinished?.Invoke();
+                        _responsesInProgress.Remove(jObj["response"]?["id"]?.ToString());
+                        if (_responsesInProgress.Count == 0)
+                            onAIResponseFinished?.Invoke();
                         
                         // 1) The standard logic: GPT is done responding. Parse response data.
                         if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
@@ -1058,6 +1063,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 yield return null; // keep waiting
             }
 
+            while (_responsesInProgress.Count > 0)
+            {
+                yield return null;
+            }
+
             _isSpeaking = false;
 
             // Only restart the mic if user has not disabled it
@@ -1264,6 +1274,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _isSpeaking = false;
                 _transcriptText = null;
                 _websocket = null;
+                _responsesInProgress.Clear();
             }
 #endif
             
