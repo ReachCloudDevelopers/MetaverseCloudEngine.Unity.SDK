@@ -204,7 +204,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         
         private int _responsesInProgress;
         private bool _isStartingResponse;
-        private bool _pendingFunctionCall;
         
         /// <summary>
         /// Invoked when the component is connected to the server.
@@ -584,16 +583,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
             });
             
-            toolList.Add(new
-            {
-                type = "function",
-                name = "speak_and_call_function",
-                description = "You do not, by default, have the ability to speak and make a function call at the same " +
-                              "time, so if you want to speak and then call a function in succession please call this " +
-                              "function instead of speaking. It will first allow you to speak verbally, and then trigger a " +
-                              "followup response where you can call a function."
-            });
-
             // Prepare the session.update payload:
             var sessionMsg = new
             {
@@ -928,17 +917,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         VisionHandler.SubmitGameScreenshot(visionPrompt);
                         break;
                     }
-                    case "speak_and_call_function" when !_pendingFunctionCall:
-                    {
-                        // This is a special function to allow the AI to speak and then call a function in succession.
-                        if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] speak_and_call_function invoked.");
-                    
-                        // Allow the AI to speak first, then process the next function call after the audio finishes.
-                        _pendingFunctionCall = true;
-                        StopMic();
-                        TriggerResponseInternal(true);
-                        break;
-                    }
                     default:
                         // Invoke the callback (UnityEvent) matching this function name
                         TriggerFunctionCall(functionName, argumentsJson);
@@ -1116,16 +1094,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_responsesInProgress > 0 || _pendingVision)
             {
                 yield break;
-            }
-
-            if (_isAiSpeaking)
-            {
-                if (_pendingFunctionCall)
-                {
-                    _pendingFunctionCall = false;
-                    TriggerResponseInternal(true);
-                    yield break;
-                }
             }
 
             _isAiSpeaking = false;

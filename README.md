@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.151.0
-- Refactor AIRealtimeCommunication and iOS Bluetooth manager to improve naming conventions and functionality
+## 2.152.0
+- remove unused function call handling and related documentation
 
 Updated on April 02, 2025
