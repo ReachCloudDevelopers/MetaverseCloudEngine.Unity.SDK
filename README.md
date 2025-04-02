@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.152.0
-- remove unused function call handling and related documentation
+## 2.153.0
+- Implement WiFi device discovery in SPAPWiFiManager
 
 Updated on April 02, 2025
