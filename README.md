@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.150.1
-- Add event ID handling to AI response processing
+## 2.151.0
+- Refactor AIRealtimeCommunication and iOS Bluetooth manager to improve naming conventions and functionality
 
-Updated on April 01, 2025
+Updated on April 02, 2025

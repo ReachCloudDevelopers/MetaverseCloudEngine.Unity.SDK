@@ -211,13 +211,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 case InstanceMethodID.IsOpened:
                     // Return whether the Bluetooth connection is active.
-                    return (T)(object)IOSBluetoothSerialManager.Instance.IsConnected;
+                    return (T)(object)IOSWiFiSerialManager.Instance.IsConnected;
 
                 case InstanceMethodID.Write:
                     // Expect parameters[0] to be a byte[] array.
                     if (parameters.Length > 0 && parameters[0] is byte[] data)
                     {
-                        IOSBluetoothSerialManager.Instance.WriteBytes(data);
+                        IOSWiFiSerialManager.Instance.WriteBytes(data);
                     }
                     return default;
 
@@ -225,12 +225,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     // Expect parameters[0] to be a DeviceInfo representing the device to open.
                     if (parameters.Length > 0 && parameters[0] is DeviceInfo device)
                     {
-                        IOSBluetoothSerialManager.Instance.ConnectToDevice();
+                        IOSWiFiSerialManager.Instance.ConnectToDevice();
                     }
                     return default;
 
                 case InstanceMethodID.Close:
-                    IOSBluetoothSerialManager.Instance.Disconnect();
+                    IOSWiFiSerialManager.Instance.Disconnect();
                     return default;
 
                 default:
@@ -258,15 +258,15 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 case InstanceMethodID.Write:
                     if (parameters.Length > 0 && parameters[0] is byte[] data)
-                        IOSBluetoothSerialManager.Instance.WriteBytes(data);
+                        IOSWiFiSerialManager.Instance.WriteBytes(data);
                     break;
 
                 case InstanceMethodID.Open:
-                    IOSBluetoothSerialManager.Instance.ConnectToDevice();
+                    IOSWiFiSerialManager.Instance.ConnectToDevice();
                     break;
 
                 case InstanceMethodID.Close:
-                    IOSBluetoothSerialManager.Instance.Disconnect();
+                    IOSWiFiSerialManager.Instance.Disconnect();
                     break;
 
                 default:
@@ -293,7 +293,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             switch (fieldName)
             {
                 case GettableFieldID.SystemEventObject:
-                    // Return the system event object from your IOSBluetoothSerialManager if applicable.
+                    // Return the system event object from your IOSWiFiSerialManager if applicable.
                     return (T)(object)null; // Replace with actual implementation if needed.
                 case GettableFieldID.ReadCompleteEventObject:
                     return (T)(object)null;
@@ -342,7 +342,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             switch (propertyName)
             {
                 case GettablePropertyID.SerialNumber:
-                    return (T)(object)IOSBluetoothSerialManager.Instance.SerialNumber;
+                    return (T)(object)IOSWiFiSerialManager.Instance.SerialNumber;
                 default:
                     return default;
             }
@@ -364,19 +364,19 @@ namespace MetaverseCloudEngine.Unity.SPUP
             switch (propertyName)
             {
                 case SettablePropertyID.VendorID:
-                    IOSBluetoothSerialManager.Instance.VendorID = (string)value;
+                    IOSWiFiSerialManager.Instance.VendorID = (string)value;
                     break;
                 case SettablePropertyID.Port:
-                    IOSBluetoothSerialManager.Instance.Port = (string)value;
+                    IOSWiFiSerialManager.Instance.Port = (string)value;
                     break;
                 case SettablePropertyID.ProductID:
-                    IOSBluetoothSerialManager.Instance.ProductID = (string)value;
+                    IOSWiFiSerialManager.Instance.ProductID = (string)value;
                     break;
                 case SettablePropertyID.SerialNumber:
-                    IOSBluetoothSerialManager.Instance.SerialNumber = (string)value;
+                    IOSWiFiSerialManager.Instance.SerialNumber = (string)value;
                     break;
                 case SettablePropertyID.DeviceName:
-                    IOSBluetoothSerialManager.Instance.DeviceName = (string)value;
+                    IOSWiFiSerialManager.Instance.DeviceName = (string)value;
                     break;
                 default:
                     break;

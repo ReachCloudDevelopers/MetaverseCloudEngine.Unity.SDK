@@ -7,23 +7,24 @@ using UnityEngine;
 namespace MetaverseCloudEngine.Unity.SPUP
 {
     /// <summary>
-    /// iOS-specific Bluetooth serial manager.
-    /// Uses native iOS functions to connect to a device, write data, and read data.
+    /// iOS-specific Wi-Fi serial manager.
+    /// Uses native iOS functions to connect to a device over TCP/IP, write data, and read data.
     /// </summary>
-    public class IOSBluetoothSerialManager : MonoBehaviour
+    public class IOSWiFiSerialManager : MonoBehaviour
     {
-        private static IOSBluetoothSerialManager _instance;
+        private static IOSWiFiSerialManager _instance;
+
         /// <summary>
-        /// Singleton instance of IOSBluetoothSerialManager.
+        /// Singleton instance of IOSWiFiSerialManager.
         /// </summary>
-        public static IOSBluetoothSerialManager Instance
+        public static IOSWiFiSerialManager Instance
         {
             get
             {
                 if (_instance == null)
                 {
-                    GameObject go = new GameObject("IOSBluetoothSerialManager");
-                    _instance = go.AddComponent<IOSBluetoothSerialManager>();
+                    GameObject go = new GameObject("IOSWiFiSerialManager");
+                    _instance = go.AddComponent<IOSWiFiSerialManager>();
                     DontDestroyOnLoad(go);
                 }
                 return _instance;
@@ -31,20 +32,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
         }
 
         /// <summary>
-        /// Indicates whether a Bluetooth device is currently connected.
+        /// Indicates whether a device is currently connected.
         /// </summary>
-        [UsedImplicitly]
-        public bool IsConnected { get; private set; }
-        [UsedImplicitly]
-        public string SerialNumber { get; set; }
-        [UsedImplicitly]
-        public string DeviceName { get; set; }
-        [UsedImplicitly]
-        public string Port { get; set; }
-        [UsedImplicitly]
-        public string VendorID { get; set; }
-        [UsedImplicitly]
-        public string ProductID { get; set; }
+        [UsedImplicitly] public bool IsConnected { get; private set; }
+        [UsedImplicitly] public string SerialNumber { get; set; } // IP address of the ESP32
+        [UsedImplicitly] public string DeviceName { get; set; }
+        [UsedImplicitly] public string Port { get; set; }
+        [UsedImplicitly] public string VendorID { get; set; }
+        [UsedImplicitly] public string ProductID { get; set; }
 
         /// <summary>
         /// Information about the currently connected device.
@@ -65,27 +60,24 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private static extern int ios_readData(byte[] buffer, int bufferSize);
 
         /// <summary>
-        /// Connects to the specified Bluetooth device.
-        /// Uses the device's SerialNumber for connecting.
+        /// Connects to the specified Wi-Fi device (by IP).
         /// </summary>
-        /// <param name="device">Device information used for connection.</param>
         public void ConnectToDevice()
         {
             if (string.IsNullOrEmpty(SerialNumber))
             {
-                MetaverseProgram.Logger.LogError("IOSBluetoothSerialManager: Serial number is empty.");
+                MetaverseProgram.Logger.LogError("IOSWiFiSerialManager: Serial number (IP) is empty.");
                 return;
             }
-            
+
             if (IsConnected)
             {
                 Disconnect();
                 IsConnected = false;
             }
 
-            // Attempt connection via native call.
             int result = ios_connectToDevice(SerialNumber);
-            if (result == 0) // Assuming 0 indicates success.
+            if (result == 0) // 0 = success
             {
                 IsConnected = true;
                 ConnectedDevice = new MetaverseSerialPortUtilityInterop.DeviceInfo
@@ -95,53 +87,48 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     Vendor = VendorID,
                     Product = ProductID
                 };
-                MetaverseProgram.Logger.Log(
-                    $"IOSBluetoothSerialManager: Successfully connected to device: {ConnectedDevice}");
+                MetaverseProgram.Logger.Log($"IOSWiFiSerialManager: Connected to device: {ConnectedDevice}");
             }
             else
             {
-                MetaverseProgram.Logger.LogError(
-                    $"IOSBluetoothSerialManager: Failed to connect to device: {ConnectedDevice}");
+                MetaverseProgram.Logger.LogError($"IOSWiFiSerialManager: Failed to connect to device with IP {SerialNumber}");
             }
         }
 
         /// <summary>
-        /// Disconnects from the currently connected Bluetooth device.
+        /// Disconnects from the currently connected Wi-Fi device.
         /// </summary>
         public void Disconnect()
         {
             if (!IsConnected)
             {
-                MetaverseProgram.Logger.LogWarning("IOSBluetoothSerialManager: No device connected to disconnect.");
+                MetaverseProgram.Logger.LogWarning("IOSWiFiSerialManager: No device connected to disconnect.");
                 return;
             }
 
             ios_disconnect();
-            MetaverseProgram.Logger.Log("IOSBluetoothSerialManager: Disconnected from device: " + ConnectedDevice.ToString());
+            MetaverseProgram.Logger.Log("IOSWiFiSerialManager: Disconnected from device: " + ConnectedDevice?.ToString());
             IsConnected = false;
             ConnectedDevice = null;
         }
 
         /// <summary>
-        /// Writes bytes to the connected Bluetooth device.
-        /// Calls the native function to send data.
+        /// Sends bytes to the connected device over Wi-Fi (TCP).
         /// </summary>
-        /// <param name="data">Byte array to be sent.</param>
+        /// <param name="data">Byte array to send.</param>
         public void WriteBytes(byte[] data)
         {
-            if (!IsConnected)
+            if (!IsConnected || data == null || data.Length == 0)
                 return;
-            if (data == null || data.Length == 0)
-                return;
+
             int bytesWritten = ios_writeData(data, data.Length);
-            MetaverseProgram.Logger.Log("IOSBluetoothSerialManager: Wrote " + bytesWritten + " bytes.");
+            MetaverseProgram.Logger.Log($"IOSWiFiSerialManager: Wrote {bytesWritten} bytes.");
         }
 
         /// <summary>
-        /// Reads bytes received from the Bluetooth device.
-        /// Calls the native function to retrieve data.
+        /// Reads bytes received from the device over Wi-Fi (TCP).
         /// </summary>
-        /// <returns>Byte array containing the received data.</returns>
+        /// <returns>Byte array containing received data.</returns>
         public byte[] ReadBytes()
         {
             if (!IsConnected)
@@ -150,13 +137,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
             const int bufferSize = 1024;
             byte[] buffer = new byte[bufferSize];
             int bytesRead = ios_readData(buffer, bufferSize);
+
             if (bytesRead <= 0)
-            {
                 return Array.Empty<byte>();
-            }
+
             byte[] result = new byte[bytesRead];
             Array.Copy(buffer, result, bytesRead);
-            MetaverseProgram.Logger.Log("IOSBluetoothSerialManager: Read " + bytesRead + " bytes.");
+            MetaverseProgram.Logger.Log($"IOSWiFiSerialManager: Read {bytesRead} bytes.");
             return result;
         }
     }

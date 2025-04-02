@@ -175,7 +175,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private readonly string _micDevice = null; // default mic
 
         private string _ephemeralToken;
-        private bool _awaitingVisionResponse;
+        private bool _pendingVision;
 
         // Tracks whether the mic is *actually running* at the moment
         private bool _isMicRunning; 
@@ -188,7 +188,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private readonly Queue<float> _streamBuffer = new();
 
         // True if GPT is actively sending audio
-        private bool _isSpeaking;
+        private bool _isAiSpeaking;
 
         // For partial transcripts
         private string _transcriptText = string.Empty;
@@ -202,7 +202,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _isStarted;
         private bool _connectCalled;
         
-        private readonly HashSet<string> _responsesInProgress = new();
+        private int _responsesInProgress;
+        private bool _isStartingResponse;
+        private bool _pendingFunctionCall;
         
         /// <summary>
         /// Invoked when the component is connected to the server.
@@ -269,7 +271,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
 #if MV_NATIVE_WEBSOCKETS
                     // User re-enabled the mic, try to start it if socket is open and GPT not speaking
-                    if (_websocket is { State: WebSocketState.Open } && !_isSpeaking && !_awaitingVisionResponse)
+                    if (_websocket is { State: WebSocketState.Open } && !_isAiSpeaking && !_pendingVision)
                     {
                         StartMic();
                     }
@@ -313,7 +315,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary>
         /// A bool indicating whether the AI is currently processing a request or speaking.
         /// </summary>
-        public bool IsResponding => _isSpeaking || _responsesInProgress.Count > 0;
+        public bool IsProcessing => 
+            _isAiSpeaking || 
+            _isMicRunning ||
+            _responsesInProgress > 0 || 
+            _pendingVision || 
+            _isStartingResponse;
 
         #region Unity Lifecycle
 
@@ -447,7 +454,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 await SendSessionUpdate();
 
                 // Only start the mic if the user setting is true (and GPT isn't already speaking)
-                if (micActive && !_isSpeaking && !_awaitingVisionResponse)
+                if (micActive && !_isAiSpeaking && !_pendingVision)
                 {
                     StartMic();
                 }
@@ -570,10 +577,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         vision_request = new
                         {
                             type = "string",
-                            description = "A short prompt describing the output that you want from the vision AI. For example 'The user asked what color their shirt.'"
+                            description = "A short prompt describing the output that you want from the vision AI. For " +
+                                          "example 'The user asked what color their shirt.'"
                         }
                     },
                 }
+            });
+            
+            toolList.Add(new
+            {
+                type = "function",
+                name = "speak_and_call_function",
+                description = "You do not, by default, have the ability to speak and make a function call at the same " +
+                              "time, so if you want to speak and then call a function in succession please call this " +
+                              "function instead of speaking. It will first allow you to speak verbally, and then trigger a " +
+                              "followup response where you can call a function."
             });
 
             // Prepare the session.update payload:
@@ -758,101 +776,113 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region AI Response Handling
 
-        private void OnWebSocketMessage(byte[] data)
+        private async void OnWebSocketMessage(byte[] data)
         {
-            var rawJson = Encoding.UTF8.GetString(data);
-            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Received: {rawJson}");
-
             try
             {
-                var jObj = JObject.Parse(rawJson);
-                var msgType = jObj["type"]?.ToString();
+                await UniTask.SwitchToMainThread();
+                
+                var rawJson = Encoding.UTF8.GetString(data);
+                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Received: {rawJson}");
 
-                switch (msgType)
+                try
                 {
-                    case "session.created":
-                    case "session.updated":
-                        if (logs)
-                            MetaverseProgram.Logger.Log(
-                                $"[AIRealtimeCommunication] {msgType} event. Session ID: {jObj["session_id"]}");
-                        break;
-                    case "response.audio.delta":
-                    {
-                        // GPT just started sending audio. Stop the mic so it won't hear itself.
-                        HandleAudioDelta(jObj);
-                        break;
-                    }
-                    case "response.audio_transcript.delta":
-                        HandleAudioTranscriptDelta(jObj);
-                        break;
-                    case "response.created":
-                    {
-                        // GPT just started sending a response. Stop the mic so it won't hear itself, and the user knows
-                        // not to speak during this time.
-                        _responsesInProgress.Add(jObj["response"]?["id"]?.ToString());
-                        if (_responsesInProgress.Count == 1)
-                            StartResponse();
-                        break;
-                    }
-                    case "response.done":
-                    {
-                        // Invoked when the AI is done responding.
-                        _responsesInProgress.Remove(jObj["response"]?["id"]?.ToString());
-                        _responsesInProgress.Remove(jObj["event_id"]?.ToString());
-                        if (_responsesInProgress.Count == 0)
-                            onAIResponseFinished?.Invoke();
-                        
-                        // 1) The standard logic: GPT is done responding. Parse response data.
-                        if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
+                    var jObj = JObject.Parse(rawJson);
+                    var msgType = jObj["type"]?.ToString();
 
-                        // 2) Check if there's a function_call in response.output array
-                        HandleResponseOutput(jObj);
-
-                        // 3) If we have a transcript from the AI, send it to the UnityEvent
-                        if (!string.IsNullOrEmpty(_transcriptText))
+                    switch (msgType)
+                    {
+                        case "session.created":
+                        case "session.updated":
+                            if (logs)
+                                MetaverseProgram.Logger.Log(
+                                    $"[AIRealtimeCommunication] {msgType} event. Session ID: {jObj["session_id"]}");
+                            break;
+                        case "response.audio.delta":
                         {
-                            onAIResponseString?.Invoke(_transcriptText);
-                            if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Final transcript: {_transcriptText}");
-                            _transcriptText = string.Empty; // reset for next response
+                            // GPT just started sending audio. Stop the mic so it won't hear itself.
+                            HandleAudioDelta(jObj);
+                            break;
                         }
-                        else
+                        case "response.audio_transcript.delta":
+                            HandleAudioTranscriptDelta(jObj);
+                            break;
+                        case "response.created":
                         {
-                            onAIResponseString?.Invoke(string.Empty);
+                            // GPT just started sending a response. Stop the mic so it won't hear itself, and the user knows
+                            // not to speak during this time.
+                            _responsesInProgress++;
+                            if (_responsesInProgress == 1)
+                                StartResponse();
+                            break;
                         }
+                        case "response.done":
+                        {
+                            // Invoked when the AI is done responding.
+                            _responsesInProgress--;
+                            if (_responsesInProgress == 0)
+                            {
+                                _pendingVision = false;
+                                onAIResponseFinished?.Invoke();
+                                StartCoroutine(WaitUntilFinishedSpeaking());
+                            }
 
-                        // 4) The normal “done” logic to resume mic once audio buffer empties
-                        //    (this was probably your existing code)
-                        if (logs)
-                            MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Will resume mic once buffer empties...");
-                        StartCoroutine(ResumeMicAfterPlayback());
-                        break;
+                            // 1) The standard logic: GPT is done responding. Parse response data.
+                            if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
+
+                            // 2) Check if there's a function_call in response.output array
+                            HandleResponseOutput(jObj);
+
+                            // 3) If we have a transcript from the AI, send it to the UnityEvent
+                            if (!string.IsNullOrEmpty(_transcriptText))
+                            {
+                                onAIResponseString?.Invoke(_transcriptText);
+                                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Final transcript: {_transcriptText}");
+                                _transcriptText = string.Empty; // reset for next response
+                            }
+                            else
+                            {
+                                onAIResponseString?.Invoke(string.Empty);
+                            }
+
+                            // 4) The normal “done” logic to resume mic once audio buffer empties
+                            //    (this was probably your existing code)
+                            if (logs)
+                                MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Will resume mic once buffer empties...");
+                            break;
+                        }
+                        case "error":
+                        {
+                            var eCode = jObj["error"]?["code"]?.ToString();
+                            var eMsg = jObj["error"]?["message"]?.ToString();
+                            if (logs)
+                                MetaverseProgram.Logger.LogWarning(
+                                    $"[AIRealtimeCommunication] Error code={eCode}, message={eMsg}");
+                            break;
+                        }
+                        default:
+                            if (logs)
+                                MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Unhandled message type: {msgType}");
+                            break;
                     }
-                    case "error":
-                    {
-                        var eCode = jObj["error"]?["code"]?.ToString();
-                        var eMsg = jObj["error"]?["message"]?.ToString();
-                        if (logs)
-                            MetaverseProgram.Logger.LogWarning(
-                                $"[AIRealtimeCommunication] Error code={eCode}, message={eMsg}");
-                        break;
-                    }
-                    default:
-                        if (logs)
-                            MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Unhandled message type: {msgType}");
-                        break;
+                }
+                catch (Exception ex)
+                {
+                    if (logs)
+                        MetaverseProgram.Logger.LogWarning($"[AIRealtimeCommunication] JSON parse error: {ex.Message}");
                 }
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
                 if (logs)
-                    MetaverseProgram.Logger.LogWarning($"[AIRealtimeCommunication] JSON parse error: {ex.Message}");
+                    MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] WebSocket message error: {e.Message}");
             }
         }
 
         private void StartResponse()
         {
-            if (_isSpeaking) return;
-            _isSpeaking = true;
+            if (_isAiSpeaking) return;
+            _isAiSpeaking = true;
             onAIResponseStarted?.Invoke();
             StopMic();
             if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Stopping mic (AI is speaking).");
@@ -871,34 +901,48 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var functionName = item["name"]?.ToString();
                 var callId = item["call_id"]?.ToString();
                 var argumentsJson = item["arguments"]?.ToString(); 
-                    
+
                 if (logs)
                 {
                     MetaverseProgram.Logger.Log(
                         $"[AIRealtimeCommunication] Found function_call '{functionName}' with call_id='{callId}' and arguments={argumentsJson}"
                     );
                 }
-                                
-                if (functionName == "vision_request")
+
+                switch (functionName)
                 {
-                    // Handle vision_request separately if needed
-                    if (logs) MetaverseProgram.Logger.Log(
-                        $"[AIRealtimeCommunication] Vision request received: {argumentsJson}");
-                    if (string.IsNullOrWhiteSpace(argumentsJson))
-                        continue;
-                                    
-                    // Parse vision request.
-                    var visionRequest = JObject.Parse(argumentsJson);
-                    var visionPrompt = visionRequest["vision_request"]?.ToString();
-                    if (string.IsNullOrWhiteSpace(visionPrompt)) continue;
-                    _awaitingVisionResponse = true;
-                    StopMic();
-                    VisionHandler.SubmitGameScreenshot(visionPrompt);
-                }
-                else
-                {
-                    // Invoke the callback (UnityEvent) matching this function name
-                    TriggerFunctionCall(functionName, argumentsJson);
+                    case "vision_request":
+                    {
+                        // Handle vision_request separately if needed
+                        if (logs) MetaverseProgram.Logger.Log(
+                            $"[AIRealtimeCommunication] Vision request received: {argumentsJson}");
+                        if (string.IsNullOrWhiteSpace(argumentsJson))
+                            continue;
+
+                        // Parse vision request.
+                        var visionRequest = JObject.Parse(argumentsJson);
+                        var visionPrompt = visionRequest["vision_request"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(visionPrompt)) continue;
+                        _pendingVision = true;
+                        StopMic();
+                        VisionHandler.SubmitGameScreenshot(visionPrompt);
+                        break;
+                    }
+                    case "speak_and_call_function" when !_pendingFunctionCall:
+                    {
+                        // This is a special function to allow the AI to speak and then call a function in succession.
+                        if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] speak_and_call_function invoked.");
+                    
+                        // Allow the AI to speak first, then process the next function call after the audio finishes.
+                        _pendingFunctionCall = true;
+                        StopMic();
+                        TriggerResponseInternal(true);
+                        break;
+                    }
+                    default:
+                        // Invoke the callback (UnityEvent) matching this function name
+                        TriggerFunctionCall(functionName, argumentsJson);
+                        break;
                 }
                     
                 // If you need to do something with argumentsJson, parse it here
@@ -1057,7 +1101,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region Playback + Utility
 
-        private IEnumerator ResumeMicAfterPlayback()
+        private IEnumerator WaitUntilFinishedSpeaking()
         {
             // Keep waiting until our buffer is fully played out
             while (true)
@@ -1069,12 +1113,22 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 yield return null; // keep waiting
             }
 
-            while (_responsesInProgress.Count > 0)
+            if (_responsesInProgress > 0 || _pendingVision)
             {
-                yield return null;
+                yield break;
             }
 
-            _isSpeaking = false;
+            if (_isAiSpeaking)
+            {
+                if (_pendingFunctionCall)
+                {
+                    _pendingFunctionCall = false;
+                    TriggerResponseInternal(true);
+                    yield break;
+                }
+            }
+
+            _isAiSpeaking = false;
 
             // Only restart the mic if user has not disabled it
             if (micActive)
@@ -1132,6 +1186,49 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return output;
         }
 
+        private void TriggerResponseInternal(bool force)
+        {
+            UniTask.Void(async () =>
+            {
+                await UniTask.SwitchToMainThread();
+                
+                if (!force)
+                    await UniTask.WaitUntil(() => !IsProcessing);
+
+                _isStartingResponse = true;
+
+                try
+                {
+#if MV_NATIVE_WEBSOCKETS
+                    if (_websocket is not { State: WebSocketState.Open })
+                    {
+                        if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot trigger response. Socket not open.");
+                        return;
+                    }
+#endif
+                
+                    // Trigger a response from GPT to process the current input
+                    var responseMsg = new
+                    {
+                        type = "response.create",
+                        response = new
+                        {
+                            modalities = new[] { "text", "audio" }
+                        }
+                    };
+                
+                    var responseJson = JsonConvert.SerializeObject(responseMsg);
+#if MV_NATIVE_WEBSOCKETS
+                    await _websocket.SendText(responseJson);
+#endif
+                }
+                finally
+                {
+                    _isStartingResponse = false;
+                }
+            });
+        }
+
         #endregion
         
         #region Vision
@@ -1140,6 +1237,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                if (!_pendingVision)
+                    return;
+                
                 if (string.IsNullOrWhiteSpace(visionResponse))
                 {
                     if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Vision response is empty.");
@@ -1175,17 +1275,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     {
                         await _websocket.SendText(json);
                         if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Sent vision response to GPT.");
-                        
-                        // Trigger a response from GPT to process the vision response
-                        /*
-                         * const event = {
-                             type: "response.create",
-                             response: {
-                               modalities: [ "text", "audio" ]
-                             },
-                           };
-                         */
-
                         var responseMsg = new
                         {
                             type = "response.create",
@@ -1205,7 +1294,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
                 finally
                 {
-                    _awaitingVisionResponse = false;
                     try
                     {
                         onVisionFinished?.Invoke();
@@ -1225,15 +1313,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             OnVisionResponse("I'm sorry, I couldn't process the vision request.");
         }
         
-        private string NewEvent()
-        {
-            var eventId = "event_" + Guid.NewGuid().ToString().Replace("-", "")[..7];
-            _responsesInProgress.Add(eventId);
-            if (_responsesInProgress.Count == 1)
-                StartResponse();
-            return eventId;
-        }
-
         #endregion
 
         #region Public API
@@ -1284,10 +1363,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _websocket.OnClose -= OnWebSocketClose;
                 if (_websocket.State == WebSocketState.Open)
                     _websocket.Close();
-                _isSpeaking = false;
+                _isAiSpeaking = false;
                 _transcriptText = null;
                 _websocket = null;
-                _responsesInProgress.Clear();
+                _responsesInProgress = 0;
             }
 #endif
             
@@ -1331,34 +1410,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         public void TriggerResponse()
         {
-            UniTask.Void(async () =>
-            {
-                await UniTask.SwitchToMainThread();
-                
-#if MV_NATIVE_WEBSOCKETS
-                if (_websocket is not { State: WebSocketState.Open })
-                {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot trigger response. Socket not open.");
-                    return;
-                }
-#endif
-                
-                // Trigger a response from GPT to process the current input
-                var responseMsg = new
-                {
-                    event_id = NewEvent(),
-                    type = "response.create",
-                    response = new
-                    {
-                        modalities = new[] { "text", "audio" }
-                    }
-                };
-                
-                var responseJson = JsonConvert.SerializeObject(responseMsg);
-#if MV_NATIVE_WEBSOCKETS
-                await _websocket.SendText(responseJson);
-#endif
-            });
+            TriggerResponseInternal(false);
         }
 
         /// <summary>
@@ -1371,55 +1423,63 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 await UniTask.SwitchToMainThread();
 
-#if MV_NATIVE_WEBSOCKETS
-                if (_websocket is not { State: WebSocketState.Open })
+                await UniTask.WaitUntil(() => !IsProcessing);
+
+                _isStartingResponse = true;
+                try
                 {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
-                    return;
-                }
+#if MV_NATIVE_WEBSOCKETS
+                    if (_websocket is not { State: WebSocketState.Open })
+                    {
+                        if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
+                        return;
+                    }
 #endif
                 
-                var textMsg = new
-                {
-                    event_id = NewEvent(),
-                    type = "conversation.item.create",
-                    item = new
+                    var textMsg = new
                     {
-                        type = "message",
-                        role = "user",
-                        content = new[]
+                        type = "conversation.item.create",
+                        item = new
                         {
-                            new
+                            type = "message",
+                            role = "user",
+                            content = new[]
                             {
-                                type = "input_text",
-                                text
+                                new
+                                {
+                                    type = "input_text",
+                                    text
+                                }
                             }
                         }
-                    }
-                };
+                    };
 
-                var json = JsonConvert.SerializeObject(textMsg);
+                    var json = JsonConvert.SerializeObject(textMsg);
 #if MV_NATIVE_WEBSOCKETS
-                await _websocket.SendText(json);
+                    await _websocket.SendText(json);
 #endif
                 
-                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
+                    if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
                 
-                // Trigger a response from GPT to process the text input
-                var responseMsg = new
-                {
-                    event_id = NewEvent(),
-                    type = "response.create",
-                    response = new
+                    // Trigger a response from GPT to process the text input
+                    var responseMsg = new
                     {
-                        modalities = new[] { "text", "audio" }
-                    }
-                };
+                        type = "response.create",
+                        response = new
+                        {
+                            modalities = new[] { "text", "audio" }
+                        }
+                    };
                 
-                var responseJson = JsonConvert.SerializeObject(responseMsg);
+                    var responseJson = JsonConvert.SerializeObject(responseMsg);
 #if MV_NATIVE_WEBSOCKETS
-                await _websocket.SendText(responseJson);
+                    await _websocket.SendText(responseJson);
 #endif
+                }
+                finally
+                {
+                    _isStartingResponse = false;
+                }
             });
         }
 
@@ -1433,38 +1493,47 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 await UniTask.SwitchToMainThread();
 
+                await UniTask.WaitUntil(() => !IsProcessing);
+
+                _isStartingResponse = true;
+
+                try
+                {
 #if MV_NATIVE_WEBSOCKETS
-                if (_websocket is not { State: WebSocketState.Open })
-                {
-                    if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
-                    return;
-                }
-#endif
-                var textMsg = new
-                {
-                    event_id = NewEvent(),
-                    type = "conversation.item.create",
-                    item = new
+                    if (_websocket is not { State: WebSocketState.Open })
                     {
-                        type = "message",
-                        role = "user",
-                        content = new[]
+                        if (logs) MetaverseProgram.Logger.LogWarning("[AIRealtimeCommunication] Cannot send text. Socket not open.");
+                        return;
+                    }
+#endif
+                    var textMsg = new
+                    {
+                        type = "conversation.item.create",
+                        item = new
                         {
-                            new
+                            type = "message",
+                            role = "user",
+                            content = new[]
                             {
-                                type = "input_text",
-                                text
+                                new
+                                {
+                                    type = "input_text",
+                                    text
+                                }
                             }
                         }
-                    }
-                };
+                    };
 
-                var json = JsonConvert.SerializeObject(textMsg);
+                    var json = JsonConvert.SerializeObject(textMsg);
 #if MV_NATIVE_WEBSOCKETS
-                await _websocket.SendText(json);
+                    await _websocket.SendText(json);
 #endif
-                
-                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
+                    if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Sent text: {text}");
+                }
+                finally
+                {
+                    _isStartingResponse = false;
+                }
             });
         }
 
