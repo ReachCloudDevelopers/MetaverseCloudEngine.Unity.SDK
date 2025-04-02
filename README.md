@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.0
-- Implement WiFi device discovery in SPAPWiFiManager
+## 2.153.1
+- Added support for Google Play app update
 
 Updated on April 02, 2025

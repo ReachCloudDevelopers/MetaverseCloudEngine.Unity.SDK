@@ -205,6 +205,11 @@
             "name": "com.endel.nativewebsocket",
             "expression": "",
             "define": "MV_NATIVE_WEBSOCKETS"
+        },
+        {
+            "name": "com.google.play.appupdate",
+            "expression": "",
+            "define": "MV_GPLAY_APP_UPDATE"
         }
     ],
     "noEngineReferences": false
