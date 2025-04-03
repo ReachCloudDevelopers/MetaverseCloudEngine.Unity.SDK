@@ -135,12 +135,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         [DisableInPlayMode]
         private bool micActive = true; // The user's setting in the Inspector.
+        [Tooltip("Automatically re-enables the microphone if the AI asks a question. This is useful if you have a " +
+                 "custom microphone lifecycle and want to ensure the mic is re-enabled after a response.")]
+        [SerializeField]
+        private bool reEnableMicOnQuestion = true;
 
         // Output (GPT Response)
         [Header("Output (GPT Response)")]
         [TextArea(5, 10)] 
         [SerializeField] private string prompt;
-        [Required] 
         [SerializeField] private AudioSource outputVoiceSource;
         [Tooltip("The voice to use for the AI's audio output.")]
         [SerializeField] private TextToSpeechVoicePreset outputVoice = TextToSpeechVoicePreset.Male;
@@ -204,6 +207,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         
         private int _responsesInProgress;
         private bool _isStartingResponse;
+        private bool _hasAudioFrameSent;
         
         /// <summary>
         /// Invoked when the component is connected to the server.
@@ -490,7 +494,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] WebSocket closed: {code}");
 
             // Stop the audio source to avoid glitchy sound
-            if (outputVoiceSource != null)
+            if (outputVoiceSource)
             {
                 outputVoiceSource.Stop();
                 outputVoiceSource.volume = 0f;
@@ -674,7 +678,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
                     _lastMicPos = 0;
                     _sampleTimer = 0f;
-                    onMicStarted?.Invoke();
                     _isMicRunning = true;
                     if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone started, streaming audio...");
                 }
@@ -683,14 +686,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void StopMic()
         {
-            if (!_isMicRunning) return;
-
+            if (!_isMicRunning)
+            {
+                if (logs)
+                    MetaverseProgram.Logger.Log(
+                        "[AIRealtimeCommunication] StopMic called, but microphone is not running. Nothing to stop.");
+                return;
+            }
             _isMicRunning = false;
             Microphone.End(_micDevice);
             _micClip = null;
             _lastMicPos = 0;
-            onMicStopped?.Invoke();
-
+            if (_hasAudioFrameSent)
+                onMicStopped?.Invoke();
+            _hasAudioFrameSent = false;
             if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Microphone stopped.");
         }
 
@@ -706,7 +715,22 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 samplesToRead = _micClip.samples - _lastMicPos;
             }
 
-            if (samplesToRead <= 0) return;
+            if (samplesToRead <= 0)
+            {
+                if (logs)
+                    MetaverseProgram.Logger.Log(
+                        $"[AIRealtimeCommunication] No new samples to read from microphone. Current position: {currentPos}, last position: {_lastMicPos}");
+                if (!Microphone.IsRecording(_micDevice) && !_isShuttingDown)
+                {
+                    // Mic was stopped externally, reset the state and try to restart
+                    if (logs)
+                        MetaverseProgram.Logger.Log(
+                            "[AIRealtimeCommunication] Microphone was stopped externally, restarting...");
+                    StopMic();
+                    StartMic();
+                }
+                return;
+            }
 
             var samples = new float[samplesToRead];
             _micClip.GetData(samples, _lastMicPos);
@@ -739,7 +763,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 var pcmBytes = ConvertFloatsToPCM16Bytes(samples);
                 var base64Chunk = Convert.ToBase64String(pcmBytes);
-
                 var appendMsg = new
                 {
                     type = "input_audio_buffer.append",
@@ -748,6 +771,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 var json = JsonConvert.SerializeObject(appendMsg);
                 await _websocket.SendText(json);
+
+                if (!_hasAudioFrameSent)
+                {
+                    onMicStarted?.Invoke();
+                    _hasAudioFrameSent = true;
+                }
 
                 if (logs)
                     MetaverseProgram.Logger.Log(
@@ -776,8 +805,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 try
                 {
-                    var jObj = JObject.Parse(rawJson);
-                    var msgType = jObj["type"]?.ToString();
+                    var responseJson = JObject.Parse(rawJson);
+                    var msgType = responseJson["type"]?.ToString();
 
                     switch (msgType)
                     {
@@ -785,16 +814,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         case "session.updated":
                             if (logs)
                                 MetaverseProgram.Logger.Log(
-                                    $"[AIRealtimeCommunication] {msgType} event. Session ID: {jObj["session_id"]}");
+                                    $"[AIRealtimeCommunication] {msgType} event. Session ID: {responseJson["session_id"]}");
                             break;
                         case "response.audio.delta":
                         {
                             // GPT just started sending audio. Stop the mic so it won't hear itself.
-                            HandleAudioDelta(jObj);
+                            HandleAudioDelta(responseJson);
                             break;
                         }
                         case "response.audio_transcript.delta":
-                            HandleAudioTranscriptDelta(jObj);
+                            HandleAudioTranscriptDelta(responseJson);
                             break;
                         case "response.created":
                         {
@@ -813,14 +842,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                             {
                                 _pendingVision = false;
                                 onAIResponseFinished?.Invoke();
-                                StartCoroutine(WaitUntilFinishedSpeaking());
+                                StartCoroutine(WaitUntilFinishedSpeaking(_transcriptText));
                             }
 
                             // 1) The standard logic: GPT is done responding. Parse response data.
                             if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] response.done received. Checking for function calls...");
 
                             // 2) Check if there's a function_call in response.output array
-                            HandleResponseOutput(jObj);
+                            HandleResponseOutput(responseJson);
 
                             // 3) If we have a transcript from the AI, send it to the UnityEvent
                             if (!string.IsNullOrEmpty(_transcriptText))
@@ -842,11 +871,24 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         }
                         case "error":
                         {
-                            var eCode = jObj["error"]?["code"]?.ToString();
-                            var eMsg = jObj["error"]?["message"]?.ToString();
+                            var eCode = responseJson["error"]?["code"]?.ToString();
+                            var eMsg = responseJson["error"]?["message"]?.ToString();
                             if (logs)
                                 MetaverseProgram.Logger.LogWarning(
                                     $"[AIRealtimeCommunication] Error code={eCode}, message={eMsg}");
+                            Disconnect();
+                            if (eCode is "token_expired" or "invalid_token")
+                            {
+                                // Token expired, re-acquire and reconnect
+                                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Token expired, reconnecting...");
+                                await AcquireEphemeralToken();
+                                ConnectAsync();
+                            }
+                            else
+                            {
+                                // Handle other errors as needed
+                                onDisconnected?.Invoke();
+                            }
                             break;
                         }
                         default:
@@ -1079,8 +1121,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region Playback + Utility
 
-        private IEnumerator WaitUntilFinishedSpeaking()
+        private IEnumerator WaitUntilFinishedSpeaking(string transcript)
         {
+            yield return null;
+            
             // Keep waiting until our buffer is fully played out
             while (true)
             {
@@ -1098,7 +1142,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             _isAiSpeaking = false;
 
-            // Only restart the mic if user has not disabled it
+            yield return null;
+            
+            if (!string.IsNullOrEmpty(transcript) && transcript.EndsWith("?") && reEnableMicOnQuestion && !micActive)
+            {
+                MicrophoneActive = true;
+                yield break;
+            }
+
             if (micActive)
             {
                 StartMic();
@@ -1303,7 +1354,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _systemSampleRate = AudioSettings.outputSampleRate;
 
             // Create a dummy streaming clip to drive OnAudioFilterRead
-            if (outputVoiceSource != null)
+            if (outputVoiceSource)
             {
                 var dummyLength = _systemSampleRate; // 1 second dummy clip
                 var dummyClip = AudioClip.Create("StreamingClip", dummyLength, 1, _systemSampleRate, true);

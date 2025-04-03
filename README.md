@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.1
-- Added support for Google Play app update
+## 2.153.2
+- Improved AIRealtimeCommunication component
 
-Updated on April 02, 2025
+Updated on April 03, 2025
