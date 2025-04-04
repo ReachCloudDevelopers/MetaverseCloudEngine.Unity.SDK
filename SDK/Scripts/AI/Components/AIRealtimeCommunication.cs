@@ -17,7 +17,9 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
+#if UNITY_ANDROID
 using UnityEngine.Android;
+#endif
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -138,8 +140,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Automatically re-enables the microphone if the AI asks a question. This is useful if you have a " +
                  "custom microphone lifecycle and want to ensure the mic is re-enabled after a response.")]
         [SerializeField]
-        private bool reEnableMicOnQuestion = true;
-
+        private bool enableMicOnQuestion = true;
+        [Tooltip("Automatically disables the microphone when the AI is done speaking to the user. This is useful if you have a " +
+                 "custom microphone lifecycle and want to ensure the mic is disabled after a response.")]
+        [SerializeField]
+        private bool disableMicOnCommunicationFinished = true;
+        
         // Output (GPT Response)
         [Header("Output (GPT Response)")]
         [TextArea(5, 10)] 
@@ -160,15 +166,27 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField] private bool logs = true;
 
         [Header("Event Callbacks")] 
+        [Tooltip("Invoked when the component is connected to the server.")]
         [SerializeField] private UnityEvent onConnected = new();
+        [Tooltip("Invoked when the component is disconnected from the server.")]
         [SerializeField] private UnityEvent onDisconnected = new();
+        [Tooltip("Invoked when the microphone starts.")]
         [SerializeField] private UnityEvent onMicStarted = new();
+        [Tooltip("Invoked when the microphone stops.")]
         [SerializeField] private UnityEvent onMicStopped = new();
+        [Tooltip("Invoked when the AI requests vision processing.")]
         [SerializeField] private UnityEvent onVisionRequested = new();
+        [Tooltip("Invoked when the vision request is finished.")]
         [SerializeField] private UnityEvent onVisionFinished = new();
+        [Tooltip("Invoked when the AI starts responding.")]
         [SerializeField] private UnityEvent onAIResponseStarted = new();
+        [Tooltip("Invoked when the AI responds with a string.")]
         [SerializeField] private UnityEvent<string> onAIResponseString = new();
+        [Tooltip("Invoked when the AI indicates that it is done responding to the user.")]
         [SerializeField] private UnityEvent onAIResponseFinished = new();
+        [Tooltip("This is invoked when the AI indicates that it wants to stop speaking " +
+                 "to the user and end the communication.")]
+        [SerializeField] private UnityEvent onCommunicationFinished = new();
 
 #if MV_NATIVE_WEBSOCKETS
         private WebSocket _websocket;
@@ -569,8 +587,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 name = "vision_request",
                 description = "Contrary to previous prompting, you now have the ability to see things directly using this function. " +
                               "If you are processing a user input that requires vision capabilities, " +
-                             "this function should be called with a vision_request parameter. " +
-                             "You will provide a short prompt describing the output you want from the vision AI. " +
+                              "this function should be called with a vision_request parameter. " +
+                              "You will provide a short prompt describing the output you want from the vision AI. " +
                               "You are to pretend that the information you receive from the vision agent is coming from you.",
                 parameters = new
                 {
@@ -983,12 +1001,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var resampledSamples = Resample(samples, gptOutputRate, _systemSampleRate);
 
             lock (_bufferLock)
-            {
                 foreach (var s in resampledSamples)
-                {
                     _streamBuffer.Enqueue(s);
-                }
-            }
         }
 
         private void HandleAudioTranscriptDelta(JObject jObj)
@@ -1124,29 +1138,35 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private IEnumerator WaitUntilFinishedSpeaking(string transcript)
         {
             yield return null;
-            
+
             // Keep waiting until our buffer is fully played out
             while (true)
             {
                 lock (_bufferLock)
-                {
                     if (_streamBuffer.Count == 0) break;
-                }
                 yield return null; // keep waiting
             }
 
             if (_responsesInProgress > 0 || _pendingVision)
-            {
                 yield break;
-            }
 
             _isAiSpeaking = false;
 
             yield return null;
             
-            if (!string.IsNullOrEmpty(transcript) && transcript.EndsWith("?") && reEnableMicOnQuestion && !micActive)
+            if (!string.IsNullOrEmpty(transcript) && transcript.EndsWith("?") && 
+                enableMicOnQuestion && !micActive)
             {
                 MicrophoneActive = true;
+                yield break;
+            }
+            
+            if (!string.IsNullOrEmpty(transcript) && transcript.EndsWith(";") && 
+                micActive)
+            {
+                if (disableMicOnCommunicationFinished)
+                    MicrophoneActive = false;
+                onCommunicationFinished?.Invoke();
                 yield break;
             }
 
@@ -1158,18 +1178,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             else
             {
                 if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Mic is still disabled by user.");
+                onCommunicationFinished?.Invoke();
             }
         }
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
             lock (_bufferLock)
-            {
                 for (var i = 0; i < data.Length; i++)
-                {
-                    data[i] = (_streamBuffer.Count > 0) ? _streamBuffer.Dequeue() : 0f;
-                }
-            }
+                    data[i] = _streamBuffer.Count > 0 ? _streamBuffer.Dequeue() : 0f;
         }
 
         private float[] Convert16BitPCMToFloats(byte[] pcmData)
@@ -1396,14 +1413,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             StopMic();
-            
-            if (outputVoiceSource)
-            {
-                outputVoiceSource.Stop();
-                if (outputVoiceSource.clip)
-                    Destroy(outputVoiceSource.clip);
-                outputVoiceSource.clip = null;
-            }
+
+            if (!outputVoiceSource) return;
+            outputVoiceSource.Stop();
+            if (outputVoiceSource.clip)
+                Destroy(outputVoiceSource.clip);
+            outputVoiceSource.clip = null;
         }
         
         /// <summary>

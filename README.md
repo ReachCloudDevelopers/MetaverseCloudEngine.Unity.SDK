@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.2
-- Improved AIRealtimeCommunication component
+## 2.153.3
+- Improvements to AIRealtimeCommunication component
 
-Updated on April 03, 2025
+Updated on April 04, 2025
