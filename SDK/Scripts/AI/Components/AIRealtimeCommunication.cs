@@ -398,7 +398,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region WebSocket Connection
 
-        private async void ConnectAsync()
+        private async Task ConnectAsync()
         {
             try
             {
@@ -459,34 +459,37 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         // ReSharper disable once PartialMethodWithSinglePart
         partial void AcquireEphemeralTokenImplementation(ref Task t);
 
-        private async void OnWebSocketOpen()
+        private void OnWebSocketOpen()
         {
-            try
+            UniTask.Void(async () =>
             {
-                if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] WebSocket connected!");
-
-                // Ensure volume is unmuted if it was previously set to 0
-                if (outputVoiceSource)
+                try
                 {
-                    outputVoiceSource.volume = 1f;
-                }
+                    if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] WebSocket connected!");
 
-                // Configure session with text/audio + our tools
-                await SendSessionUpdate();
+                    // Ensure volume is unmuted if it was previously set to 0
+                    if (outputVoiceSource)
+                    {
+                        outputVoiceSource.volume = 1f;
+                    }
 
-                // Only start the mic if the user setting is true (and GPT isn't already speaking)
-                if (micActive && !_isAiSpeaking && !_pendingVision)
-                {
-                    StartMic();
-                }
+                    // Configure session with text/audio + our tools
+                    await SendSessionUpdate();
+
+                    // Only start the mic if the user setting is true (and GPT isn't already speaking)
+                    if (micActive && !_isAiSpeaking && !_pendingVision)
+                    {
+                        StartMic();
+                    }
                 
-                onConnected?.Invoke();
-            }
-            catch (Exception e)
-            {
-                if (logs)
-                    MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] WebSocket open error: {e.Message}");
-            }
+                    onConnected?.Invoke();
+                }
+                catch (Exception e)
+                {
+                    if (logs)
+                        MetaverseProgram.Logger.LogError($"[AIRealtimeCommunication] WebSocket open error: {e.Message}");
+                }
+            });
         }
 
         private void OnWebSocketError(string errMsg)
@@ -538,7 +541,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!_isShuttingDown)
             {
                 if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Reconnecting now...");
-                ConnectAsync();
+                UniTask.Void(async () => await ConnectAsync());
             }
         }
 
@@ -755,7 +758,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _lastMicPos = currentPos;
 
             // Send chunk of mic data to GPT
-            SendAudioChunk(samples);
+            UniTask.Void(async () => await SendAudioChunk(samples));
         }
 
         private static byte[] ConvertFloatsToPCM16Bytes(float[] samples)
@@ -772,7 +775,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return ms.ToArray();
         }
 
-        private async void SendAudioChunk(float[] samples)
+        private async Task SendAudioChunk(float[] samples)
         {
             try
             {
@@ -812,12 +815,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #region AI Response Handling
 
-        private async void OnWebSocketMessage(byte[] data)
+        private void OnWebSocketMessage(byte[] data)
         {
             try
             {
-                await UniTask.SwitchToMainThread();
-                
                 var rawJson = Encoding.UTF8.GetString(data);
                 if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Received: {rawJson}");
 
@@ -899,8 +900,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                             {
                                 // Token expired, re-acquire and reconnect
                                 if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Token expired, reconnecting...");
-                                await AcquireEphemeralToken();
-                                ConnectAsync();
+                                UniTask.Void(async () =>
+                                {
+                                    await AcquireEphemeralToken();
+                                    await ConnectAsync();
+                                });
                             }
                             else
                             {
@@ -1380,7 +1384,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 outputVoiceSource.Play();
             }
 
-            ConnectAsync();
+            UniTask.Void(async () => await ConnectAsync());
         }
 
         /// <summary>
