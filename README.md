@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.4
-- Reduce chance of thread locking due to async void usage.
+## 2.153.5
+- Fixed access exception when accessing destroyCancellationToken in PlatformAPI
 
 Updated on April 07, 2025

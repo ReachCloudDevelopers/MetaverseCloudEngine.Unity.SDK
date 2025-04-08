@@ -213,10 +213,11 @@ namespace MetaverseCloudEngine.Unity.Components
 #if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
         private void OnARSessionStateChanged(ARSessionStateChangedEventArgs e)
         {
+            if (!this) return;
             UniTask.Void(async c =>
             {
-                if (!this) return;
                 await UniTask.DelayFrame(1, cancellationToken: c);
+                if (!this) return;
                 if (destroyCancellationToken.IsCancellationRequested) return;
                 if (_lastARSessionState == e.state) return;
                 _lastARSessionState = e.state;
@@ -226,10 +227,7 @@ namespace MetaverseCloudEngine.Unity.Components
         }
 #endif
 
-        private void OnEnable()
-        {
-            PerformCheck();
-        }
+        private void OnEnable() => PerformCheck();
 
         private void OnDestroy()
         {
@@ -360,10 +358,12 @@ namespace MetaverseCloudEngine.Unity.Components
 
             if (MVUtils.IsARCompatible())
             {
-                if (!XRSettings.isDeviceActive && arSupport == XRSupportType.Required)
-                    return false;
-                if (XRSettings.isDeviceActive && arSupport == XRSupportType.NotSupported)
-                    return false;
+                switch (XRSettings.isDeviceActive)
+                {
+                    case false when arSupport == XRSupportType.Required:
+                    case true when arSupport == XRSupportType.NotSupported:
+                        return false;
+                }
             }
             else if (arSupport == XRSupportType.Required)
                 return false;
