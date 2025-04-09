@@ -1409,9 +1409,9 @@ namespace MetaverseCloudEngine.Unity
 
         public static void FreeUpMemory(Action action, bool gcCollect = true, bool delay = true)
         {
-            Resources.UnloadUnusedAssets().completed += _ =>
+            //Resources.UnloadUnusedAssets().completed += _ =>
             {
-                if (gcCollect) GC.Collect();
+                //if (gcCollect) GC.Collect();
                 Collect();
             };
             return;
@@ -1425,8 +1425,8 @@ namespace MetaverseCloudEngine.Unity
 
         public static async UniTask FreeUpMemoryAsync(bool gcCollect = true, bool delay = true)
         {
-            await Resources.UnloadUnusedAssets();
-            if (gcCollect) GC.Collect();
+            //await Resources.UnloadUnusedAssets();
+            //if (gcCollect) GC.Collect();
             if (delay) await UniTask.Yield();
         }
 
@@ -2015,31 +2015,28 @@ namespace MetaverseCloudEngine.Unity
             // ReSharper disable MethodHasAsyncOverload
             try
             {
+                // Link the cancellation token to Application.Quit
+                cancellationToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Application.exitCancellationToken).Token;
+                
                 if (!MetaverseDispatcher.UseUniTaskThreading)
                     return await semaphore.WaitAsync(timeout ?? Timeout.Infinite, cancellationToken);
+                
+                timeout ??= 1000 * 5;
 
-                if (timeout.HasValue)
+                var start = DateTime.UtcNow;
+                while (!semaphore.Wait(0, cancellationToken))
                 {
-                    var start = DateTime.UtcNow;
-                    while (!semaphore.Wait(0, cancellationToken))
+                    if ((DateTime.UtcNow - start).TotalMilliseconds > timeout.Value)
+                        return false;
+                    try
                     {
-                        if ((DateTime.UtcNow - start).TotalMilliseconds > timeout.Value)
-                            return false;
-                        try
-                        {
-                            await UniTask.Yield(cancellationToken);
-                        }
-                        catch (Exception e)
-                        {
-                            MetaverseProgram.Logger.Log(e);
-                            return false;
-                        }
-                    }
-                }
-                else
-                {
-                    while (!semaphore.Wait(0, cancellationToken))
                         await UniTask.Yield(cancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        MetaverseProgram.Logger.Log(e);
+                        return false;
+                    }
                 }
 
                 return !cancellationToken.IsCancellationRequested;

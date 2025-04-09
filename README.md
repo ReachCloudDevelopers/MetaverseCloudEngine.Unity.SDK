@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.5
-- Fixed access exception when accessing destroyCancellationToken in PlatformAPI
+## 2.153.6
+- Improvements to threading and memory management
 
-Updated on April 07, 2025
+Updated on April 09, 2025

@@ -205,7 +205,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private int _lastMicPos;
 
         // Buffer for streaming AI audio samples
-        private readonly object _bufferLock = new();
         private readonly Queue<float> _streamBuffer = new();
 
         // True if GPT is actively sending audio
@@ -352,7 +351,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 Connect();
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
 #if MV_NATIVE_WEBSOCKETS
             _websocket?.DispatchMessageQueue();
@@ -362,11 +361,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!_isMicRunning || !_micClip) return;
 
             _sampleTimer += Time.deltaTime;
-            if (_sampleTimer >= sampleInterval)
-            {
-                _sampleTimer = 0f;
-                ProcessAudioFrame();
-            }
+            if (_sampleTimer < sampleInterval)
+                return;
+            _sampleTimer = 0f;
+            ProcessAudioFrame();
         }
 
         private void OnApplicationQuit()
@@ -463,6 +461,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
+                
                 try
                 {
                     if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] WebSocket connected!");
@@ -541,7 +541,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!_isShuttingDown)
             {
                 if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Reconnecting now...");
-                UniTask.Void(async () => await ConnectAsync());
+                UniTask.Void(async () =>
+                {
+                    await UniTask.SwitchToMainThread();
+                    await ConnectAsync();
+                });
             }
         }
 
@@ -758,7 +762,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _lastMicPos = currentPos;
 
             // Send chunk of mic data to GPT
-            UniTask.Void(async () => await SendAudioChunk(samples));
+            UniTask.Void(async () =>
+            {
+                await UniTask.SwitchToMainThread();
+                await SendAudioChunk(samples);
+            });
         }
 
         private static byte[] ConvertFloatsToPCM16Bytes(float[] samples)
@@ -902,6 +910,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                                 if (logs) MetaverseProgram.Logger.Log("[AIRealtimeCommunication] Token expired, reconnecting...");
                                 UniTask.Void(async () =>
                                 {
+                                    await UniTask.SwitchToMainThread();
                                     await AcquireEphemeralToken();
                                     await ConnectAsync();
                                 });
@@ -1004,9 +1013,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Resample from GPT output rate to system rate
             var resampledSamples = Resample(samples, gptOutputRate, _systemSampleRate);
 
-            lock (_bufferLock)
-                foreach (var s in resampledSamples)
-                    _streamBuffer.Enqueue(s);
+            foreach (var s in resampledSamples)
+                _streamBuffer.Enqueue(s);
         }
 
         private void HandleAudioTranscriptDelta(JObject jObj)
@@ -1146,8 +1154,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Keep waiting until our buffer is fully played out
             while (true)
             {
-                lock (_bufferLock)
-                    if (_streamBuffer.Count == 0) break;
+                if (_streamBuffer.Count == 0) break;
                 yield return null; // keep waiting
             }
 
@@ -1188,9 +1195,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            lock (_bufferLock)
-                for (var i = 0; i < data.Length; i++)
-                    data[i] = _streamBuffer.Count > 0 ? _streamBuffer.Dequeue() : 0f;
+            for (var i = 0; i < data.Length; i++)
+                data[i] = _streamBuffer.Count > 0 ? _streamBuffer.Dequeue() : 0f;
         }
 
         private float[] Convert16BitPCMToFloats(byte[] pcmData)
@@ -1277,6 +1283,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
+                
                 if (!_pendingVision)
                     return;
                 
@@ -1384,7 +1392,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 outputVoiceSource.Play();
             }
 
-            UniTask.Void(async () => await ConnectAsync());
+            UniTask.Void(async () =>
+            {
+                await UniTask.SwitchToMainThread();
+                await ConnectAsync();
+            });
         }
 
         /// <summary>
@@ -1460,7 +1472,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             UniTask.Void(async () =>
             {
                 await UniTask.SwitchToMainThread();
-
                 await UniTask.WaitUntil(() => !IsProcessing);
 
                 _isStartingResponse = true;
@@ -1530,7 +1541,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             UniTask.Void(async () =>
             {
                 await UniTask.SwitchToMainThread();
-
                 await UniTask.WaitUntil(() => !IsProcessing);
 
                 _isStartingResponse = true;
