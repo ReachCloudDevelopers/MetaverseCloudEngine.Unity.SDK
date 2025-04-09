@@ -828,8 +828,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             try
             {
                 var rawJson = Encoding.UTF8.GetString(data);
-                if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeCommunication] Received: {rawJson}");
-
                 try
                 {
                     var responseJson = JObject.Parse(rawJson);
