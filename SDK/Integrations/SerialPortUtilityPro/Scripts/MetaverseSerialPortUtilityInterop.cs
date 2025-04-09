@@ -1,4 +1,4 @@
-#if UNITY_IOS
+#if UNITY_IOS && false
 #define ENABLE_IOS_INTEGRATION
 #endif
 

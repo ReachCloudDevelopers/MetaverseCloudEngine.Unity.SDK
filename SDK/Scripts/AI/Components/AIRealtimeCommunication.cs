@@ -450,6 +450,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     _visionHandler.OnResponseFailed.AddListener(HandleVisionResponseFailed);
 
                     // Configure the vision agent's prompt
+                    _visionHandler.IntelligencePreset = AiCharacterIntelligencePreset.PreferSpeed;
                     _visionHandler.Prompt =
                         "You are assisting another AI model allowing it to process vision requests. " +
                         "You will receive a short prompt describing the output that is needed from the vision AI. " +

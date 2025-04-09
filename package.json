@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.153.9",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.9\n- Complete rewrite of AIRealtimeCommunication component to be more thread safe and performant.\n\nUpdated on April 09, 2025",
+  "version": "2.153.10",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.10\n- Removed iOS bluetooth experimental support.\n\nUpdated on April 09, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
