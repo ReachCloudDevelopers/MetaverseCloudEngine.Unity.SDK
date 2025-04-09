@@ -841,7 +841,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         case "session.updated":
                             if (logs)
                                 MetaverseProgram.Logger.Log(
-                                    $"[AIRealtimeCommunication] {msgType} event. Session ID: {responseJson["session_id"]}");
+                                    $"[AIRealtimeCommunication] {msgType} event. Session ID: {responseJson["session"]?["id"] ?? "<unknown>"}");
                             break;
                         case "response.audio.delta":
                         {

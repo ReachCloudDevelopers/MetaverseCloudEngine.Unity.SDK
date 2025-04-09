@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.6
-- Improvements to threading and memory management
+## 2.153.7
+- Fixed session ID not logging correctly
 
 Updated on April 09, 2025
