@@ -1519,7 +1519,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         if (enableMicOnQuestion) { Log("Enabling mic."); if (!micActive) MicrophoneActive = true; shouldRestartMic = true; }
                         else { Log("enableMicOnQuestion is false."); shouldRestartMic = micActive; }
                     }
-                    else if (transcript.TrimEnd().EndsWith(";"))
+                    else if (transcript.TrimEnd().EndsWith(";") || transcript.Contains(".;"))
                     {
                         Log("Transcript ends with ';'. Signaling communication finished.");
                         if (disableMicOnCommunicationFinished) { Log("Disabling mic."); if (micActive) MicrophoneActive = false; shouldRestartMic = false; }
