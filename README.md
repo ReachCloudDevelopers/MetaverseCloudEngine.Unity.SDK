@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.16
-- Ensure that AI does not get cut off while speaking.
+## 2.153.17
+- Fixed micActive modification not causing websocket to re-open when set to true even though no change in the flag has been made.
 
 Updated on April 10, 2025

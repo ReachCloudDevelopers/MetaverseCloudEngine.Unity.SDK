@@ -349,6 +349,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
 
         private float _activityTimer;
+        private bool _micActivationQueued; // Flag to indicate if mic activation is pending
 
         // --- Public Properties ---
 
@@ -417,8 +418,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             get => micActive;
             set
             {
-                if (micActive == value) return; // No change
+                if ((micActive == value && _websocket.State != WebSocketState.Closed) || _micActivationQueued) 
+                {
+                    if (_micActivationQueued)
+                        micActive = value; // Mic activation is queued, so update the property
+                    return; // No change
+                }
 
+                _micActivationQueued = true;
                 micActive = value;
                 if (logs) Log($"MicrophoneActive set to: {micActive}");
 
@@ -426,6 +433,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _mainThreadActions.Enqueue(() =>
                 {
 #if MV_NATIVE_WEBSOCKETS
+                    _micActivationQueued = false;
+                    
                     if (micActive)
                     {
                         var isConnectingOrOpen = _websocket != null &&
