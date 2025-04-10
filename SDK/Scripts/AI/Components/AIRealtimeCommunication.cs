@@ -418,7 +418,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             get => micActive;
             set
             {
-                if ((micActive == value && _websocket.State != WebSocketState.Closed) || _micActivationQueued) 
+                if ((micActive == value 
+#if MV_NATIVE_WEBSOCKETS
+                     && _websocket.State != WebSocketState.Closed
+#endif
+                     ) || _micActivationQueued) 
                 {
                     if (_micActivationQueued)
                         micActive = value; // Mic activation is queued, so update the property

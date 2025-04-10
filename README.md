@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.17
-- Fixed micActive modification not causing websocket to re-open when set to true even though no change in the flag has been made.
+## 2.153.18
+- Fixed error message saying reference to websockets is missing
 
 Updated on April 10, 2025
