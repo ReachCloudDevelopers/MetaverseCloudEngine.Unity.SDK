@@ -1454,7 +1454,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 if (!string.IsNullOrEmpty(transcript))
                 {
-                    if (transcript.TrimEnd().EndsWith("?"))
+                    if (transcript.TrimEnd().EndsWith("?") || transcript.EndsWith("?;"))
                     {
                         Log("Transcript ends with '?'.");
                         if (enableMicOnQuestion) { Log("Enabling mic."); if (!micActive) MicrophoneActive = true; shouldRestartMic = true; }

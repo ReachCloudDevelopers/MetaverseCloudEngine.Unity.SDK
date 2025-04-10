@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.12
-- Fixed invalid data being sent to AI when audio is still initializing.
+## 2.153.13
+- Ensure that edge case is handled when AIRealtimeCommunication sends question mark and semicolon simultaneously.
 
 Updated on April 10, 2025
