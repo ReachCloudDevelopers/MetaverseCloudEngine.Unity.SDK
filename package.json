@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.153.19",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.19\n- Ensure that if the AI accidentally adds additional sentence it is considered still as a conversation completion in AIRealtimeCommunication\n\nUpdated on April 10, 2025",
+  "version": "2.153.20",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.20\n- Improved transcript reading in AIRealtimeCommunication\n\nUpdated on April 10, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

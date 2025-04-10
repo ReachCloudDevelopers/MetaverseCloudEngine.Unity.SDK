@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.19
-- Ensure that if the AI accidentally adds additional sentence it is considered still as a conversation completion in AIRealtimeCommunication
+## 2.153.20
+- Improved transcript reading in AIRealtimeCommunication
 
 Updated on April 10, 2025

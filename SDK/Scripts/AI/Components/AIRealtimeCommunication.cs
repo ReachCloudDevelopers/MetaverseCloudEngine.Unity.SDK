@@ -1471,10 +1471,22 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 Log($"Received completed input transcript: \"{transcript}\"");
 
                 // Check for coherence: not null/empty, and not empty after trimming and removing newlines
-                string cleanedTranscript = transcript.Trim().Replace("\n", "").Replace("\r", "");
-
+                var cleanedTranscript = transcript.Trim().Replace("\n", "").Replace("\r", "");
                 if (!string.IsNullOrEmpty(cleanedTranscript))
                 {
+                    const string allowedSinglePhrases = "Yes.,No.,Okay.";
+                    var wordCount = cleanedTranscript.Split(' ').Length;
+                    if (wordCount == 1 && !allowedSinglePhrases.Split(',').Any(phrase => cleanedTranscript.Contains(phrase)))
+                    {
+                        Log("Transcript contains incoherent phrases. Not triggering AI response.");
+                        // Optionally restart mic if it was stopped and conditions allow
+                        if (micActive && CanStartMic()) {
+                            Log("Attempting to restart microphone after incoherent input.");
+                            StartMic();
+                        }
+                        return;
+                    }
+                    
                     Log("Transcript is coherent. Triggering AI response.");
                     TriggerResponseInternal(true); // Force trigger based on coherent input
                 }
