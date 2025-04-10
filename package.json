@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.153.15",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.15\n- Added licensing to AIRealtimeCommunication.cs\n\nUpdated on April 10, 2025",
+  "version": "2.153.16",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.16\n- Ensure that AI does not get cut off while speaking.\n\nUpdated on April 10, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

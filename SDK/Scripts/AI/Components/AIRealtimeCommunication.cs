@@ -1520,6 +1520,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (shouldRestartMic && CanStartMic()) { Log("Attempting to start microphone."); StartMic(); }
                 else { Log($"Microphone remains inactive (ShouldStart: {shouldRestartMic}, CanStart: {CanStartMic()})."); if (!micActive && _isMicRunning) { StopMic(); } }
             }
+            else
+            {
+                _activityTimer = 0;
+            }
         }
 
         /// <summary> Handles 'response.audio.delta' message. Runs on Main Thread. </summary>

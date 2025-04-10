@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.15
-- Added licensing to AIRealtimeCommunication.cs
+## 2.153.16
+- Ensure that AI does not get cut off while speaking.
 
 Updated on April 10, 2025
