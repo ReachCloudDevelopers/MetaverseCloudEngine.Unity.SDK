@@ -330,6 +330,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _isWaitingToFinishSpeaking;
         private string _finishedTranscript; // Store the transcript when waiting starts
 
+        // A flag to indicate if the microphone initialization is pending.
+        // This will help to prevent any garbled audio when the mic is not ready.
+        private bool _micInitializationReadPending;
+        
         // === [1] ADDED FOR IDLE DISCONNECT ===
         [SerializeField]
         private float idleDisconnectTime = 30f;   // Default: 30 seconds
@@ -1131,18 +1135,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (Microphone.IsRecording(_micDevice)) { LogWarning("Microphone was already recording. Stopping it before restarting."); Microphone.End(_micDevice); }
                 if (_micClip != null) { Destroy(_micClip); _micClip = null; }
 
-                _micClip = Microphone.Start(_micDevice, true, 10, micSampleRate);
+                _micClip = Microphone.Start(_micDevice, true, 10, micSampleRate); // Keep buffer duration reasonable (e.g., 10s)
                 if (_micClip == null) { LogError("Failed to start microphone. Microphone.Start returned null."); micActive = false; return; }
 
                 // Check recording state with retries (synchronous delay - consider alternatives if problematic)
-                var retries = 5;
-                while (!Microphone.IsRecording(_micDevice) && retries-- > 0) { LogWarning($"Microphone.IsRecording is false. Waiting... ({retries})"); System.Threading.Thread.Sleep(50); }
                 if (!Microphone.IsRecording(_micDevice)) { LogError("Microphone failed to enter recording state."); Microphone.End(_micDevice); Destroy(_micClip); _micClip = null; micActive = false; return; }
 
-                _lastMicPos = 0;
                 _sampleTimer = 0f;
                 _isMicRunning = true;
                 _hasSentFirstAudioChunk = false;
+                _micInitializationReadPending = true;
                 Log("Microphone recording started successfully.");
             }
             catch (Exception e)
@@ -1214,6 +1216,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             try
             {
                 var currentPos = Microphone.GetPosition(_micDevice);
+                
+                // Perform initial synchronization read without sending data
+                if (_micInitializationReadPending)
+                {
+                    _lastMicPos = currentPos; // Sync position to whatever is current *after* starting
+                    _micInitializationReadPending = false; // Mark synchronization as complete
+                    Log("Initial microphone position synchronized. Skipping first frame send.");
+                    return; // Exit here, don't process/send this initial (potentially noisy) frame
+                }
+
                 var samplesAvailable = (currentPos - _lastMicPos + _micClip.samples) % _micClip.samples; // Handles wrap-around correctly
 
                 if (samplesAvailable <= 0) { return; } // No new data

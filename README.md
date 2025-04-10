@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.11
-- Added idle timeout for websocket connection to AIRealtimeCommunication
+## 2.153.12
+- Fixed invalid data being sent to AI when audio is still initializing.
 
 Updated on April 10, 2025
