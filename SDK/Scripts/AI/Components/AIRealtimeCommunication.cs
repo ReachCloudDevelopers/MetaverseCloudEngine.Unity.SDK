@@ -334,7 +334,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         // This will help to prevent any garbled audio when the mic is not ready.
         private bool _micInitializationReadPending;
         
-        // === [1] ADDED FOR IDLE DISCONNECT ===
         [SerializeField]
         private float idleDisconnectTime = 30f;   // Default: 30 seconds
         public float IdleDisconnectTime
@@ -343,7 +342,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             set => idleDisconnectTime = value;
         }
 
-        // Tracks time since last WebSocket activity (send/receive).
         private float _activityTimer;
 
         // --- Public Properties ---
@@ -421,7 +419,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 // Enqueue the action to be processed in FixedUpdate
                 _mainThreadActions.Enqueue(() =>
                 {
-                    // === [2] ADDED FOR AUTO-CONNECT ON micActive=true ===
 #if MV_NATIVE_WEBSOCKETS
                     if (micActive)
                     {
@@ -580,7 +577,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             UpdateReconnectionState();
             UpdateSpeakingFinishedState();
 
-            // === [1a] IDLE-TIMEOUT CHECK (AFTER processing everything) ===
             UpdateIdleTimer();
         }
 
@@ -1036,7 +1032,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 { "modalities", new[] { "text", "audio" } },
                 { "input_audio_format", "pcm16" },
                 { "output_audio_format", "pcm16" },
-                { "turn_detection", new { type = "server_vad" } },
+                { "turn_detection", new Dictionary<string, object> { // Changed to Dictionary for modification
+                    { "type", "server_vad" },
+                    { "create_response", false } // Turn off automatic response creation
+                    // Default silence/threshold values will be used if not specified here
+                }},
                 { "tools", toolList },
                 { "tool_choice", "auto" },
                 { "input_audio_transcription", new { model = "whisper-1" } },
@@ -1335,7 +1335,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     case "response.created": HandleResponseCreated(); break;
                     case "response.done": HandleResponseDone(responseJson); break;
                     case "conversation.item.created": Log($"'{msgType}' confirmed for item ID: {responseJson["item"]?["item_id"]}"); break;
-                    case "conversation.item.updated": Log($"'{msgType}' for item ID: {responseJson["item"]?["item_id"]}, Type: {responseJson["item"]?["type"]}"); break;
+                    case "conversation.item.input_audio_transcription.completed": HandleTranscriptCompleted(responseJson); break; // <<< MODIFICATION: Added handler
                     case "function_call.created": Log($"'{msgType}' detected for call_id: {responseJson["call_id"]}. Waiting for response.done."); break;
                     case "response.audio_transcript.done": HandleAudioTranscriptDone(responseJson); break;
                     case "response.text.done": HandleAudioTranscriptDone(responseJson); break;
@@ -1418,9 +1418,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             ProcessFunctionCallsFromResponse(responseJson);
 
             var finalTranscript = _currentTranscriptText;
+            // Fallback: try to get text directly from the response.done if delta accumulation was empty
             if (string.IsNullOrEmpty(finalTranscript)) {
                 finalTranscript = responseJson["response"]?["output"]?.FirstOrDefault(o => o["type"]?.ToString() == "message")?["content"]?.FirstOrDefault(c => c["type"]?.ToString() == "text")?["text"]?.ToString();
             }
+
             Log($"Final transcript for this turn: \"{finalTranscript ?? ""}\"");
             try { onAIResponseString?.Invoke(finalTranscript ?? string.Empty); Log("onAIResponseString event invoked."); }
             catch (Exception e) { LogError($"Error in onAIResponseString handler: {e.Message}"); }
@@ -1436,6 +1438,44 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             else { Log($"Not finishing speaking state yet. Responses in progress: {_responsesInProgress}, Pending Vision: {_pendingVision}"); }
         }
+        
+        /// <summary> Handles the 'conversation.item.input_audio_transcription.completed' message. Runs on Main Thread. Checks for completed transcription and triggers response if coherent. </summary>
+        private void HandleTranscriptCompleted(JObject jObj)
+        {
+            if (_isShuttingDown) return;
+
+            // Check if this update contains the completed input audio transcription
+            var transcript = jObj["transcript"]?.ToString();
+
+            if (transcript != null) // We got a completed transcript string
+            {
+                Log($"Received completed input transcript: \"{transcript}\"");
+
+                // Check for coherence: not null/empty, and not empty after trimming and removing newlines
+                string cleanedTranscript = transcript.Trim().Replace("\n", "").Replace("\r", "");
+
+                if (!string.IsNullOrEmpty(cleanedTranscript))
+                {
+                    Log("Transcript is coherent. Triggering AI response.");
+                    TriggerResponseInternal(true); // Force trigger based on coherent input
+                }
+                else
+                {
+                    Log("Transcript is empty or incoherent after cleaning. Not triggering response.");
+                    // Optionally restart mic if it was stopped and conditions allow
+                    if (micActive && CanStartMic()) {
+                        Log("Attempting to restart microphone after incoherent input.");
+                        StartMic();
+                    }
+                }
+            }
+            else
+            {
+                // Log other conversation item updates if needed for debugging
+                 Log($"'conversation.item.updated' for item ID: {jObj["item_id"]}");
+            }
+        }
+
 
         /// <summary> Called from FixedUpdate to check if the AI has finished speaking (audio buffer empty) and handle subsequent actions. </summary>
         private void UpdateSpeakingFinishedState()
@@ -1470,6 +1510,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     }
                 }
 
+                // Only restart mic if conditions allow (including user preference `micActive`)
                 if (shouldRestartMic && CanStartMic()) { Log("Attempting to start microphone."); StartMic(); }
                 else { Log($"Microphone remains inactive (ShouldStart: {shouldRestartMic}, CanStart: {CanStartMic()})."); if (!micActive && _isMicRunning) { StopMic(); } }
             }
@@ -1907,7 +1948,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _activityTimer = 0f;
 
                 Log("Vision response sent.");
-                TriggerResponseInternal(true);
+                TriggerResponseInternal(true); // Force trigger after sending system message
             }
             catch (Exception e)
             {
@@ -1967,7 +2008,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _activityTimer = 0f;
 
                 Log("Vision failure message sent.");
-                TriggerResponseInternal(true);
+                TriggerResponseInternal(true); // Force trigger after sending system message
             }
             catch (Exception e)
             {
@@ -2053,7 +2094,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     {
                         Destroy(outputVoiceSource.clip);
                     }
-                    outputVoiceSource.clip = AudioClip.Create("StreamingClip", _systemSampleRate, 1, _systemSampleRate, true, OnAudioPCMRead);
+                    // Ensure the AudioClip uses the system sample rate for playback via OnAudioFilterRead
+                    outputVoiceSource.clip = AudioClip.Create("StreamingClip", _systemSampleRate * 2, 1, _systemSampleRate, true); // Longer buffer just in case
                     outputVoiceSource.loop = true;
                     outputVoiceSource.Play();
                     Log("Output AudioSource prepared.");
@@ -2088,7 +2130,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary> Public method to set microphone inactive state. </summary>
         public void SetMicrophoneInactive(bool inactive) { MicrophoneActive = !inactive; }
 
-        /// <summary> Public method to trigger an AI response without new text input. </summary>
+        /// <summary>
+        /// Public method to manually trigger an AI response. Use with caution, as it bypasses
+        /// the automatic triggering based on coherent transcription.
+        /// </summary>
         public void TriggerResponse()
         {
             _mainThreadActions.Enqueue(() => TriggerResponseInternal(false));
@@ -2132,7 +2177,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     _activityTimer = 0f;
 
                     Log("User text sent.");
-                    TriggerResponseInternal(true);
+                    TriggerResponseInternal(true); // Force trigger after explicit text input
                 }
                 catch (Exception e)
                 {
@@ -2182,6 +2227,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     _activityTimer = 0f;
 
                     Log("User text sent.");
+                    // NOTE: No TriggerResponseInternal call here, as requested by method name
                 }
                 catch (Exception e)
                 {
@@ -2197,12 +2243,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void TriggerResponseInternal(bool force)
         {
             if (_isShuttingDown) return;
-            var busy = IsProcessing && !_isWaitingToFinishSpeaking;
+            
+            // Prevent triggering if AI is already speaking or waiting to finish, unless forced.
+            // Allow triggering even if the mic is running (e.g., triggered by transcript complete event)
+            var busy = (_isAiSpeaking || _isWaitingToFinishSpeaking) && !_pendingVision; // Allow trigger if pending vision finished
             if (!force && busy)
             {
-                Log("TriggerResponseInternal: Processing, request ignored.");
+                Log($"TriggerResponseInternal: Processing (AI Speaking: {_isAiSpeaking}, WaitingToFinish: {_isWaitingToFinishSpeaking}), request ignored.");
                 return;
             }
+            // Prevent triggering if a response is already actively being generated/streamed
+            if (_responsesInProgress > 0 && !force) {
+                 Log($"TriggerResponseInternal: Response already in progress ({_responsesInProgress}), request ignored.");
+                 return;
+            }
+
 
 #if MV_NATIVE_WEBSOCKETS
             if (_websocket == null || _websocket.State != WebSocketState.Open)
@@ -2211,6 +2266,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
             Log("Triggering AI response creation...");
+            StopMic(); // Ensure mic is stopped before requesting response
             var responseMsg = new
             {
                 type = "response.create",

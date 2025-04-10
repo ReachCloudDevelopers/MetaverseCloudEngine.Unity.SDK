@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.13
-- Ensure that edge case is handled when AIRealtimeCommunication sends question mark and semicolon simultaneously.
+## 2.153.14
+- Added more stability to conversational AI by using custom transcript post-processing to ensure valid transcription data is being interpreted.
 
 Updated on April 10, 2025
