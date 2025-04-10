@@ -330,6 +330,18 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _isWaitingToFinishSpeaking;
         private string _finishedTranscript; // Store the transcript when waiting starts
 
+        // === [1] ADDED FOR IDLE DISCONNECT ===
+        [SerializeField]
+        private float idleDisconnectTime = 30f;   // Default: 30 seconds
+        public float IdleDisconnectTime
+        {
+            get => idleDisconnectTime;
+            set => idleDisconnectTime = value;
+        }
+
+        // Tracks time since last WebSocket activity (send/receive).
+        private float _activityTimer;
+
         // --- Public Properties ---
 
         /// <summary>
@@ -405,6 +417,19 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 // Enqueue the action to be processed in FixedUpdate
                 _mainThreadActions.Enqueue(() =>
                 {
+                    // === [2] ADDED FOR AUTO-CONNECT ON micActive=true ===
+#if MV_NATIVE_WEBSOCKETS
+                    if (micActive)
+                    {
+                        var isConnectingOrOpen = _websocket != null &&
+                            (_websocket.State == WebSocketState.Connecting || _websocket.State == WebSocketState.Open);
+                        if (!isConnectingOrOpen && !_isAcquiringToken)
+                        {
+                            // If the socket is disconnected (not open/connecting) and not acquiring token, connect now
+                            Connect();
+                        }
+                    }
+#endif
                     if (!micActive)
                     {
                         // User explicitly disabled the mic
@@ -414,7 +439,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     {
 #if MV_NATIVE_WEBSOCKETS
                         // User re-enabled the mic, try to start it if conditions allow
-                        // Check connection state and other blocking flags
                         if (CanStartMic()) // Use helper function to check all conditions
                         {
                             StartMic();
@@ -551,6 +575,28 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // 4. Update state machines (reconnection, finishing speech)
             UpdateReconnectionState();
             UpdateSpeakingFinishedState();
+
+            // === [1a] IDLE-TIMEOUT CHECK (AFTER processing everything) ===
+            UpdateIdleTimer();
+        }
+
+        /// <summary>
+        /// Idle activity check: If we've gone idleDisconnectTime seconds
+        /// without sending or receiving from the WebSocket, disconnect.
+        /// </summary>
+        private void UpdateIdleTimer()
+        {
+#if MV_NATIVE_WEBSOCKETS
+            if (_websocket != null && _websocket.State == WebSocketState.Open && idleDisconnectTime > 0f)
+            {
+                _activityTimer += Time.fixedDeltaTime;
+                if (_activityTimer >= idleDisconnectTime)
+                {
+                    Log($"Idle timeout reached ({idleDisconnectTime}s). Closing connection due to inactivity.");
+                    DisconnectInternal();
+                }
+            }
+#endif
         }
 
         /// <summary>
@@ -716,6 +762,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 _websocket.Connect();
                 Log("WebSocket Connect() method called.");
+
+                // Reset activity timer on connect
+                _activityTimer = 0f;
             }
             catch (Exception e)
             {
@@ -731,7 +780,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary>
         /// Handles WebSocket open event (from WebSocket thread). Enqueues `ProcessWebSocketOpen`.
         /// </summary>
-        private void HandleWebSocketOpen() { _mainThreadActions.Enqueue(ProcessWebSocketOpen); }
+        private void HandleWebSocketOpen() 
+        {
+            // Reset timer because we just had activity
+            _activityTimer = 0f;
+
+            _mainThreadActions.Enqueue(ProcessWebSocketOpen);
+        }
 
         /// <summary>
         /// Processes WebSocket open event (runs on main thread).
@@ -794,7 +849,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     _websocket = null;
                 }
                 ResetCommunicationState();
-                 try { onDisconnected?.Invoke(); } catch (Exception e) { LogError($"Error in onDisconnected handler: {e.Message}"); }
+                try { onDisconnected?.Invoke(); } catch (Exception e) { LogError($"Error in onDisconnected handler: {e.Message}"); }
                 return;
             }
 
@@ -870,6 +925,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _pendingVision = false;
             _isWaitingToFinishSpeaking = false;
             _streamBuffer.Clear();
+            onCommunicationFinished?.Invoke();
         }
 
         /// <summary>
@@ -974,35 +1030,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var sessionConfig = new Dictionary<string, object>
             {
                 { "modalities", new[] { "text", "audio" } },
-                 // REMOVED: "input_audio_rate" - Invalid for session.update
-                 // REMOVED: "output_audio_rate" - Invalid for session.update
-                { "input_audio_format", "pcm16" }, // Format is allowed
-                { "output_audio_format", "pcm16" }, // Format is allowed
-                { "turn_detection", new { type = "server_vad" } }, // Turn detection is allowed
-                { "tools", toolList }, // Tools are allowed
-                { "tool_choice", "auto" }, // Tool choice is allowed
-                { "input_audio_transcription", new { model = "whisper-1" } }, // Transcription settings allowed
+                { "input_audio_format", "pcm16" },
+                { "output_audio_format", "pcm16" },
+                { "turn_detection", new { type = "server_vad" } },
+                { "tools", toolList },
+                { "tool_choice", "auto" },
+                { "input_audio_transcription", new { model = "whisper-1" } },
             };
 
-            // Remove null values manually if necessary, or use cleaner object initialization
-             var sessionUpdatePayload = new
-             {
-                 type = "session.update",
-                 session = sessionConfig.Where(kvp => kvp.Value != null)
-                                       .ToDictionary(kvp => kvp.Key, kvp => kvp.Value) // Filter out nulls
-             };
-
+            var sessionUpdatePayload = new
+            {
+                type = "session.update",
+                session = sessionConfig.Where(kvp => kvp.Value != null)
+                                       .ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
+            };
 
             string jsonPayload;
             try
             {
                  jsonPayload = JsonConvert.SerializeObject(sessionUpdatePayload, Formatting.None,
-                    new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }); // Ignore nulls during serialization
+                    new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore }); 
             }
             catch (Exception e) { LogError($"Failed to serialize session update message: {e.Message}"); return; }
 
             Log("Sending session.update message...");
             _websocket.SendText(jsonPayload);
+            // Reset idle timer on activity
+            _activityTimer = 0f;
+
             Log("session.update message sent.");
 
 #else
@@ -1042,7 +1097,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (!socketOpen) { LogWarning("StartMic called, but WebSocket is not open."); return; }
 
-             // Check all potential blocking states
+            // Check all potential blocking states
             if (_isAiSpeaking || _pendingVision || _isWaitingToFinishSpeaking || _isAcquiringToken) {
                 Log($"StartMic called, but blocked by: AI Speaking({_isAiSpeaking}), Pending Vision({_pendingVision}), Finishing Speech({_isWaitingToFinishSpeaking}), Acquiring Token({_isAcquiringToken}). Mic start deferred.");
                 return;
@@ -1105,7 +1160,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (!_isMicRunning) { return; }
 
             Log("Stopping microphone recording...");
-             var wasSendingAudio = _hasSentFirstAudioChunk;
+            var wasSendingAudio = _hasSentFirstAudioChunk;
             _isMicRunning = false;
             _hasSentFirstAudioChunk = false;
 
@@ -1120,10 +1175,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             finally
             {
                 _lastMicPos = 0;
-                 if (wasSendingAudio) {
+                if (wasSendingAudio) {
                     try { onMicStopped?.Invoke(); Log("onMicStopped event invoked."); }
                     catch (Exception e) { LogError($"Error in onMicStopped event handler: {e.Message}"); }
-                 } else { Log("Mic stopped, but no audio was sent since last start, so onMicStopped was not invoked."); }
+                } else { Log("Mic stopped, but no audio was sent since last start, so onMicStopped was not invoked."); }
             }
         }
 
@@ -1138,7 +1193,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_sampleTimer >= sampleInterval)
             {
                 _sampleTimer -= sampleInterval;
-                if (!Microphone.IsRecording(_micDevice)) { LogWarning("Microphone stopped recording unexpectedly. Restarting..."); StopMic(); StartMic(); return; }
+                if (!Microphone.IsRecording(_micDevice))
+                {
+                    LogWarning("Microphone stopped recording unexpectedly. Restarting...");
+                    StopMic();
+                    StartMic();
+                    return;
+                }
                 ProcessAudioFrame();
             }
         }
@@ -1174,7 +1235,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (samples == null || samples.Length == 0) return Array.Empty<byte>();
             var pcmBytes = new byte[samples.Length * 2];
             var byteIndex = 0;
-            foreach (var t in samples) {
+            foreach (var t in samples)
+            {
                 var pcmValue = (short)(Mathf.Clamp(t, -1.0f, 1.0f) * 32767f);
                 pcmBytes[byteIndex++] = (byte)(pcmValue & 0xFF);
                 pcmBytes[byteIndex++] = (byte)((pcmValue >> 8) & 0xFF);
@@ -1202,6 +1264,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var json = JsonConvert.SerializeObject(appendMsg);
                 _websocket.SendText(json);
 
+                // Reset idle timer on activity
+                _activityTimer = 0f;
+
                 if (!_hasSentFirstAudioChunk) {
                     _hasSentFirstAudioChunk = true;
                     try { onMicStarted?.Invoke(); Log("onMicStarted event invoked (first audio chunk sent)."); }
@@ -1219,10 +1284,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         #region AI Response Handling (WebSocket Messages)
 
         /// <summary>
-        /// Handles incoming raw WebSocket message data (from WebSocket thread). Enqueues `ProcessWebSocketMessage`.
+        /// Handles incoming raw WebSocket message data (from WebSocket thread). 
+        /// Resets idle timer and enqueues `ProcessWebSocketMessage`.
         /// </summary>
         private void HandleWebSocketMessage(byte[] data)
         {
+            // Reset idle timer on inbound message
+            _activityTimer = 0f;
+
             if (data == null || data.Length == 0) return;
             try {
                 var rawJson = Encoding.UTF8.GetString(data);
@@ -1249,16 +1318,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     case "session.created": Log($"{msgType} event. Session ID: {responseJson["session"]!["id"]?.ToString() ?? "N/A"}"); break;
                     case "session.updated": Log($"{msgType} event. Session ID: {responseJson["session"]!["id"]?.ToString() ?? "N/A"}"); break;
                     case "response.audio.delta": HandleAudioDelta(responseJson); break;
-                    case "response.audio_transcript.delta": HandleAudioTranscriptDelta(responseJson); break; // Note: This matches V1 doc, V2 might use response.text.delta? Keep for now.
-                    case "response.text.delta": HandleAudioTranscriptDelta(responseJson); break; // Handle V2 text delta as well.
+                    case "response.audio_transcript.delta": HandleAudioTranscriptDelta(responseJson); break; 
+                    case "response.text.delta": HandleAudioTranscriptDelta(responseJson); break; 
                     case "response.created": HandleResponseCreated(); break;
                     case "response.done": HandleResponseDone(responseJson); break;
                     case "conversation.item.created": Log($"'{msgType}' confirmed for item ID: {responseJson["item"]?["item_id"]}"); break;
                     case "conversation.item.updated": Log($"'{msgType}' for item ID: {responseJson["item"]?["item_id"]}, Type: {responseJson["item"]?["type"]}"); break;
                     case "function_call.created": Log($"'{msgType}' detected for call_id: {responseJson["call_id"]}. Waiting for response.done."); break;
-                    // V2 events potentially replacing audio_transcript.delta/done
                     case "response.audio_transcript.done": HandleAudioTranscriptDone(responseJson); break;
-                    case "response.text.done": HandleAudioTranscriptDone(responseJson); break; // Treat text.done same as audio_transcript.done
+                    case "response.text.done": HandleAudioTranscriptDone(responseJson); break;
                     case "response.function_call_arguments.delta": HandleFunctionArgsDelta(responseJson); break;
                     case "response.function_call_arguments.done": HandleFunctionArgsDone(responseJson); break;
                     case "error": HandleServerError(responseJson); break;
@@ -1280,7 +1348,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_responsesInProgress == 1 && !_isAiSpeaking) {
                 _isAiSpeaking = true;
                 _currentTranscriptText = string.Empty;
-                 _functionCallArgsBuffer.Clear(); // Clear function arg buffer too
+                _functionCallArgsBuffer.Clear(); // Clear function arg buffer too
                 Log("Marked AI as speaking. Stopping microphone.");
                 StopMic();
                 try { onAIResponseStarted?.Invoke(); Log("onAIResponseStarted event invoked."); }
@@ -1289,8 +1357,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             else if (_responsesInProgress > 1) { LogWarning("response.created received while another response was already in progress. Nested responses?"); }
         }
 
-         /// <summary> Accumulates partial function call arguments. </summary>
-         private readonly Dictionary<string, StringBuilder> _functionCallArgsBuffer = new Dictionary<string, StringBuilder>();
+        /// <summary> Accumulates partial function call arguments. </summary>
+        private readonly Dictionary<string, StringBuilder> _functionCallArgsBuffer = new Dictionary<string, StringBuilder>();
 
         /// <summary> Handles the 'response.function_call_arguments.delta' message. Runs on Main Thread. </summary>
         private void HandleFunctionArgsDelta(JObject jObj) {
@@ -1303,29 +1371,26 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _functionCallArgsBuffer[callId] = buffer;
             }
             buffer.Append(delta);
-             // Log($"Function call args delta for {callId}: {delta}"); // Can be noisy
         }
 
         /// <summary> Handles the 'response.function_call_arguments.done' message. Runs on Main Thread. </summary>
         private void HandleFunctionArgsDone(JObject jObj) {
             var callId = jObj["call_id"]?.ToString();
-            var finalArgs = jObj["arguments"]?.ToString(); // Use the final argument string from the 'done' event
+            var finalArgs = jObj["arguments"]?.ToString();
             if(string.IsNullOrEmpty(callId)) return;
 
-            // If we have buffered args, log them for comparison/debugging, but prefer the final args from the event
             if (_functionCallArgsBuffer.TryGetValue(callId, out var bufferedArgs)) {
                 var bufferedResult = bufferedArgs.ToString();
-                 if(logs && bufferedResult != finalArgs) {
-                      LogWarning($"Function call {callId} final args ('{finalArgs}') differ from buffered delta ('{bufferedResult}'). Using final args.");
-                 }
-                _functionCallArgsBuffer.Remove(callId); // Clean up buffer
-            } else if(string.IsNullOrEmpty(finalArgs)) {
-                 LogWarning($"Function call arguments done for {callId}, but no arguments provided or buffered.");
-                 finalArgs = "{}"; // Assume empty object if null/empty?
+                if(logs && bufferedResult != finalArgs) {
+                    LogWarning($"Function call {callId} final args ('{finalArgs}') differ from buffered delta ('{bufferedResult}'). Using final args.");
+                }
+                _functionCallArgsBuffer.Remove(callId);
+            } 
+            else if(string.IsNullOrEmpty(finalArgs)) {
+                LogWarning($"Function call arguments done for {callId}, but no arguments provided or buffered.");
+                finalArgs = "{}";
             }
-
-             // We don't trigger the function here. The full function details arrive in 'response.done'.
-             Log($"Function call arguments complete for {callId}. Final Args: {finalArgs}");
+            Log($"Function call arguments complete for {callId}. Final Args: {finalArgs}");
         }
 
         /// <summary> Handles the 'response.done' message. Runs on Main Thread. </summary>
@@ -1338,25 +1403,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_responsesInProgress < 0) { LogWarning("response.done received but no response was marked as in progress. Resetting count to 0."); _responsesInProgress = 0; }
             Log($"Responses in progress: {_responsesInProgress}");
 
-            // Process function calls embedded in the response output.
-            // This now uses the arguments potentially buffered/finalized by HandleFunctionArgsDone.
             ProcessFunctionCallsFromResponse(responseJson);
 
-            // Handle the final transcript text (check both transcript and text fields for compatibility).
-            var finalTranscript = _currentTranscriptText; // Use the buffered text delta
+            var finalTranscript = _currentTranscriptText;
             if (string.IsNullOrEmpty(finalTranscript)) {
-                // Fallback for V1/V2 compatibility if delta wasn't received but done event has text
                 finalTranscript = responseJson["response"]?["output"]?.FirstOrDefault(o => o["type"]?.ToString() == "message")?["content"]?.FirstOrDefault(c => c["type"]?.ToString() == "text")?["text"]?.ToString();
             }
             Log($"Final transcript for this turn: \"{finalTranscript ?? ""}\"");
             try { onAIResponseString?.Invoke(finalTranscript ?? string.Empty); Log("onAIResponseString event invoked."); }
             catch (Exception e) { LogError($"Error in onAIResponseString handler: {e.Message}"); }
-            _currentTranscriptText = string.Empty; // Reset for the next turn
+            _currentTranscriptText = string.Empty; 
 
             if (_responsesInProgress == 0 && !_pendingVision) {
                 Log("All responses complete and no pending vision. Finishing speaking state.");
                 _isWaitingToFinishSpeaking = true;
-                _finishedTranscript = finalTranscript; // Store for checking '?' or ';' later
+                _finishedTranscript = finalTranscript; 
                 Log("Waiting for audio buffer to empty before potentially restarting mic.");
                 try { onAIResponseFinished?.Invoke(); Log("onAIResponseFinished event invoked."); }
                 catch (Exception e) { LogError($"Error in onAIResponseFinished handler: {e.Message}"); }
@@ -1369,7 +1430,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             if (!_isWaitingToFinishSpeaking || _isShuttingDown) return;
 
-            if (_streamBuffer.IsEmpty) {
+            if (_streamBuffer.IsEmpty)
+            {
                 Log("Audio buffer is empty. AI has finished speaking.");
                 _isWaitingToFinishSpeaking = false;
                 _isAiSpeaking = false;
@@ -1378,12 +1440,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _finishedTranscript = null;
                 var shouldRestartMic = micActive;
 
-                if (!string.IsNullOrEmpty(transcript)) {
-                    if (transcript.TrimEnd().EndsWith("?")) {
+                if (!string.IsNullOrEmpty(transcript))
+                {
+                    if (transcript.TrimEnd().EndsWith("?"))
+                    {
                         Log("Transcript ends with '?'.");
                         if (enableMicOnQuestion) { Log("Enabling mic."); if (!micActive) MicrophoneActive = true; shouldRestartMic = true; }
                         else { Log("enableMicOnQuestion is false."); shouldRestartMic = micActive; }
-                    } else if (transcript.TrimEnd().EndsWith(";")) {
+                    }
+                    else if (transcript.TrimEnd().EndsWith(";"))
+                    {
                         Log("Transcript ends with ';'. Signaling communication finished.");
                         if (disableMicOnCommunicationFinished) { Log("Disabling mic."); if (micActive) MicrophoneActive = false; shouldRestartMic = false; }
                         else { Log("disableMicOnCommunicationFinished is false."); shouldRestartMic = micActive; }
@@ -1408,7 +1474,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (pcmBytes.Length == 0) return;
                 var samples = Convert16BitPCMToFloats(pcmBytes);
                 if (samples.Length == 0) return;
-                var finalSamples = Resample(samples, outputSampleRate, _systemSampleRate); // Resample using configured gptOutputRate
+                var finalSamples = Resample(samples, outputSampleRate, _systemSampleRate);
                 if (finalSamples.Length == 0) return;
                 foreach (var s in finalSamples) { _streamBuffer.Enqueue(s); }
             } catch (FormatException formatEx) { LogError($"Base64 decoding error for audio delta: {formatEx.Message}"); }
@@ -1420,26 +1486,28 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             if (_isShuttingDown) return;
             var delta = jObj["delta"]?.ToString();
-            if (delta == null) return; // Allow empty string delta ""
+            if (delta == null) return; 
             _currentTranscriptText += delta;
         }
 
-         /// <summary> Handles 'response.audio_transcript.done' or 'response.text.done'. Runs on Main Thread. </summary>
-         private void HandleAudioTranscriptDone(JObject jObj)
-         {
-             if (_isShuttingDown) return;
-             // V2 includes the final text/transcript in the 'done' event.
-             var finalValue = jObj["transcript"]?.ToString() ?? jObj["text"]?.ToString();
-             if (finalValue != null) {
-                 if(logs && _currentTranscriptText != finalValue) {
-                     LogWarning($"Final transcript/text ('{finalValue}') differs from buffered delta ('{_currentTranscriptText}'). Using final value.");
-                 }
-                 _currentTranscriptText = finalValue; // Override with final value from 'done' event
-             } else {
-                 LogWarning($"Received transcript/text done event, but no final value found. Using buffered value: '{_currentTranscriptText}'");
-             }
-             // The overall 'response.done' event handles invoking onAIResponseString.
-         }
+        /// <summary> Handles 'response.audio_transcript.done' or 'response.text.done'. Runs on Main Thread. </summary>
+        private void HandleAudioTranscriptDone(JObject jObj)
+        {
+            if (_isShuttingDown) return;
+            var finalValue = jObj["transcript"]?.ToString() ?? jObj["text"]?.ToString();
+            if (finalValue != null)
+            {
+                if(logs && _currentTranscriptText != finalValue)
+                {
+                    LogWarning($"Final transcript/text ('{finalValue}') differs from buffered delta ('{_currentTranscriptText}'). Using final value.");
+                }
+                _currentTranscriptText = finalValue;
+            }
+            else
+            {
+                LogWarning($"Received transcript/text done event, but no final value found. Using buffered value: '{_currentTranscriptText}'");
+            }
+        }
 
         /// <summary> Handles the 'error' message from the server. Runs on Main Thread. </summary>
         private void HandleServerError(JObject responseJson)
@@ -1469,36 +1537,40 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (item is not JObject itemObj) continue;
                 var itemType = itemObj["type"]?.ToString();
-                if (itemType != "function_call") continue; // V1 style? Need to check V2 format.
+                if (itemType != "function_call") continue;
 
-                 // V2 Format Check: The function call details might be directly in the item
-                 var functionName = itemObj["name"]?.ToString();
-                 var callId = itemObj["call_id"]?.ToString();
-                 string argumentsJson;
+                var functionName = itemObj["name"]?.ToString();
+                var callId = itemObj["call_id"]?.ToString();
+                string argumentsJson;
 
-                 // Get arguments: Prefer final args from buffer, fallback to item if needed.
-                 if (!string.IsNullOrEmpty(callId) && _functionCallArgsBuffer.TryGetValue(callId, out var bufferedArgs)) {
+                if (!string.IsNullOrEmpty(callId) && _functionCallArgsBuffer.TryGetValue(callId, out var bufferedArgs))
+                {
                     argumentsJson = bufferedArgs.ToString();
-                    _functionCallArgsBuffer.Remove(callId); // Clean up buffer immediately
-                 } else {
-                     // Fallback if delta/done events for args were missed or not used
-                      argumentsJson = itemObj["arguments"]?.ToString();
-                      if(!string.IsNullOrEmpty(callId)) _functionCallArgsBuffer.Remove(callId); // Ensure buffer is cleaned even if args were directly in response.done
-                 }
+                    _functionCallArgsBuffer.Remove(callId);
+                }
+                else
+                {
+                    argumentsJson = itemObj["arguments"]?.ToString();
+                    if(!string.IsNullOrEmpty(callId)) _functionCallArgsBuffer.Remove(callId);
+                }
 
-
-                if (string.IsNullOrEmpty(functionName)) { LogWarning("Found function_call with missing name."); continue; }
+                if (string.IsNullOrEmpty(functionName))
+                {
+                    LogWarning("Found function_call with missing name.");
+                    continue;
+                }
 
                 Log($"Processing function_call: Name='{functionName}', CallID='{callId ?? "N/A"}', Args='{argumentsJson ?? "None"}'");
 
                 if (functionName == "vision_request") { HandleVisionFunctionCall(argumentsJson); }
                 else { TriggerUserFunctionCall(functionName, argumentsJson); }
             }
-             // Clear any remaining buffers for calls not listed in response.done (shouldn't happen ideally)
-             if(_functionCallArgsBuffer.Count > 0) {
-                 LogWarning($"Clearing {_functionCallArgsBuffer.Count} stale function call argument buffers.");
-                 _functionCallArgsBuffer.Clear();
-             }
+
+            if(_functionCallArgsBuffer.Count > 0)
+            {
+                LogWarning($"Clearing {_functionCallArgsBuffer.Count} stale function call argument buffers.");
+                _functionCallArgsBuffer.Clear();
+            }
         }
 
         /// <summary> Handles 'vision_request' function call. Runs on Main Thread. </summary>
@@ -1528,47 +1600,164 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             Log($"Invoking user function: '{functionID}'");
             try { functionDefinition.onCalled?.Invoke(); } catch (Exception e) { LogError($"Error invoking onCalled for '{functionID}': {e.Message}"); }
 
-            if (!string.IsNullOrEmpty(argumentsJson) && functionDefinition.parameters.Count > 0) {
-                try {
+            if (!string.IsNullOrEmpty(argumentsJson) && functionDefinition.parameters.Count > 0)
+            {
+                try
+                {
                     var arguments = JObject.Parse(argumentsJson);
-                    foreach (var paramDef in functionDefinition.parameters) {
-                        if (arguments.TryGetValue(paramDef.parameterID, StringComparison.OrdinalIgnoreCase, out var paramValueToken)) { ParseAndInvokeParameter(paramDef, paramValueToken); }
-                        else { Log($"Argument '{paramDef.parameterID}' not provided for '{functionID}'. Skipping."); }
+                    foreach (var paramDef in functionDefinition.parameters)
+                    {
+                        if (arguments.TryGetValue(paramDef.parameterID, StringComparison.OrdinalIgnoreCase, out var paramValueToken))
+                        {
+                            ParseAndInvokeParameter(paramDef, paramValueToken);
+                        }
+                        else
+                        {
+                            Log($"Argument '{paramDef.parameterID}' not provided for '{functionID}'. Skipping.");
+                        }
                     }
-                } catch (JsonException jsonEx) { LogError($"Failed to parse args JSON for '{functionID}': {jsonEx.Message}\nJSON: {argumentsJson}"); }
+                }
+                catch (JsonException jsonEx) { LogError($"Failed to parse args JSON for '{functionID}': {jsonEx.Message}\nJSON: {argumentsJson}"); }
                 catch (Exception e) { LogError($"Error processing args for '{functionID}': {e.Message}"); }
-            } else if (!string.IsNullOrEmpty(argumentsJson)) { LogWarning($"Function '{functionID}' received args '{argumentsJson}' but defines no parameters."); }
-            else if (functionDefinition.parameters.Count > 0) { Log($"Function '{functionID}' defines parameters but received no arguments."); }
+            }
+            else if (!string.IsNullOrEmpty(argumentsJson))
+            {
+                LogWarning($"Function '{functionID}' received args '{argumentsJson}' but defines no parameters.");
+            }
+            else if (functionDefinition.parameters.Count > 0)
+            {
+                Log($"Function '{functionID}' defines parameters but received no arguments.");
+            }
         }
 
         /// <summary> Parses a JToken value and invokes the corresponding parameter event. Runs on Main Thread. </summary>
         private void ParseAndInvokeParameter(AIRealtimeCommunicationFunctionParameter paramDef, JToken valueToken)
         {
-            if (valueToken == null || valueToken.Type == JTokenType.Null) { LogWarning($"Null value for parameter '{paramDef.parameterID}'."); return; }
-            var valueString = valueToken.ToString(); // Use string representation for most parsing
+            if (valueToken == null || valueToken.Type == JTokenType.Null)
+            {
+                LogWarning($"Null value for parameter '{paramDef.parameterID}'.");
+                return;
+            }
+            var valueString = valueToken.ToString(); 
             Log($"Parsing parameter '{paramDef.parameterID}', Type: {paramDef.type}, Raw Value: '{valueString}'");
-            try {
-                switch (paramDef.type) {
-                    case AIRealtimeCommunicationFunctionParameterType.String: paramDef.onStringValue?.Invoke(valueString); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Float: if (float.TryParse(valueString, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var fVal)) paramDef.onFloatValue?.Invoke(fVal); else LogWarning($"Failed parse float: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Integer: if (int.TryParse(valueString, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var iVal)) paramDef.onIntValue?.Invoke(iVal); else LogWarning($"Failed parse int: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Boolean: bool bVal; if (valueToken.Type == JTokenType.Boolean) bVal = valueToken.Value<bool>(); else if (!bool.TryParse(valueString, out bVal)) if (valueString == "1") bVal = true; else if (valueString == "0") bVal = false; else { LogWarning($"Failed parse bool: '{valueString}'"); return; } paramDef.onBoolValue?.Invoke(bVal); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Vector2: if (TryParseVector2(valueString, out var v2)) paramDef.onVector2Value?.Invoke(v2); else LogWarning($"Failed parse Vector2: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Vector3: if (TryParseVector3(valueString, out var v3)) paramDef.onVector3Value?.Invoke(v3); else LogWarning($"Failed parse Vector3: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Vector4: if (TryParseVector4(valueString, out var v4)) paramDef.onVector4Value?.Invoke(v4); else LogWarning($"Failed parse Vector4: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Quaternion: if (TryParseVector4(valueString, out var q)) paramDef.onQuaternionValue?.Invoke(new Quaternion(q.x, q.y, q.z, q.w)); else LogWarning($"Failed parse Quaternion: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Color: var hc = valueString.StartsWith("#") ? valueString : "#" + valueString; if (ColorUtility.TryParseHtmlString(hc, out var c)) paramDef.onColorValue?.Invoke(c); else LogWarning($"Failed parse Color: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Color32: var hc32 = valueString.StartsWith("#") ? valueString : "#" + valueString; if (ColorUtility.TryParseHtmlString(hc32, out var c32)) paramDef.onColor32Value?.Invoke(c32); else LogWarning($"Failed parse Color32: '{valueString}'"); break;
-                    case AIRealtimeCommunicationFunctionParameterType.Enum: var idx = paramDef.enumValues.FindIndex(e => string.Equals(e, valueString, StringComparison.OrdinalIgnoreCase)); if (idx >= 0) { paramDef.onEnumValue?.Invoke(idx); paramDef.onEnumValueString?.Invoke(paramDef.enumValues[idx]); } else if (int.TryParse(valueString, out var i) && i >= 0 && i < paramDef.enumValues.Count) { paramDef.onEnumValue?.Invoke(i); paramDef.onEnumValueString?.Invoke(paramDef.enumValues[i]); } else LogWarning($"Failed parse Enum: '{valueString}'"); break;
-                    default: LogWarning($"Unhandled param type: '{paramDef.type}'"); break;
+            try
+            {
+                switch (paramDef.type)
+                {
+                    case AIRealtimeCommunicationFunctionParameterType.String:
+                        paramDef.onStringValue?.Invoke(valueString);
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Float:
+                        if (float.TryParse(valueString, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var fVal))
+                            paramDef.onFloatValue?.Invoke(fVal);
+                        else
+                            LogWarning($"Failed parse float: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Integer:
+                        if (int.TryParse(valueString, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var iVal))
+                            paramDef.onIntValue?.Invoke(iVal);
+                        else
+                            LogWarning($"Failed parse int: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Boolean:
+                        bool bVal;
+                        if (valueToken.Type == JTokenType.Boolean)
+                        {
+                            bVal = valueToken.Value<bool>();
+                        }
+                        else if (!bool.TryParse(valueString, out bVal))
+                        {
+                            if (valueString == "1") bVal = true;
+                            else if (valueString == "0") bVal = false;
+                            else { LogWarning($"Failed parse bool: '{valueString}'"); return; }
+                        }
+                        paramDef.onBoolValue?.Invoke(bVal);
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Vector2:
+                        if (TryParseVector2(valueString, out var v2)) paramDef.onVector2Value?.Invoke(v2);
+                        else LogWarning($"Failed parse Vector2: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Vector3:
+                        if (TryParseVector3(valueString, out var v3)) paramDef.onVector3Value?.Invoke(v3);
+                        else LogWarning($"Failed parse Vector3: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Vector4:
+                        if (TryParseVector4(valueString, out var v4)) paramDef.onVector4Value?.Invoke(v4);
+                        else LogWarning($"Failed parse Vector4: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Quaternion:
+                        if (TryParseVector4(valueString, out var q)) paramDef.onQuaternionValue?.Invoke(new Quaternion(q.x, q.y, q.z, q.w));
+                        else LogWarning($"Failed parse Quaternion: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Color:
+                        var hc = valueString.StartsWith("#") ? valueString : "#" + valueString;
+                        if (ColorUtility.TryParseHtmlString(hc, out var c)) paramDef.onColorValue?.Invoke(c);
+                        else LogWarning($"Failed parse Color: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Color32:
+                        var hc32 = valueString.StartsWith("#") ? valueString : "#" + valueString;
+                        if (ColorUtility.TryParseHtmlString(hc32, out var c32)) paramDef.onColor32Value?.Invoke(c32);
+                        else LogWarning($"Failed parse Color32: '{valueString}'");
+                        break;
+                    case AIRealtimeCommunicationFunctionParameterType.Enum:
+                        var idx = paramDef.enumValues.FindIndex(e => string.Equals(e, valueString, StringComparison.OrdinalIgnoreCase));
+                        if (idx >= 0)
+                        {
+                            paramDef.onEnumValue?.Invoke(idx);
+                            paramDef.onEnumValueString?.Invoke(paramDef.enumValues[idx]);
+                        }
+                        else if (int.TryParse(valueString, out var iEnum) && iEnum >= 0 && iEnum < paramDef.enumValues.Count)
+                        {
+                            paramDef.onEnumValue?.Invoke(iEnum);
+                            paramDef.onEnumValueString?.Invoke(paramDef.enumValues[iEnum]);
+                        }
+                        else
+                        {
+                            LogWarning($"Failed parse Enum: '{valueString}'");
+                        }
+                        break;
+                    default:
+                        LogWarning($"Unhandled param type: '{paramDef.type}'");
+                        break;
                 }
-            } catch (Exception e) { LogError($"Error invoking param event for '{paramDef.parameterID}': {e.Message}\n{e.StackTrace}"); }
+            }
+            catch (Exception e)
+            {
+                LogError($"Error invoking param event for '{paramDef.parameterID}': {e.Message}\n{e.StackTrace}");
+            }
         }
 
         // --- Argument Parsing Helpers ---
-        private static bool TryParseVector2(string v, out Vector2 r) { r=Vector2.zero; if(string.IsNullOrWhiteSpace(v)) return false; var p=v.Trim('(',')',' ').Split(','); return p.Length==2 && float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) && float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y); }
-        private static bool TryParseVector3(string v, out Vector3 r) { r=Vector3.zero; if(string.IsNullOrWhiteSpace(v)) return false; var p=v.Trim('(',')',' ').Split(','); return p.Length==3 && float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) && float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y) && float.TryParse(p[2].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.z); }
-        private static bool TryParseVector4(string v, out Vector4 r) { r=Vector4.zero; if(string.IsNullOrWhiteSpace(v)) return false; var p=v.Trim('(',')',' ').Split(','); return p.Length==4 && float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) && float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y) && float.TryParse(p[2].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.z) && float.TryParse(p[3].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.w); }
+        private static bool TryParseVector2(string v, out Vector2 r)
+        {
+            r=Vector2.zero;
+            if(string.IsNullOrWhiteSpace(v)) return false;
+            var p=v.Trim('(',')',' ').Split(',');
+            return p.Length==2 &&
+                   float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) &&
+                   float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y);
+        }
+        private static bool TryParseVector3(string v, out Vector3 r)
+        {
+            r=Vector3.zero;
+            if(string.IsNullOrWhiteSpace(v)) return false;
+            var p=v.Trim('(',')',' ').Split(',');
+            return p.Length==3 &&
+                   float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) &&
+                   float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y) &&
+                   float.TryParse(p[2].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.z);
+        }
+        private static bool TryParseVector4(string v, out Vector4 r)
+        {
+            r=Vector4.zero;
+            if(string.IsNullOrWhiteSpace(v)) return false;
+            var p=v.Trim('(',')',' ').Split(',');
+            return p.Length==4 &&
+                   float.TryParse(p[0].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.x) &&
+                   float.TryParse(p[1].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.y) &&
+                   float.TryParse(p[2].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.z) &&
+                   float.TryParse(p[3].Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out r.w);
+        }
 
         #endregion
 
@@ -1576,29 +1765,53 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         /// <summary> Unity callback on audio thread. Feeds buffered data to output. </summary>
         private void OnAudioFilterRead(float[] data, int channels) {
-            for (var i = 0; i < data.Length; i += channels) {
-                if (_streamBuffer.TryDequeue(out var sample)) { for (var j = 0; j < channels; ++j) data[i + j] = sample; }
-                else { for (var j = 0; j < channels; ++j) data[i + j] = 0f; }
+            for (var i = 0; i < data.Length; i += channels)
+            {
+                if (_streamBuffer.TryDequeue(out var sample))
+                {
+                    for (var j = 0; j < channels; ++j) data[i + j] = sample;
+                }
+                else
+                {
+                    for (var j = 0; j < channels; ++j) data[i + j] = 0f;
+                }
             }
         }
 
         /// <summary> Converts 16-bit PCM bytes to float samples. </summary>
-        private float[] Convert16BitPCMToFloats(byte[] pcmData) {
+        private float[] Convert16BitPCMToFloats(byte[] pcmData)
+        {
             if (pcmData == null || pcmData.Length < 2) return Array.Empty<float>();
             var samples = new float[pcmData.Length / 2];
-            for (int i = 0, pcmIndex = 0; i < samples.Length; i++) { samples[i] = (short)(pcmData[pcmIndex++] | (pcmData[pcmIndex++] << 8)) / 32768f; }
+            for (int i = 0, pcmIndex = 0; i < samples.Length; i++)
+            {
+                samples[i] = (short)(pcmData[pcmIndex++] | (pcmData[pcmIndex++] << 8)) / 32768f;
+            }
             return samples;
         }
 
         /// <summary> Simple linear interpolation resampling. </summary>
-        private float[] Resample(float[] input, int inputRate, int outputRate) {
-            if (input == null || input.Length == 0 || inputRate <= 0 || outputRate <= 0 || inputRate == outputRate) return input ?? Array.Empty<float>();
-            var ratio = (double)inputRate / outputRate; var outputLength = (int)Math.Ceiling(input.Length / ratio); if (outputLength <= 0) return Array.Empty<float>();
+        private float[] Resample(float[] input, int inputRate, int outputRate)
+        {
+            if (input == null || input.Length == 0 || inputRate <= 0 || outputRate <= 0 || inputRate == outputRate)
+                return input ?? Array.Empty<float>();
+
+            var ratio = (double)inputRate / outputRate;
+            var outputLength = (int)Math.Ceiling(input.Length / ratio);
+            if (outputLength <= 0) return Array.Empty<float>();
+
             var output = new float[outputLength];
-            for (var i = 0; i < outputLength; i++) {
-                var idxD = i * ratio; var idx0 = (int)Math.Floor(idxD); var idx1 = Math.Min(idx0 + 1, input.Length - 1); idx0 = Math.Max(0, idx0);
-                output[i] = (idx0 == idx1) ? input[idx0] : (float)(input[idx0] * (1.0 - (idxD - idx0)) + input[idx1] * (idxD - idx0));
-            } return output;
+            for (var i = 0; i < outputLength; i++)
+            {
+                var idxD = i * ratio;
+                var idx0 = (int)Math.Floor(idxD);
+                var idx1 = Math.Min(idx0 + 1, input.Length - 1);
+                idx0 = Math.Max(0, idx0);
+                output[i] = (idx0 == idx1)
+                    ? input[idx0]
+                    : (float)(input[idx0] * (1.0 - (idxD - idx0)) + input[idx1] * (idxD - idx0));
+            }
+            return output;
         }
 
         #endregion
@@ -1606,73 +1819,200 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         #region Vision Handling (Callbacks from VisionHandler AIAgent)
 
         /// <summary> Callback when VisionHandler starts thinking. Queues OnVisionRequested invocation. </summary>
-        private void HandleVisionThinkingStarted() { _mainThreadActions.Enqueue(() => { Log("Vision processing started."); try { onVisionRequested?.Invoke(); } catch (Exception e) { LogError($"Error in onVisionRequested handler: {e.Message}"); } }); }
+        private void HandleVisionThinkingStarted()
+        {
+            _mainThreadActions.Enqueue(() =>
+            {
+                Log("Vision processing started.");
+                try { onVisionRequested?.Invoke(); }
+                catch (Exception e) { LogError($"Error in onVisionRequested handler: {e.Message}"); }
+            });
+        }
 
         /// <summary> Callback when VisionHandler finishes thinking. Logs info. </summary>
-        private void HandleVisionThinkingFinished() { _mainThreadActions.Enqueue(() => Log("Vision processing finished by VisionHandler.")); }
+        private void HandleVisionThinkingFinished()
+        {
+            _mainThreadActions.Enqueue(() => Log("Vision processing finished by VisionHandler."));
+        }
 
         /// <summary> Callback for successful VisionHandler response. Queues processing. </summary>
-        private void HandleVisionResponse(string visionResponse) { _mainThreadActions.Enqueue(() => ProcessVisionResponse(visionResponse)); }
+        private void HandleVisionResponse(string visionResponse)
+        {
+            _mainThreadActions.Enqueue(() => ProcessVisionResponse(visionResponse));
+        }
 
         /// <summary> Callback for failed VisionHandler response. Queues processing. </summary>
-        private void HandleVisionResponseFailed() { _mainThreadActions.Enqueue(() => ProcessVisionResponseFailed("Vision agent failed to generate a response.")); }
+        private void HandleVisionResponseFailed()
+        {
+            _mainThreadActions.Enqueue(() => ProcessVisionResponseFailed("Vision agent failed to generate a response."));
+        }
 
         /// <summary> Processes successful vision response. Sends result back to main AI. Runs on Main Thread. </summary>
-        private void ProcessVisionResponse(string visionResponse) {
-            if (_isShuttingDown || !_pendingVision) { if(!_pendingVision) LogWarning("Received vision response, but no request pending."); return; }
+        private void ProcessVisionResponse(string visionResponse)
+        {
+            if (_isShuttingDown || !_pendingVision)
+            {
+                if(!_pendingVision) LogWarning("Received vision response, but no request pending.");
+                return;
+            }
             Log($"Vision response received: \"{visionResponse}\"");
-            if (string.IsNullOrWhiteSpace(visionResponse)) { LogWarning("Vision response empty."); ProcessVisionResponseFailed("Received empty response."); return; }
+            if (string.IsNullOrWhiteSpace(visionResponse))
+            {
+                LogWarning("Vision response empty.");
+                ProcessVisionResponseFailed("Received empty response.");
+                return;
+            }
 
 #if MV_NATIVE_WEBSOCKETS
-            if (_websocket == null || _websocket.State != WebSocketState.Open) { LogError("WebSocket not open. Cannot send vision response."); _pendingVision = false; InvokeVisionFinishedEvent(); if (CanStartMic()) StartMic(); return; }
+            if (_websocket == null || _websocket.State != WebSocketState.Open)
+            {
+                LogError("WebSocket not open. Cannot send vision response.");
+                _pendingVision = false;
+                InvokeVisionFinishedEvent();
+                if (CanStartMic()) StartMic();
+                return;
+            }
             Log("Sending vision response back to main AI...");
-            var visionMsg = new { type = "conversation.item.create", item = new { type = "message", role = "system", content = new[] { new { type = "input_text", text = $"[Vision System Response]: {visionResponse}" } } } };
-            try { var json = JsonConvert.SerializeObject(visionMsg); _websocket.SendText(json); Log("Vision response sent."); TriggerResponseInternal(true); }
-            catch (Exception e) { LogError($"Failed to send vision response: {e.Message}"); ProcessVisionResponseFailed("Failed to send vision result."); return; }
+            var visionMsg = new
+            {
+                type = "conversation.item.create",
+                item = new
+                {
+                    type = "message",
+                    role = "system",
+                    content = new[]
+                    {
+                        new { type = "input_text", text = $"[Vision System Response]: {visionResponse}" }
+                    }
+                }
+            };
+            try
+            {
+                var json = JsonConvert.SerializeObject(visionMsg);
+                _websocket.SendText(json);
+
+                // Reset idle timer on activity
+                _activityTimer = 0f;
+
+                Log("Vision response sent.");
+                TriggerResponseInternal(true);
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to send vision response: {e.Message}");
+                ProcessVisionResponseFailed("Failed to send vision result.");
+                return;
+            }
 #else
-             LogError("Cannot send vision response: MV_NATIVE_WEBSOCKETS not defined."); ProcessVisionResponseFailed("Cannot send vision result (missing dependency)."); return;
+            LogError("Cannot send vision response: MV_NATIVE_WEBSOCKETS not defined.");
+            ProcessVisionResponseFailed("Cannot send vision result (missing dependency).");
+            return;
 #endif
-            _pendingVision = false; InvokeVisionFinishedEvent(); Log("Vision handling complete.");
+            _pendingVision = false;
+            InvokeVisionFinishedEvent();
+            Log("Vision handling complete.");
         }
 
         /// <summary> Processes failed vision response. Sends error message back to main AI. Runs on Main Thread. </summary>
-        private void ProcessVisionResponseFailed(string failureReason) {
-            if (_isShuttingDown || !_pendingVision) { if(!_pendingVision) LogWarning("Received vision failure, but no request pending."); return; }
+        private void ProcessVisionResponseFailed(string failureReason)
+        {
+            if (_isShuttingDown || !_pendingVision)
+            {
+                if(!_pendingVision) LogWarning("Received vision failure, but no request pending.");
+                return;
+            }
             LogError($"Vision processing failed: {failureReason}");
 
 #if MV_NATIVE_WEBSOCKETS
-            if (_websocket == null || _websocket.State != WebSocketState.Open) { LogError("WebSocket not open. Cannot send vision failure message."); _pendingVision = false; InvokeVisionFinishedEvent(); if (CanStartMic()) StartMic(); return; }
+            if (_websocket == null || _websocket.State != WebSocketState.Open)
+            {
+                LogError("WebSocket not open. Cannot send vision failure message.");
+                _pendingVision = false;
+                InvokeVisionFinishedEvent();
+                if (CanStartMic()) StartMic();
+                return;
+            }
             Log("Sending vision failure message back to main AI...");
-            var failureMsg = new { type = "conversation.item.create", item = new { type = "message", role = "system", content = new[] { new { type = "input_text", text = "[Vision System Error]: I'm sorry, I couldn't process the visual information at this time." } } } };
-            try { var json = JsonConvert.SerializeObject(failureMsg); _websocket.SendText(json); Log("Vision failure message sent."); TriggerResponseInternal(true); }
-            catch (Exception e) { LogError($"Failed to send vision failure message: {e.Message}"); }
+            var failureMsg = new
+            {
+                type = "conversation.item.create",
+                item = new
+                {
+                    type = "message",
+                    role = "system",
+                    content = new[]
+                    {
+                        new { type = "input_text", text = "[Vision System Error]: I'm sorry, I couldn't process the visual information at this time." }
+                    }
+                }
+            };
+            try
+            {
+                var json = JsonConvert.SerializeObject(failureMsg);
+                _websocket.SendText(json);
+
+                // Reset idle timer on activity
+                _activityTimer = 0f;
+
+                Log("Vision failure message sent.");
+                TriggerResponseInternal(true);
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to send vision failure message: {e.Message}");
+            }
 #else
-              LogError("Cannot send vision failure message: MV_NATIVE_WEBSOCKETS not defined.");
+            LogError("Cannot send vision failure message: MV_NATIVE_WEBSOCKETS not defined.");
 #endif
-            _pendingVision = false; InvokeVisionFinishedEvent(); Log("Vision failure handling complete.");
+            _pendingVision = false;
+            InvokeVisionFinishedEvent();
+            Log("Vision failure handling complete.");
         }
 
         /// <summary> Checks if conditions allow starting the microphone. </summary>
-         private bool CanStartMic() {
-             var socketOpen = false;
+        private bool CanStartMic()
+        {
+            var socketOpen = false;
 #if MV_NATIVE_WEBSOCKETS
-             socketOpen = _websocket is { State: WebSocketState.Open };
+            socketOpen = _websocket is { State: WebSocketState.Open };
 #endif
-             return micActive && !_isMicRunning && !_isAiSpeaking && !_pendingVision && !_isWaitingToFinishSpeaking && !_isAcquiringToken && socketOpen && !_isShuttingDown;
-         }
+            return micActive && 
+                   !_isMicRunning && 
+                   !_isAiSpeaking && 
+                   !_pendingVision && 
+                   !_isWaitingToFinishSpeaking && 
+                   !_isAcquiringToken && 
+                   socketOpen && 
+                   !_isShuttingDown;
+        }
 
         /// <summary> Helper method to invoke the onVisionFinished event safely. </summary>
-        private void InvokeVisionFinishedEvent() { try { onVisionFinished?.Invoke(); Log("onVisionFinished event invoked."); } catch (Exception e) { LogError($"Error in onVisionFinished handler: {e.Message}"); } }
+        private void InvokeVisionFinishedEvent()
+        {
+            try
+            {
+                onVisionFinished?.Invoke();
+                Log("onVisionFinished event invoked.");
+            }
+            catch (Exception e)
+            {
+                LogError($"Error in onVisionFinished handler: {e.Message}");
+            }
+        }
 
         /// <summary> Internal callback for VisionHandler failure. Queues `ProcessVisionResponseFailed`. </summary>
-        private void HandleVisionResponseFailedInternal(string reason = "Vision agent failed to generate a response.") { ProcessVisionResponseFailed(reason); }
+        private void HandleVisionResponseFailedInternal(string reason = "Vision agent failed to generate a response.")
+        {
+            ProcessVisionResponseFailed(reason);
+        }
 
         #endregion
 
         #region Public API Methods
 
         /// <summary> Public method to start the connection process. Handles checks and queues the action. </summary>
-        public void Connect() {
+        public void Connect()
+        {
             _connectCalled = true;
             if (!isActiveAndEnabled) { LogWarning("Connect() called, but component is not active/enabled."); return; }
             if (!_isStarted) { LogWarning("Connect() called before Start(). Will attempt in Start()."); return; }
@@ -1681,31 +2021,48 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             var isConnectingOrOpen = false;
 #if MV_NATIVE_WEBSOCKETS
-            isConnectingOrOpen = _websocket != null && (_websocket.State == WebSocketState.Open || _websocket.State == WebSocketState.Connecting);
+            isConnectingOrOpen = _websocket != null &&
+                                 (_websocket.State == WebSocketState.Open || _websocket.State == WebSocketState.Connecting);
 #endif
             if (isConnectingOrOpen) { Log("Connect() called, but already connected/connecting."); return; }
             if (_needsReconnect) { Log("Connect() called while reconnect pending."); return; }
 
             Log("Public Connect() called. Enqueuing connection logic.");
-            _mainThreadActions.Enqueue(() => {
+            _mainThreadActions.Enqueue(() =>
+            {
                 Log("Processing enqueued Connect() action.");
                 DisconnectInternal(); // Clean up first
-                _systemSampleRate = AudioSettings.outputSampleRate; Log($"System audio rate: {_systemSampleRate}Hz.");
-                if (outputVoiceSource) {
+                _systemSampleRate = AudioSettings.outputSampleRate;
+                Log($"System audio rate: {_systemSampleRate}Hz.");
+                if (outputVoiceSource)
+                {
                     if (outputVoiceSource.isPlaying) outputVoiceSource.Stop();
-                    if (outputVoiceSource.clip != null && outputVoiceSource.clip.name == "StreamingClip") { Destroy(outputVoiceSource.clip); }
+                    if (outputVoiceSource.clip != null && outputVoiceSource.clip.name == "StreamingClip")
+                    {
+                        Destroy(outputVoiceSource.clip);
+                    }
                     outputVoiceSource.clip = AudioClip.Create("StreamingClip", _systemSampleRate, 1, _systemSampleRate, true, OnAudioPCMRead);
-                    outputVoiceSource.loop = true; outputVoiceSource.Play(); Log("Output AudioSource prepared.");
-                } else { LogError("Cannot prepare audio output: outputVoiceSource is null."); }
-                InitiateConnection(); // Start token -> websocket sequence
+                    outputVoiceSource.loop = true;
+                    outputVoiceSource.Play();
+                    Log("Output AudioSource prepared.");
+                }
+                else
+                {
+                    LogError("Cannot prepare audio output: outputVoiceSource is null.");
+                }
+                InitiateConnection();
             });
         }
 
         /// <summary> Dummy callback for AudioClip.Create. </summary>
-        private void OnAudioPCMRead(float[] data) { /* Required by Unity, logic is in OnAudioFilterRead */ }
+        private void OnAudioPCMRead(float[] data)
+        {
+            // Required by Unity, logic is in OnAudioFilterRead
+        }
 
         /// <summary> Public method to disconnect. Sets shutdown flag and queues internal disconnect. </summary>
-        public void Disconnect() {
+        public void Disconnect()
+        {
             var wasShuttingDown = _isShuttingDown;
             _isShuttingDown = true; // Prevent reconnects after manual disconnect
             if (wasShuttingDown) { Log("Disconnect() called while already shutting down/disconnecting."); }
@@ -1720,21 +2077,55 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public void SetMicrophoneInactive(bool inactive) { MicrophoneActive = !inactive; }
 
         /// <summary> Public method to trigger an AI response without new text input. </summary>
-        public void TriggerResponse() { _mainThreadActions.Enqueue(() => TriggerResponseInternal(false)); }
+        public void TriggerResponse()
+        {
+            _mainThreadActions.Enqueue(() => TriggerResponseInternal(false));
+        }
 
         /// <summary> Sends text input and immediately requests a response. </summary>
-        public void SendTextWithResponse(string text) {
+        public void SendTextWithResponse(string text)
+        {
             if (string.IsNullOrEmpty(text)) { LogWarning("SendTextWithResponse called with empty text."); return; }
             if (_isShuttingDown) return;
-            _mainThreadActions.Enqueue(() => {
+            _mainThreadActions.Enqueue(() =>
+            {
                 var busy = IsProcessing && !_isWaitingToFinishSpeaking;
                 if (busy) { LogWarning("SendTextWithResponse called while processing."); return; }
 #if MV_NATIVE_WEBSOCKETS
-                if (_websocket == null || _websocket.State != WebSocketState.Open) { LogWarning("SendTextWithResponse: WebSocket not open."); return; }
+                if (_websocket == null || _websocket.State != WebSocketState.Open)
+                {
+                    LogWarning("SendTextWithResponse: WebSocket not open.");
+                    return;
+                }
                 Log($"Sending text & requesting response: \"{text}\"");
-                var textMsg = new { type = "conversation.item.create", item = new { type = "message", role = "user", content = new[] { new { type = "input_text", text } } } };
-                try { var json = JsonConvert.SerializeObject(textMsg); _websocket.SendText(json); Log("User text sent."); TriggerResponseInternal(true); }
-                catch (Exception e) { LogError($"Failed to send text: {e.Message}"); }
+                var textMsg = new
+                {
+                    type = "conversation.item.create",
+                    item = new
+                    {
+                        type = "message",
+                        role = "user",
+                        content = new[]
+                        {
+                            new { type = "input_text", text }
+                        }
+                    }
+                };
+                try
+                {
+                    var json = JsonConvert.SerializeObject(textMsg);
+                    _websocket.SendText(json);
+
+                    // Reset idle timer on activity
+                    _activityTimer = 0f;
+
+                    Log("User text sent.");
+                    TriggerResponseInternal(true);
+                }
+                catch (Exception e)
+                {
+                    LogError($"Failed to send text: {e.Message}");
+                }
 #else
                 LogWarning("SendTextWithResponse: MV_NATIVE_WEBSOCKETS not defined.");
 #endif
@@ -1742,36 +2133,94 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
 
         /// <summary> Sends text input without immediately requesting a response. </summary>
-        public void SendText(string text) {
+        public void SendText(string text)
+        {
             if (string.IsNullOrEmpty(text)) { LogWarning("SendText called with empty text."); return; }
             if (_isShuttingDown) return;
-            _mainThreadActions.Enqueue(() => {
-                 var busy = IsProcessing && !_isWaitingToFinishSpeaking;
+            _mainThreadActions.Enqueue(() =>
+            {
+                var busy = IsProcessing && !_isWaitingToFinishSpeaking;
                 if (busy) { LogWarning("SendText called while processing."); return; }
 #if MV_NATIVE_WEBSOCKETS
-                if (_websocket == null || _websocket.State != WebSocketState.Open) { LogWarning("SendText: WebSocket not open."); return; }
+                if (_websocket == null || _websocket.State != WebSocketState.Open)
+                {
+                    LogWarning("SendText: WebSocket not open.");
+                    return;
+                }
                 Log($"Sending text: \"{text}\"");
-                var textMsg = new { type = "conversation.item.create", item = new { type = "message", role = "user", content = new[] { new { type = "input_text", text } } } };
-                try { var json = JsonConvert.SerializeObject(textMsg); _websocket.SendText(json); Log("User text sent."); }
-                catch (Exception e) { LogError($"Failed to send text: {e.Message}"); }
+                var textMsg = new
+                {
+                    type = "conversation.item.create",
+                    item = new
+                    {
+                        type = "message",
+                        role = "user",
+                        content = new[]
+                        {
+                            new { type = "input_text", text }
+                        }
+                    }
+                };
+                try
+                {
+                    var json = JsonConvert.SerializeObject(textMsg);
+                    _websocket.SendText(json);
+
+                    // Reset idle timer on activity
+                    _activityTimer = 0f;
+
+                    Log("User text sent.");
+                }
+                catch (Exception e)
+                {
+                    LogError($"Failed to send text: {e.Message}");
+                }
 #else
-                 LogWarning("SendText: MV_NATIVE_WEBSOCKETS not defined.");
+                LogWarning("SendText: MV_NATIVE_WEBSOCKETS not defined.");
 #endif
             });
         }
 
         /// <summary> Internal method to send 'response.create' message. Runs on Main Thread. </summary>
-        private void TriggerResponseInternal(bool force) {
+        private void TriggerResponseInternal(bool force)
+        {
             if (_isShuttingDown) return;
             var busy = IsProcessing && !_isWaitingToFinishSpeaking;
-            if (!force && busy) { Log("TriggerResponseInternal: Processing, request ignored."); return; }
+            if (!force && busy)
+            {
+                Log("TriggerResponseInternal: Processing, request ignored.");
+                return;
+            }
 
 #if MV_NATIVE_WEBSOCKETS
-            if (_websocket == null || _websocket.State != WebSocketState.Open) { LogWarning("TriggerResponseInternal: WebSocket not open."); return; }
+            if (_websocket == null || _websocket.State != WebSocketState.Open)
+            {
+                LogWarning("TriggerResponseInternal: WebSocket not open.");
+                return;
+            }
             Log("Triggering AI response creation...");
-            var responseMsg = new { type = "response.create", response = new { modalities = new[] { "text", "audio" } } };
-            try { var json = JsonConvert.SerializeObject(responseMsg); _websocket.SendText(json); Log("response.create sent."); }
-            catch (Exception e) { LogError($"Failed to send response.create: {e.Message}"); }
+            var responseMsg = new
+            {
+                type = "response.create",
+                response = new
+                {
+                    modalities = new[] { "text", "audio" }
+                }
+            };
+            try
+            {
+                var json = JsonConvert.SerializeObject(responseMsg);
+                _websocket.SendText(json);
+
+                // Reset idle timer on activity
+                _activityTimer = 0f;
+
+                Log("response.create sent.");
+            }
+            catch (Exception e)
+            {
+                LogError($"Failed to send response.create: {e.Message}");
+            }
 #else
             LogWarning("TriggerResponseInternal: MV_NATIVE_WEBSOCKETS not defined.");
 #endif

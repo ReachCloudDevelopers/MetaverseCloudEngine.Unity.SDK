@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.10
-- Removed iOS bluetooth experimental support.
+## 2.153.11
+- Added idle timeout for websocket connection to AIRealtimeCommunication
 
-Updated on April 09, 2025
+Updated on April 10, 2025
