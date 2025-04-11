@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.22
-- Patched a few formatting issues and unused namespaces
+## 2.153.23
+- Fix formatting in AIRealtimeCommunication.cs
 
 Updated on April 11, 2025

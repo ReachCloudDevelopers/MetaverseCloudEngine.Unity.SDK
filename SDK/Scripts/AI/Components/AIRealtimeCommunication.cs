@@ -196,7 +196,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         private int micSampleRate = 16000;
 
-        [Tooltip("How often (in seconds) microphone audio is sampled and sent to the AI.")] [SerializeField]
+        [Tooltip("How often (in seconds) microphone audio is sampled and sent to the AI.")]
+        [SerializeField]
         private float sampleInterval = 0.2f;
 
         [Tooltip(
