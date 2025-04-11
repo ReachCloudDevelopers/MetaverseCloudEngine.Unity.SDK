@@ -20,6 +20,7 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
+using UnityEngine.Serialization;
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
@@ -341,11 +342,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _micInitializationReadPending;
         
         [SerializeField]
-        private float idleDisconnectTime = 30f;   // Default: 30 seconds
-        public float IdleDisconnectTime
+        private float idleTimeout;   // Default: 0
+        public float IdleTimeout
         {
-            get => idleDisconnectTime;
-            set => idleDisconnectTime = value;
+            get => idleTimeout;
+            set => idleTimeout = value;
         }
 
         private float _activityTimer;
@@ -560,6 +561,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Needs to happen on main thread, so queue it.
             _mainThreadActions.Enqueue(() =>
             {
+                if (_isShuttingDown)
+                    return;
+                
                 if (connectOnStart || _connectCalled)
                     Connect();
             });
@@ -571,6 +575,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         private void FixedUpdate()
         {
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+                return;
+            
+            if (_isShuttingDown) return;
+
             // 1. Process any actions queued from background threads (WebSocket, Vision, Token Acquisition)
             while (_mainThreadActions.TryDequeue(out var action))
             {
@@ -606,12 +615,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void UpdateIdleTimer()
         {
 #if MV_NATIVE_WEBSOCKETS
-            if (_websocket != null && _websocket.State == WebSocketState.Open && idleDisconnectTime > 0f)
+            if (_websocket != null && _websocket.State == WebSocketState.Open && idleTimeout > 0f)
             {
                 _activityTimer += Time.fixedDeltaTime;
-                if (_activityTimer >= idleDisconnectTime)
+                if (_activityTimer >= idleTimeout)
                 {
-                    Log($"Idle timeout reached ({idleDisconnectTime}s). Closing connection due to inactivity.");
+                    Log($"Idle timeout reached ({idleTimeout}s). Closing connection due to inactivity.");
                     DisconnectInternal();
                 }
             }
@@ -662,9 +671,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             Log("Component destroyed. Ensuring disconnection.");
             _isShuttingDown = true;
             DisconnectInternal(); // Attempt immediate cleanup without queueing
-            if (!_visionHandler) return; // Clean up vision handler GameObject
-            Destroy(_visionHandler.gameObject);
-            _visionHandler = null;
+            if (_visionHandler) // Clean up vision handler GameObject
+            {
+                Destroy(_visionHandler.gameObject);
+                _visionHandler = null;
+            }
         }
 
         #endregion
@@ -901,6 +912,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _needsReconnect = false;
             _isAcquiringToken = false;
             _ephemeralToken = null;
+            _activityTimer = 0;
 
 #if MV_NATIVE_WEBSOCKETS
             if (_websocket != null)
@@ -944,7 +956,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _pendingVision = false;
             _isWaitingToFinishSpeaking = false;
             _streamBuffer.Clear();
-            onCommunicationFinished?.Invoke();
+            if (!_isShuttingDown)
+                onCommunicationFinished?.Invoke();
         }
 
         /// <summary>
@@ -1187,8 +1200,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             try
             {
-                var device = _micDevice;
-                if (Microphone.IsRecording(device)) { Microphone.End(device); Log("Microphone.End() called."); }
+                if (Microphone.IsRecording(_micDevice)) { Microphone.End(_micDevice); Log("Microphone.End() called."); }
                 else { LogWarning("StopMic called, but Microphone.IsRecording was already false."); }
                 if (_micClip != null) { Destroy(_micClip); _micClip = null; Log("Microphone AudioClip destroyed."); }
             }
@@ -2101,6 +2113,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary> Public method to start the connection process. Handles checks and queues the action. </summary>
         public void Connect()
         {
+            if (_isShuttingDown)
+                return;
             _connectCalled = true;
             if (!isActiveAndEnabled) { LogWarning("Connect() called, but component is not active/enabled."); return; }
             if (!_isStarted) { LogWarning("Connect() called before Start(). Will attempt in Start()."); return; }
@@ -2118,6 +2132,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             Log("Public Connect() called. Enqueuing connection logic.");
             _mainThreadActions.Enqueue(() =>
             {
+                if (_isShuttingDown)
+                    return;
                 Log("Processing enqueued Connect() action.");
                 DisconnectInternal(); // Clean up first
                 _systemSampleRate = AudioSettings.outputSampleRate;
