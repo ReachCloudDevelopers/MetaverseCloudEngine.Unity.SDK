@@ -420,9 +420,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             get => micActive;
             set
             {
+                if (_isShuttingDown)
+                {
+                    micActive = value;
+                    return;
+                }
+                
                 if ((micActive == value 
 #if MV_NATIVE_WEBSOCKETS
-                     && _websocket.State != WebSocketState.Closed
+                     && _websocket?.State != WebSocketState.Closed
 #endif
                      ) || _micActivationQueued) 
                 {
@@ -580,6 +586,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             
             if (_isShuttingDown) return;
+            if (_websocket == null)
+                return;
 
             // 1. Process any actions queued from background threads (WebSocket, Vision, Token Acquisition)
             while (_mainThreadActions.TryDequeue(out var action))
