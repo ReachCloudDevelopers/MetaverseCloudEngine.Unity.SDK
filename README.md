@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.21
-- Ensure that processing completely stops if _isShuttingDown flag is set to true in AIRealtimeCommunication
+## 2.153.22
+- Patched a few formatting issues and unused namespaces
 
 Updated on April 11, 2025

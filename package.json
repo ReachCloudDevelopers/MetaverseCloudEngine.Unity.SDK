@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.153.21",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.21\n- Ensure that processing completely stops if _isShuttingDown flag is set to true in AIRealtimeCommunication\n\nUpdated on April 11, 2025",
+  "version": "2.153.22",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.22\n- Patched a few formatting issues and unused namespaces\n\nUpdated on April 11, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

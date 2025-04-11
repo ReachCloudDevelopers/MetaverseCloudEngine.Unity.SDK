@@ -20,7 +20,6 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
-using UnityEngine.Serialization;
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
@@ -253,7 +252,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         private UnityEvent onConnected = new();
 
-        [Tooltip("Invoked on the main thread when the WebSocket connection is closed or fails.")] [SerializeField]
+        [Tooltip("Invoked on the main thread when the WebSocket connection is closed or fails.")]
+        [SerializeField]
         private UnityEvent onDisconnected = new();
 
         [Tooltip("Invoked on the main thread when microphone audio starts being sent after a period of silence.")]
