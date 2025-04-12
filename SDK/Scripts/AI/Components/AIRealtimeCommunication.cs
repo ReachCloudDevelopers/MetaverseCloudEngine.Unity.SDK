@@ -602,11 +602,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
             }
 
-            if (_websocket == null || _isShuttingDown)
+            if (_isShuttingDown)
                 return;
 
             // 2. Dispatch messages from WebSocket (must be called regularly on main thread)
 #if MV_NATIVE_WEBSOCKETS
+            if (_websocket == null)
+                return;
             _websocket?.DispatchMessageQueue();
 #endif
 

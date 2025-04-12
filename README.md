@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.154.0
-- Fix issue where _isShuttingDown causes FixedUpdate() not to function properly.
+## 2.154.1
+- Fixed MV_NATIVE_WEBSOCKETS not properly wrapping _websocket variable.
 
 Updated on April 11, 2025
