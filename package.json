@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.153.24",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.153.24\n- Fixed null reference error being thrown if microphone was modified during shutdown\n\nUpdated on April 11, 2025",
+  "version": "2.154.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.154.0\n- Fix issue where _isShuttingDown causes FixedUpdate() not to function properly.\n\nUpdated on April 11, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -422,7 +422,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (_isShuttingDown)
                 {
-                    micActive = value;
+                    if (micActive != value)
+                    {
+                        micActive = value;
+                        MetaverseProgram.Logger.Log("Microphone is shutting down");
+                    }
                     return;
                 }
                 
@@ -585,10 +589,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (Application.internetReachability == NetworkReachability.NotReachable)
                 return;
             
-            if (_isShuttingDown) return;
-            if (_websocket == null)
-                return;
-
             // 1. Process any actions queued from background threads (WebSocket, Vision, Token Acquisition)
             while (_mainThreadActions.TryDequeue(out var action))
             {
@@ -601,6 +601,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     LogError($"Error executing main thread action: {e.Message}\n{e.StackTrace}");
                 }
             }
+
+            if (_websocket == null || _isShuttingDown)
+                return;
 
             // 2. Dispatch messages from WebSocket (must be called regularly on main thread)
 #if MV_NATIVE_WEBSOCKETS
@@ -2122,8 +2125,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary> Public method to start the connection process. Handles checks and queues the action. </summary>
         public void Connect()
         {
-            if (_isShuttingDown)
-                return;
             _connectCalled = true;
             if (!isActiveAndEnabled) { LogWarning("Connect() called, but component is not active/enabled."); return; }
             if (!_isStarted) { LogWarning("Connect() called before Start(). Will attempt in Start()."); return; }
@@ -2141,8 +2142,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             Log("Public Connect() called. Enqueuing connection logic.");
             _mainThreadActions.Enqueue(() =>
             {
-                if (_isShuttingDown)
-                    return;
                 Log("Processing enqueued Connect() action.");
                 DisconnectInternal(); // Clean up first
                 _systemSampleRate = AudioSettings.outputSampleRate;

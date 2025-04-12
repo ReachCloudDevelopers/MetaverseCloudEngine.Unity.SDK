@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.153.24
-- Fixed null reference error being thrown if microphone was modified during shutdown
+## 2.154.0
+- Fix issue where _isShuttingDown causes FixedUpdate() not to function properly.
 
 Updated on April 11, 2025
