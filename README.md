@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.155.1
-- Fixed errors in WebCameraFrameProvider.cs
+## 2.155.2
+- Fixed other errors related to unreferenced fields
 
 Updated on April 14, 2025

@@ -1199,7 +1199,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         FlipMat(frameMat, flipVertical, flipHorizontal);
                     }
                     Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-                    return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, _depth);
+                    return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, defaultDepthOffset);
                 }
                 else
                 {
@@ -1216,15 +1216,15 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         // (Orientation is Landscape, rotate90Degree is false)
                         FlipMat(frameMat, flipVertical, flipHorizontal);
                     }
-                    return new SimpleCameraFrameMat(frameMat, fieldOfView, _depth);
+                    return new SimpleCameraFrameMat(frameMat, fieldOfView, defaultDepthOffset);
                 }
 #else
                 FlipMat(frameMat, flipVertical, flipHorizontal);
                 if (rotatedFrameMat == null)
-                    return new SimpleCameraFrameMat(frameMat, fieldOfView, _depth);
+                    return new SimpleCameraFrameMat(frameMat, fieldOfView, defaultDepthOffset);
 
                 Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, _depth);
+                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, defaultDepthOffset);
 #endif
             }
             finally

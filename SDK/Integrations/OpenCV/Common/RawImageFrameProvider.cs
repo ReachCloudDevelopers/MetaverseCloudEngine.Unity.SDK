@@ -96,6 +96,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         protected Texture sourceTexture;
 
         /// <summary>
+        /// Intermediate Texture2D used for conversion.
+        /// </summary>
+        protected Texture2D intermediateTexture2D;
+
+        /// <summary>
         /// The frame mat.
         /// </summary>
         protected Mat frameMat;
@@ -214,57 +219,81 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
 
         /// <summary>
-        /// Allocates or reallocates the OpenCV Mat objects based on the current texture dimensions and format.
+        /// Allocates or reallocates the OpenCV Mat objects and intermediate Texture2D
+        /// based on the current texture dimensions and format.
         /// </summary>
         /// <returns>True if successful, false otherwise.</returns>
         protected virtual bool InitializeMats()
         {
             if (sourceTexture == null)
             {
-                Debug.LogWarning("RawImageFrameProvider: Cannot initialize Mats, source texture is null.");
-                ReleaseMats(); // Clean up existing mats if any
+                Debug.LogWarning("RawImageTextureSource: Cannot initialize Mats, source texture is null.");
+                ReleaseMats(); // Clean up existing resources if any
                 return false;
             }
 
-            if (sourceTexture.width <= 0 || sourceTexture.height <= 0)
+            int newWidth = sourceTexture.width;
+            int newHeight = sourceTexture.height;
+
+            if (newWidth <= 0 || newHeight <= 0)
             {
-                 Debug.LogWarning($"RawImageFrameProvider: Cannot initialize Mats, texture dimensions are invalid ({sourceTexture.width}x{sourceTexture.height}).");
+                 Debug.LogWarning($"RawImageTextureSource: Cannot initialize Mats, texture dimensions are invalid ({newWidth}x{newHeight}).");
                  ReleaseMats();
                  return false;
             }
 
-            // Release previous Mats if dimensions or format changed
-            if (baseMat != null && (currentTextureWidth != sourceTexture.width || currentTextureHeight != sourceTexture.height))
+            // Check if dimensions changed or if resources are missing
+            bool needsRecreation = baseMat == null || intermediateTexture2D == null ||
+                                  currentTextureWidth != newWidth || currentTextureHeight != newHeight;
+
+            if (needsRecreation)
             {
-                ReleaseMats();
+                ReleaseMats(); // Release previous resources
+
+                currentTextureWidth = newWidth;
+                currentTextureHeight = newHeight;
+
+                try
+                {
+                    // Create intermediate Texture2D (RGBA32 is generally compatible)
+                    intermediateTexture2D = new Texture2D(currentTextureWidth, currentTextureHeight, TextureFormat.RGBA32, false);
+
+                    // Create baseMat (Utils.texture2DToMat typically deals well with RGBA input)
+                    baseMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC4);
+                    baseColorFormat = ColorFormat.RGBA; // Assuming RGBA from Texture2D
+
+                    // Create frameMat based on output format
+                    if (baseColorFormat == outputColorFormat)
+                    {
+                        frameMat = baseMat; // Reuse Mat if formats match
+                    }
+                    else
+                    {
+                        frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"RawImageTextureSource: Error creating Mats or Texture2D: {ex.Message}");
+                    ReleaseMats(); // Ensure cleanup on failure
+                    return false;
+                }
             }
-
-             currentTextureWidth = sourceTexture.width;
-             currentTextureHeight = sourceTexture.height;
-
-            // Create baseMat if it doesn't exist
-            if (baseMat == null)
+            // If not needsRecreation, check if frameMat needs update due to format change
+            else if (frameMat == null || (frameMat != baseMat && frameMat.channels() != Channels(outputColorFormat)))
             {
-                 // Utils.textureToMat typically outputs RGBA
-                baseMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC4);
-                baseColorFormat = ColorFormat.RGBA;
-            }
+                if(frameMat != null && frameMat != baseMat) frameMat.Dispose(); // Dispose previous specific frameMat
 
-            // Create frameMat if it doesn't exist or format changed
-            if (frameMat == null || frameMat.channels() != Channels(outputColorFormat))
-            {
-                 frameMat?.Dispose(); // Dispose previous if format changed
                 if (baseColorFormat == outputColorFormat)
                 {
-                    // Output format is the same as the base format, reuse the Mat
                     frameMat = baseMat;
                 }
                 else
                 {
-                    // Output format is different, need a separate Mat for conversion
-                    frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
+                     frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
                 }
             }
+
 
             // Note: Rotation logic removed for simplicity, add back if needed
             // if (rotatedFrameMat != null) rotatedFrameMat.Dispose();
@@ -274,7 +303,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
 
         /// <summary>
-        /// Releases the OpenCV Mat resources.
+        /// Releases the OpenCV Mat resources and the intermediate Texture2D.
         /// </summary>
         protected virtual void ReleaseMats()
         {
@@ -291,13 +320,22 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             }
             baseMat = null;
 
+            // Dispose intermediate Texture2D
+            if (intermediateTexture2D != null)
+            {
+                if (Application.isPlaying)
+                    UnityEngine.Object.Destroy(intermediateTexture2D);
+                else
+                    UnityEngine.Object.DestroyImmediate(intermediateTexture2D);
+                intermediateTexture2D = null;
+            }
+
             // if (rotatedFrameMat != null) rotatedFrameMat.Dispose();
             // rotatedFrameMat = null;
 
              currentTextureWidth = 0;
              currentTextureHeight = 0;
         }
-
 
         /// <summary>
         /// Indicates whether this instance has been initialized.
@@ -454,7 +492,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
         // --- End ICameraFrame Implementation ---
 
-
         /// <summary>
         /// Gets the Mat of the current frame from the RawImage texture.
         /// The Mat object's type is determined by the outputColorFormat setting.
@@ -470,33 +507,52 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             sourceTexture = sourceRawImage.texture;
 
             if (sourceTexture == null)
-                return null; // No texture to process
-
-            // Check if texture dimensions changed and reinitialize Mats if needed
-            if (sourceTexture.width != currentTextureWidth || sourceTexture.height != currentTextureHeight)
             {
-                Debug.Log($"RawImageFrameProvider: Texture dimensions changed ({currentTextureWidth}x{currentTextureHeight} -> {sourceTexture.width}x{sourceTexture.height}). Reinitializing Mats.");
+                // If texture becomes null after initialization, release mats
+                if(currentTextureWidth > 0 || currentTextureHeight > 0)
+                {
+                    Debug.LogWarning("RawImageTextureSource: Source texture became null. Releasing resources.");
+                    ReleaseMats();
+                }
+                return null; // No texture to process
+            }
+
+
+            // Check if texture dimensions changed OR if essential resources are missing/invalid
+            // and reinitialize Mats/Texture if needed
+            if (intermediateTexture2D == null || baseMat == null || // Resources missing?
+                sourceTexture.width != currentTextureWidth || sourceTexture.height != currentTextureHeight) // Dimensions changed?
+            {
+                Debug.Log($"RawImageTextureSource: Texture dimensions changed or resources invalid. " +
+                          $"Current:({currentTextureWidth}x{currentTextureHeight}), " +
+                          $"New:({sourceTexture.width}x{sourceTexture.height}). Reinitializing.");
                 if (!InitializeMats())
                 {
-                    Debug.LogError("RawImageFrameProvider: Failed to reinitialize Mats after texture resize.");
-                    return null; // Cannot proceed if Mats aren't ready
+                    Debug.LogError("RawImageTextureSource: Failed to reinitialize Mats/Texture after change.");
+                    return null; // Cannot proceed if resources aren't ready
                 }
             }
 
-             // Ensure Mats are valid before proceeding
-            if (baseMat == null || baseMat.IsDisposed || frameMat == null || frameMat.IsDisposed)
+             // Ensure Mats and intermediate texture are valid before proceeding (double check after potential InitializeMats call)
+             if (baseMat == null || baseMat.IsDisposed ||
+                 frameMat == null || frameMat.IsDisposed ||
+                 intermediateTexture2D == null)
             {
-                Debug.LogError("RawImageFrameProvider: Mats are not initialized or have been disposed unexpectedly.");
-                 if (!InitializeMats()) return null; // Attempt reinitialization
+                Debug.LogError("RawImageTextureSource: Mats or intermediate Texture2D are not initialized or have been disposed unexpectedly.");
+                // Avoid infinite loop by not calling InitializeMats again here unless logic guarantees exit
+                return null;
             }
 
 
             try
             {
-                // Convert the Unity Texture to the baseMat (usually RGBA)
-                Utils.textureToMat(sourceTexture, baseMat); // This handles Texture2D, RenderTexture etc.
+                // === Step 1: Convert source Texture to intermediate Texture2D ===
+                Utils.textureToTexture2D(sourceTexture, intermediateTexture2D);
 
-                // Perform color conversion if necessary
+                // === Step 2: Convert intermediate Texture2D to baseMat (usually RGBA) ===
+                Utils.texture2DToMat(intermediateTexture2D, baseMat);
+
+                // === Step 3: Perform color conversion if necessary (baseMat -> frameMat) ===
                 if (baseColorFormat != outputColorFormat)
                 {
                     int code = ColorConversionCodes(baseColorFormat, outputColorFormat);
@@ -506,26 +562,34 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     }
                     else
                     {
-                        // If no direct conversion, copy base to frame
+                        // If no direct conversion, copy base to frame if they are different objects
                          if(frameMat != baseMat) baseMat.copyTo(frameMat);
-                         Debug.LogWarning($"RawImageFrameProvider: Unsupported color conversion from {baseColorFormat} to {outputColorFormat}. Using base format.");
+                         Debug.LogWarning($"RawImageTextureSource: Unsupported color conversion from {baseColorFormat} to {outputColorFormat}. Using base format.");
                     }
                 }
                 // If formats are the same, frameMat already references baseMat (or was copied if conversion failed)
+                // Now 'frameMat' holds the image in the correct format
 
-                // Apply flips
+                // === Step 4: Apply flips ===
                 FlipMat(frameMat, _flipVertical, _flipHorizontal);
 
+                // === Step 5: Return the frame wrapper ===
                 // Note: Rotation logic removed for RawImage simplicity
                 // if (rotatedFrameMat != null) { ... Core.rotate ... return new RawImageCameraFrame(rotatedFrameMat, ...); }
 
-                // Return the frame wrapper containing the processed Mat
                 return new RawImageCameraFrame(frameMat, fieldOfView, defaultDepthOffset);
 
             }
-            catch (Exception e)
+            catch (ArgumentException argEx) // Catch potential errors from Utils methods (e.g., size mismatch)
             {
-                Debug.LogError($"RawImageFrameProvider: Error processing texture to Mat: {e}");
+                 Debug.LogError($"RawImageTextureSource: Argument Error processing texture to Mat: {argEx.Message}\n{argEx.StackTrace}");
+                 // This might indicate a need to reinitialize if sizes diverged unexpectedly
+                 // Consider calling InitializeMats() here cautiously or just returning null.
+                 return null;
+            }
+            catch (Exception e) // Catch general errors
+            {
+                Debug.LogError($"RawImageTextureSource: General Error processing texture to Mat: {e}");
                 return null;
             }
         }
