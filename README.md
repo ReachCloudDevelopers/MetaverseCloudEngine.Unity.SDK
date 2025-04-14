@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.154.1
-- Fixed MV_NATIVE_WEBSOCKETS not properly wrapping _websocket variable.
+## 2.154.2
+- Added support for passing arguments from function into onCalled event in AIRealtimeCommunication.
 
-Updated on April 11, 2025
+Updated on April 14, 2025

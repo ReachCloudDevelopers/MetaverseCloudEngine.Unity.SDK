@@ -150,7 +150,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary>
         /// Detailed description to help the AI understand when and why to call this function.
         /// </summary>
-        [TextArea] [Tooltip("Description to help the AI decide when to call this function.")]
+        [TextArea]
+        [Tooltip("Description to help the AI decide when to call this function.")]
         public string functionDescription;
 
         /// <summary>
@@ -165,7 +166,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// Parameter values are handled by events within AIRealtimeCommunicationFunctionParameter.
         /// </summary>
         [Tooltip("Event invoked when the AI calls this functionID.")]
-        public UnityEvent onCalled = new();
+        public UnityEvent<Dictionary<string, object>> onCalled = new();
     }
 
     #endregion
@@ -198,6 +199,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Tooltip("How often (in seconds) microphone audio is sampled and sent to the AI.")]
         [SerializeField]
+        [Range(0.01f, 1.0f)]
         private float sampleInterval = 0.2f;
 
         [Tooltip(
@@ -223,10 +225,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [SerializeField]
         private string prompt = "You are a helpful assistant."; // Default prompt
 
-        [Tooltip("The AudioSource component used to play back the AI's voice.")] [SerializeField]
+        [Tooltip("The AudioSource component used to play back the AI's voice.")]
+        [SerializeField]
         private AudioSource outputVoiceSource;
 
-        [Tooltip("The desired voice preset for the AI's text-to-speech output.")] [SerializeField]
+        [Tooltip("The desired voice preset for the AI's text-to-speech output.")]
+        [SerializeField]
         private TextToSpeechVoicePreset outputVoice = TextToSpeechVoicePreset.Male;
 
         [Range(8000, 48000)]
@@ -1710,47 +1714,53 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             var functionDefinition = availableFunctions.FirstOrDefault(f => f.functionID == functionID);
             if (functionDefinition == null) { LogWarning($"AI called undefined function: '{functionID}'."); return; }
-
+            var args = new Dictionary<string, object>();
             Log($"Invoking user function: '{functionID}'");
-            try { functionDefinition.onCalled?.Invoke(); } catch (Exception e) { LogError($"Error invoking onCalled for '{functionID}': {e.Message}"); }
-
-            if (!string.IsNullOrEmpty(argumentsJson) && functionDefinition.parameters.Count > 0)
+            switch (string.IsNullOrEmpty(argumentsJson))
             {
-                try
-                {
-                    var arguments = JObject.Parse(argumentsJson);
-                    foreach (var paramDef in functionDefinition.parameters)
+                case false when functionDefinition.parameters.Count > 0:
+                    try
                     {
-                        if (arguments.TryGetValue(paramDef.parameterID, StringComparison.OrdinalIgnoreCase, out var paramValueToken))
+                        var arguments = JObject.Parse(argumentsJson);
+                        foreach (var paramDef in functionDefinition.parameters)
                         {
-                            ParseAndInvokeParameter(paramDef, paramValueToken);
-                        }
-                        else
-                        {
-                            Log($"Argument '{paramDef.parameterID}' not provided for '{functionID}'. Skipping.");
+                            if (arguments.TryGetValue(paramDef.parameterID, StringComparison.OrdinalIgnoreCase, out var paramValueToken))
+                            {
+                                if (ParseAndInvokeParameter(paramDef, paramValueToken, out var o))
+                                {
+                                    args[paramDef.parameterID] = o;
+                                    Log($"Parsed argument '{paramDef.parameterID}' for '{functionID}': {o}");
+                                }
+                                else LogWarning($"Failed to parse argument '{paramDef.parameterID}' for '{functionID}'.");
+                            }
+                            else Log($"Argument '{paramDef.parameterID}' not provided for '{functionID}'. Skipping.");
                         }
                     }
+                    catch (JsonException jsonEx) { LogError($"Failed to parse args JSON for '{functionID}': {jsonEx.Message}\nJSON: {argumentsJson}"); }
+                    catch (Exception e) { LogError($"Error processing args for '{functionID}': {e.Message}"); }
+                    break;
+                case false:
+                    LogWarning($"Function '{functionID}' received args '{argumentsJson}' but defines no parameters.");
+                    break;
+                default:
+                {
+                    if (functionDefinition.parameters.Count > 0)
+                        Log($"Function '{functionID}' defines parameters but received no arguments.");
+                    break;
                 }
-                catch (JsonException jsonEx) { LogError($"Failed to parse args JSON for '{functionID}': {jsonEx.Message}\nJSON: {argumentsJson}"); }
-                catch (Exception e) { LogError($"Error processing args for '{functionID}': {e.Message}"); }
             }
-            else if (!string.IsNullOrEmpty(argumentsJson))
-            {
-                LogWarning($"Function '{functionID}' received args '{argumentsJson}' but defines no parameters.");
-            }
-            else if (functionDefinition.parameters.Count > 0)
-            {
-                Log($"Function '{functionID}' defines parameters but received no arguments.");
-            }
+            try { functionDefinition.onCalled?.Invoke(args); }
+            catch (Exception e) { LogError($"Error invoking onCalled for '{functionID}': {e.Message}"); }
         }
 
         /// <summary> Parses a JToken value and invokes the corresponding parameter event. Runs on Main Thread. </summary>
-        private void ParseAndInvokeParameter(AIRealtimeCommunicationFunctionParameter paramDef, JToken valueToken)
+        private bool ParseAndInvokeParameter(AIRealtimeCommunicationFunctionParameter paramDef, JToken valueToken, out object o)
         {
             if (valueToken == null || valueToken.Type == JTokenType.Null)
             {
                 LogWarning($"Null value for parameter '{paramDef.parameterID}'.");
-                return;
+                o = null;
+                return false;
             }
             var valueString = valueToken.ToString(); 
             Log($"Parsing parameter '{paramDef.parameterID}', Type: {paramDef.type}, Raw Value: '{valueString}'");
@@ -1760,18 +1770,27 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
                     case AIRealtimeCommunicationFunctionParameterType.String:
                         paramDef.onStringValue?.Invoke(valueString);
-                        break;
+                        o = valueString;
+                        return true;
                     case AIRealtimeCommunicationFunctionParameterType.Float:
-                        if (float.TryParse(valueString, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var fVal))
+                        if (float.TryParse(valueString, System.Globalization.NumberStyles.Any,
+                                System.Globalization.CultureInfo.InvariantCulture, out var fVal))
+                        {
                             paramDef.onFloatValue?.Invoke(fVal);
-                        else
-                            LogWarning($"Failed parse float: '{valueString}'");
+                            o = fVal;
+                            return true;
+                        }
+                        LogWarning($"Failed parse float: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Integer:
-                        if (int.TryParse(valueString, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var iVal))
+                        if (int.TryParse(valueString, System.Globalization.NumberStyles.Integer,
+                                System.Globalization.CultureInfo.InvariantCulture, out var iVal))
+                        {
                             paramDef.onIntValue?.Invoke(iVal);
-                        else
-                            LogWarning($"Failed parse int: '{valueString}'");
+                            o = iVal;
+                            return true;
+                        }
+                        LogWarning($"Failed parse int: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Boolean:
                         bool bVal;
@@ -1783,35 +1802,71 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         {
                             if (valueString == "1") bVal = true;
                             else if (valueString == "0") bVal = false;
-                            else { LogWarning($"Failed parse bool: '{valueString}'"); return; }
+                            else
+                            {
+                                LogWarning($"Failed parse bool: '{valueString}'");
+                                o = null;
+                                return false;
+                            }
                         }
                         paramDef.onBoolValue?.Invoke(bVal);
-                        break;
+                        o = bVal;
+                        return true;
                     case AIRealtimeCommunicationFunctionParameterType.Vector2:
-                        if (TryParseVector2(valueString, out var v2)) paramDef.onVector2Value?.Invoke(v2);
-                        else LogWarning($"Failed parse Vector2: '{valueString}'");
+                        if (TryParseVector2(valueString, out var v2))
+                        {
+                            paramDef.onVector2Value?.Invoke(v2);
+                            o = v2;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Vector2: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Vector3:
-                        if (TryParseVector3(valueString, out var v3)) paramDef.onVector3Value?.Invoke(v3);
-                        else LogWarning($"Failed parse Vector3: '{valueString}'");
+                        if (TryParseVector3(valueString, out var v3))
+                        {
+                            paramDef.onVector3Value?.Invoke(v3);
+                            o = v3;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Vector3: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Vector4:
-                        if (TryParseVector4(valueString, out var v4)) paramDef.onVector4Value?.Invoke(v4);
-                        else LogWarning($"Failed parse Vector4: '{valueString}'");
+                        if (TryParseVector4(valueString, out var v4))
+                        {
+                            paramDef.onVector4Value?.Invoke(v4);
+                            o = v4;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Vector4: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Quaternion:
-                        if (TryParseVector4(valueString, out var q)) paramDef.onQuaternionValue?.Invoke(new Quaternion(q.x, q.y, q.z, q.w));
-                        else LogWarning($"Failed parse Quaternion: '{valueString}'");
+                        if (TryParseVector4(valueString, out var q))
+                        {
+                            paramDef.onQuaternionValue?.Invoke(new Quaternion(q.x, q.y, q.z, q.w));
+                            o = q;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Quaternion: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Color:
                         var hc = valueString.StartsWith("#") ? valueString : "#" + valueString;
-                        if (ColorUtility.TryParseHtmlString(hc, out var c)) paramDef.onColorValue?.Invoke(c);
-                        else LogWarning($"Failed parse Color: '{valueString}'");
+                        if (ColorUtility.TryParseHtmlString(hc, out var c))
+                        {
+                            paramDef.onColorValue?.Invoke(c);
+                            o = c;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Color: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Color32:
                         var hc32 = valueString.StartsWith("#") ? valueString : "#" + valueString;
-                        if (ColorUtility.TryParseHtmlString(hc32, out var c32)) paramDef.onColor32Value?.Invoke(c32);
-                        else LogWarning($"Failed parse Color32: '{valueString}'");
+                        if (ColorUtility.TryParseHtmlString(hc32, out var c32))
+                        {
+                            paramDef.onColor32Value?.Invoke(c32);
+                            o = (Color32)c32;
+                            return true;
+                        }
+                        LogWarning($"Failed parse Color32: '{valueString}'");
                         break;
                     case AIRealtimeCommunicationFunctionParameterType.Enum:
                         var idx = paramDef.enumValues.FindIndex(e => string.Equals(e, valueString, StringComparison.OrdinalIgnoreCase));
@@ -1819,26 +1874,30 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                         {
                             paramDef.onEnumValue?.Invoke(idx);
                             paramDef.onEnumValueString?.Invoke(paramDef.enumValues[idx]);
+                            o = idx;
+                            return true;
                         }
-                        else if (int.TryParse(valueString, out var iEnum) && iEnum >= 0 && iEnum < paramDef.enumValues.Count)
+                        if (int.TryParse(valueString, out var iEnum) && iEnum >= 0 && iEnum < paramDef.enumValues.Count)
                         {
                             paramDef.onEnumValue?.Invoke(iEnum);
                             paramDef.onEnumValueString?.Invoke(paramDef.enumValues[iEnum]);
+                            o = iEnum;
+                            return true;
                         }
-                        else
-                        {
-                            LogWarning($"Failed parse Enum: '{valueString}'");
-                        }
+                        LogWarning($"Failed parse Enum: '{valueString}'");
                         break;
                     default:
                         LogWarning($"Unhandled param type: '{paramDef.type}'");
-                        break;
+                        o = null;
+                        return false;
                 }
             }
             catch (Exception e)
             {
                 LogError($"Error invoking param event for '{paramDef.parameterID}': {e.Message}\n{e.StackTrace}");
             }
+            o = null;
+            return false;
         }
 
         // --- Argument Parsing Helpers ---
