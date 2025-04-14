@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.155.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.155.4\n- Add ClonedCameraFrame class and improve error handling in RawImageFrameProvider\n\nUpdated on April 14, 2025",
+  "version": "2.155.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.155.5\n- Updated bytetracker implementation and DepthBasedEnvironmentVoxelizationEngine\n\nUpdated on April 14, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

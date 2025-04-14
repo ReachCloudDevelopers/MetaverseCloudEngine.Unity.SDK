@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.155.4
-- Add ClonedCameraFrame class and improve error handling in RawImageFrameProvider
+## 2.155.5
+- Updated bytetracker implementation and DepthBasedEnvironmentVoxelizationEngine
 
 Updated on April 14, 2025
