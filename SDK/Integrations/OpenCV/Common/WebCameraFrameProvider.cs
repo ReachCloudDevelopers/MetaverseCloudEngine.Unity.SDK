@@ -19,11 +19,15 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
     [DeclareFoldoutGroup("Additional Metadata")]
     public class WebCameraFrameProvider : TriInspectorMonoBehaviour, ICameraFrameProvider
     {
-        [Tooltip("If true, initializes the webcam on start.")] [SerializeField]
+        [Tooltip("If true, initializes the webcam on start.")]
+        [SerializeField]
         private bool initOnStart;
 
         [Group("Additional Metadata")]
         [Min(0)] [SerializeField] private float fieldOfView = 60;
+        [Tooltip("Since webcamera doesn't provide depth, depth will be calculated by this constant.")]
+        [Min(0)]
+        [SerializeField] private float defaultDepthOffset = 1;
 
         [Tooltip("Set this to false if you will be supplying the WebCamTexture via the 'SetWebCamTexture' method.")]
         [SerializeField]
@@ -649,7 +653,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         if (devices[cameraIndex].kind != WebCamKind.ColorAndDepth &&
                             devices[cameraIndex].isFrontFacing == RequestedIsFrontFacing)
 #else
-                    if (devices[cameraIndex].isFrontFacing == requestedIsFrontFacing)
+                        if (devices[cameraIndex].isFrontFacing == requestedIsFrontFacing)
 #endif
                         {
                             webCamDevice = devices[cameraIndex];
@@ -942,11 +946,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         {
             private readonly Mat _m;
             private readonly float _fov;
+            private readonly bool _depth;
 
-            public SimpleCameraFrameMat(Mat m, float fov)
+            public SimpleCameraFrameMat(Mat m, float fov, float depth = 0)
             {
                 _m = m;
                 _fov = fov;
+                _depth = depth;
             }
 
             public void Dispose()
@@ -986,18 +992,37 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
             public bool ProvidesDepthData()
             {
-                return false;
+                return _depth > 0;
             }
 
             public float SampleDepth(int sampleX, int sampleY)
             {
-                return -1;
+                if (_depth <= 0)
+                    return -1;
+                return _depth;
             }
 
             public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
             {
-                point = default;
-                return false;
+                if (_depth <= 0)
+                {
+                    point = default;
+                    return false;
+                }
+                
+                var size = GetSize();
+                if (sampleX > size.x) return -1;
+                if (sampleY > size.y) return -1;
+                if (sampleX < 0) return -1;
+                if (sampleY < 0) return -1;
+
+                var sampleFX = sampleX / (float)size.x;
+                var sampleFY = sampleY / (float)size.y;
+                var fov = _fov;
+                
+                var x = (sampleFX - 0.5f) * 2f * Mathf.Tan(fov / 2f) * _depth;
+                var y = (sampleFY - 0.5f) * 2f * Mathf.Tan(fov / 2f) * _depth;
+                return new Vector3(x, y, _depth);
             }
         }
 
@@ -1010,27 +1035,19 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         public virtual ICameraFrame DequeueNextFrame()
         {
             if (!hasInitDone || !IsStreaming())
-            {
                 return null;
-            }
 
             if (frameMat is null)
-            {
                 return null;
-            }
 
             try
             {
                 if (baseColorFormat == outputColorFormat)
                 {
                     if (webCamTexture is Texture2D t2d)
-                    {
                         Utils.texture2DToMat(t2d, frameMat, false);
-                    }
                     else if (webCamTexture is WebCamTexture wct)
-                    {
                         Utils.webCamTextureToMat(wct, frameMat, colors, false);
-                    }
                 }
                 else
                 {
@@ -1048,58 +1065,48 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 }
 
 #if !UNITY_EDITOR && !(UNITY_STANDALONE || UNITY_WEBGL)
-            if (rotatedFrameMat != null)
-            {
-                if (screenOrientation == ScreenOrientation.Portrait || screenOrientation == ScreenOrientation.PortraitUpsideDown)
+                if (rotatedFrameMat != null)
                 {
-                    // (Orientation is Portrait, rotate90Degree is false)
-                    if (webCamDevice.isFrontFacing)
+                    if (screenOrientation == ScreenOrientation.Portrait || screenOrientation == ScreenOrientation.PortraitUpsideDown)
                     {
-                        FlipMat(frameMat, !flipHorizontal, !flipVertical);
+                        // (Orientation is Portrait, rotate90Degree is false)
+                        if (webCamDevice.isFrontFacing)
+                            FlipMat(frameMat, !flipHorizontal, !flipVertical);
+                        else
+                            FlipMat(frameMat, flipHorizontal, flipVertical);
                     }
                     else
                     {
-                        FlipMat(frameMat, flipHorizontal, flipVertical);
+                        // (Orientation is Landscape, rotate90Degrees=true)
+                        FlipMat(frameMat, flipVertical, flipHorizontal);
                     }
+                    Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
+                    return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, _depth);
                 }
                 else
                 {
-                    // (Orientation is Landscape, rotate90Degrees=true)
-                    FlipMat(frameMat, flipVertical, flipHorizontal);
-                }
-                Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView);
-            }
-            else
-            {
-                if (screenOrientation == ScreenOrientation.Portrait || screenOrientation == ScreenOrientation.PortraitUpsideDown)
-                {
-                    // (Orientation is Portrait, rotate90Degree is ture)
-                    if (webCamDevice.isFrontFacing)
+                    if (screenOrientation == ScreenOrientation.Portrait || screenOrientation == ScreenOrientation.PortraitUpsideDown)
                     {
-                        FlipMat(frameMat, flipHorizontal, flipVertical);
+                        // (Orientation is Portrait, rotate90Degree is ture)
+                        if (webCamDevice.isFrontFacing)
+                            FlipMat(frameMat, flipHorizontal, flipVertical);
+                        else
+                            FlipMat(frameMat, !flipHorizontal, !flipVertical);
                     }
                     else
                     {
-                        FlipMat(frameMat, !flipHorizontal, !flipVertical);
+                        // (Orientation is Landscape, rotate90Degree is false)
+                        FlipMat(frameMat, flipVertical, flipHorizontal);
                     }
+                    return new SimpleCameraFrameMat(frameMat, fieldOfView, _depth);
                 }
-                else
-                {
-                    // (Orientation is Landscape, rotate90Degree is false)
-                    FlipMat(frameMat, flipVertical, flipHorizontal);
-                }
-                return new SimpleCameraFrameMat(frameMat, fieldOfView);
-            }
 #else
                 FlipMat(frameMat, flipVertical, flipHorizontal);
-
                 if (rotatedFrameMat == null)
-                    return new SimpleCameraFrameMat(frameMat, fieldOfView);
+                    return new SimpleCameraFrameMat(frameMat, fieldOfView, _depth);
 
                 Core.rotate(frameMat, rotatedFrameMat, Core.ROTATE_90_CLOCKWISE);
-                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView);
-
+                return new SimpleCameraFrameMat(rotatedFrameMat, fieldOfView, _depth);
 #endif
             }
             finally

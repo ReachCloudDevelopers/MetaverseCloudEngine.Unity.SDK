@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.154.2
-- Added support for passing arguments from function into onCalled event in AIRealtimeCommunication.
+## 2.155.0
+- Added basic constant depth support to WebCameraFrameProvider, and added new RawImageFrameProvider to allow for raw image input as camera image source.
 
 Updated on April 14, 2025

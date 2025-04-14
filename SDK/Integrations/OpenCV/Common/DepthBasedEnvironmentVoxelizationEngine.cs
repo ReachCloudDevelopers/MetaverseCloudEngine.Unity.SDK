@@ -426,28 +426,27 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         }
 
         private readonly ObjectPool<GameObject> _voxelPool = new(() =>
-            {
-                if (!Application.isPlaying)
-                    return null;
-
-                var voxel = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                voxel.hideFlags = HideFlags.HideInHierarchy;
-                return voxel;
-            },
-            actionOnGet: go =>
-            {
-                if (go) go.SetActive(true);
-            },
-            actionOnRelease: go =>
-            {
-                if (!go) return;
-                go.SetActive(false);
-                go.transform.parent = null;
-            },
-            actionOnDestroy: go =>
-            {
-                if (go) Destroy(go);
-            });
+        {
+            if (!Application.isPlaying)
+                return null;
+            var voxel = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            voxel.hideFlags = HideFlags.HideInHierarchy;
+            return voxel;
+        },
+        actionOnGet: go =>
+        {
+            if (go) go.SetActive(true);
+        },
+        actionOnRelease: go =>
+        {
+            if (!go) return;
+            go.SetActive(false);
+            go.transform.parent = null;
+        },
+        actionOnDestroy: go =>
+        {
+            if (go) Destroy(go);
+        });
 
         private class ObjectInstance
         {
