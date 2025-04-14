@@ -4,6 +4,7 @@ using OpenCVForUnity.CoreModule;
 using OpenCVForUnity.ImgprocModule;
 using System;
 using System.Collections;
+using System.Threading; // Required for locking
 using OpenCVForUnity.UnityUtils;
 using TriInspectorMVCE;
 using UnityEngine;
@@ -13,11 +14,171 @@ using UnityEngine.UI; // Required for RawImage
 
 namespace MetaverseCloudEngine.Unity.OpenCV.Common
 {
+    #region ClonedCameraFrame Class (Implements ICameraFrame)
+
+    /// <summary>
+    /// An implementation of ICameraFrame that holds a CLONE of the Mat data
+    /// provided to it. The consumer is responsible for calling the Dispose() method
+    /// manually to release the cloned Mat.
+    /// </summary>
+    public class ClonedCameraFrame : ICameraFrame
+    {
+        private Mat _clonedMat; // Owns this cloned Mat instance
+        private readonly float _fov;
+        private readonly float _depthOffset;
+        private readonly Vector2Int _size; // Store size from the cloned Mat
+
+        // Constructor takes the CLONED Mat and metadata
+        public ClonedCameraFrame(Mat matToOwn, float fov, float depthOffset)
+        {
+             if (matToOwn == null || matToOwn.IsDisposed)
+             {
+                 Debug.LogError("ClonedCameraFrame: Received null or disposed Mat during construction.");
+                 _clonedMat = null;
+                 _size = Vector2Int.zero;
+             }
+             else
+             {
+                 _clonedMat = matToOwn; // Takes ownership of the provided clone
+                 _size = new Vector2Int(_clonedMat.cols(), _clonedMat.rows());
+             }
+            _fov = fov;
+            _depthOffset = depthOffset;
+        }
+
+        /// <summary>
+        /// Releases the internal cloned Mat resource. Must be called manually by the consumer.
+        /// </summary>
+        public void Dispose() // Not IDisposable.Dispose()
+        {
+            if (_clonedMat != null && !_clonedMat.IsDisposed)
+            {
+                _clonedMat.Dispose();
+            }
+            _clonedMat = null; // Prevent further access
+            // Note: _size remains valid even after disposal for potential post-mortem info
+        }
+
+        // --- ICameraFrame Implementation ---
+
+        public Mat GetMat()
+        {
+            // Return the internal Mat, check if valid
+            if (_clonedMat == null || _clonedMat.IsDisposed)
+            {
+                // This might be expected if consumer calls GetMat after calling Dispose
+                // Avoid logging error here, just return null.
+                return null;
+            }
+            return _clonedMat;
+        }
+
+        public ReadOnlySpan<Color32> GetColors32()
+        {
+            if (_clonedMat == null || _clonedMat.IsDisposed) return Array.Empty<Color32>();
+
+            TextureFormat format;
+            int channels = _clonedMat.channels();
+            if (channels == 1) format = TextureFormat.Alpha8;
+            else if (channels == 3) format = TextureFormat.RGB24;
+            else if (channels == 4) format = TextureFormat.RGBA32;
+            else
+            {
+                Debug.LogError($"ClonedCameraFrame.GetColors32: Unsupported Mat channels: {channels}");
+                return Array.Empty<Color32>();
+            }
+
+            Texture2D tempTex = null;
+            try
+            {
+                // Use stored size for safety
+                tempTex = new Texture2D(_size.x, _size.y, format, false);
+                Utils.matToTexture2D(_clonedMat, tempTex);
+                return tempTex.GetPixels32();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"ClonedCameraFrame.GetColors32 Error: {ex.Message}\n{ex.StackTrace}");
+                return Array.Empty<Color32>();
+            }
+            finally
+            {
+                if (tempTex != null)
+                {
+                    if (Application.isPlaying) UnityEngine.Object.Destroy(tempTex);
+                    else UnityEngine.Object.DestroyImmediate(tempTex);
+                }
+            }
+        }
+
+        public Vector2Int GetSize()
+        {
+             // Return stored size. It remains valid even after Dispose() is called.
+            return _size;
+        }
+
+        public float GetFOV(ICameraFrame.FOVType type)
+        {
+            if (type == ICameraFrame.FOVType.Horizontal)
+            {
+                return _fov;
+            }
+            else
+            {
+                if (_size.y == 0) return 0;
+                float aspect = (float)_size.x / _size.y;
+                if (aspect <= 0 || _fov <= 0) return 0;
+                float hFovRad = _fov * Mathf.Deg2Rad;
+                float vFovRad = 2f * Mathf.Atan(Mathf.Tan(hFovRad / 2f) / aspect);
+                return vFovRad * Mathf.Rad2Deg;
+            }
+        }
+
+        public bool ProvidesDepthData()
+        {
+            return _depthOffset > 0;
+        }
+
+        public float SampleDepth(int sampleX, int sampleY)
+        {
+            if (!ProvidesDepthData()) return -1f;
+            // Optional: Add bounds check using _size
+            if (sampleX < 0 || sampleX >= _size.x || sampleY < 0 || sampleY >= _size.y) return -1f;
+            return _depthOffset;
+        }
+
+        public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
+        {
+            point = default;
+            if (!ProvidesDepthData() || _size.x <= 0 || _size.y <= 0) return false;
+            if (sampleX < 0 || sampleX >= _size.x || sampleY < 0 || sampleY >= _size.y) return false;
+
+            float aspect = (float)_size.x / _size.y;
+            float hFovRad = _fov * Mathf.Deg2Rad;
+            if (hFovRad <= 0 || aspect <= 0) return false;
+
+            float normX = (sampleX / (float)(_size.x - 1)) * 2f - 1f;
+            float normY = (1f - (sampleY / (float)(_size.y - 1))) * 2f - 1f; // Invert Y
+            float planeX = normX * Mathf.Tan(hFovRad / 2f);
+            float planeY = normY * Mathf.Tan(hFovRad / 2f) / aspect;
+
+            point.x = planeX * _depthOffset;
+            point.y = planeY * _depthOffset;
+            point.z = _depthOffset;
+            return true;
+        }
+    }
+
+    #endregion
+
+    #region RawImageFrameProvider Class
+
     [HideMonoScript]
     [DeclareFoldoutGroup("RawImage Source Options")]
     [DeclareFoldoutGroup("Additional Metadata")]
     public class RawImageFrameProvider : TriInspectorMonoBehaviour, ICameraFrameProvider
     {
+        #region Inspector Fields
         [Tooltip("The RawImage component whose texture will be used as the source.")]
         [Required]
         [SerializeField]
@@ -73,86 +234,58 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 if (_outputColorFormat != value)
                 {
                     _outputColorFormat = value;
-                    // Reinitialize Mat if format changes
-                    if (hasInitDone)
-                        InitializeMats();
+                    _needsReinitialization = true;
                 }
             }
         }
 
-        /// <summary>
-        /// UnityEvent that is triggered when this instance is initialized.
-        /// </summary>
+        [Tooltip("Size of the internal ring buffer for processed frames.")]
+        [Min(2)]
+        [SerializeField]
+        [Group("RawImage Source Options")]
+        private int bufferSize = 3;
+
+        #endregion
+
+        #region Events
         public event Action Initialized;
-
-        /// <summary>
-        /// UnityEvent that is triggered when this instance is disposed.
-        /// </summary>
         public event Action Disposed;
+        #endregion
 
-        /// <summary>
-        /// The texture read from the RawImage.
-        /// </summary>
+        #region Internal Fields
         protected Texture sourceTexture;
-
-        /// <summary>
-        /// Intermediate Texture2D used for conversion.
-        /// </summary>
-        protected Texture2D intermediateTexture2D;
-
-        /// <summary>
-        /// The frame mat.
-        /// </summary>
-        protected Mat frameMat;
-
-        /// <summary>
-        /// The base mat (usually RGBA from the texture).
-        /// </summary>
-        protected Mat baseMat;
-
-        // Note: Rotation is less common for RawImage, but kept for potential future use or consistency
-        /// <summary>
-        /// The rotated frame mat
-        /// </summary>
-        // protected Mat rotatedFrameMat;
-
-        /// <summary>
-        /// The base color format (usually RGBA when reading from Unity Textures).
-        /// </summary>
+        protected Texture2D intermediateTexture2D; // Main thread only
+        protected Mat baseMat; // Main thread only
+        protected Mat frameMat; // Main thread only (intermediate for processing)
         protected ColorFormat baseColorFormat = ColorFormat.RGBA;
 
-        /// <summary>
-        /// Indicates whether this instance has been initialized.
-        /// </summary>
-        protected bool hasInitDone = false;
-
-        /// <summary>
-        /// Indicates whether this instance is currently initializing (less relevant here, but kept for interface consistency).
-        /// </summary>
+        protected volatile bool hasInitDone = false;
         protected bool isInitializing = false;
+        private bool _needsReinitialization = false;
 
-        // Store texture dimensions to detect changes
+        // --- Ring Buffer Fields ---
+        private Mat[] _ringBufferMats; // Provider owns these Mats
+        private int _writeIndex = 0;
+        private int _readIndex = 0;
+        private readonly object _bufferLock = new object();
+        private long _producedFrameCount = 0;
+        private long _consumedFrameCount = 0;
+
         protected int currentTextureWidth = 0;
         protected int currentTextureHeight = 0;
 
+        public enum ColorFormat : int { GRAY = 0, RGB, BGR, RGBA, BGRA }
 
-        // Keep ColorFormat enum for consistency with WebCameraFrameProvider
-        public enum ColorFormat : int
-        {
-            GRAY = 0,
-            RGB,
-            BGR,
-            RGBA,
-            BGRA,
-        }
+        public bool RequestedIsFrontFacing { get; set; } = false;
+        #endregion
 
-        // RequestedIsFrontFacing is part of ICameraFrameProvider, provide a default implementation
-        public bool RequestedIsFrontFacing { get; set; } = false; // RawImage doesn't have a facing concept
+        #region Unity Lifecycle Methods
 
         protected virtual void OnValidate()
         {
             fieldOfView = Mathf.Max(0, fieldOfView);
             defaultDepthOffset = Mathf.Max(0, defaultDepthOffset);
+            bufferSize = Mathf.Max(2, bufferSize);
         }
 
         private void Start()
@@ -168,19 +301,125 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             Dispose();
         }
 
-        /// <summary>
-        /// Initializes this instance. Reads the texture from the RawImage and prepares Mats.
-        /// </summary>
-        public virtual void Initialize()
+        protected virtual void LateUpdate()
         {
-            if (hasInitDone)
+            if (_needsReinitialization && hasInitDone)
             {
-                ReleaseResources(); // Clean up previous state if any
-                 if (Disposed != null)
-                    Disposed.Invoke();
+                Debug.Log("RawImageFrameProvider: Reinitializing Mats due to configuration change.");
+                ReleaseMatsInternal();
+                if (!InitializeMatsInternal())
+                {
+                    Debug.LogError("RawImageFrameProvider: Failed to reinitialize Mats in LateUpdate.");
+                    hasInitDone = false;
+                }
+                _needsReinitialization = false;
             }
 
+            if (!hasInitDone || isInitializing || sourceRawImage == null)
+                return;
+
+            sourceTexture = sourceRawImage.texture;
+            if (sourceTexture == null)
+                return;
+
+            bool resourcesInvalid = intermediateTexture2D == null || baseMat == null || frameMat == null || _ringBufferMats == null;
+            bool dimensionsChanged = sourceTexture.width != currentTextureWidth || sourceTexture.height != currentTextureHeight;
+
+            if (resourcesInvalid || dimensionsChanged)
+            {
+                 Debug.Log($"RawImageFrameProvider: Resources invalid ({resourcesInvalid}) or dimensions changed ({dimensionsChanged}). Reinitializing.");
+                 ReleaseMatsInternal();
+                 if (!InitializeMatsInternal())
+                 {
+                     Debug.LogError("RawImageFrameProvider: Failed to reinitialize Mats/Texture after change in LateUpdate.");
+                     hasInitDone = false;
+                     return;
+                 }
+            }
+
+            if (baseMat == null || baseMat.IsDisposed ||
+                frameMat == null || frameMat.IsDisposed ||
+                intermediateTexture2D == null || _ringBufferMats == null)
+            {
+                 Debug.LogError("RawImageFrameProvider: Processing resources invalid after reinitialization check.");
+                 return;
+            }
+
+            // --- Process Texture to Mat (Main Thread Work) ---
+            Mat targetMatInBuffer = null;
+            int nextWriteIndex = -1;
+
+            lock (_bufferLock)
+            {
+                nextWriteIndex = _writeIndex;
+                targetMatInBuffer = _ringBufferMats[nextWriteIndex];
+
+                if (targetMatInBuffer == null || targetMatInBuffer.IsDisposed)
+                {
+                    Debug.LogError($"RawImageFrameProvider: Target Mat in ring buffer at index {nextWriteIndex} is invalid! Reinitializing.");
+                    _needsReinitialization = true;
+                    return;
+                }
+
+                try
+                {
+                    // Step 1: Texture -> Texture2D
+                    Utils.textureToTexture2D(sourceTexture, intermediateTexture2D);
+                    // Step 2: Texture2D -> baseMat (RGBA)
+                    Utils.texture2DToMat(intermediateTexture2D, baseMat);
+
+                    Mat matToCopy;
+                    // Step 3: Color Conversion (if needed)
+                    if (baseColorFormat != outputColorFormat)
+                    {
+                        int code = ColorConversionCodes(baseColorFormat, outputColorFormat);
+                        if (code >= 0)
+                        {
+                            Imgproc.cvtColor(baseMat, frameMat, code);
+                            matToCopy = frameMat;
+                        }
+                        else
+                        {
+                             if (frameMat != baseMat) baseMat.copyTo(frameMat);
+                             matToCopy = frameMat;
+                             Debug.LogWarning($"RawImageFrameProvider: Unsupported color conversion from {baseColorFormat} to {outputColorFormat}. Using base format.");
+                        }
+                    }
+                    else
+                    {
+                        matToCopy = baseMat;
+                    }
+
+                    // Step 4: Apply flips
+                    FlipMat(matToCopy, _flipVertical, _flipHorizontal);
+
+                    // Step 5: Copy final result to the ring buffer Mat
+                    matToCopy.copyTo(targetMatInBuffer);
+
+                    // Step 6: Update Write Index and Count
+                    _writeIndex = (_writeIndex + 1) % bufferSize;
+                    _producedFrameCount++;
+
+                }
+                catch (Exception e) // Catch potential errors during processing
+                {
+                     Debug.LogError($"RawImageFrameProvider: Error during frame processing in LateUpdate: {e.Message}\n{e.StackTrace}");
+                     // Optionally skip frame production or attempt recovery
+                     _needsReinitialization = e is ArgumentException || e is CvException; // Trigger re-init for common issues
+                }
+            } // --- End Critical Section ---
+        } // End LateUpdate
+
+        #endregion
+
+        #region Public API (ICameraFrameProvider Implementation)
+
+        public virtual void Initialize()
+        {
+            if (isInitializing || hasInitDone) return;
+
             isInitializing = true;
+            hasInitDone = false;
 
             if (sourceRawImage == null)
             {
@@ -190,46 +429,137 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             }
 
             sourceTexture = sourceRawImage.texture;
-
-            if (sourceTexture == null)
+            if (sourceTexture != null)
             {
-                Debug.LogWarning("RawImageFrameProvider: Source RawImage does not have a texture assigned yet.");
-                // We might be initialized, but cannot produce frames yet.
-                // DequeueNextFrame will handle the null texture case.
-                // Alternatively, you could implement a check in Update() or a delay.
-                isInitializing = false;
-                hasInitDone = true; // Consider it initialized, but possibly inactive
-                 if (Initialized != null)
-                    Initialized.Invoke();
-                return;
+                 if (!InitializeMatsInternal())
+                 {
+                     Debug.LogError("RawImageFrameProvider: Failed to initialize Mats during Initialize().");
+                     isInitializing = false;
+                     return;
+                 }
             }
-
-            if (!InitializeMats())
-            {
-                // Failed to initialize Mats (e.g., zero dimensions)
-                isInitializing = false;
-                return;
+            else {
+                 Debug.LogWarning("RawImageFrameProvider: Source RawImage has no texture at initialization. Will initialize Mats in LateUpdate.");
             }
 
             isInitializing = false;
             hasInitDone = true;
+            _needsReinitialization = false;
 
-            if (Initialized != null)
-                Initialized.Invoke();
+            Debug.Log("RawImageFrameProvider: Initialized.");
+            Initialized?.Invoke();
         }
 
+        public virtual bool IsInitialized()
+        {
+            return hasInitDone;
+        }
+
+        public virtual bool IsInitializing()
+        {
+            return isInitializing;
+        }
+
+        public virtual bool IsStreaming()
+        {
+            return hasInitDone && sourceRawImage != null && sourceRawImage.texture != null;
+        }
+
+
         /// <summary>
-        /// Allocates or reallocates the OpenCV Mat objects and intermediate Texture2D
-        /// based on the current texture dimensions and format.
+        /// Dequeues the next available processed frame. (Thread-Safe)
+        /// Returns an ICameraFrame containing a CLONE of the data.
+        /// The caller is responsible for calling Dispose() on the returned object.
         /// </summary>
-        /// <returns>True if successful, false otherwise.</returns>
-        protected virtual bool InitializeMats()
+        public virtual ICameraFrame DequeueNextFrame()
+        {
+            if (!hasInitDone) return null;
+
+            Mat clonedMat = null;
+            bool gotFrame = false;
+
+            lock (_bufferLock)
+            {
+                if (_consumedFrameCount < _producedFrameCount)
+                {
+                    if (_ringBufferMats == null || _ringBufferMats.Length != bufferSize)
+                    {
+                        Debug.LogError("RawImageFrameProvider: Ring buffer invalid in DequeueNextFrame.");
+                        return null;
+                    }
+
+                    Mat sourceMat = _ringBufferMats[_readIndex];
+
+                    if (sourceMat == null || sourceMat.IsDisposed)
+                    {
+                        Debug.LogError($"RawImageFrameProvider: Mat at read index {_readIndex} is invalid.");
+                        // Skip frame, maybe producer will fix. Advance index to avoid stall.
+                        _readIndex = (_readIndex + 1) % bufferSize;
+                        _consumedFrameCount++;
+                        return null;
+                    }
+
+                    try
+                    {
+                        // *** Clone the Mat data ***
+                        clonedMat = sourceMat.clone();
+                        gotFrame = true;
+
+                        // Advance read index and count
+                        _readIndex = (_readIndex + 1) % bufferSize;
+                        _consumedFrameCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                         Debug.LogError($"RawImageFrameProvider: Error cloning Mat in DequeueNextFrame: {ex.Message}");
+                         // Don't advance index if clone failed, retry next time? Or advance anyway?
+                         // Let's advance to avoid getting stuck, but log the error.
+                         _readIndex = (_readIndex + 1) % bufferSize;
+                         _consumedFrameCount++;
+                         return null; // Return null as clone failed
+                    }
+                }
+            } // --- End Critical Section ---
+
+            if (gotFrame && clonedMat != null)
+            {
+                // Create the frame wrapper OWNING the cloned Mat
+                return new ClonedCameraFrame(clonedMat, fieldOfView, defaultDepthOffset);
+            }
+            else
+            {
+                return null; // No new frame available or clone failed
+            }
+        }
+
+        public virtual void Dispose()
+        {
+            lock (_bufferLock)
+            {
+                if (hasInitDone || isInitializing)
+                {
+                    ReleaseResourcesInternal();
+
+                    hasInitDone = false;
+                    isInitializing = false;
+                    sourceTexture = null;
+
+                    Debug.Log("RawImageFrameProvider: Disposed.");
+                    try { Disposed?.Invoke(); } catch (Exception e) { Debug.LogError($"Error invoking Disposed event: {e}"); }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Internal Helper Methods
+
+        private bool InitializeMatsInternal()
         {
             if (sourceTexture == null)
             {
                 Debug.LogWarning("RawImageTextureSource: Cannot initialize Mats, source texture is null.");
-                ReleaseMats(); // Clean up existing resources if any
-                return false;
+                return true; // Wait for LateUpdate
             }
 
             int newWidth = sourceTexture.width;
@@ -237,399 +567,128 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
             if (newWidth <= 0 || newHeight <= 0)
             {
-                 Debug.LogWarning($"RawImageTextureSource: Cannot initialize Mats, texture dimensions are invalid ({newWidth}x{newHeight}).");
-                 ReleaseMats();
-                 return false;
+                Debug.LogError($"RawImageTextureSource: Cannot initialize Mats, texture dimensions invalid ({newWidth}x{newHeight}).");
+                return false;
             }
 
-            // Check if dimensions changed or if resources are missing
-            bool needsRecreation = baseMat == null || intermediateTexture2D == null ||
-                                  currentTextureWidth != newWidth || currentTextureHeight != newHeight;
+            ReleaseMatsInternal(); // Ensure cleanup before recreating
 
-            if (needsRecreation)
+            bool success = false;
+            try
             {
-                ReleaseMats(); // Release previous resources
-
                 currentTextureWidth = newWidth;
                 currentTextureHeight = newHeight;
 
-                try
-                {
-                    // Create intermediate Texture2D (RGBA32 is generally compatible)
-                    intermediateTexture2D = new Texture2D(currentTextureWidth, currentTextureHeight, TextureFormat.RGBA32, false);
+                intermediateTexture2D = new Texture2D(currentTextureWidth, currentTextureHeight, TextureFormat.RGBA32, false);
+                baseMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC4);
+                baseColorFormat = ColorFormat.RGBA;
 
-                    // Create baseMat (Utils.texture2DToMat typically deals well with RGBA input)
-                    baseMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC4);
-                    baseColorFormat = ColorFormat.RGBA; // Assuming RGBA from Texture2D
+                if (baseColorFormat == outputColorFormat) {
+                    frameMat = baseMat; // Reuse
+                } else {
+                    frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
+                }
 
-                    // Create frameMat based on output format
-                    if (baseColorFormat == outputColorFormat)
-                    {
-                        frameMat = baseMat; // Reuse Mat if formats match
-                    }
-                    else
-                    {
-                        frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
-                    }
+                // --- Initialize Ring Buffer with Provider-Owned Mats ---
+                _ringBufferMats = new Mat[bufferSize];
+                int outputCvType = CvType.CV_8UC(Channels(outputColorFormat));
+
+                for (int i = 0; i < bufferSize; i++) {
+                    _ringBufferMats[i] = new Mat(currentTextureHeight, currentTextureWidth, outputCvType);
                 }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"RawImageTextureSource: Error creating Mats or Texture2D: {ex.Message}");
-                    ReleaseMats(); // Ensure cleanup on failure
-                    return false;
-                }
+                _writeIndex = 0;
+                _readIndex = 0;
+                _producedFrameCount = 0;
+                _consumedFrameCount = 0;
+                // -----------------------------
+
+                success = true;
+                Debug.Log($"RawImageFrameProvider: Mats and Ring Buffer Initialized ({currentTextureWidth}x{currentTextureHeight}, Format: {_outputColorFormat}, BufferSize: {bufferSize})");
             }
-            // If not needsRecreation, check if frameMat needs update due to format change
-            else if (frameMat == null || (frameMat != baseMat && frameMat.channels() != Channels(outputColorFormat)))
+            catch (Exception ex)
             {
-                if(frameMat != null && frameMat != baseMat) frameMat.Dispose(); // Dispose previous specific frameMat
-
-                if (baseColorFormat == outputColorFormat)
-                {
-                    frameMat = baseMat;
-                }
-                else
-                {
-                     frameMat = new Mat(currentTextureHeight, currentTextureWidth, CvType.CV_8UC(Channels(outputColorFormat)));
-                }
+                Debug.LogError($"RawImageTextureSource: Error creating resources: {ex.Message}\n{ex.StackTrace}");
+                ReleaseMatsInternal(); // Cleanup on failure
+                success = false;
             }
-
-
-            // Note: Rotation logic removed for simplicity, add back if needed
-            // if (rotatedFrameMat != null) rotatedFrameMat.Dispose();
-            // rotatedFrameMat = null; // Reset rotation mat
-
-            return true;
+            return success;
         }
 
-        /// <summary>
-        /// Releases the OpenCV Mat resources and the intermediate Texture2D.
-        /// </summary>
-        protected virtual void ReleaseMats()
+        private void ReleaseMatsInternal()
         {
-            // If frameMat points to baseMat, only dispose baseMat
-            if (frameMat != null && frameMat != baseMat)
-            {
-                frameMat.Dispose();
-            }
+            // Dispose intermediate processing Mats
+            if (frameMat != null && frameMat != baseMat) frameMat.Dispose();
             frameMat = null;
-
-            if (baseMat != null)
-            {
-                baseMat.Dispose();
-            }
+            if (baseMat != null) baseMat.Dispose();
             baseMat = null;
 
             // Dispose intermediate Texture2D
             if (intermediateTexture2D != null)
             {
-                if (Application.isPlaying)
-                    UnityEngine.Object.Destroy(intermediateTexture2D);
-                else
-                    UnityEngine.Object.DestroyImmediate(intermediateTexture2D);
+                if (Application.isPlaying) UnityEngine.Object.Destroy(intermediateTexture2D);
+                else UnityEngine.Object.DestroyImmediate(intermediateTexture2D);
                 intermediateTexture2D = null;
             }
 
-            // if (rotatedFrameMat != null) rotatedFrameMat.Dispose();
-            // rotatedFrameMat = null;
+            // Dispose Mats OWNED BY THE PROVIDER in the ring buffer
+             if (_ringBufferMats != null)
+             {
+                 for (int i = 0; i < _ringBufferMats.Length; i++)
+                 {
+                     _ringBufferMats[i]?.Dispose();
+                 }
+                 _ringBufferMats = null;
+             }
 
-             currentTextureWidth = 0;
-             currentTextureHeight = 0;
+            currentTextureWidth = 0;
+            currentTextureHeight = 0;
+            _writeIndex = 0;
+            _readIndex = 0;
+            _producedFrameCount = 0;
+            _consumedFrameCount = 0;
+        }
+
+        protected virtual void ReleaseResourcesInternal()
+        {
+            ReleaseMatsInternal();
         }
 
         /// <summary>
-        /// Indicates whether this instance has been initialized.
+        /// Flips the mat. Adapated from WebCameraFrameProvider. (Main Thread)
         /// </summary>
-        /// <returns><c>true</c>, if this instance has been initialized, <c>false</c> otherwise.</returns>
-        public virtual bool IsInitialized()
-        {
-            return hasInitDone;
-        }
-
-        /// <summary>
-        /// Indicates whether this instance is currently initializing.
-        /// </summary>
-        /// <returns><c>true</c>, if this instance is initializing, <c>false</c> otherwise.</returns>
-        public virtual bool IsInitializing()
-        {
-            return isInitializing;
-        }
-
-
-        /// <summary>
-        /// Indicates whether the source is ready to provide frames.
-        /// Requires initialization and a valid texture.
-        /// </summary>
-        /// <returns><c>true</c>, if ready, <c>false</c> otherwise.</returns>
-        public virtual bool IsStreaming()
-        {
-            // Considered "streaming" if initialized and has a valid texture assigned
-            return hasInitDone && sourceRawImage != null && sourceRawImage.texture != null;
-        }
-
-        // --- ICameraFrame Implementation ---
-        private readonly struct RawImageCameraFrame : ICameraFrame
-        {
-            private readonly Mat _mat; // The final processed Mat
-            private readonly float _fov;
-            private readonly float _depthOffset;
-
-            public RawImageCameraFrame(Mat mat, float fov, float depthOffset)
-            {
-                _mat = mat; // This holds a reference, doesn't own it
-                _fov = fov;
-                _depthOffset = depthOffset;
-            }
-
-            public void Dispose()
-            {
-                // This frame doesn't own the Mat, so nothing to dispose here.
-                // The RawImageFrameProvider manages the Mat lifecycle.
-            }
-
-            public Mat GetMat()
-            {
-                // Return the reference to the processed Mat
-                return _mat;
-            }
-
-            public ReadOnlySpan<Color32> GetColors32()
-            {
-                 // This is potentially expensive: Mat -> Texture2D -> Color32[]
-                 if (_mat == null || _mat.IsDisposed)
-                    return Array.Empty<Color32>();
-
-                // Create a temporary Texture2D to get pixels
-                // Ensure the texture format matches the Mat channels
-                TextureFormat format;
-                if (_mat.channels() == 1) format = TextureFormat.Alpha8; // Or R8 if appropriate
-                else if (_mat.channels() == 3) format = TextureFormat.RGB24;
-                else if (_mat.channels() == 4) format = TextureFormat.RGBA32;
-                else return Array.Empty<Color32>(); // Unsupported channel count
-
-                Texture2D tempTex = new Texture2D(_mat.cols(), _mat.rows(), format, false);
-                try
-                {
-                    Utils.matToTexture2D(_mat, tempTex);
-                    // Note: matToTexture2D might handle color order (BGR vs RGB) depending on OpenCV build/settings.
-                    // If colors look wrong, you might need an intermediate BGR<->RGB conversion Mat step.
-                    return tempTex.GetPixels32(); // Gets a copy
-                }
-                finally
-                {
-                    // Destroy the temporary texture
-                    if (Application.isPlaying)
-                        UnityEngine.Object.Destroy(tempTex);
-                    else
-                        UnityEngine.Object.DestroyImmediate(tempTex);
-                }
-            }
-
-
-            public Vector2Int GetSize()
-            {
-                 if (_mat == null || _mat.IsDisposed)
-                    return Vector2Int.zero;
-                return new Vector2Int(_mat.cols(), _mat.rows());
-            }
-
-            public float GetFOV(ICameraFrame.FOVType type)
-            {
-                // RawImage doesn't intrinsically have FOV, use the configured value
-                // Assuming horizontal FOV for simplicity, adjust if needed
-                return _fov;
-            }
-
-            public bool ProvidesDepthData()
-            {
-                // Only provides depth if a default offset is set
-                return _depthOffset > 0;
-            }
-
-            public float SampleDepth(int sampleX, int sampleY)
-            {
-                if (!ProvidesDepthData()) return -1;
-
-                // Check bounds roughly (GetSize might be called separately)
-                 var size = GetSize();
-                 if (sampleX < 0 || sampleX >= size.x || sampleY < 0 || sampleY >= size.y)
-                     return -1;
-
-                // Return the constant depth offset
-                return _depthOffset;
-            }
-
-            public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
-            {
-                 point = default;
-                if (!ProvidesDepthData()) return false;
-
-                var size = GetSize();
-                if (sampleX < 0 || sampleX >= size.x || sampleY < 0 || sampleY >= size.y)
-                     return false;
-
-                // Simplified perspective projection using FOV and constant depth
-                // Assumes FOV is horizontal FOV
-                float aspect = (float)size.x / size.y;
-                float hFovRad = _fov * Mathf.Deg2Rad;
-                // float vFovRad = 2f * Mathf.Atan(Mathf.Tan(hFovRad / 2f) / aspect); // Calculate vertical FOV if needed
-
-                // Normalize coordinates (-1 to 1, with Y often inverted in image space)
-                float normX = (sampleX / (float)(size.x - 1)) * 2f - 1f;
-                float normY = (1f - (sampleY / (float)(size.y - 1))) * 2f - 1f; // Invert Y
-
-                // Calculate position on the near plane (z=1) based on FOV
-                float planeX = normX * Mathf.Tan(hFovRad / 2f);
-                 float planeY = normY * Mathf.Tan(hFovRad / 2f) / aspect; // Use aspect ratio correct vertical position
-
-                // Scale by depth
-                point.x = planeX * _depthOffset;
-                point.y = planeY * _depthOffset;
-                point.z = _depthOffset;
-
-                return true;
-            }
-        }
-        // --- End ICameraFrame Implementation ---
-
-        /// <summary>
-        /// Gets the Mat of the current frame from the RawImage texture.
-        /// The Mat object's type is determined by the outputColorFormat setting.
-        /// Please do not dispose of the returned mat as it will be reused.
-        /// </summary>
-        /// <returns>An ICameraFrame containing the Mat of the current frame, or null if not ready.</returns>
-        public virtual ICameraFrame DequeueNextFrame()
-        {
-            if (!hasInitDone || sourceRawImage == null)
-                return null;
-
-            // Update source texture reference in case it changed
-            sourceTexture = sourceRawImage.texture;
-
-            if (sourceTexture == null)
-            {
-                // If texture becomes null after initialization, release mats
-                if(currentTextureWidth > 0 || currentTextureHeight > 0)
-                {
-                    Debug.LogWarning("RawImageTextureSource: Source texture became null. Releasing resources.");
-                    ReleaseMats();
-                }
-                return null; // No texture to process
-            }
-
-
-            // Check if texture dimensions changed OR if essential resources are missing/invalid
-            // and reinitialize Mats/Texture if needed
-            if (intermediateTexture2D == null || baseMat == null || // Resources missing?
-                sourceTexture.width != currentTextureWidth || sourceTexture.height != currentTextureHeight) // Dimensions changed?
-            {
-                Debug.Log($"RawImageTextureSource: Texture dimensions changed or resources invalid. " +
-                          $"Current:({currentTextureWidth}x{currentTextureHeight}), " +
-                          $"New:({sourceTexture.width}x{sourceTexture.height}). Reinitializing.");
-                if (!InitializeMats())
-                {
-                    Debug.LogError("RawImageTextureSource: Failed to reinitialize Mats/Texture after change.");
-                    return null; // Cannot proceed if resources aren't ready
-                }
-            }
-
-             // Ensure Mats and intermediate texture are valid before proceeding (double check after potential InitializeMats call)
-             if (baseMat == null || baseMat.IsDisposed ||
-                 frameMat == null || frameMat.IsDisposed ||
-                 intermediateTexture2D == null)
-            {
-                Debug.LogError("RawImageTextureSource: Mats or intermediate Texture2D are not initialized or have been disposed unexpectedly.");
-                // Avoid infinite loop by not calling InitializeMats again here unless logic guarantees exit
-                return null;
-            }
-
-
-            try
-            {
-                // === Step 1: Convert source Texture to intermediate Texture2D ===
-                Utils.textureToTexture2D(sourceTexture, intermediateTexture2D);
-
-                // === Step 2: Convert intermediate Texture2D to baseMat (usually RGBA) ===
-                Utils.texture2DToMat(intermediateTexture2D, baseMat);
-
-                // === Step 3: Perform color conversion if necessary (baseMat -> frameMat) ===
-                if (baseColorFormat != outputColorFormat)
-                {
-                    int code = ColorConversionCodes(baseColorFormat, outputColorFormat);
-                    if (code >= 0)
-                    {
-                        Imgproc.cvtColor(baseMat, frameMat, code);
-                    }
-                    else
-                    {
-                        // If no direct conversion, copy base to frame if they are different objects
-                         if(frameMat != baseMat) baseMat.copyTo(frameMat);
-                         Debug.LogWarning($"RawImageTextureSource: Unsupported color conversion from {baseColorFormat} to {outputColorFormat}. Using base format.");
-                    }
-                }
-                // If formats are the same, frameMat already references baseMat (or was copied if conversion failed)
-                // Now 'frameMat' holds the image in the correct format
-
-                // === Step 4: Apply flips ===
-                FlipMat(frameMat, _flipVertical, _flipHorizontal);
-
-                // === Step 5: Return the frame wrapper ===
-                // Note: Rotation logic removed for RawImage simplicity
-                // if (rotatedFrameMat != null) { ... Core.rotate ... return new RawImageCameraFrame(rotatedFrameMat, ...); }
-
-                return new RawImageCameraFrame(frameMat, fieldOfView, defaultDepthOffset);
-
-            }
-            catch (ArgumentException argEx) // Catch potential errors from Utils methods (e.g., size mismatch)
-            {
-                 Debug.LogError($"RawImageTextureSource: Argument Error processing texture to Mat: {argEx.Message}\n{argEx.StackTrace}");
-                 // This might indicate a need to reinitialize if sizes diverged unexpectedly
-                 // Consider calling InitializeMats() here cautiously or just returning null.
-                 return null;
-            }
-            catch (Exception e) // Catch general errors
-            {
-                Debug.LogError($"RawImageTextureSource: General Error processing texture to Mat: {e}");
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Flips the mat. Adapated from WebCameraFrameProvider.
-        /// </summary>
-        /// <param name="mat">Mat to flip.</param>
-        /// <param name="applyVerticalFlip">Whether to flip vertically.</param>
-        /// <param name="applyHorizontalFlip">Whether to flip horizontally.</param>
         protected virtual void FlipMat(Mat mat, bool applyVerticalFlip, bool applyHorizontalFlip)
         {
-            // Texture coordinates often start top-left, OpenCV starts top-left.
-            // Direct Texture -> Mat conversion might or might not need an initial flip depending on source.
-            // Let's assume Utils.textureToMat provides a consistent orientation (usually requires no initial flip).
-            int flipCode = int.MinValue; // int.MinValue means no flip initially
+            if (mat == null || mat.IsDisposed) return; // Safety check
+
+            int flipCode = int.MinValue; // No flip initially
 
             if (applyVerticalFlip)
             {
-                if (flipCode == int.MinValue) flipCode = 0; // Vertical
-                else if (flipCode == 0) flipCode = int.MinValue; // Vertical -> None
-                else if (flipCode == 1) flipCode = -1; // Horizontal -> Both
-                else if (flipCode == -1) flipCode = 1; // Both -> Horizontal
+                if (flipCode == int.MinValue) flipCode = 0;        // None -> Vertical
+                else if (flipCode == 0) flipCode = int.MinValue;   // Vertical -> None
+                else if (flipCode == 1) flipCode = -1;       // Horizontal -> Both
+                else if (flipCode == -1) flipCode = 1;       // Both -> Horizontal
             }
 
             if (applyHorizontalFlip)
             {
-                if (flipCode == int.MinValue) flipCode = 1; // Horizontal
-                else if (flipCode == 0) flipCode = -1; // Vertical -> Both
-                else if (flipCode == 1) flipCode = int.MinValue; // Horizontal -> None
-                else if (flipCode == -1) flipCode = 0; // Both -> Vertical
+                if (flipCode == int.MinValue) flipCode = 1;        // None -> Horizontal
+                else if (flipCode == 0) flipCode = -1;       // Vertical -> Both
+                else if (flipCode == 1) flipCode = int.MinValue;   // Horizontal -> None
+                else if (flipCode == -1) flipCode = 0;       // Both -> Vertical
             }
 
             if (flipCode > int.MinValue)
             {
-                Core.flip(mat, mat, flipCode);
+                 try {
+                     Core.flip(mat, mat, flipCode);
+                 } catch (CvException cvEx) {
+                     Debug.LogError($"Error during Core.flip: {cvEx.Message}");
+                 }
             }
         }
 
-        // Helper methods adapted from WebCameraFrameProvider
+        /// <summary> Helper methods adapted from WebCameraFrameProvider (Main Thread) </summary>
         protected virtual int Channels(ColorFormat type)
         {
             switch (type)
@@ -639,79 +698,77 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 case ColorFormat.BGR: return 3;
                 case ColorFormat.RGBA: return 4;
                 case ColorFormat.BGRA: return 4;
-                default: return 4; // Default to RGBA
+                default:
+                     Debug.LogWarning($"Unsupported ColorFormat '{type}' in Channels(). Defaulting to 4.");
+                     return 4; // Default to RGBA
             }
         }
 
+        /// <summary> Helper methods adapted from WebCameraFrameProvider (Main Thread) </summary>
         protected virtual int ColorConversionCodes(ColorFormat srcType, ColorFormat dstType)
         {
-            if (srcType == dstType) return -1; // No conversion needed
+             if (srcType == dstType) return -1; // No conversion needed
 
-            if (srcType == ColorFormat.GRAY)
-            {
-                if (dstType == ColorFormat.RGB) return Imgproc.COLOR_GRAY2RGB;
-                if (dstType == ColorFormat.BGR) return Imgproc.COLOR_GRAY2BGR;
-                if (dstType == ColorFormat.RGBA) return Imgproc.COLOR_GRAY2RGBA;
-                if (dstType == ColorFormat.BGRA) return Imgproc.COLOR_GRAY2BGRA;
-            }
-            else if (srcType == ColorFormat.RGB)
-            {
-                if (dstType == ColorFormat.GRAY) return Imgproc.COLOR_RGB2GRAY;
-                if (dstType == ColorFormat.BGR) return Imgproc.COLOR_RGB2BGR;
-                if (dstType == ColorFormat.RGBA) return Imgproc.COLOR_RGB2RGBA;
-                if (dstType == ColorFormat.BGRA) return Imgproc.COLOR_RGB2BGRA;
-            }
-            else if (srcType == ColorFormat.BGR)
-            {
-                if (dstType == ColorFormat.GRAY) return Imgproc.COLOR_BGR2GRAY;
-                if (dstType == ColorFormat.RGB) return Imgproc.COLOR_BGR2RGB;
-                if (dstType == ColorFormat.RGBA) return Imgproc.COLOR_BGR2RGBA;
-                if (dstType == ColorFormat.BGRA) return Imgproc.COLOR_BGR2BGRA;
-            }
-            else if (srcType == ColorFormat.RGBA)
-            {
-                if (dstType == ColorFormat.GRAY) return Imgproc.COLOR_RGBA2GRAY;
-                if (dstType == ColorFormat.RGB) return Imgproc.COLOR_RGBA2RGB;
-                if (dstType == ColorFormat.BGR) return Imgproc.COLOR_RGBA2BGR;
-                if (dstType == ColorFormat.BGRA) return Imgproc.COLOR_RGBA2BGRA;
-            }
-            else if (srcType == ColorFormat.BGRA)
-            {
-                if (dstType == ColorFormat.GRAY) return Imgproc.COLOR_BGRA2GRAY;
-                if (dstType == ColorFormat.RGB) return Imgproc.COLOR_BGRA2RGB;
-                if (dstType == ColorFormat.BGR) return Imgproc.COLOR_BGRA2BGR;
-                if (dstType == ColorFormat.RGBA) return Imgproc.COLOR_BGRA2RGBA;
-            }
-            return -1; // Conversion not found
-        }
-
-
-        /// <summary>
-        /// To release the resources.
-        /// </summary>
-        protected virtual void ReleaseResources()
-        {
-            hasInitDone = false;
-            isInitializing = false;
-            sourceTexture = null; // Release reference
-
-            ReleaseMats(); // Dispose Mat objects
-        }
-
-        /// <summary>
-        /// Releases all resource used by the RawImageFrameProvider object.
-        /// </summary>
-        public virtual void Dispose()
-        {
-             if (hasInitDone || isInitializing) // Check if resources might exist
+             if (srcType == ColorFormat.GRAY)
              {
-                ReleaseResources();
-
-                if (Disposed != null)
-                    Disposed.Invoke();
+                 switch (dstType)
+                 {
+                     case ColorFormat.RGB: return Imgproc.COLOR_GRAY2RGB;
+                     case ColorFormat.BGR: return Imgproc.COLOR_GRAY2BGR;
+                     case ColorFormat.RGBA: return Imgproc.COLOR_GRAY2RGBA;
+                     case ColorFormat.BGRA: return Imgproc.COLOR_GRAY2BGRA;
+                 }
              }
+             else if (srcType == ColorFormat.RGB)
+             {
+                 switch (dstType)
+                 {
+                     case ColorFormat.GRAY: return Imgproc.COLOR_RGB2GRAY;
+                     case ColorFormat.BGR: return Imgproc.COLOR_RGB2BGR;
+                     case ColorFormat.RGBA: return Imgproc.COLOR_RGB2RGBA;
+                     case ColorFormat.BGRA: return Imgproc.COLOR_RGB2BGRA;
+                 }
+             }
+             else if (srcType == ColorFormat.BGR)
+             {
+                 switch (dstType)
+                 {
+                     case ColorFormat.GRAY: return Imgproc.COLOR_BGR2GRAY;
+                     case ColorFormat.RGB: return Imgproc.COLOR_BGR2RGB;
+                     case ColorFormat.RGBA: return Imgproc.COLOR_BGR2RGBA;
+                     case ColorFormat.BGRA: return Imgproc.COLOR_BGR2BGRA;
+                 }
+             }
+             else if (srcType == ColorFormat.RGBA) // Common case from Texture2D
+             {
+                 switch (dstType)
+                 {
+                     case ColorFormat.GRAY: return Imgproc.COLOR_RGBA2GRAY;
+                     case ColorFormat.RGB: return Imgproc.COLOR_RGBA2RGB;
+                     case ColorFormat.BGR: return Imgproc.COLOR_RGBA2BGR;
+                     case ColorFormat.BGRA: return Imgproc.COLOR_RGBA2BGRA;
+                 }
+             }
+             else if (srcType == ColorFormat.BGRA)
+             {
+                 switch (dstType)
+                 {
+                     case ColorFormat.GRAY: return Imgproc.COLOR_BGRA2GRAY;
+                     case ColorFormat.RGB: return Imgproc.COLOR_BGRA2RGB;
+                     case ColorFormat.BGR: return Imgproc.COLOR_BGRA2BGR;
+                     case ColorFormat.RGBA: return Imgproc.COLOR_BGRA2RGBA;
+                 }
+             }
+
+             Debug.LogWarning($"Unsupported color conversion combination: {srcType} to {dstType}");
+             return -1; // Indicate unsupported conversion
         }
-    }
-}
+
+        #endregion
+
+    } // End Class RawImageFrameProvider
+
+    #endregion
+} // End Namespace
 
 #endif // (METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED || MV_OPENCV)

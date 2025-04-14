@@ -195,6 +195,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         MetaverseProgram.Logger.LogWarning(e);
                         await Task.Yield();
                     }
+                    catch (Exception e)
+                    {
+                        MetaverseProgram.Logger.LogError(e);
+                        throw;
+                    }
                 }
             }, destroyCancellationToken);
         }
