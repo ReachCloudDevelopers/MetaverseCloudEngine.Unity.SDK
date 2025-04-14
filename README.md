@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.155.0
-- Added basic constant depth support to WebCameraFrameProvider, and added new RawImageFrameProvider to allow for raw image input as camera image source.
+## 2.155.1
+- Fixed errors in WebCameraFrameProvider.cs
 
 Updated on April 14, 2025

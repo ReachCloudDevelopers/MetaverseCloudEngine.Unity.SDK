@@ -946,83 +946,201 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         {
             private readonly Mat _m;
             private readonly float _fov;
-            private readonly bool _depth;
+            private readonly float _simulatedDepth; // Renamed for clarity
 
-            public SimpleCameraFrameMat(Mat m, float fov, float depth = 0)
+            public SimpleCameraFrameMat(Mat m, float fov, float depth)
             {
+                // This struct holds references, it doesn't own the Mat
                 _m = m;
                 _fov = fov;
-                _depth = depth;
+                _simulatedDepth = depth; // Store the provided constant depth
             }
 
             public void Dispose()
             {
+                // No-op: This struct does not own the Mat resource.
+                // The WebCameraFrameProvider is responsible for Mat lifecycle.
             }
 
             public Mat GetMat()
             {
+                // Return the reference to the Mat
+                // Check for disposal defensively
+                if (_m == null || _m.IsDisposed)
+                {
+                     Debug.LogError("SimpleCameraFrameMat.GetMat() called on a null or disposed Mat!");
+                     return null;
+                }
                 return _m;
             }
 
             public ReadOnlySpan<Color32> GetColors32()
             {
-                if (_m is null || _m.IsDisposed)
+                 // This is potentially expensive: Mat -> Texture2D -> Color32[]
+                if (_m == null || _m.IsDisposed)
                     return Array.Empty<Color32>();
-                var tex = new Texture2D(_m.cols(), _m.rows(), TextureFormat.RGB24, false);
-                try
-                {
-                    Utils.matToTexture2D(_m, tex);
-                    return tex.GetPixels32();
+
+                // Determine appropriate TextureFormat based on Mat channels
+                TextureFormat format;
+                int channels = _m.channels();
+                if (channels == 1) format = TextureFormat.Alpha8; // Or R8 depending on context
+                else if (channels == 3) format = TextureFormat.RGB24;
+                else if (channels == 4) format = TextureFormat.RGBA32;
+                else {
+                    Debug.LogError($"SimpleCameraFrameMat.GetColors32(): Unsupported Mat channel count: {channels}");
+                    return Array.Empty<Color32>();
                 }
-                finally
-                {
-                    Destroy(tex);
-                }
+
+                // Create a temporary Texture2D
+                Texture2D tempTex = null;
+                 try
+                 {
+                    tempTex = new Texture2D(_m.cols(), _m.rows(), format, false);
+                    Utils.matToTexture2D(_m, tempTex); // Convert Mat pixels to the texture
+                    // Note: Utils.matToTexture2D handles BGR<->RGB internally if necessary.
+                    return tempTex.GetPixels32(); // Get a copy of the pixels
+                 }
+                 catch (Exception ex)
+                 {
+                     Debug.LogError($"SimpleCameraFrameMat.GetColors32(): Error converting Mat to Texture: {ex.Message}");
+                     return Array.Empty<Color32>();
+                 }
+                 finally
+                 {
+                     // IMPORTANT: Destroy the temporary texture to avoid memory leaks
+                     if (tempTex != null)
+                     {
+                         if (Application.isPlaying)
+                             UnityEngine.Object.Destroy(tempTex);
+                         else
+                             UnityEngine.Object.DestroyImmediate(tempTex);
+                     }
+                 }
             }
+
 
             public Vector2Int GetSize()
             {
+                 if (_m == null || _m.IsDisposed) return Vector2Int.zero;
                 return new Vector2Int(_m.cols(), _m.rows());
             }
 
             public float GetFOV(ICameraFrame.FOVType type)
             {
-                return _fov;
+                // Returns the configured horizontal field of view.
+                // If vertical FOV is needed, it would require calculation based on aspect ratio.
+                if (type == ICameraFrame.FOVType.Horizontal)
+                {
+                    return _fov;
+                }
+                else // type == ICameraFrame.FOVType.Vertical
+                {
+                    var size = GetSize();
+                    if (size.y == 0) return 0; // Avoid division by zero
+                    float aspect = (float)size.x / size.y;
+                    if (aspect == 0) return 0; // Avoid division by zero
+                    float hFovRad = _fov * Mathf.Deg2Rad;
+                    float vFovRad = 2f * Mathf.Atan(Mathf.Tan(hFovRad / 2f) / aspect);
+                    return vFovRad * Mathf.Rad2Deg;
+                }
             }
 
+            /// <summary>
+            /// Indicates whether simulated depth data is available (i.e., defaultDepthOffset > 0).
+            /// </summary>
             public bool ProvidesDepthData()
             {
-                return _depth > 0;
+                // Depth data is considered available if a positive depth offset was provided.
+                return _simulatedDepth > 0f;
             }
 
+            /// <summary>
+            /// Returns the configured constant depth value for the given pixel coordinates.
+            /// Returns -1 if depth data is not provided or coordinates are out of bounds.
+            /// </summary>
             public float SampleDepth(int sampleX, int sampleY)
             {
-                if (_depth <= 0)
-                    return -1;
-                return _depth;
+                if (!ProvidesDepthData())
+                    return -1f;
+
+                // Basic bounds check (more robust check might use GetSize)
+                // Note: GetSize() could be slightly expensive if called repeatedly.
+                // If performance is critical, pass size in or assume valid coords.
+                // var size = GetSize();
+                // if (sampleX < 0 || sampleX >= size.x || sampleY < 0 || sampleY >= size.y)
+                //    return -1f;
+
+                // Return the constant simulated depth value.
+                return _simulatedDepth;
             }
 
+            /// <summary>
+            /// Calculates the estimated 3D point in camera-relative space using the
+            /// configured FOV and constant depth offset.
+            /// </summary>
+            /// <param name="sampleX">Pixel X coordinate (0 to width-1).</param>
+            /// <param name="sampleY">Pixel Y coordinate (0 to height-1).</param>
+            /// <param name="point">Output Vector3 representing the point (X, Y, Z).</param>
+            /// <returns>True if the point could be calculated, false otherwise (no depth or invalid coords).</returns>
             public bool TryGetCameraRelativePoint(int sampleX, int sampleY, out Vector3 point)
             {
-                if (_depth <= 0)
+                point = default;
+
+                // Ensure depth data is available
+                if (!ProvidesDepthData())
                 {
-                    point = default;
                     return false;
                 }
-                
-                var size = GetSize();
-                if (sampleX > size.x) return -1;
-                if (sampleY > size.y) return -1;
-                if (sampleX < 0) return -1;
-                if (sampleY < 0) return -1;
 
-                var sampleFX = sampleX / (float)size.x;
-                var sampleFY = sampleY / (float)size.y;
-                var fov = _fov;
-                
-                var x = (sampleFX - 0.5f) * 2f * Mathf.Tan(fov / 2f) * _depth;
-                var y = (sampleFY - 0.5f) * 2f * Mathf.Tan(fov / 2f) * _depth;
-                return new Vector3(x, y, _depth);
+                var size = GetSize();
+                // Ensure image size is valid
+                if (size.x <= 0 || size.y <= 0)
+                {
+                    return false;
+                }
+
+                // Bounds check for pixel coordinates
+                if (sampleX < 0 || sampleX >= size.x || sampleY < 0 || sampleY >= size.y)
+                {
+                    return false;
+                }
+
+                // Normalize coordinates to the range [-1, 1]
+                // Assumes sampleY=0 is the top row of the image
+                // Camera coordinate system: +X right, +Y up, +Z forward
+                float normX = (sampleX / (float)(size.x - 1)) * 2f - 1f;
+                // Invert Y because image coordinates typically increase downwards, while camera Y increases upwards
+                float normY = (1f - (sampleY / (float)(size.y - 1))) * 2f - 1f;
+
+                // Convert the configured horizontal FOV from degrees to radians
+                float hFovRad = _fov * Mathf.Deg2Rad;
+
+                // Avoid issues with zero FOV
+                if (hFovRad <= 0f) {
+                    return false;
+                }
+
+                // Calculate the aspect ratio
+                float aspect = (float)size.x / size.y;
+                 if (aspect <= 0f) // Avoid division by zero/invalid aspect
+                 {
+                     return false;
+                 }
+
+                // Calculate the coordinates on the virtual plane at the specified depth
+                // The tangent of half the FOV relates the half-width/height to the distance (depth)
+                // tan(hFov/2) = (halfWidth / depth) => halfWidth = depth * tan(hFov/2)
+                // x = normalizedX * halfWidth
+                point.x = normX * _simulatedDepth * Mathf.Tan(hFovRad / 2f);
+
+                // y = normalizedY * halfHeight
+                // halfHeight = halfWidth / aspect = depth * tan(hFov/2) / aspect
+                point.y = normY * _simulatedDepth * Mathf.Tan(hFovRad / 2f) / aspect;
+
+                // Z coordinate is the constant depth
+                point.z = _simulatedDepth;
+
+                return true;
             }
         }
 
