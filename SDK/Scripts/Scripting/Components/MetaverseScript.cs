@@ -1125,7 +1125,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The types that contain extension methods.</returns>
         public static unsafe Type[] GetExtensionMethodTypes()
         {
-            return new [] { typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions)
+            return new [] { typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions), typeof(ImageConversion)
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
                 ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif

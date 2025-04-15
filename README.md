@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.155.5
-- Updated bytetracker implementation and DepthBasedEnvironmentVoxelizationEngine
+## 2.156.0
+- Added support for ImageConversion extension methods.
 
-Updated on April 14, 2025
+Updated on April 15, 2025
