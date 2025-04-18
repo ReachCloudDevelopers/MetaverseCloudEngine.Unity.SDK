@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.157.1
-- Add error handling and resource cleanup in ImageInferenceNet Wrapped texture processing in a try-finally block to ensure proper disposal of resources. Added validation to skip texture creation for invalid data dimensions. This improves stability and prevents potential crashes during image inference operations.
+## 2.157.2
+- Disable OVR Telemetry Popup in Unity SDK. Add a script to patch and disable the OVR Telemetry Popup by commenting out the consent recording function in the Unity Package Cache. This ensures the popup is suppressed during project initialization, improving user experience.
 
 Updated on April 18, 2025
