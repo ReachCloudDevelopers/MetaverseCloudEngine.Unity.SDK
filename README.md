@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.156.0
-- Added support for ImageConversion extension methods.
+## 2.157.0
+- Fix texture mismatch in image inference handling. Ensure the texture is recreated when its dimensions differ from the incoming data. This prevents potential issues with rendering and guarantees correct output display.
 
-Updated on April 15, 2025
+Updated on April 18, 2025

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.156.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.156.0\n- Added support for ImageConversion extension methods.\n\nUpdated on April 15, 2025",
+  "version": "2.157.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.157.0\n- Fix texture mismatch in image inference handling. Ensure the texture is recreated when its dimensions differ from the incoming data. This prevents potential issues with rendering and guarantees correct output display.\n\nUpdated on April 18, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -98,7 +98,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!_outputDataQueue.TryDequeue(out var data))
                 return;
             
-            if (!Texture)
+            if (!Texture || data.Item2.cols() != Texture.width || data.Item2.rows() != Texture.height)
             {
                 Texture = new Texture2D(data.Item2.cols(), data.Item2.rows(), TextureFormat.RGBA32, false);
                 onTextureCreated?.Invoke(Texture);
