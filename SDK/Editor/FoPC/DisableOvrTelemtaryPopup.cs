@@ -20,9 +20,10 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             if (string.IsNullOrEmpty(path)) return;
             if (!System.IO.File.Exists(path)) return;
             var text = System.IO.File.ReadAllText(path);
-            const string badCode = "var consent = EditorUtility.DisplayDialog(";
+            const string badCode = " var consent = EditorUtility.DisplayDialog(";
             if (!text.Contains(badCode)) return;
-            text = text.Replace(badCode, "var consent = false;}}/*EditorUtility.DisplayDialog(");
+            text = text.Replace(badCode, " /*var consent = EditorUtility.DisplayDialog(");
+            text = text.Replace("RecordConsent(consent);", "RecordConsent(consent);*/");
             System.IO.File.WriteAllText(path, text);
             CompilationPipeline.RequestScriptCompilation();
             Debug.Log("Disabled OVR Telemetry Popup");
