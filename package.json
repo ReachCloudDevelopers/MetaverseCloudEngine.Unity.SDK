@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.157.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.157.2\n- Disable OVR Telemetry Popup in Unity SDK. Add a script to patch and disable the OVR Telemetry Popup by commenting out the consent recording function in the Unity Package Cache. This ensures the popup is suppressed during project initialization, improving user experience.\n\nUpdated on April 18, 2025",
+  "version": "2.157.3",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.157.3\n- Disable OVR Telemetry Popup in Unity SDK. Replaced popup dialog code with a safe default to prevent the telemetry consent dialog from appearing. This ensures smoother workflows and avoids interruptions for developers using the SDK.\n\nUpdated on April 18, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

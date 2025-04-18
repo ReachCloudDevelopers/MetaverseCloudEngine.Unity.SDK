@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.157.2
-- Disable OVR Telemetry Popup in Unity SDK. Add a script to patch and disable the OVR Telemetry Popup by commenting out the consent recording function in the Unity Package Cache. This ensures the popup is suppressed during project initialization, improving user experience.
+## 2.157.3
+- Disable OVR Telemetry Popup in Unity SDK. Replaced popup dialog code with a safe default to prevent the telemetry consent dialog from appearing. This ensures smoother workflows and avoids interruptions for developers using the SDK.
 
 Updated on April 18, 2025
