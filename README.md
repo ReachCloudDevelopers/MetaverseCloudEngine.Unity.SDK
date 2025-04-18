@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.157.4
-- Disable OVR telemetry popup in SDK initialization. Updated code to modify specific lines preventing the OVR telemetry consent dialog from appearing during initialization. This ensures a smoother user experience and avoids unnecessary interruptions.
+## 2.158.0
+- Add flipping options to Copy2D method in MVUtils. Enhanced the Copy2D method to support horizontal and vertical flipping of textures via optional parameters. This provides more flexibility when manipulating textures, particularly in graphics-related operations.
 
 Updated on April 18, 2025

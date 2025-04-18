@@ -279,7 +279,10 @@ namespace MetaverseCloudEngine.Unity
 
         #region Graphics
 
-        public static Texture2D Copy2D(this Texture source)
+        public static Texture2D Copy2D(
+            this Texture source, 
+            bool flipHorizontal = false, 
+            bool flipVertical = false)
         {
             if (Application.isBatchMode)
                 return null;
@@ -300,6 +303,28 @@ namespace MetaverseCloudEngine.Unity
                 var readableText = new Texture2D(source.width, source.height);
                 readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
                 readableText.Apply();
+                
+                if (flipHorizontal)
+                {
+                    var pixels = readableText.GetPixels();
+                    Array.Reverse(pixels);
+                    readableText.SetPixels(pixels);
+                }
+                
+                if (flipVertical)
+                {
+                    var pixels = readableText.GetPixels();
+                    for (var i = 0; i < pixels.Length; i++)
+                    {
+                        var y = i / readableText.width;
+                        var x = i % readableText.width;
+                        var newY = readableText.height - y - 1;
+                        pixels[i] = readableText.GetPixel(x, newY);
+                    }
+
+                    readableText.SetPixels(pixels);
+                }
+                
                 return readableText;
             }
             finally

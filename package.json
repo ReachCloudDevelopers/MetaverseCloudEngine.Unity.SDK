@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.157.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.157.4\n- Disable OVR telemetry popup in SDK initialization. Updated code to modify specific lines preventing the OVR telemetry consent dialog from appearing during initialization. This ensures a smoother user experience and avoids unnecessary interruptions.\n\nUpdated on April 18, 2025",
+  "version": "2.158.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.158.0\n- Add flipping options to Copy2D method in MVUtils. Enhanced the Copy2D method to support horizontal and vertical flipping of textures via optional parameters. This provides more flexibility when manipulating textures, particularly in graphics-related operations.\n\nUpdated on April 18, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
