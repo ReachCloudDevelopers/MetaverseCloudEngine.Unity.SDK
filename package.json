@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.158.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.158.0\n- Add flipping options to Copy2D method in MVUtils. Enhanced the Copy2D method to support horizontal and vertical flipping of textures via optional parameters. This provides more flexibility when manipulating textures, particularly in graphics-related operations.\n\nUpdated on April 18, 2025",
+  "version": "2.158.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.158.1\n- Refactor texture copying and improve flipping logic. Reorder parameters for consistency and fix flipping implementation. Correctly apply vertical and horizontal flips by addressing pixel manipulation logic. Renamed variables for clarity and improved code readability.\n\nUpdated on April 18, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

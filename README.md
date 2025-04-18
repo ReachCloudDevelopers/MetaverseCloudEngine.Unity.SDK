@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.158.0
-- Add flipping options to Copy2D method in MVUtils. Enhanced the Copy2D method to support horizontal and vertical flipping of textures via optional parameters. This provides more flexibility when manipulating textures, particularly in graphics-related operations.
+## 2.158.1
+- Refactor texture copying and improve flipping logic. Reorder parameters for consistency and fix flipping implementation. Correctly apply vertical and horizontal flips by addressing pixel manipulation logic. Renamed variables for clarity and improved code readability.
 
 Updated on April 18, 2025

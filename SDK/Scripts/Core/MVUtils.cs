@@ -281,8 +281,8 @@ namespace MetaverseCloudEngine.Unity
 
         public static Texture2D Copy2D(
             this Texture source, 
-            bool flipHorizontal = false, 
-            bool flipVertical = false)
+            bool flipVertical = false, 
+            bool flipHorizontal = false)
         {
             if (Application.isBatchMode)
                 return null;
@@ -300,32 +300,39 @@ namespace MetaverseCloudEngine.Unity
                 Graphics.Blit(source, renderTex);
                 previous = RenderTexture.active;
                 RenderTexture.active = renderTex;
-                var readableText = new Texture2D(source.width, source.height);
-                readableText.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
-                readableText.Apply();
-                
-                if (flipHorizontal)
-                {
-                    var pixels = readableText.GetPixels();
-                    Array.Reverse(pixels);
-                    readableText.SetPixels(pixels);
-                }
+                var readableTexture = new Texture2D(source.width, source.height);
+                readableTexture.ReadPixels(new Rect(0, 0, renderTex.width, renderTex.height), 0, 0);
+                readableTexture.Apply();
                 
                 if (flipVertical)
                 {
-                    var pixels = readableText.GetPixels();
+                    var pixels = readableTexture.GetPixels();
                     for (var i = 0; i < pixels.Length; i++)
                     {
-                        var y = i / readableText.width;
-                        var x = i % readableText.width;
-                        var newY = readableText.height - y - 1;
-                        pixels[i] = readableText.GetPixel(x, newY);
+                        var y = i / readableTexture.width;
+                        var x = i % readableTexture.width;
+                        var newY = readableTexture.height - y - 1;
+                        pixels[i] = readableTexture.GetPixel(x, newY);
                     }
 
-                    readableText.SetPixels(pixels);
+                    readableTexture.SetPixels(pixels);
+                }
+
+                if (flipHorizontal)
+                {
+                    var pixels = readableTexture.GetPixels();
+                    for (var i = 0; i < pixels.Length; i++)
+                    {
+                        var y = i / readableTexture.width;
+                        var x = i % readableTexture.width;
+                        var newX = readableTexture.width - x - 1;
+                        pixels[i] = readableTexture.GetPixel(newX, y);
+                    }
+                    
+                    readableTexture.SetPixels(pixels);
                 }
                 
-                return readableText;
+                return readableTexture;
             }
             finally
             {
