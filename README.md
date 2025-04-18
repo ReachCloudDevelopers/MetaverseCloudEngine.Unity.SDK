@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.157.0
-- Fix texture mismatch in image inference handling. Ensure the texture is recreated when its dimensions differ from the incoming data. This prevents potential issues with rendering and guarantees correct output display.
+## 2.157.1
+- Add error handling and resource cleanup in ImageInferenceNet Wrapped texture processing in a try-finally block to ensure proper disposal of resources. Added validation to skip texture creation for invalid data dimensions. This improves stability and prevents potential crashes during image inference operations.
 
 Updated on April 18, 2025

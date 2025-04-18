@@ -95,19 +95,29 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     }
                 return;
             }
+
             if (!_outputDataQueue.TryDequeue(out var data))
                 return;
-            
-            if (!Texture || data.Item2.cols() != Texture.width || data.Item2.rows() != Texture.height)
-            {
-                Texture = new Texture2D(data.Item2.cols(), data.Item2.rows(), TextureFormat.RGBA32, false);
-                onTextureCreated?.Invoke(Texture);
-            }
 
-            Utils.matToTexture2D(data.Item2, Texture, flip: true);
-            OnMainThreadPostProcessInference(data.Item1);
-            data.Item1.Dispose();
-            data.Item2.Dispose();
+            try
+            {
+                if (data.Item2.cols() <= 0 || data.Item2.rows() <= 0)
+                    return;
+                
+                if (!Texture || data.Item2.cols() != Texture.width || data.Item2.rows() != Texture.height)
+                {
+                    Texture = new Texture2D(data.Item2.cols(), data.Item2.rows(), TextureFormat.RGBA32, false);
+                    onTextureCreated?.Invoke(Texture);
+                }
+
+                Utils.matToTexture2D(data.Item2, Texture, flip: true);
+                OnMainThreadPostProcessInference(data.Item1);
+            }
+            finally
+            {
+                data.Item1.Dispose();
+                data.Item2.Dispose();
+            }
         }
 
         /// <summary>
