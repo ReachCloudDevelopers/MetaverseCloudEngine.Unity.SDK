@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.158.1
-- Refactor texture copying and improve flipping logic. Reorder parameters for consistency and fix flipping implementation. Correctly apply vertical and horizontal flips by addressing pixel manipulation logic. Renamed variables for clarity and improved code readability.
+## 2.159.0
+- Add NTRIP client implementation for GNSS data streaming
 
-Updated on April 18, 2025
+Updated on April 21, 2025
