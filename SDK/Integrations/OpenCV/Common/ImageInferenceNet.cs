@@ -102,7 +102,14 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             try
             {
                 if (data.Item2.cols() <= 0 || data.Item2.rows() <= 0)
+                {
+                    if (Texture && (Texture.width > 1 || Texture.height > 1))
+                    {
+                        Texture = Texture2D.whiteTexture;
+                        onTextureCreated?.Invoke(Texture);
+                    }
                     return;
+                }
                 
                 if (!Texture || data.Item2.cols() != Texture.width || data.Item2.rows() != Texture.height)
                 {

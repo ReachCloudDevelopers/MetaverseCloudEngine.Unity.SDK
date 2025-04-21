@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.159.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.159.0\n- Add NTRIP client implementation for GNSS data streaming\n\nUpdated on April 21, 2025",
+  "version": "2.160.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.160.0\n- Add system event handling and device info logging in AutoConnect. Introduced system event callbacks to track device-related events such as "OPENED" for improved AutoConnect handling. Enhanced device info logging and saving mechanisms by integrating new fields such as VendorID, Port, and SerialNumber. Improved concurrency handling to prevent conflicting AutoConnect instances.\n\nUpdated on April 21, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

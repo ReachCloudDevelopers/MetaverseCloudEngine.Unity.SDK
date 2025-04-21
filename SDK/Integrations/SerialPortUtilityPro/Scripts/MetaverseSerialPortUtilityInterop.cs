@@ -48,6 +48,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         public enum GettableFieldID
         {
+            OpenMethod,
             SystemEventObject,
             ReadCompleteEventObject,
         }
@@ -64,6 +65,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
         public enum GettablePropertyID
         {
             SerialNumber,
+            OpenSystem,
+            DeviceName,
+            VendorID,
+            Port,
+            ProductID,
         }
 
         public enum SerialPortEventName
@@ -81,7 +87,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             public override string ToString()
             {
-                return $"{Vendor},{Product},{SerialNumber},{PortName}";
+                var str = $"{Vendor},{Product},{SerialNumber},{PortName}";
+                if (ParsedOpenSystem.HasValue)
+                    str += $",{ParsedOpenSystem.Value}";
+                return str;
             }
 
             public static bool TryParse(string deviceInfoString, out DeviceInfo deviceInfo)
