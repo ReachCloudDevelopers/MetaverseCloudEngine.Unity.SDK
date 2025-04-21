@@ -2417,9 +2417,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         #endregion
 
         #region Logging Helpers
-        private void Log(string message) { if (logs) Debug.Log($"[AIRealtimeComms] {message}"); }
-        private void LogWarning(string message) { if (logs) Debug.LogWarning($"[AIRealtimeComms] {message}"); }
-        private void LogError(string message) { Debug.LogError($"[AIRealtimeComms] ERROR: {message}"); }
+        private void Log(string message) { if (logs) MetaverseProgram.Logger.Log($"[AIRealtimeComms] {message}"); }
+        private void LogWarning(string message) { if (logs) MetaverseProgram.Logger.LogWarning($"[AIRealtimeComms] {message}"); }
+        private void LogError(string message) { MetaverseProgram.Logger.LogError($"[AIRealtimeComms] ERROR: {message}"); }
         #endregion
     }
 
