@@ -171,10 +171,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
             if (!OnPreInitialize(dependencies, out var error))
             {
-                if (error is Exception exception)
-                    MetaverseProgram.Logger.LogException(exception);
-                else
-                    MetaverseProgram.Logger.LogError(error);
+                MetaverseProgram.Logger.LogError(error);
                 return;
             }
 
