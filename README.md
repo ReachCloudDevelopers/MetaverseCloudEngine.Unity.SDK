@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.3
-- Refactor logging for saved device info in auto-connect process
+## 2.162.4
+- Add debug log for device opened in SerialPortAutoConnect
 
 Updated on April 22, 2025

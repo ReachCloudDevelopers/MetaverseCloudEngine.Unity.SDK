@@ -114,6 +114,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             if (debugLog)
                                 MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Saved device info: {deviceInfo}");
                         }
+                        else if (debugLog)
+                        {
+                            MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Device opened: {deviceInfo} | SaveLastDevice: {saveLastDevice} | SaveKey: {saveKey}");
+                        }
                         break;
                 }
             });
