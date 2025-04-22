@@ -108,10 +108,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             Product = productId,
                             ParsedOpenSystem = (MetaverseSerialPortUtilityInterop.OpenSystem)openMethod
                         };
-                        MetaverseProgram.Logger.Log("[SPUP AutoConnect] Saved device info: " +
-                            $"{deviceInfo.ToString()}");
                         if (saveLastDevice && !string.IsNullOrEmpty(saveKey))
+                        {
                             MetaverseProgram.Prefs.SetString(GetSaveKey(), deviceInfo.ToString());
+                            if (debugLog)
+                                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Saved device info: {deviceInfo}");
+                        }
                         break;
                 }
             });
