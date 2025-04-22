@@ -665,10 +665,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             UnityAction<object, string> callback)
         {
             if (!spupComponent)
-            {
-                MetaverseProgram.Logger.LogWarning("AddSystemListener: SerialPortUtilityPro component is null");
                 return;
-            }
 
             if (delegateCall is not null)
                 RemoveSystemListener(delegateCall, ref systemEventObjectField, spupComponent);
@@ -676,36 +673,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
             var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField,
                 GettableFieldID.SystemEventObject);
             if (readCompleteEvent == null)
-            {
-                MetaverseProgram.Logger.LogError(
-                    "AddSystemListener: Could not find SystemEventObject field in SerialPortUtilityPro component");
                 return;
-            }
 
             var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
             if (eventType == null)
-            {
-                MetaverseProgram.Logger.LogError("AddSystemListener: Could not determine event type");
                 return;
-            }
 
             const BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public;
             var addListenerCallFunction = readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags)
                 .FirstOrDefault(x =>
                     x.Name.Contains("AddListener", StringComparison.OrdinalIgnoreCase));
             if (addListenerCallFunction == null)
-            {
-                MetaverseProgram.Logger.LogError(
-                    "AddSystemListener: Could not find AddListener method in " +
-                    readCompleteEvent.GetType().BaseType?.FullName + " | " +
-                    string.Join(", ",
-                        readCompleteEvent.GetType().BaseType?.GetMethods(bindingFlags).Select(x => x.Name) ??
-                        Array.Empty<string>()));
                 return;
-            }
-
-            MetaverseProgram.Logger.Log("AddSystemListener: Adding listener to " + addListenerCallFunction.Name +
-                                        " in " + readCompleteEvent.GetType().BaseType?.FullName);
 
             var dynamicDelegate = Delegate.CreateDelegate(
                 typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
@@ -723,39 +702,23 @@ namespace MetaverseCloudEngine.Unity.SPUP
             Component spupComponent)
         {
             if (!spupComponent)
-            {
-                MetaverseProgram.Logger.LogWarning("RemoveSystemListener: SerialPortUtilityPro component is null");
                 return;
-            }
 
             if (delegateCall is null) return;
 
             var readCompleteEvent = GetField<UnityEventBase>(spupComponent, ref systemEventObjectField,
                 GettableFieldID.SystemEventObject);
-            if (readCompleteEvent == null)
-            {
-                MetaverseProgram.Logger.LogError(
-                    $"RemoveSystemListener: Could not find {GettableFieldID.SystemEventObject} field in SerialPortUtilityPro component");
-                return;
-            }
 
-            var eventType = readCompleteEvent.GetType().BaseType?.GetGenericArguments()[0];
+            var eventType = readCompleteEvent?.GetType().BaseType?.GetGenericArguments()[0];
             if (eventType == null)
-            {
-                MetaverseProgram.Logger.LogError("RemoveSystemListener: Could not determine event type");
                 return;
-            }
 
             var removeListenerCallFunction = readCompleteEvent.GetType().BaseType
                 ?.GetMethods(BindingFlags.Instance | BindingFlags.Public)
                 .FirstOrDefault(x =>
                     x.Name.Contains("RemoveListener", StringComparison.OrdinalIgnoreCase));
             if (removeListenerCallFunction == null)
-            {
-                MetaverseProgram.Logger.LogError(
-                    $"RemoveSystemListener: Could not find RemoveListener method in {readCompleteEvent.GetType().BaseType?.FullName}");
                 return;
-            }
 
             var dynamicDelegate = Delegate.CreateDelegate(
                 typeof(UnityAction<,>).MakeGenericType(eventType, typeof(string)),
@@ -768,7 +731,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
     }
 
 #if ENABLE_IOS_INTEGRATION
-    // Start the Bluetooth scan at runtime load.
+    // Start the Bluetooth scan at a runtime load.
     public static class IOSBluetoothInitializer
     {
         [DllImport("__Internal", EntryPoint = "ios_startScan")]

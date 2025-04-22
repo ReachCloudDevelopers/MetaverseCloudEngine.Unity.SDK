@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.5
-- Add debug logging and ensure _currentAutoConnect is updated
+## 2.162.6
+- Refactor event listener handling for SPUP integration.
 
 Updated on April 22, 2025

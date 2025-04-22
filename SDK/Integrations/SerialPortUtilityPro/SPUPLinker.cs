@@ -15,9 +15,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 Debug.Log($"SPUP Event: {s} {s1}");
             });
+            spup.ReadEventObject.RemoveListener((o) =>
+            {
+                Debug.Log($"SPUP Read: {o}");
+            });
             spup.ReadCompleteEventObject.AddListener((o) =>
             {
                 Debug.LogError($"SPUP Error: {o}");
+            });
+            spup.ReadCompleteEventObject.RemoveListener((o) =>
+            {
+                Debug.Log($"SPUP Read: {o}");
             });
 #endif
         }
