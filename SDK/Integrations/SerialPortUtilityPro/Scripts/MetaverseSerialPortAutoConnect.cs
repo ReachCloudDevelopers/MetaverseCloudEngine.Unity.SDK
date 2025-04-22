@@ -163,6 +163,15 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (!string.IsNullOrEmpty(saveKey))
                     {
                         var deviceInfoString = MetaverseProgram.Prefs.GetString(GetSaveKey(), string.Empty);
+                        if (debugLog)
+                        {
+                            if (!string.IsNullOrEmpty(deviceInfoString))
+                                MetaverseProgram.Logger.Log(
+                                    $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}");
+                            else
+                                MetaverseProgram.Logger.Log("[SPUP AutoConnect] No saved device found for " + saveKey);
+                        }
+                        
                         if (!string.IsNullOrEmpty(deviceInfoString) && 
                             MetaverseSerialPortUtilityInterop.DeviceInfo.TryParse(deviceInfoString, out var i) &&
                             i.ParsedOpenSystem is not null)
