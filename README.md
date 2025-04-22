@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.0
-- Removed unused method
+## 2.162.1
+- Fix condition order in MetaverseSerialPortAutoConnect. earranged the condition in `MetaverseDispatcher.WaitUntil` to prioritize verifying the object existence before checking its state. This ensures stability and prevents potential null reference issues during auto-connect operations.
 
-Updated on April 21, 2025
+Updated on April 22, 2025

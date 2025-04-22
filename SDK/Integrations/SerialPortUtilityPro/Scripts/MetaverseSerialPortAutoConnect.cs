@@ -139,7 +139,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 
                 if (_currentAutoConnect != this && _currentAutoConnect)
                 {
-                    MetaverseDispatcher.WaitUntil(() => !isActiveAndEnabled || !this || !_currentAutoConnect || _currentAutoConnect == this, () =>
+                    MetaverseDispatcher.WaitUntil(() => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
                     {
                         if (this && isActiveAndEnabled)
                             AutoConnect();
