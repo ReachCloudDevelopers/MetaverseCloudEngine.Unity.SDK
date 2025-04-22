@@ -136,6 +136,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             MetaverseDispatcher.WaitForSeconds(0.5f, () =>
             {
+                if (debugLog)
+                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
+                
                 if (!this || !isActiveAndEnabled)
                 {
                     if (this && debugLog)
@@ -145,6 +148,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 
                 if (_currentAutoConnect != this && _currentAutoConnect)
                 {
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log(
+                            $"[SPUP AutoConnect] {saveKey} Waiting to auto connect...");
+                    
                     MetaverseDispatcher.WaitUntil(() => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
                     {
                         if (this && isActiveAndEnabled)
@@ -154,12 +161,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
             
-                _currentAutoConnect = this;
-
                 if (serialPortUtilityPro is Behaviour { isActiveAndEnabled: false })
                 {
                     if (debugLog)
-                        MetaverseProgram.Logger.Log("AutoConnect cancelled because the SerialPortUtilityPro component is disabled.");
+                        MetaverseProgram.Logger.Log("AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
                     return;
                 }
                 
@@ -185,6 +190,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             if (debugLog)
                                 MetaverseProgram.Logger.Log(
                                     $"[SPUP AutoConnect] Found a saved device: {i.SerialNumber}");
+
+                            _currentAutoConnect = this;
 
                             _deviceAPI.Initialize(
                                 serialPortUtilityPro,
@@ -255,6 +262,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log($"AutoConnect found a device: {deviceInfo.Item1.SerialNumber}");
+                    
+                    _currentAutoConnect = this;
+
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
                         deviceInfo.Item1.SerialNumber,
