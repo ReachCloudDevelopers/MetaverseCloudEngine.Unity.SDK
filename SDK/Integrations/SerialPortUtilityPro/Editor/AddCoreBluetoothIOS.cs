@@ -26,7 +26,7 @@ public class AddCoreBluetoothIOS
             // Write changes to the project file.
             proj.WriteToFile(projPath);
 
-            MetaverseProgram.Logger.Log("AddCoreBluetoothIOS: CoreBluetooth.framework has been added to the Xcode project.");
+            MetaverseProgram.Logger.Log("[AddCoreBluetoothIOS] CoreBluetooth.framework has been added to the Xcode project.");
             
             // Enable in Info.plist the NSBluetoothAlwaysUsageDescription key
             var plistPath = Path.Combine(pathToBuiltProject, "Info.plist");
@@ -37,11 +37,11 @@ public class AddCoreBluetoothIOS
             {
                 rootDict.SetString("NSBluetoothAlwaysUsageDescription", "This app requires Bluetooth access to connect to devices.");
                 plist.WriteToFile(plistPath);
-                MetaverseProgram.Logger.Log("AddCoreBluetoothIOS: NSBluetoothAlwaysUsageDescription key has been added to Info.plist.");
+                MetaverseProgram.Logger.Log("[AddCoreBluetoothIOS] NSBluetoothAlwaysUsageDescription key has been added to Info.plist.");
             }
             else
             {
-                MetaverseProgram.Logger.Log("AddCoreBluetoothIOS: NSBluetoothAlwaysUsageDescription key already exists in Info.plist.");
+                MetaverseProgram.Logger.Log("[AddCoreBluetoothIOS] NSBluetoothAlwaysUsageDescription key already exists in Info.plist.");
             }
         }
     }
