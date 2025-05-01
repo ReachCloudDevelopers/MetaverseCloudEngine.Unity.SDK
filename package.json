@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.162.7",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.162.7\n- Improve logging, add a device disconnect method, and validate regex. Updated log format for consistency in AddCoreBluetoothIOS. Introduced a `DisconnectAndForget` method in MetaverseSerialPortAutoConnect to clear saved device data and disconnect. Added a check to skip processing when the regex search string is empty.\n\nUpdated on April 22, 2025",
+  "version": "2.162.8",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.162.8\n- Add tooltips and properties for MetaverseWebView fields.\n\nUpdated on May 01, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

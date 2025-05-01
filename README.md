@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.7
-- Improve logging, add a device disconnect method, and validate regex. Updated log format for consistency in AddCoreBluetoothIOS. Introduced a `DisconnectAndForget` method in MetaverseSerialPortAutoConnect to clear saved device data and disconnect. Added a check to skip processing when the regex search string is empty.
+## 2.162.8
+- Add tooltips and properties for MetaverseWebView fields.
 
-Updated on April 22, 2025
+Updated on May 01, 2025
