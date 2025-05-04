@@ -27,7 +27,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             public string OutputPath { get; set; }
         }
 
-        public const string MetaverseBuildDirectory = "Builds/MetaverseAssetBundles";
+        private const string MetaverseBuildDirectory = "Builds/MetaverseAssetBundles";
 
         private static IEnumerator BuildAssetBundle(
             string bundleId,
@@ -55,8 +55,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                         BuildTarget.StandaloneOSX
 #endif
                     ;
-                if (EditorUserBuildSettings.activeBuildTarget != defaultBuildTarget)
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
+
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
+                if (defaultBuildTarget == BuildTarget.StandaloneOSX)
+                    EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
 
                 // Make sure all dirty assets are saved and cleaned up.
                 AssetDatabase.SaveAssets();

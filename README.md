@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.8
-- Add tooltips and properties for MetaverseWebView fields.
+## 2.162.9
+- Refactor build configuration and update QNX architecture handling
 
-Updated on May 01, 2025
+Updated on May 04, 2025
