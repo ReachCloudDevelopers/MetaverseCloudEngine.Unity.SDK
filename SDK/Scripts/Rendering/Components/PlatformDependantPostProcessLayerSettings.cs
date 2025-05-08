@@ -88,7 +88,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
                 NativePlatform.UNITY_IOS
 #elif UNITY_WEBGL
                 NativePlatform.UNITY_WEBGL
-#elif UNITY_STANDALONE
+#else
                 NativePlatform.UNITY_STANDALONE
 #endif
                 ;

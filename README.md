@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.10
-- Fix platform priority order in post-process layer settings.
+## 2.162.11
+- Refactor platform check for standalone builds.
 
 Updated on May 08, 2025
