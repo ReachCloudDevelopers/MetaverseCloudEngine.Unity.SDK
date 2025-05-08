@@ -210,6 +210,11 @@
             "name": "com.google.play.appupdate",
             "expression": "",
             "define": "MV_GPLAY_APP_UPDATE"
+        },
+        {
+            "name": "com.unity.postprocessing",
+            "expression": "",
+            "define": "MV_UNITY_POSTPROCESSING"
         }
     ],
     "noEngineReferences": false

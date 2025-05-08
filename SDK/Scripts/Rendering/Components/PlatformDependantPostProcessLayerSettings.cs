@@ -1,4 +1,4 @@
-﻿#if UNITY_POST_PROCESSING_STACK_V2
+﻿#if MV_UNITY_POSTPROCESSING
 using System;
 using System.Linq;
 using TriInspectorMVCE;

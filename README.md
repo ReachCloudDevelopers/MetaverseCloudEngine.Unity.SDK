@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.11
-- Refactor platform check for standalone builds.
+## 2.162.12
+- Add support for Unity PostProcessing package
 
 Updated on May 08, 2025
