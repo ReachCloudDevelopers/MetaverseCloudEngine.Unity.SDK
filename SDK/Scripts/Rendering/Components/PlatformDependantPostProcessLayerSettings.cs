@@ -82,14 +82,14 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             layer.InitBundles();
             
             var currentPlatform = 
-#if UNITY_STANDALONE
-                NativePlatform.UNITY_STANDALONE
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
                 NativePlatform.UNITY_ANDROID
 #elif UNITY_IOS
                 NativePlatform.UNITY_IOS
 #elif UNITY_WEBGL
                 NativePlatform.UNITY_WEBGL
+#elif UNITY_STANDALONE
+                NativePlatform.UNITY_STANDALONE
 #endif
                 ;
 

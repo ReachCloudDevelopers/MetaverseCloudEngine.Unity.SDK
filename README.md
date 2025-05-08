@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.9
-- Refactor build configuration and update QNX architecture handling
+## 2.162.10
+- Fix platform priority order in post-process layer settings.
 
-Updated on May 04, 2025
+Updated on May 08, 2025
