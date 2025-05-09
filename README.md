@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.162.12
-- Add support for Unity PostProcessing package
+## 2.163.0
+- Add fullscreen support to MetaverseWebView
 
-Updated on May 08, 2025
+Updated on May 09, 2025

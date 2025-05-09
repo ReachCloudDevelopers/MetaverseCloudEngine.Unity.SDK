@@ -2,8 +2,6 @@
 #pragma warning disable IDE0079
 #pragma warning disable IDE0052
 
-using System;
-
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -51,6 +49,8 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         [Header("Events")]
         [Tooltip("Invoked when the URL changes.")]
         [SerializeField] private UnityEvent<string> onUrlChanged = new();
+        [Tooltip("Invoked when the web view is put into or out of fullscreen mode.")]
+        [SerializeField] private UnityEvent<bool> onFullScreenChanged = new();
         
         /// <summary>
         /// Invoked when the URL changes.
@@ -81,9 +81,17 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         /// </summary>
         /// <param name="url">The url to apply to the webview.</param>
         public void SetUrl(string url) => SetUrl_Impl(url);
+        
+        /// <summary>
+        /// Set the full-screen state of the web view.
+        /// </summary>
+        /// <param name="value">Whether to set the web view to full screen.</param>
+        public void FullScreen(bool value) => FullScreen_Impl(value);
 
         partial void SetUrl_Impl(string url);
 
         partial void SetVolume_Impl(float v);
+        
+        partial void FullScreen_Impl(bool value);
     }
 }
