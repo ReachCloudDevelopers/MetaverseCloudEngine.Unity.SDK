@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.0
-- Add fullscreen support to MetaverseWebView
+## 2.163.1
+- Enhance MetaverseWebView with new property and improved docs
 
 Updated on May 09, 2025

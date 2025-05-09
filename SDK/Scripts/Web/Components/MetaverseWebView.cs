@@ -51,11 +51,16 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         [SerializeField] private UnityEvent<string> onUrlChanged = new();
         [Tooltip("Invoked when the web view is put into or out of fullscreen mode.")]
         [SerializeField] private UnityEvent<bool> onFullScreenChanged = new();
-        
+
         /// <summary>
-        /// Invoked when the URL changes.
+        /// Invoked when the URL of the web view changes.
         /// </summary>
         public UnityEvent<string> OnUrlChanged => onUrlChanged;
+
+        /// <summary>
+        /// Invoked when the web view enters or exits full-screen mode.
+        /// </summary>
+        public UnityEvent<bool> OnFullScreenChanged => onFullScreenChanged;
         
         /// <summary>
         /// Gets or sets the initial URL of the web view.
@@ -75,6 +80,11 @@ namespace MetaverseCloudEngine.Unity.Web.Components
                 SetVolume_Impl(volume);
             }
         }
+        
+        /// <summary>
+        /// The most recently loaded URL of the web view.
+        /// </summary>
+        public string CurrentlyLoadedUrl { get; private set; }
 
         /// <summary>
         /// Sets the URL of the web view.
