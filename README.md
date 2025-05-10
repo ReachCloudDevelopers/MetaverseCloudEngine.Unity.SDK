@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.1
-- Enhance MetaverseWebView with new property and improved docs
+## 2.163.2
+- Initialize CameraDistanceTracker in negative state.
 
-Updated on May 09, 2025
+Updated on May 10, 2025

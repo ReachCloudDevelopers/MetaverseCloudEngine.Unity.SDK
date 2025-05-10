@@ -34,7 +34,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
         private Transform _transform;
 
-        private bool _isMaxDistance;
+        private bool _isMaxDistance = true;
         private bool _isMinDistance;
 
         private bool _initMinDistance;
@@ -67,8 +67,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             _maxDistance = maxDistance * maxDistance;
             _minDistance = minDistance * minDistance;
 
-            onBelowMinDistance?.Invoke();
-            onBelowMaxDistance?.Invoke();
+            onAboveMinDistance?.Invoke();
+            onAboveMaxDistance?.Invoke();
         }
 
         private void OnDrawGizmosSelected()
