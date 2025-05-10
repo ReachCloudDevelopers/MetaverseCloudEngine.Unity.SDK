@@ -20,8 +20,10 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             NearestPointOnCollider
         }
 
-        [Min(0), SerializeField] private float minDistance = 0;
-        [Min(0), SerializeField] private float maxDistance = 0;
+        [Min(0)]
+        [SerializeField] private float minDistance;
+        [Min(0)]
+        [SerializeField] private float maxDistance;
         [FormerlySerializedAs("measurmentType")]
         [SerializeField] private DistanceMeasurementType measurementType;
         [SerializeField] private Collider[] nearestPointColliders = Array.Empty<Collider>();

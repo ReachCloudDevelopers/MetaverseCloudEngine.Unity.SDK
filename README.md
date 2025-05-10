@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.2
-- Initialize CameraDistanceTracker in negative state.
+## 2.163.3
+- Styling adjustments to CameraDistanceTracker.cs
 
 Updated on May 10, 2025
