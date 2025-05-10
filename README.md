@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.3
-- Styling adjustments to CameraDistanceTracker.cs
+## 2.163.4
+- Potential fix for crashing on iOS
 
 Updated on May 10, 2025

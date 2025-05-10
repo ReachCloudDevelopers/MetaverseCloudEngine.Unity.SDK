@@ -58,6 +58,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
         private void Awake()
         {
+            if (Application.platform == RuntimePlatform.IPhonePlayer) // iOS tends to crash when doing this.
+                return;
             Apply();
         }
 
