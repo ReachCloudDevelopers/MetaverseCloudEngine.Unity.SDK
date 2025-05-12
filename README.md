@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.5
-- Improved enabled/activation detection within UnityPrefabSpawner to prevent conflicting timing logic.
+## 2.163.6
+- `Fix null reference and ensure proper volume handling`
 
-Updated on May 10, 2025
+Updated on May 12, 2025

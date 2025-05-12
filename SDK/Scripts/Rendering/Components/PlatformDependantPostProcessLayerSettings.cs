@@ -46,7 +46,10 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
                 layer.enabled = enabled;
                 layer.antialiasingMode = layer.enabled ? antialiasing : PostProcessLayer.Antialiasing.None;
                 if (volume)
+                {
                     volume.sharedProfile = profile ? profile : null;
+                    volume.enabled = (bool)profile;
+                }
             }
         }
 
