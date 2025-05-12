@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.7
-- Set default values for post-process settings and improve checks
+## 2.163.8
+- Add placeholder Start method to MetaverseWebView class
 
 Updated on May 12, 2025

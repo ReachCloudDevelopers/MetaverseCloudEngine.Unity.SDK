@@ -86,6 +86,10 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         /// </summary>
         public string CurrentlyLoadedUrl { get; private set; }
 
+        private void Start()
+        {
+        }
+
         /// <summary>
         /// Sets the URL of the web view.
         /// </summary>
