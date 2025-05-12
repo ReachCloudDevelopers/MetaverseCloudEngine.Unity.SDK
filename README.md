@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.9
-- Fixed NtripClient.cs parsing requirements
+## 2.164.0
+- Added ability to modify the drag to scroll behavior on webviews
 
 Updated on May 12, 2025

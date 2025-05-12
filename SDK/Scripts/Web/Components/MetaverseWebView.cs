@@ -35,6 +35,9 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         [DisableInPlayMode]
         [Tooltip("If true, the web view will allow interaction.")]
         [SerializeField] private bool allowInteraction = true;
+        [DisableInPlayMode]
+        [Tooltip("If true, the web view will be scrollable by dragging the window.")]
+        [SerializeField] private bool dragToScroll = true;
         [Tooltip("The volume of the web view.")]
         [DisableInPlayMode]
         [Range(0, 1)] [SerializeField] private float volume = 0.5f;
@@ -101,11 +104,19 @@ namespace MetaverseCloudEngine.Unity.Web.Components
         /// </summary>
         /// <param name="value">Whether to set the web view to full screen.</param>
         public void FullScreen(bool value) => FullScreen_Impl(value);
+        
+        /// <summary>
+        /// Sets whether or not dragging the web view will scroll the content.
+        /// </summary>
+        /// <param name="value">Whether to set the web view to scrollable by dragging.</param>
+        public void SetDragToScroll(bool value) => SetDragToScroll_Impl(value);
 
         partial void SetUrl_Impl(string url);
 
         partial void SetVolume_Impl(float v);
         
         partial void FullScreen_Impl(bool value);
+
+        partial void SetDragToScroll_Impl(bool value);
     }
 }
