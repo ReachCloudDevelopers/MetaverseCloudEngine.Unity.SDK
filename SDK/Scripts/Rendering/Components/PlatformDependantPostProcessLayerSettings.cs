@@ -55,8 +55,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
         [InfoBox("This component is only compatible with the Post Processing Stack v2. It also only applies at " +
                  "build time.")]
-        public PlatformSettingsOptions defaultSettings;
-        public PlatformSettings[] settings;
+        public PlatformSettingsOptions defaultSettings = new();
+        public PlatformSettings[] settings = Array.Empty<PlatformSettings>();
         public PostProcessVolume volume;
 
         private void Awake()
@@ -103,7 +103,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             
             foreach (var setting in settings)
             {
-                if (((int)setting.platforms & (int)currentPlatform) == 0)
+                if (!setting.platforms.HasFlag(currentPlatform))
                     continue;
                 setting.Apply(layer, volume);
                 return;

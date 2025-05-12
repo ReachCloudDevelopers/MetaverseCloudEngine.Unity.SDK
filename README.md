@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.6
-- `Fix null reference and ensure proper volume handling`
+## 2.163.7
+- Set default values for post-process settings and improve checks
 
 Updated on May 12, 2025
