@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.163.8
-- Add placeholder Start method to MetaverseWebView class
+## 2.163.9
+- Fixed NtripClient.cs parsing requirements
 
 Updated on May 12, 2025

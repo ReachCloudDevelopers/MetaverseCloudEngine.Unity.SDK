@@ -985,8 +985,7 @@ namespace MetaverseCloudEngine.Unity.GIS.GNSS
             if (string.IsNullOrEmpty(sentenceToSend) ||
                 !(sentenceToSend.StartsWith("$GPGGA") ||
                   sentenceToSend.StartsWith("$GNGGA")) || // Allow both common types
-                !sentenceToSend.Contains("*") ||
-                !sentenceToSend.EndsWith("\r\n"))
+                !sentenceToSend.Contains("*"))
             {
                 LogWarning(
                     $"[NTRIP] Invalid or missing GGA sentence format for sending: {sentenceToSend ?? "NULL"}");
