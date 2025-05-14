@@ -144,7 +144,6 @@ namespace MetaverseCloudEngine.Unity
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Main_Runtime()
         {
-            Logger.Log("MetaverseProgram.Main_Runtime");
             Main();
         }
 
@@ -185,8 +184,6 @@ namespace MetaverseCloudEngine.Unity
 
             MVUtils.FreeUpMemory(() =>
             {
-                Logger.Log("Initializing Metaverse Cloud Engine...");
-
                 ConfigureUnityApplication();
 
                 Prefs ??= new EncryptedPrefs();

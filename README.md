@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.0
-- Added ability to modify the drag to scroll behavior on webviews
+## 2.164.1
+- Remove unnecessary log statements during initialization
 
-Updated on May 12, 2025
+Updated on May 14, 2025
