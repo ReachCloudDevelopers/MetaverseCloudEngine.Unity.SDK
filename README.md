@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.1
-- Remove unnecessary log statements during initialization
+## 2.164.2
+- Ensure TextureProvider is null-checked before disposal.
 
-Updated on May 14, 2025
+Updated on May 19, 2025
