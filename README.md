@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.2
-- Ensure TextureProvider is null-checked before disposal.
+## 2.164.3
+- Fix null check and disable safe zone for non-mobile platforms
 
-Updated on May 19, 2025
+Updated on May 20, 2025

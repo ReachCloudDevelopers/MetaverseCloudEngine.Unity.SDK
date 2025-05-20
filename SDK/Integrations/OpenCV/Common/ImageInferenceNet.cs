@@ -77,7 +77,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         protected virtual void OnDestroy()
         {
-            if (TextureProvider)
+            if (TextureProvider != null)
                 TextureProvider.Dispose();
             Utils.setDebugMode(false);
         }

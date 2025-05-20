@@ -20,7 +20,10 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         private void Awake()
         {
             if (!UnityEngine.Device.Application.isMobilePlatform)
+            {
+                enabled = false;
                 return;
+            }
             
             _rectTransform = GetComponent<RectTransform>();
             _canvas = GetComponentInParent<Canvas>();
