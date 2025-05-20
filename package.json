@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.164.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.164.4\n- Improve styling and performance as well as potential deadlocking and concurrency issues.\n\nUpdated on May 20, 2025",
+  "version": "2.164.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.164.5\n- Added ImageConversion extension methods to MetaverseScript\n\nUpdated on May 20, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

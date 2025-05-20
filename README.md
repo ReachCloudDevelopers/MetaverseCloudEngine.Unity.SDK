@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.4
-- Improve styling and performance as well as potential deadlocking and concurrency issues.
+## 2.164.5
+- Added ImageConversion extension methods to MetaverseScript
 
 Updated on May 20, 2025

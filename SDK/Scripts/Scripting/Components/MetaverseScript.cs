@@ -1162,7 +1162,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(Enumerable), 
                 typeof(MVUtils), 
                 typeof(MetaverseDispatcherExtensions), 
-                typeof(UniTaskExtensions)
+                typeof(UniTaskExtensions),
+                typeof(ImageConversion)
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
                 ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
