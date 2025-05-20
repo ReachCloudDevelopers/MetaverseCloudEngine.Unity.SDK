@@ -1441,9 +1441,9 @@ namespace MetaverseCloudEngine.Unity
 
         public static void FreeUpMemory(Action action, bool gcCollect = true, bool delay = true)
         {
-            //Resources.UnloadUnusedAssets().completed += _ =>
+            Resources.UnloadUnusedAssets().completed += _ =>
             {
-                //if (gcCollect) GC.Collect();
+                if (gcCollect) GC.Collect();
                 Collect();
             };
             return;
@@ -1457,8 +1457,8 @@ namespace MetaverseCloudEngine.Unity
 
         public static async UniTask FreeUpMemoryAsync(bool gcCollect = true, bool delay = true)
         {
-            //await Resources.UnloadUnusedAssets();
-            //if (gcCollect) GC.Collect();
+            await Resources.UnloadUnusedAssets();
+            if (gcCollect) GC.Collect();
             if (delay) await UniTask.Yield();
         }
 
