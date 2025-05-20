@@ -66,7 +66,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         }
         
 #pragma warning disable CS0618
-        private static readonly List<string> BlackListedNames = new()
+        private readonly static List<string> BlackListedNames = new()
         {
             nameof(Application.OpenURL),
             nameof(SendMessage),
@@ -85,7 +85,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         };
 #pragma warning restore CS0618
 
-        private static readonly List<string> BlackListedNamespaces = new()
+        private readonly static List<string> BlackListedNamespaces = new()
         {
             "System.IO",
             "System.Reflection",
@@ -96,7 +96,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             "Microsoft.SafeHandles",
         };
 
-        private static readonly List<string> BlackListedTypes = new()
+        private readonly static List<string> BlackListedTypes = new()
         {
             nameof(Resources),
             nameof(AssetBundle),
@@ -562,6 +562,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!this)
                 return;
 
+            if (!isActiveAndEnabled)
+                return;
+
             if (string.IsNullOrEmpty(fn))
                 return;
 
@@ -586,6 +589,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public unsafe void ExecuteVoid(string fn, object[] args)
         {
             if (!this)
+                return;
+
+            if (!isActiveAndEnabled)
                 return;
 
             if (string.IsNullOrEmpty(fn))
@@ -615,6 +621,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!this)
                 return null;
 
+            if (!isActiveAndEnabled)
+                return null;
+
             if (string.IsNullOrEmpty(fn))
                 return null;
 
@@ -641,6 +650,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public unsafe JsValue Execute(string fn)
         {
             if (!this)
+                return null;
+
+            if (!isActiveAndEnabled)
                 return null;
 
             if (string.IsNullOrEmpty(fn))
@@ -998,13 +1010,26 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n)) },
 
             // Async/Await Function
-            { AwaitFunction, (Action<object, Action<object>>)((t, a) => {
+            { AwaitFunction, (Action<object, Action<object>>)((t, a) =>
+            {
+                if (!context || !context.isActiveAndEnabled)
+                    return;
                 if (t is not Task task) {
-                    if (t is IEnumerator e) _ = e.ToUniTask().ContinueWith(() => a?.Invoke(t));
+                    if (t is IEnumerator e) _ = e.ToUniTask().ContinueWith(() =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return;
+                        a?.Invoke(t);
+                    });
                     return;
                 }
                 if (task.GetType().GenericTypeArguments.Length == 0) {
-                    _ = task.AsUniTask().ContinueWith(() => a);
+                    _ = task.AsUniTask().ContinueWith(() =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return;
+                        a(task);
+                    });
                     return;
                 }
                 const string asUniTaskName = "AsUniTask";
@@ -1019,7 +1044,15 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     .GetExtensionMethods()
                     .FirstOrDefault(x => x.Name == continueWithName && x.ReturnType == typeof(UniTask));
                 if (continueWith == null) return;
-                _ = continueWith.Invoke(uniTask, new[] { uniTask, a });
+                _ = continueWith.Invoke(uniTask, new[] { 
+                    uniTask, 
+                    (Action<object>)((t1) =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return;
+                        a(t1);
+                    })
+                });
             }) },
             
             // Show Dialog
@@ -1125,7 +1158,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The types that contain extension methods.</returns>
         public static unsafe Type[] GetExtensionMethodTypes()
         {
-            return new [] { typeof(Enumerable), typeof(MVUtils), typeof(MetaverseDispatcherExtensions), typeof(UniTaskExtensions), typeof(ImageConversion)
+            return new [] { 
+                typeof(Enumerable), 
+                typeof(MVUtils), 
+                typeof(MetaverseDispatcherExtensions), 
+                typeof(UniTaskExtensions)
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
                 ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif

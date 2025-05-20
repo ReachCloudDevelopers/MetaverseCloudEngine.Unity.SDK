@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.3
-- Fix null check and disable safe zone for non-mobile platforms
+## 2.164.4
+- Improve styling and performance as well as potential deadlocking and concurrency issues.
 
 Updated on May 20, 2025

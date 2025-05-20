@@ -28,16 +28,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             get {
                 if (!Application.isPlaying)
                     return null;
-
-                if (!_current)
-                {
-                    _current = MVUtils.FindObjectsOfTypeNonPrefabPooled<MetaverseScriptCache>(true).FirstOrDefault();
-                    if (!_current)
-                    {
-                        _current = new GameObject(MVUtils.GenerateUid()).AddComponent<MetaverseScriptCache>();
-                        _current.gameObject.hideFlags = Application.isPlaying ? (HideFlags.HideInHierarchy | HideFlags.NotEditable) : HideFlags.HideAndDontSave;
-                    }
-                }
+                if (_current)
+                    return _current;
+                _current = MVUtils.FindObjectsOfTypeNonPrefabPooled<MetaverseScriptCache>(true).FirstOrDefault();
+                if (_current)
+                    return _current;
+                _current = new GameObject(MVUtils.GenerateUid()).AddComponent<MetaverseScriptCache>();
+                _current.gameObject.hideFlags = Application.isPlaying ? (HideFlags.HideInHierarchy | HideFlags.NotEditable) : HideFlags.HideAndDontSave;
                 return _current;
             }
         }
@@ -51,13 +48,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public Script GetScript(TextAsset asset, Func<string, string> preProcessScript = null)
         {
             _scriptModules ??= new Dictionary<TextAsset, Script>();
-            if (!_scriptModules.TryGetValue(asset, out Script code))
-            {
-                string text = asset.text;
-                if (preProcessScript != null)
-                    text = preProcessScript?.Invoke(text);
-                code = _scriptModules[asset] = Engine.PrepareScript(text, strict: true);
-            }
+            if (_scriptModules.TryGetValue(asset, out var code))
+                return code;
+            var text = asset.text;
+            if (preProcessScript != null)
+                text = preProcessScript?.Invoke(text);
+            code = _scriptModules[asset] = Engine.PrepareScript(text, strict: true);
             return code;
         }
 
@@ -79,9 +75,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The value of the static reference, if any.</returns>
         public object GetStaticReference(string key)
         {
-            if (_staticReferences == null) return null;
-            if (_staticReferences.TryGetValue(key, out object value)) return value;
-            return null;
+            return _staticReferences?.GetValueOrDefault(key);
         }
     }
 }
