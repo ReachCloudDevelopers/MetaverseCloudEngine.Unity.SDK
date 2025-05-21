@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.165.1
-- Improved isStreaming logic
+## 2.165.2
+- Optimize script initialization and logging for asset processing.
 
 Updated on May 21, 2025
