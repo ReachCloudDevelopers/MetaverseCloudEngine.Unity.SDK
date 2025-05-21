@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.6
-- Improved memory management
+## 2.164.7
+- Removed ability to call setTimeout while context is not active and enabled
 
-Updated on May 20, 2025
+Updated on May 21, 2025

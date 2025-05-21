@@ -988,9 +988,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             // Timing Functions
             { SetTimeoutFunction, (Func<Action, int, int>)((a, t) => {
+                if (!context || !context.isActiveAndEnabled)
+                    return -1;
                 var h = ++_timeoutHandleIndex;
                 context._timeoutHandles.Add(h);
                 MetaverseDispatcher.WaitForSeconds(t / 1000f, () => {
+                    if (!context || !context.isActiveAndEnabled)
+                        return;
                     if (!context._timeoutHandles.Remove(h) || !context) return;
                     try { a?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError($"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
                 });
