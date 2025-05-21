@@ -108,6 +108,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     {
                         Texture = Texture2D.whiteTexture;
                         onTextureCreated?.Invoke(Texture);
+                        MetaverseProgram.Logger.Log("Texture is empty, setting to white texture.");
                     }
                     return;
                 }
@@ -116,6 +117,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 {
                     Texture = new Texture2D(data.Item2.cols(), data.Item2.rows(), TextureFormat.RGBA32, false);
                     onTextureCreated?.Invoke(Texture);
+                    MetaverseProgram.Logger.Log("Texture is empty, setting to white texture.");
                 }
 
                 Utils.matToTexture2D(data.Item2, Texture, flip: true);
@@ -168,7 +170,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void Run(string[] dependencies)
         {
-            Utils.setDebugMode(true);
+            Utils.setDebugMode(false);
 
             if (!OnPreInitialize(dependencies, out var error))
             {
@@ -183,8 +185,14 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
             Task.Run(async () =>
             {
-                while (!MetaverseProgram.IsQuitting)
+                while (this && !MetaverseProgram.IsQuitting)
                 {
+                    if (!this)
+                    {
+                        MetaverseProgram.Logger.Log("ImageInferenceNet was destroyed.");
+                        break;
+                    }
+                    
                     if (TextureProvider == null || !TextureProvider.IsStreaming())
                     {
                         await Task.Yield();
@@ -213,7 +221,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     catch (Exception e)
                     {
                         MetaverseProgram.Logger.LogError(e);
-                        throw;
+                        break;
                     }
                 }
             }, destroyCancellationToken);
@@ -221,7 +229,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         private void OnTexToMatDisposed()
         {
-            if (Texture == null) return;
+            if (!Texture) return;
             Destroy(Texture);
             Texture = null;
         }

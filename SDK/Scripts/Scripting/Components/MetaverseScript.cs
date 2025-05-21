@@ -3,7 +3,6 @@ using Jint.Native;
 using TMPro;
 using Cinemachine;
 using Cysharp.Threading.Tasks;
-
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
 using MetaverseCloudEngine.Unity.Async;
@@ -11,11 +10,9 @@ using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Unity.Networking.Abstract;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Networking.Enumerations;
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
-
 using Unity.VisualScripting;
 using Unity.Collections;
 #if MV_UNITY_AI_NAV
@@ -34,6 +31,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using TriInspectorMVCE;
+
 // ReSharper disable RedundantUnsafeContext
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
@@ -44,7 +42,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
     /// using the Jint library.
     /// </summary>
     [HideMonoScript]
-    [HelpURL("https://reach-cloud.gitbook.io/reach-explorer-documentation/docs/development-guide/unity-engine-sdk/custom-scripting/custom-javascript")]
+    [HelpURL(
+        "https://reach-cloud.gitbook.io/reach-explorer-documentation/docs/development-guide/unity-engine-sdk/custom-scripting/custom-javascript")]
     [AddComponentMenu(MetaverseConstants.ProductName + "/Scripting/Metaverse Script")]
     [ExecuteAlways]
     public class MetaverseScript : NetworkObjectBehaviour
@@ -57,14 +56,17 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             // ReSharper disable once InconsistentNaming
             public void log(object o) => MetaverseProgram.Logger.Log(o);
+
             // ReSharper disable once InconsistentNaming
             public void error(object o) => MetaverseProgram.Logger.LogError(o);
+
             // ReSharper disable once InconsistentNaming
             public void warn(object o) => MetaverseProgram.Logger.LogWarning(o);
+
             // ReSharper disable once InconsistentNaming
             public void info(object o) => MetaverseProgram.Logger.Log(o);
         }
-        
+
 #pragma warning disable CS0618
         private readonly static List<string> BlackListedNames = new()
         {
@@ -134,15 +136,15 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             OnCollisionEnter2D = 524288,
             OnCollisionExit2D = 1048576,
             OnCollisionStay2D = 2097152,
-            
+
             OnMetaSpaceBehaviourInitialize = 4194304,
             OnMetaSpaceBehaviourDestroyed = 8388608,
             OnMetaSpaceServicesRegistered = 16777216,
-            
+
             OnNetworkReady = 33554432,
             RegisterNetworkRPCs = 67108864,
             UnRegisterNetworkRPCs = 134217728,
-            
+
             OnGUI = 268435456,
         }
 
@@ -196,7 +198,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private readonly Dictionary<string, JsValue> _functionLookup = new();
         private static int _timeoutHandleIndex;
         private readonly HashSet<int> _timeoutHandles = new();
-        private readonly Queue<Action> _initializationMethodQueue = new(); 
+        private readonly Queue<Action> _initializationMethodQueue = new();
 
         // ReSharper disable once InconsistentNaming
         /// <summary>
@@ -212,9 +214,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         protected override unsafe void OnDestroy()
         {
             _initializationMethodQueue.Clear(); // Make sure no initialization methods are triggered.
-            
+
             base.OnDestroy();
-            
+
             if (_methods != null && _ready)
             {
                 JsValue method = null;
@@ -256,12 +258,18 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 }
                 OnMetaSpaceReady();
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                MetaverseProgram.Logger.LogError($"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e.GetBaseException()}");
-                if (this) enabled = false;
+                OnFailed(e.GetBaseException());
             }
             return;
+
+            void OnFailed(object e)
+            {
+                MetaverseProgram.Logger.LogError(
+                    $"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e}");
+                if (this) enabled = false;
+            }
 
             void OnMetaSpaceReady()
             {
@@ -271,70 +279,67 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     if (!this) return;
                     try
                     {
-                        if (!TryInitializeEngine())
+                        TryInitializeEngine(() =>
                         {
-                            if (this) enabled = false;
-                            return;
-                        }
-
-                        unsafe void CallAwake()
-                        {
-                            if (!this) return;
-                            _ready = true;
-
-                            JsValue awakeMethod = null;
-                            if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
-                                _ = _engine.Invoke(awakeMethod);   
-                            
-                            while (_initializationMethodQueue.TryDequeue(out var a))
-                            {
-                                try { a?.Invoke(); }
-                                catch (Exception e)
+                            if (this && gameObject.activeInHierarchy)
+                                CallAwake();
+                            else
+                                MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
                                 {
-                                    MetaverseProgram.Logger.LogError($"Failed to execute initialization method on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                                    if (this) CallAwake();
+                                });
+
+                            if (this && isActiveAndEnabled)
+                                CallOnEnabled();
+                            else
+                            {
+                                MetaverseDispatcher.WaitUntil(() => !this || isActiveAndEnabled, () =>
+                                {
+                                    if (this) CallOnEnabled();
+                                });
+                            }
+                            return;
+
+                            unsafe void CallOnEnabled()
+                            {
+                                if (!this) return;
+                                JsValue onEnableMethod = null;
+                                if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
+                                    _ = _engine.Invoke(onEnableMethod);
+                                JsValue startMethod = null;
+                                if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
+                                    _ = _engine.Invoke(startMethod);
+                            }
+
+                            unsafe void CallAwake()
+                            {
+                                if (!this) return;
+                                _ready = true;
+
+                                JsValue awakeMethod = null;
+                                if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
+                                    _ = _engine.Invoke(awakeMethod);
+
+                                while (_initializationMethodQueue.TryDequeue(out var a))
+                                {
+                                    try
+                                    {
+                                        a?.Invoke();
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        OnFailed(e.GetBaseException());
+                                    }
                                 }
                             }
-                        }
-
-                        if (this && gameObject.activeInHierarchy)
+                        }, e =>
                         {
-                            CallAwake();
-                        }
-                        else
-                        {
-                            MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
-                            {
-                                if (this) CallAwake();
-                            });
-                        }
-                        
-                        unsafe void CallOnEnabled()
-                        {
-                            if (!this) return;
-                            JsValue onEnableMethod = null;
-                            if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
-                                _ = _engine.Invoke(onEnableMethod);
-                            JsValue startMethod = null;
-                            if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
-                                _ = _engine.Invoke(startMethod);
-                        }
-
-                        if (this && isActiveAndEnabled)
-                        {
-                            CallOnEnabled();
-                        }
-                        else
-                        {
-                            MetaverseDispatcher.WaitUntil(() => !this || isActiveAndEnabled, () =>
-                            {
-                                if (this) CallOnEnabled();
-                            });
-                        }
+                            OnFailed($"Failed to initialize the engine: {e}");
+                        });
                     }
                     catch (Exception e)
                     {
-                        MetaverseProgram.Logger.LogError($"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e.GetBaseException()}");
-                        if (this) enabled = false;
+                        OnFailed(e.GetBaseException());
                     }
                 });
             }
@@ -491,7 +496,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnNetworkReady, out method) == true)
-                    _ = _engine.Invoke(method, offline); 
+                    _ = _engine.Invoke(method, offline);
             });
         }
 
@@ -502,7 +507,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out method) == true)
-                    _ = _engine.Invoke(method); 
+                    _ = _engine.Invoke(method);
             });
         }
 
@@ -533,7 +538,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out method) == true)
-                    _ = _engine.Invoke(method); 
+                    _ = _engine.Invoke(method);
             });
         }
 
@@ -570,7 +575,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                MetaverseProgram.Logger.Log(
+                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -599,13 +605,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                MetaverseProgram.Logger.Log(
+                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
-            
+
             if (!_functionLookup.TryGetValue(fn, out var method))
                 _functionLookup[fn] = method = _engine.GetValue(fn);
-            
+
             if (method != null && !method.IsUndefined())
                 _ = _engine.Invoke(method, args);
         }
@@ -629,7 +636,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                MetaverseProgram.Logger.Log(
+                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -641,7 +649,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             return null;
         }
-        
+
         /// <summary>
         /// Executes a javascript function without any arguments.
         /// </summary>
@@ -657,10 +665,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (string.IsNullOrEmpty(fn))
                 return null;
-            
+
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log($"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                MetaverseProgram.Logger.Log(
+                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -692,9 +701,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public unsafe object TryGetVar(string variableName, object defaultValue)
         {
             if (!variables) return defaultValue;
-            return variables.declarations?.IsDefined(variableName) == true ? variables.declarations.Get(variableName) : defaultValue;
+            return variables.declarations?.IsDefined(variableName) == true
+                ? variables.declarations.Get(variableName)
+                : defaultValue;
         }
-        
+
         /// <summary>
         /// Sets a Unity variable with the given name.
         /// </summary>
@@ -705,7 +716,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!variables) return;
             variables.declarations?.Set(variableName, value);
         }
-        
+
         /// <summary>
         /// Tries to set a Unity variable with the given name.
         /// </summary>
@@ -719,7 +730,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             variables.declarations.Set(variableName, value);
             return true;
         }
-        
+
         /// <summary>
         /// Gets a property with the given name from the javascript engine.
         /// </summary>
@@ -765,7 +776,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>true if the member is allowed, false otherwise.</returns>
         public static unsafe bool FilterAllowedMembers(MemberInfo member)
         {
-            if (member is null || 
+            if (member is null ||
                 string.IsNullOrEmpty(member.Name) ||
                 string.IsNullOrEmpty(member.DeclaringType?.FullName))
                 return false;
@@ -805,7 +816,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             return () => TryGetVar(variableName, defaultValue);
         }
-        
+
         private unsafe Func<object> DefineTypedVar(string variableName, string typePath, object defaultValue)
         {
             return () =>
@@ -824,14 +835,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 a?.Invoke();
                 return;
             }
-            
+
             _initializationMethodQueue.Enqueue(a);
         }
-        
-        private unsafe bool TryInitializeEngine()
+
+        private void TryInitializeEngine(Action onFinished, Action<object> onFailed)
         {
             if (!javascriptFile)
-                return false;
+                return;
 
             _engine = new Engine(o => DefaultEngineOptions(o, true))
                 .Do(e => GetEmbeddedGlobalMembers(this)
@@ -844,17 +855,25 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         }
                         e.SetValue(m.Key, m.Value);
                     }));
-            
-            foreach (var include in includes)
-                if (include && !string.IsNullOrEmpty(include.text))
-                    _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(include));
-            _ = _engine.Execute(MetaverseScriptCache.Current.GetScript(javascriptFile));
-            
-            var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
-            foreach (var method in methods)
-                CacheMethod(method);
 
-            return _methods != null;
+            UniTask.Void(async c =>
+            {
+                foreach (var include in includes)
+                    if (include && !string.IsNullOrEmpty(include.text))
+                        _engine.Execute(await MetaverseScriptCache.Current.GetScriptAsync(include, c));
+                _engine.Execute(await MetaverseScriptCache.Current.GetScriptAsync(javascriptFile, c));
+
+                var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
+                foreach (var method in methods)
+                    CacheMethod(method);
+
+                if (_methods != null)
+                    onFinished?.Invoke();
+                else
+                    onFailed?.Invoke("Failed to initialize the engine.");
+
+            }, cancellationToken: destroyCancellationToken);
+
         }
 
         private unsafe void DefaultEngineOptions(Options options, bool strict)
@@ -874,7 +893,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private unsafe bool OnJavaScriptCLRException(Exception exception)
         {
-            MetaverseProgram.Logger.LogError($"An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
+            MetaverseProgram.Logger.LogError(
+                $"An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
             return true;
         }
 
@@ -919,7 +939,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             _methods.Add(method, val);
         }
-        
+
         /// <summary>
         /// Gets the global members that are accessible within any given javascript file.
         /// </summary>
@@ -954,52 +974,106 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { IsInputAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsInputAuthority ?? false) },
             { IsStateAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsStateAuthority ?? false) },
             { GetHostIDFunction, (Func<int>)(() => context.NetworkObject.uNull()?.Networking.HostID ?? -1) },
-            { RegisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.RegisterRPC(rpc, h)) },
-            { UnregisterRPCFunction, (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.UnregisterRPC(rpc, h)) },
-            { ServerRPCFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p)) },
-            { ServerRPCBufferedFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p, buffered: true)) },
-            { ClientRPCFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p)) },
-            { ClientRPCBufferedFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p, buffered: true)) },
-            { ClientRPCOthersFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p)) },
-            { ClientRPCOthersBufferedFunction, (Action<short, object>)((rpc, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p, buffered: true)) },
-            { PlayerRPCFunction, (Action<short, int, object>)((rpc, player, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, player, p)) },
-            { SpawnNetworkPrefabFunction, (System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>)((pref, pos, rot, parent, cb) => {
-                if (!pref) {
-                    MetaverseProgram.Logger.LogError("Cannot spawn null prefab.");
-                    return;
-                }
-                var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
-                if (netSvc == null) {
-                    MetaverseProgram.Logger.LogError("Networking is not available.");
-                    return;
-                }
-                var sPos = parent ? parent.InverseTransformPoint(pos) : pos;
-                var sRot = parent ? Quaternion.Inverse(parent.rotation) * rot : rot;
-                netSvc.SpawnGameObject(pref, spawned => {
-                    if (!context || !context.isActiveAndEnabled || spawned.IsStale) {
-                        spawned.IsStale = true;
-                        return;
-                    }
-                    if (parent) spawned.Transform.parent = parent;
-                    spawned.Transform.SetLocalPositionAndRotation(sPos, sRot);
-                    cb?.Invoke(spawned.GameObject);
-                }, pos, rot, false);
-            }) },
+            {
+                RegisterRPCFunction,
+                (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.RegisterRPC(rpc, h))
+            },
+            {
+                UnregisterRPCFunction,
+                (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.UnregisterRPC(rpc, h))
+            },
+            {
+                ServerRPCFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p))
+            },
+            {
+                ServerRPCBufferedFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p, buffered: true))
+            },
+            {
+                ClientRPCFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p))
+            },
+            {
+                ClientRPCBufferedFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p, buffered: true))
+            },
+            {
+                ClientRPCOthersFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p))
+            },
+            {
+                ClientRPCOthersBufferedFunction,
+                (Action<short, object>)((rpc, p) =>
+                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p, buffered: true))
+            },
+            {
+                PlayerRPCFunction,
+                (Action<short, int, object>)((rpc, player, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, player, p))
+            },
+            {
+                SpawnNetworkPrefabFunction,
+                (System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>)(
+                    (pref, pos, rot, parent, cb) =>
+                    {
+                        if (!pref)
+                        {
+                            MetaverseProgram.Logger.LogError("Cannot spawn null prefab.");
+                            return;
+                        }
+                        var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
+                        if (netSvc == null)
+                        {
+                            MetaverseProgram.Logger.LogError("Networking is not available.");
+                            return;
+                        }
+                        var sPos = parent ? parent.InverseTransformPoint(pos) : pos;
+                        var sRot = parent ? Quaternion.Inverse(parent.rotation) * rot : rot;
+                        netSvc.SpawnGameObject(pref, spawned =>
+                        {
+                            if (!context || !context.isActiveAndEnabled || spawned.IsStale)
+                            {
+                                spawned.IsStale = true;
+                                return;
+                            }
+                            if (parent) spawned.Transform.parent = parent;
+                            spawned.Transform.SetLocalPositionAndRotation(sPos, sRot);
+                            cb?.Invoke(spawned.GameObject);
+                        }, pos, rot, false);
+                    })
+            },
 
             // Timing Functions
-            { SetTimeoutFunction, (Func<Action, int, int>)((a, t) => {
-                if (!context || !context.isActiveAndEnabled)
-                    return -1;
-                var h = ++_timeoutHandleIndex;
-                context._timeoutHandles.Add(h);
-                MetaverseDispatcher.WaitForSeconds(t / 1000f, () => {
+            {
+                SetTimeoutFunction, (Func<Action, int, int>)((a, t) =>
+                {
                     if (!context || !context.isActiveAndEnabled)
-                        return;
-                    if (!context._timeoutHandles.Remove(h)) return;
-                    try { a?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError($"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
-                });
-                return h;
-            }) },
+                        return -1;
+                    var h = ++_timeoutHandleIndex;
+                    context._timeoutHandles.Add(h);
+                    MetaverseDispatcher.WaitForSeconds(t / 1000f, () =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return;
+                        if (!context._timeoutHandles.Remove(h)) return;
+                        try
+                        {
+                            a?.Invoke();
+                        }
+                        catch (Exception e)
+                        {
+                            MetaverseProgram.Logger.LogError(
+                                $"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                        }
+                    });
+                    return h;
+                })
+            },
             { ClearTimeoutFunction, (Action<int>)(h => context._timeoutHandles.Remove(h)) },
 
             // Coroutine Function
@@ -1010,81 +1084,116 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()) },
             { IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()) },
             { IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()) },
-            { GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) =>
-                go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n)) },
+            {
+                GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) =>
+                    go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n))
+            },
 
             // Async/Await Function
-            { AwaitFunction, (Action<object, Action<object>>)((t, a) =>
             {
-                if (!context || !context.isActiveAndEnabled)
-                    return;
-                if (t is not Task task) {
-                    if (t is IEnumerator e) _ = e.ToUniTask().ContinueWith(() =>
+                AwaitFunction, (Action<object, Action<object>>)((t, a) =>
+                {
+                    if (!context || !context.isActiveAndEnabled)
+                        return;
+                    if (t is not Task task)
                     {
-                        if (!context || !context.isActiveAndEnabled)
-                            return;
-                        a?.Invoke(t);
+                        if (t is IEnumerator e)
+                            _ = e.ToUniTask().ContinueWith(() =>
+                            {
+                                if (!context || !context.isActiveAndEnabled)
+                                    return;
+                                a?.Invoke(t);
+                            });
+                        return;
+                    }
+                    if (task.GetType().GenericTypeArguments.Length == 0)
+                    {
+                        _ = task.AsUniTask().ContinueWith(() =>
+                        {
+                            if (!context || !context.isActiveAndEnabled)
+                                return;
+                            a(task);
+                        });
+                        return;
+                    }
+                    const string asUniTaskName = "AsUniTask";
+                    var asUniTask = task.GetType()
+                        .GetExtensionMethods()
+                        .FirstOrDefault(x =>
+                            x.Name == asUniTaskName &&
+                            x.GetParameters().Length == 2 &&
+                            x.IsGenericMethod &&
+                            x.ReturnType == typeof(UniTask));
+                    if (asUniTask == null) return;
+                    const string continueWithName = "ContinueWith";
+                    var uniTask = asUniTask.Invoke(null, new[] { t, true });
+                    var continueWith = uniTask
+                        .GetType()
+                        .GetExtensionMethods()
+                        .FirstOrDefault(x => x.Name == continueWithName && x.ReturnType == typeof(UniTask));
+                    if (continueWith == null) return;
+                    _ = continueWith.Invoke(uniTask, new[]
+                    {
+                        uniTask,
+                        (Action<object>)((t1) =>
+                        {
+                            if (!context || !context.isActiveAndEnabled)
+                                return;
+                            a(t1);
+                        })
                     });
-                    return;
-                }
-                if (task.GetType().GenericTypeArguments.Length == 0) {
-                    _ = task.AsUniTask().ContinueWith(() =>
-                    {
-                        if (!context || !context.isActiveAndEnabled)
-                            return;
-                        a(task);
-                    });
-                    return;
-                }
-                const string asUniTaskName = "AsUniTask";
-                var asUniTask = task.GetType()
-                    .GetExtensionMethods()
-                    .FirstOrDefault(x => x.Name == asUniTaskName && x.GetParameters().Length == 2 && x.IsGenericMethod && x.ReturnType == typeof(UniTask));
-                if (asUniTask == null) return;
-                const string continueWithName = "ContinueWith";
-                var uniTask = asUniTask.Invoke(null, new[] { t, true });
-                var continueWith = uniTask
-                    .GetType()
-                    .GetExtensionMethods()
-                    .FirstOrDefault(x => x.Name == continueWithName && x.ReturnType == typeof(UniTask));
-                if (continueWith == null) return;
-                _ = continueWith.Invoke(uniTask, new[] { 
-                    uniTask, 
-                    (Action<object>)((t1) =>
-                    {
-                        if (!context || !context.isActiveAndEnabled)
-                            return;
-                        a(t1);
-                    })
-                });
-            }) },
-            
+                })
+            },
+
             // Show Dialog
-            { AlertFunction, (System.Action<string>)(message => {
+            {
+                AlertFunction, (System.Action<string>)(message =>
+                {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Alert", message, "OK", () => {}, force: true);
+                    MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Alert", message, "OK", () => {},
+                        force: true);
 #endif
-            }) },
-            { ShowDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) => {
+                })
+            },
+            {
+                ShowDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback);
+                    MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback);
 #endif
-            }) },
-            { ShowForcedDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) => {
+                })
+            },
+            {
+                ShowForcedDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback, force: true);
+                    MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback,
+                        force: true);
 #endif
-            }) },
-            { ShowDialogComplexFunction, (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback, cancelCallback) => {
+                })
+            },
+            {
+                ShowDialogComplexFunction,
+                (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback,
+                    cancelCallback) =>
+                {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel, okCallback, cancelCallback);
+                    MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel,
+                        okCallback, cancelCallback);
 #endif
-            }) },
-            { ShowForcedDialogComplexFunction, (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback, cancelCallback) => {
+                })
+            },
+            {
+                ShowForcedDialogComplexFunction,
+                (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback,
+                    cancelCallback) =>
+                {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel, okCallback, cancelCallback, force: true);
+                    MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel,
+                        okCallback, cancelCallback, force: true);
 #endif
-            }) },
+                })
+            },
         };
 
         /// <summary>
@@ -1129,7 +1238,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             { ClientRPCOthersFunction, typeof(Action<short, object>) },
             { ClientRPCOthersBufferedFunction, typeof(Action<short, object>) },
             { PlayerRPCFunction, typeof(Action<short, int, object>) },
-            { SpawnNetworkPrefabFunction, typeof(System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>) },
+            {
+                SpawnNetworkPrefabFunction,
+                typeof(System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>)
+            },
 
             // Timing Functions
             { SetTimeoutFunction, typeof(Func<Action, int, int>) },
@@ -1147,7 +1259,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             // Async/Await Function
             { AwaitFunction, typeof(Action<object, Action<object>>) },
-            
+
             // Show Dialog
             { AlertFunction, typeof(System.Action<string>) },
             { ShowDialogFunction, typeof(System.Action<string, string, string, Action>) },
@@ -1162,14 +1274,15 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The types that contain extension methods.</returns>
         public static unsafe Type[] GetExtensionMethodTypes()
         {
-            return new [] { 
-                typeof(Enumerable), 
-                typeof(MVUtils), 
-                typeof(MetaverseDispatcherExtensions), 
+            return new[]
+            {
+                typeof(Enumerable),
+                typeof(MVUtils),
+                typeof(MetaverseDispatcherExtensions),
                 typeof(UniTaskExtensions),
                 typeof(ImageConversion)
-#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR) 
-                ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
+#if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
+                , typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
             };
         }
@@ -1180,7 +1293,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <returns>The assemblies to allow access to.</returns>
         public static unsafe Assembly[] GetAssemblies()
         {
-            var assemblies = new [] { 
+            var assemblies = new[]
+            {
                 typeof(DateTime).Assembly,
                 typeof(Transform).Assembly,
                 typeof(GameObject).Assembly,
@@ -1216,35 +1330,34 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(UniTaskExtensions).Assembly, /* UniTask */
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
 #if MV_XRCOREUTILS
-                ,typeof(XROrigin).Assembly
+                , typeof(XROrigin).Assembly
 #endif
 #if MV_XR_LEGACY_INPUT_HELPERS
-                ,typeof(UnityEngine.SpatialTracking.TrackedPoseDriver).Assembly /* UnityEngine.SpatialTracking.dll */
+                , typeof(UnityEngine.SpatialTracking.TrackedPoseDriver).Assembly /* UnityEngine.SpatialTracking.dll */
 #endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                 ,typeof(Vuforia.VuforiaApplication).Assembly
                 ,typeof(Vuforia.VuforiaConfiguration).Assembly
 #endif
 #if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
-                ,typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
-                ,typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
+                , typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly,
+                typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
 #if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
-                ,typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
+                , typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
-                ,typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
-                ,typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
-                ,typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
+                , typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly,
+                typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly,
+                typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
 #if MV_CESIUM_UNITY
                 ,typeof(CesiumForUnity.CesiumGeoreference).Assembly
 #endif
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
-                ,typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
+                , typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
 #endif
-                ,typeof(CoordinateSharp.Coordinate).Assembly
-                ,typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
+                , typeof(CoordinateSharp.Coordinate).Assembly, typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())

@@ -5,6 +5,8 @@ using Jint;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
@@ -43,18 +45,29 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Gets a cached Esprima script object or creates one if it's not already cached.
         /// </summary>
         /// <param name="asset">The text asset that contians the source code.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
         /// <param name="preProcessScript">An optional preprocessing step to run on the text of the source file.</param>
         /// <returns>The <see cref="Script"/> that was prepared by <see cref="Engine.PrepareScript(string, string?, bool)"/></returns>
-        public Script GetScript(TextAsset asset, Func<string, string> preProcessScript = null)
+        public UniTask<Script> GetScriptAsync(TextAsset asset, CancellationToken cancellationToken, Func<string, string> preProcessScript = null)
         {
-            _scriptModules ??= new Dictionary<TextAsset, Script>();
-            if (_scriptModules.TryGetValue(asset, out var code))
-                return code;
-            var text = asset.text;
-            if (preProcessScript != null)
-                text = preProcessScript?.Invoke(text);
-            code = _scriptModules[asset] = Engine.PrepareScript(text, strict: true);
-            return code;
+            if (!asset)
+                throw new ArgumentNullException(nameof(asset));
+            return UniTask.Create(async () =>
+            {
+                await UniTask.SwitchToMainThread(cancellationToken);
+                _scriptModules ??= new Dictionary<TextAsset, Script>();
+                if (_scriptModules.TryGetValue(asset, out var code))
+                    return code;
+                var text = asset.text;
+                if (preProcessScript != null)
+                    text = preProcessScript?.Invoke(text);
+                
+                await UniTask.SwitchToThreadPool();
+                var script = Engine.PrepareScript(text, strict: true);
+                await UniTask.SwitchToMainThread(cancellationToken);
+                
+                return _scriptModules[asset] = script;
+            });
         }
 
         /// <summary>

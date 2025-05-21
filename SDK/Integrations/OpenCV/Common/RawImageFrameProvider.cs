@@ -462,7 +462,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         public virtual bool IsStreaming()
         {
-            return hasInitDone && sourceRawImage != null && sourceRawImage.texture != null;
+            return hasInitDone && sourceRawImage && sourceRawImage.isActiveAndEnabled && sourceRawImage.texture;
         }
 
 
@@ -512,11 +512,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     catch (Exception ex)
                     {
                          Debug.LogError($"RawImageFrameProvider: Error cloning Mat in DequeueNextFrame: {ex.Message}");
-                         // Don't advance index if clone failed, retry next time? Or advance anyway?
-                         // Let's advance to avoid getting stuck, but log the error.
+                         // If clonedMat was successfully created before another error in the try block, it could leak.
+                         // However, with current code, only clone() is likely to throw here.
+                         // If clone() itself fails, clonedMat should not hold a valid Mat needing disposal.
+                         // For added safety, one might check and dispose clonedMat if non-null here.
                          _readIndex = (_readIndex + 1) % bufferSize;
                          _consumedFrameCount++;
-                         return null; // Return null as clone failed
+                         return null; // Return null as clone failed or another error occurred
                     }
                 }
             } // --- End Critical Section ---
@@ -524,10 +526,28 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (gotFrame && clonedMat != null)
             {
                 // Create the frame wrapper OWNING the cloned Mat
-                return new ClonedCameraFrame(clonedMat, fieldOfView, defaultDepthOffset);
+                try
+                {
+                    return new ClonedCameraFrame(clonedMat, fieldOfView, defaultDepthOffset);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"RawImageFrameProvider: Exception during ClonedCameraFrame construction. Disposing the cloned Mat to prevent leak. Error: {ex.Message}");
+                    if (clonedMat != null && !clonedMat.IsDisposed)
+                    {
+                        clonedMat.Dispose();
+                    }
+                    return null; // Indicate failure to provide a frame
+                }
             }
             else
             {
+                // Ensure that if clonedMat was somehow created but not used, it's disposed.
+                // This case should ideally not be hit if gotFrame is false due to clone failure and clonedMat is null.
+                if (clonedMat != null && !clonedMat.IsDisposed) {
+                    Debug.LogWarning("RawImageFrameProvider: clonedMat existed but was not used to create a frame. Disposing.");
+                    clonedMat.Dispose();
+                }
                 return null; // No new frame available or clone failed
             }
         }

@@ -20,6 +20,7 @@ using NativeWebSocket;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TriInspectorMVCE;
+using UnityEngine.UI;
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
@@ -188,6 +189,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("If true, the connection attempt begins automatically when the component starts or is enabled.")]
         [SerializeField]
         private bool connectOnStart = true;
+        
+        // --- Vision ---
+        [Header("Vision")]
+        [SerializeField] private bool enableVision = true;
+        [SerializeField] private RawImage visionRawImage;
+        [SerializeField] private Texture visionTexture;
 
         // --- Microphone Streaming ---
         [Header("Microphone")]
@@ -493,7 +500,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             get
             {
-                if (_isShuttingDown || !Application.isPlaying)
+                if (_isShuttingDown || !Application.isPlaying || !enableVision)
                     return null;
 
                 if (!_visionHandler)
@@ -1068,13 +1075,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 .Cast<object>()
                 .ToList();
 
-            toolList.Add(new
+            if (enableVision)
             {
-                type = "function",
-                name = "vision_request",
-                description = "Call this function when you need to understand the visual scene or answer a question based on what the user is seeing. Provide a concise prompt describing what visual information you need.",
-                parameters = new { type = "object", properties = new { vision_request = new { type = "string", description = "A short prompt describing the visual information needed (e.g., 'What color is the object the user is pointing at?', 'Describe the current scene.')" } }, required = new[] { "vision_request" } }
-            });
+                toolList.Add(new
+                {
+                    type = "function",
+                    name = "vision_request",
+                    description = "Call this function when you need to understand the visual scene or answer a question based on what the user is seeing. Provide a concise prompt describing what visual information you need.",
+                    parameters = new { type = "object", properties = new { vision_request = new { type = "string", description = "A short prompt describing the visual information needed (e.g., 'What color is the object the user is pointing at?', 'Describe the current scene.')" } }, required = new[] { "vision_request" } }
+                });
+            }
 
             // Construct the session object based on valid 'session.update' parameters
             var sessionConfig = new Dictionary<string, object>
@@ -1694,6 +1704,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary> Handles 'vision_request' function call. Runs on Main Thread. </summary>
         private void HandleVisionFunctionCall(string argumentsJson)
         {
+            if (!enableVision) { LogWarning("Vision request received, but vision is disabled. Ignoring."); ProcessVisionResponseFailed("Vision is disabled."); return; }
             if (string.IsNullOrWhiteSpace(argumentsJson)) { LogWarning("Vision request called with empty arguments."); ProcessVisionResponseFailed("Missing arguments for vision request."); return; }
             try {
                 var visionArgs = JObject.Parse(argumentsJson);
@@ -1703,7 +1714,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 Log($"Vision requested with prompt: \"{visionPrompt}\"");
                 _pendingVision = true; Log("Pending vision set to true. Stopping microphone."); StopMic();
                 var handler = VisionHandler;
-                if (handler != null) { handler.SubmitGameScreenshot(visionPrompt); }
+                if (handler != null)
+                {
+                    if (!visionRawImage && !visionTexture)
+                        handler.SubmitGameScreenshot(visionPrompt);
+                    else if (visionRawImage  && visionRawImage.texture && visionRawImage.isActiveAndEnabled)
+                        handler.SubmitTexture(visionRawImage.texture, visionPrompt);
+                    else if (visionTexture)
+                        handler.SubmitTexture(visionTexture, visionPrompt);
+                }
                 else { LogError("VisionHandler is null."); HandleVisionResponseFailedInternal("Vision system not available."); }
             } catch (JsonException jsonEx) { LogError($"Failed to parse vision args: {jsonEx.Message}\nJSON: {argumentsJson}"); HandleVisionResponseFailedInternal("Invalid vision arguments format."); }
             catch (Exception e) { LogError($"Error processing vision call: {e.Message}"); HandleVisionResponseFailedInternal("Internal vision error."); }

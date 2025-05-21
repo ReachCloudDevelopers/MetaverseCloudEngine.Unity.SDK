@@ -5,6 +5,7 @@ using UnityEngine;
 using TriInspectorMVCE;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
+using UnityEngine.UI;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -196,8 +197,26 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (string.IsNullOrWhiteSpace(message)) message = "<application_screenshot>";
             SubmitGameScreenshotInternal(message);
         }
-        
+
         partial void SubmitGameScreenshotInternal(string message);
+
+        /// <summary>
+        /// Submits a texture to the AI for processing with an optional message input.
+        /// </summary>
+        /// <param name="message">The message to accompany the texture (optional).</param>
+        /// <param name="texture">The texture to submit.</param>
+        public void SubmitTexture(Texture texture, string message)
+        {
+            if (string.IsNullOrEmpty(message)) message = "<texture>";
+            if (!texture || !texture.isReadable || texture.width == 0 || texture.height == 0)
+            {
+                Debug.LogError("The texture is not valid.");
+                return;
+            }
+            SubmitTextureInternal(message, texture);
+        }
+        
+        partial void SubmitTextureInternal(string message, Texture texture);
 
         /// <summary>
         /// Submit webcam image to the AI for processing with an optional message input.
