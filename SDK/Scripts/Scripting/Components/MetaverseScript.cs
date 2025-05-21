@@ -995,7 +995,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 MetaverseDispatcher.WaitForSeconds(t / 1000f, () => {
                     if (!context || !context.isActiveAndEnabled)
                         return;
-                    if (!context._timeoutHandles.Remove(h) || !context) return;
+                    if (!context._timeoutHandles.Remove(h)) return;
                     try { a?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError($"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
                 });
                 return h;
