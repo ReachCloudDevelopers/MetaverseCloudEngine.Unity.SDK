@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.165.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.165.0\n- Added custom vision capabilities through texture input to AIRealtimeCommunication and AIAgent systems. Updated MetaverseScript and MetaverseScriptCache for asynchronous script initialization to prevent thread locking. Fixed memory leaks in RawImageFrameProvider and ImageInferenceNet scripts.\n\nUpdated on May 21, 2025",
+  "version": "2.165.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.165.1\n- Improved isStreaming logic\n\nUpdated on May 21, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

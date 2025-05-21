@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.165.0
-- Added custom vision capabilities through texture input to AIRealtimeCommunication and AIAgent systems. Updated MetaverseScript and MetaverseScriptCache for asynchronous script initialization to prevent thread locking. Fixed memory leaks in RawImageFrameProvider and ImageInferenceNet scripts.
+## 2.165.1
+- Improved isStreaming logic
 
 Updated on May 21, 2025

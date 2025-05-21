@@ -262,6 +262,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         protected volatile bool hasInitDone = false;
         protected bool isInitializing = false;
         private bool _needsReinitialization = false;
+        private bool _isStreaming = false;
 
         // --- Ring Buffer Fields ---
         private Mat[] _ringBufferMats; // Provider owns these Mats
@@ -296,6 +297,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             }
         }
 
+        private void OnDisable()
+        {
+            _isStreaming = false;
+        }
+
         protected virtual void OnDestroy()
         {
             Dispose();
@@ -315,12 +321,20 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 _needsReinitialization = false;
             }
 
-            if (!hasInitDone || isInitializing || sourceRawImage == null)
+            if (!hasInitDone || isInitializing || !sourceRawImage || !sourceRawImage.isActiveAndEnabled)
+            {
+                _isStreaming = false;
                 return;
+            }
 
             sourceTexture = sourceRawImage.texture;
-            if (sourceTexture == null)
+            if (!sourceTexture)
+            {
+                _isStreaming = false;
                 return;
+            }
+
+            _isStreaming = true;
 
             bool resourcesInvalid = intermediateTexture2D == null || baseMat == null || frameMat == null || _ringBufferMats == null;
             bool dimensionsChanged = sourceTexture.width != currentTextureWidth || sourceTexture.height != currentTextureHeight;
@@ -462,9 +476,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         public virtual bool IsStreaming()
         {
-            return hasInitDone && sourceRawImage && sourceRawImage.isActiveAndEnabled && sourceRawImage.texture;
+            return hasInitDone && _isStreaming;
         }
-
 
         /// <summary>
         /// Dequeues the next available processed frame. (Thread-Safe)
@@ -526,6 +539,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (gotFrame && clonedMat != null)
             {
                 // Create the frame wrapper OWNING the cloned Mat
+                // ***** BEGIN FIX *****
                 try
                 {
                     return new ClonedCameraFrame(clonedMat, fieldOfView, defaultDepthOffset);
@@ -539,6 +553,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     }
                     return null; // Indicate failure to provide a frame
                 }
+                // ***** END FIX *****
             }
             else
             {
@@ -554,6 +569,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         public virtual void Dispose()
         {
+            _isStreaming = false;
+
             lock (_bufferLock)
             {
                 if (hasInitDone || isInitializing)
