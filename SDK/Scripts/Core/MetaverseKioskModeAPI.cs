@@ -8,6 +8,7 @@ namespace MetaverseCloudEngine.Unity
         MetaSpaceLocked = 1,
         OrganizationLocked = 2,
         AccountLocked = 4,
+        DialogsDisabled = 8,
     }
 
     /// <summary>

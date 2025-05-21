@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.165.2
-- Optimize script initialization and logging for asset processing.
+## 2.166.0
+- Added support to MetaverseKioskModeAPI to disable dialogs.
 
 Updated on May 21, 2025
