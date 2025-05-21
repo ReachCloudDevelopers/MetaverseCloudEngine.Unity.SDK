@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.164.7
-- Removed ability to call setTimeout while context is not active and enabled
+## 2.164.8
+- Increase time between player spawn position check
 
 Updated on May 21, 2025

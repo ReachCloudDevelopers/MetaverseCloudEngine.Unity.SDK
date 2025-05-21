@@ -299,7 +299,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             });
             unityEventCallbacks.hideFlags = HideFlags.HideInInspector;
 
-            const float nanPositionCheckIntervalSeconds = 1f;
+            const float nanPositionCheckIntervalSeconds = 5f;
             var teleported = false;
             var tr = originallySpawnedPlayer.transform;
             MetaverseDispatcher.WaitForSeconds(nanPositionCheckIntervalSeconds, TeleportIfNaNPosition);
