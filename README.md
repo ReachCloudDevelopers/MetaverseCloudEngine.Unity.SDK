@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.1
-- Fix possible null reference error in MetaSpacePortal
+## 2.166.2
+- Add [MetaverseScript] and [MetaverseSerialPortDeviceAPI] prefixes to log messages for better context.
 
 Updated on May 22, 2025

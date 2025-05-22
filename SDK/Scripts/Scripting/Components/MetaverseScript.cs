@@ -267,7 +267,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             void OnFailed(object e)
             {
                 MetaverseProgram.Logger.LogError(
-                    $"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e}");
+                    $"[MetaverseScript] Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e}");
                 if (this) enabled = false;
             }
 
@@ -576,7 +576,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready)
             {
                 MetaverseProgram.Logger.Log(
-                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -606,7 +606,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready)
             {
                 MetaverseProgram.Logger.Log(
-                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -637,7 +637,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready)
             {
                 MetaverseProgram.Logger.Log(
-                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -669,7 +669,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready)
             {
                 MetaverseProgram.Logger.Log(
-                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -894,7 +894,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private unsafe bool OnJavaScriptCLRException(Exception exception)
         {
             MetaverseProgram.Logger.LogError(
-                $"An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
+                $"[MetaverseScript] An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
             return true;
         }
 
@@ -1023,13 +1023,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     {
                         if (!pref)
                         {
-                            MetaverseProgram.Logger.LogError("Cannot spawn null prefab.");
+                            MetaverseProgram.Logger.LogError("[MetaverseScript] Cannot spawn null prefab.");
                             return;
                         }
                         var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
                         if (netSvc == null)
                         {
-                            MetaverseProgram.Logger.LogError("Networking is not available.");
+                            MetaverseProgram.Logger.LogError("[MetaverseScript] Networking is not available.");
                             return;
                         }
                         var sPos = parent ? parent.InverseTransformPoint(pos) : pos;
@@ -1068,7 +1068,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         catch (Exception e)
                         {
                             MetaverseProgram.Logger.LogError(
-                                $"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                                $"[MetaverseScript] Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
                         }
                     });
                     return h;
