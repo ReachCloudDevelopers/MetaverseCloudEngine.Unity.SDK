@@ -217,6 +217,12 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
             }
             catch (Exception e)
             {
+                if (e is OperationCanceledException)
+                {
+                    return await new Exception("Asset bundle download operation cancelled. Check application logs for details.").ToHttpResponseMessage()
+                        .ToApiResponseAsync<IAssetPlatformBundle>();
+                }
+                
                 MetaverseProgram.Logger.LogError(e);
                 return await e.ToHttpResponseMessage().ToApiResponseAsync<IAssetPlatformBundle>();
             }
@@ -339,7 +345,9 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             {
                                 bundle = DownloadHandlerAssetBundle.GetContent(unityWebRequest) 
                                     ?? AssetBundle.GetAllLoadedAssetBundles()
-                                        .FirstOrDefault(y => y.name == unityWebRequest.url)
+                                        .FirstOrDefault(y => 
+                                            y.name == unityWebRequest.url ||
+                                            y.name == request.RequestUri.AbsolutePath)
                                     ?? throw new Exception("Asset bundle failed to load.");
                                 
                                 var output = new UnityAssetPlatformBundle(bundle);
@@ -347,13 +355,33 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                                 return new ApiResponse<IAssetPlatformBundle>(output);
                             }
                             case UnityWebRequest.Result.DataProcessingError:
-                                throw new Exception("Asset bundle failed to load.");
+                            {
+                                bundle = AssetBundle.GetAllLoadedAssetBundles()
+                                    .FirstOrDefault(y => 
+                                        y.name == unityWebRequest.url || 
+                                        y.name == request.RequestUri.AbsolutePath);
+                                if (!bundle)
+                                    throw new Exception("Asset bundle failed to load.");
+                                
+                                var output = new UnityAssetPlatformBundle(bundle);
+                                succeeded = true;
+                                return new ApiResponse<IAssetPlatformBundle>(output);
+                            }
                         }
                     }
                     catch (Exception e)
                     {
                         if (bundle && AssetBundle.GetAllLoadedAssetBundles().Contains(bundle)) 
                             bundle.Unload(true);
+                        else
+                        {
+                            var potentialBundle = AssetBundle.GetAllLoadedAssetBundles()
+                                .FirstOrDefault(x => 
+                                    x.name == request.RequestUri.AbsolutePath ||
+                                    x.name == unityWebRequest.url);
+                            if (potentialBundle)
+                                potentialBundle.Unload(true);
+                        }
                         return await e.ToHttpResponseMessage().ToApiResponseAsync<IAssetPlatformBundle>();
                     }
 

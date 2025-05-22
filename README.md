@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.2
-- Add [MetaverseScript] and [MetaverseSerialPortDeviceAPI] prefixes to log messages for better context.
+## 2.166.3
+- Updated MetaverseWebClient to potentially unload invalid or corrupted asset bundles.
 
 Updated on May 22, 2025
