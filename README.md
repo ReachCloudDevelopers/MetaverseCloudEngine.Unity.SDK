@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.3
-- Updated MetaverseWebClient to potentially unload invalid or corrupted asset bundles.
+## 2.166.4
+- Updating logging text for RenderPipelineAPI
 
 Updated on May 22, 2025

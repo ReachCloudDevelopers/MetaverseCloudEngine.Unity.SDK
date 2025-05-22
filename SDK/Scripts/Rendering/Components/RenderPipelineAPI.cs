@@ -104,7 +104,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
                 if (GraphicsSettings.defaultRenderPipeline == pipeline)
                 {
-                    Debug.LogWarning("Default render pipeline update skipped because it was already " + (pipeline ? pipeline.name : "null"));
+                    MetaverseProgram.Logger.LogWarning(
+                        $"[RenderPipelineAPI] Default render pipeline update skipped because it was already {(pipeline ? pipeline.name : "null")}");
                     onComplete?.Invoke();
                     return;
                 }
