@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.6
-- Updated MetaverseWebClient to be more explicit in logging and to improve the loaded asset bundle check logic
+## 2.166.7
+- Updated MetaverseWebClient to rename the asset bundle to the  URL that it was requested from to ensure consistent lookups
 
 Updated on May 22, 2025

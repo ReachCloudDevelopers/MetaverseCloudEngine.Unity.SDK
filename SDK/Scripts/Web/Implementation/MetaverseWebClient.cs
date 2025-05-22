@@ -350,7 +350,8 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                                             b.name.Contains(request.RequestUri.AbsolutePath))
                                     ?? throw new Exception(
                                         $"Asset bundle failed to load: Checked for bundles: {string.Join(", ", AssetBundle.GetAllLoadedAssetBundles().Select(b => b.name))}");
-                                
+
+                                bundle.name = unityWebRequest.url;
                                 var output = new UnityAssetPlatformBundle(bundle);
                                 succeeded = true;
                                 return new ApiResponse<IAssetPlatformBundle>(output);
