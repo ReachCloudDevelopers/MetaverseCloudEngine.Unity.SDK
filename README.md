@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.5
-- Updated MetaSpace logging statements.
+## 2.166.6
+- Updated MetaverseWebClient to be more explicit in logging and to improve the loaded asset bundle check logic
 
 Updated on May 22, 2025

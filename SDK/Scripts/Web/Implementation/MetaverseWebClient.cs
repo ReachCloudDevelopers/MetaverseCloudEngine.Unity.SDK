@@ -345,10 +345,11 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             {
                                 bundle = DownloadHandlerAssetBundle.GetContent(unityWebRequest) 
                                     ?? AssetBundle.GetAllLoadedAssetBundles()
-                                        .FirstOrDefault(y => 
-                                            y.name == unityWebRequest.url ||
-                                            y.name == request.RequestUri.AbsolutePath)
-                                    ?? throw new Exception("Asset bundle failed to load.");
+                                        .FirstOrDefault(b => 
+                                            b.name.Contains(unityWebRequest.url) || 
+                                            b.name.Contains(request.RequestUri.AbsolutePath))
+                                    ?? throw new Exception(
+                                        $"Asset bundle failed to load: Checked for bundles: {string.Join(", ", AssetBundle.GetAllLoadedAssetBundles().Select(b => b.name))}");
                                 
                                 var output = new UnityAssetPlatformBundle(bundle);
                                 succeeded = true;
@@ -357,11 +358,14 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             case UnityWebRequest.Result.DataProcessingError:
                             {
                                 bundle = AssetBundle.GetAllLoadedAssetBundles()
-                                    .FirstOrDefault(y => 
-                                        y.name == unityWebRequest.url || 
-                                        y.name == request.RequestUri.AbsolutePath);
+                                    .FirstOrDefault(b => 
+                                        b.name.Contains(unityWebRequest.url) || 
+                                        b.name.Contains(request.RequestUri.AbsolutePath));
                                 if (!bundle)
-                                    throw new Exception("Asset bundle failed to load.");
+                                {
+                                    throw new Exception(
+                                        $"DataProcessingError: Asset bundle failed to load. Checked for bundles: {string.Join(", ", AssetBundle.GetAllLoadedAssetBundles().Select(b => b.name))}");
+                                }
                                 
                                 var output = new UnityAssetPlatformBundle(bundle);
                                 succeeded = true;
