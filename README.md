@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.4
-- Updating logging text for RenderPipelineAPI
+## 2.166.5
+- Updated MetaSpace logging statements.
 
 Updated on May 22, 2025
