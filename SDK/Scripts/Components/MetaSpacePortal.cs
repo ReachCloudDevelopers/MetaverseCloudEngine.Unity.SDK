@@ -182,7 +182,7 @@ namespace MetaverseCloudEngine.Unity.Components
         private void JoinFailed(object error)
         {
             IsJoining = false;
-            onLoadingFailed?.Invoke(error.ToString());
+            onLoadingFailed?.Invoke(error?.ToString() ?? "Unknown error");
         }
 
         partial void JoinInternal(ref bool isImplemented, MetaSpaceDto metaSpace);

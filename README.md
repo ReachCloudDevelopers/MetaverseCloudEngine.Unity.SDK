@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.0
-- Added support to MetaverseKioskModeAPI to disable dialogs.
+## 2.166.1
+- Fix possible null reference error in MetaSpacePortal
 
-Updated on May 21, 2025
+Updated on May 22, 2025
