@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.8
-- Fixed google developer code that forces location and gps to be required attributes.
+## 2.166.9
+- Fixed bad formatting in code replace logic
 
 Updated on May 23, 2025

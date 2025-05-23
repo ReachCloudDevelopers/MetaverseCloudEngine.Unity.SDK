@@ -35,7 +35,7 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             // android:name=""android.hardware.location.gps"" android:required=""true""/>
             {
                 const string badCode = "android:required=\"\"true\"\"/>";
-                const string fixedCode = "android:required=\"false\"/>";
+                const string fixedCode = "android:required=\"\"false\"\"/>";
                 if (text.Contains(badCode))
                 {
                     var newText = text.Replace(badCode, fixedCode);
