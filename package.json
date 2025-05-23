@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.166.7",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.7\n- Updated MetaverseWebClient to rename the asset bundle to the  URL that it was requested from to ensure consistent lookups\n\nUpdated on May 22, 2025",
+  "version": "2.166.8",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.8\n- Fixed google developer code that forces location and gps to be required attributes.\n\nUpdated on May 23, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.7
-- Updated MetaverseWebClient to rename the asset bundle to the  URL that it was requested from to ensure consistent lookups
+## 2.166.8
+- Fixed google developer code that forces location and gps to be required attributes.
 
-Updated on May 22, 2025
+Updated on May 23, 2025
