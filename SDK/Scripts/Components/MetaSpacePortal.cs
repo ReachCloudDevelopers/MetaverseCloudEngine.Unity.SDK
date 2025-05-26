@@ -213,6 +213,8 @@ namespace MetaverseCloudEngine.Unity.Components
 
         private MetaSpacePortalInstancePropertyDefinition[] GetPropertyDefinitions()
         {
+            if (!this)
+                return Array.Empty<MetaSpacePortalInstancePropertyDefinition>();
             return !gameObject 
                 ? Array.Empty<MetaSpacePortalInstancePropertyDefinition>() 
                 : gameObject.GetTopLevelComponentsInChildrenOrdered<MetaSpacePortalInstancePropertyDefinition, MetaSpacePortal>();

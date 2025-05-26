@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.9
-- Fixed bad formatting in code replace logic
+## 2.166.10
+- Fixed null reference error in GetPropertyDefinitions of MetaSpacePortal
 
-Updated on May 23, 2025
+Updated on May 26, 2025
