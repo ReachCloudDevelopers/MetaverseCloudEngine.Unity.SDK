@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.166.10",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.10\n- Fixed null reference error in GetPropertyDefinitions of MetaSpacePortal\n\nUpdated on May 26, 2025",
+  "version": "2.166.11",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.11\n- Fixed CollectionModifiedException from occuring during offline RPC handler registration.\n\nUpdated on May 28, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

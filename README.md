@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.10
-- Fixed null reference error in GetPropertyDefinitions of MetaSpacePortal
+## 2.166.11
+- Fixed CollectionModifiedException from occuring during offline RPC handler registration.
 
-Updated on May 26, 2025
+Updated on May 28, 2025

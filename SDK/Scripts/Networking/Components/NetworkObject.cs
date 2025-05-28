@@ -394,7 +394,8 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
                 else if (_queuedRpcHandlers != null &&
                          _queuedRpcHandlers.TryGetValue(procedureID, out List<RpcEventDelegate> offlineHandlers))
                 {
-                    foreach (RpcEventDelegate handler in offlineHandlers)
+                    var handlers = offlineHandlers.ToArray();
+                    foreach (RpcEventDelegate handler in handlers)
                         handler?.Invoke(procedureID, playerID, content);
                 }
 
@@ -417,7 +418,8 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
                          _queuedRpcHandlers.TryGetValue(procedureID, out List<RpcEventDelegate> offlineHandlers) &&
                          receivers != NetworkMessageReceivers.Others)
                 {
-                    foreach (var handler in offlineHandlers)
+                    var handlers = offlineHandlers.ToArray();
+                    foreach (var handler in handlers)
                         handler?.Invoke(procedureID, Networking.LocalPlayerID, content);
                 }
 
