@@ -298,7 +298,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         private void OnDisable()
         {
             _isStreaming = false;
-            needsReinitialization = true; // Will reinit in next LateUpdate
+            _needsReinitialization = true; // Will reinit in next LateUpdate
         }
 
         protected virtual void OnDestroy()
@@ -329,7 +329,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!sourceRawImage || !sourceRawImage.isActiveAndEnabled)
             {
                 _isStreaming = false;
-                needsReinitialization = true; // Will reinit in next LateUpdate
+                _needsReinitialization = true; // Will reinit in next LateUpdate
                 return;
             }
 
@@ -337,7 +337,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!sourceTexture)
             {
                 _isStreaming = false;
-                needsReinitialization = true; // Will reinit in next LateUpdate
+                _needsReinitialization = true; // Will reinit in next LateUpdate
                 return;
             }
 

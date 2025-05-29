@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.12
-- Hopefully relieved some issues with camera streaming causing lag if no camera is actually available.
+## 2.166.13
+- Fixed unreferenced variables
 
 Updated on May 29, 2025
