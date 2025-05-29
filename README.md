@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.11
-- Fixed CollectionModifiedException from occuring during offline RPC handler registration.
+## 2.166.12
+- Hopefully relieved some issues with camera streaming causing lag if no camera is actually available.
 
-Updated on May 28, 2025
+Updated on May 29, 2025

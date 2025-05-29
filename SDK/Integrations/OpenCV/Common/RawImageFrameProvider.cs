@@ -292,14 +292,13 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         private void Start()
         {
             if (initOnStart)
-            {
                 Initialize();
-            }
         }
 
         private void OnDisable()
         {
             _isStreaming = false;
+            needsReinitialization = true; // Will reinit in next LateUpdate
         }
 
         protected virtual void OnDestroy()
@@ -321,9 +320,16 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 _needsReinitialization = false;
             }
 
-            if (!hasInitDone || isInitializing || !sourceRawImage || !sourceRawImage.isActiveAndEnabled)
+            if (!hasInitDone || isInitializing)
             {
                 _isStreaming = false;
+                return;
+            }
+
+            if (!sourceRawImage || !sourceRawImage.isActiveAndEnabled)
+            {
+                _isStreaming = false;
+                needsReinitialization = true; // Will reinit in next LateUpdate
                 return;
             }
 
@@ -331,6 +337,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (!sourceTexture)
             {
                 _isStreaming = false;
+                needsReinitialization = true; // Will reinit in next LateUpdate
                 return;
             }
 
@@ -430,6 +437,8 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         public virtual void Initialize()
         {
+            if (!this) return;
+            if (!isActiveAndEnabled) return;
             if (isInitializing || hasInitDone) return;
 
             isInitializing = true;
@@ -476,7 +485,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
 
         public virtual bool IsStreaming()
         {
-            return hasInitDone && _isStreaming;
+            return this && isActiveAndEnabled && hasInitDone && _isStreaming;
         }
 
         /// <summary>
@@ -502,11 +511,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     }
 
                     Mat sourceMat = _ringBufferMats[_readIndex];
-
                     if (sourceMat == null || sourceMat.IsDisposed)
                     {
                         Debug.LogError($"RawImageFrameProvider: Mat at read index {_readIndex} is invalid.");
-                        // Skip frame, maybe producer will fix. Advance index to avoid stall.
                         _readIndex = (_readIndex + 1) % bufferSize;
                         _consumedFrameCount++;
                         return null;
@@ -534,12 +541,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                          return null; // Return null as clone failed or another error occurred
                     }
                 }
-            } // --- End Critical Section ---
+            }
 
             if (gotFrame && clonedMat != null)
             {
                 // Create the frame wrapper OWNING the cloned Mat
-                // ***** BEGIN FIX *****
                 try
                 {
                     return new ClonedCameraFrame(clonedMat, fieldOfView, defaultDepthOffset);
@@ -548,12 +554,9 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 {
                     Debug.LogError($"RawImageFrameProvider: Exception during ClonedCameraFrame construction. Disposing the cloned Mat to prevent leak. Error: {ex.Message}");
                     if (clonedMat != null && !clonedMat.IsDisposed)
-                    {
                         clonedMat.Dispose();
-                    }
                     return null; // Indicate failure to provide a frame
                 }
-                // ***** END FIX *****
             }
             else
             {
@@ -596,6 +599,12 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             if (sourceTexture == null)
             {
                 Debug.LogWarning("RawImageTextureSource: Cannot initialize Mats, source texture is null.");
+                return true; // Wait for LateUpdate
+            }
+
+            if (sourceRawImage == null || !sourceRawImage.isActiveAndEnabled)
+            {
+                Debug.LogWarning("RawImageTextureSource: Source RawImage is not active or assigned. Will initialize Mats in LateUpdate.");
                 return true; // Wait for LateUpdate
             }
 
