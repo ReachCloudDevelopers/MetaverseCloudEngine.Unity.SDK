@@ -98,12 +98,17 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 #endif
                 ;
 
-            if (MVUtils.IsMobileVR())
-                currentPlatform |= NativePlatform.MOBILE_VR;
-            
+            var isMobileVR = MVUtils.IsMobileVR();
             foreach (var setting in settings)
             {
+                if (setting.platforms == NativePlatform.MOBILE_VR && isMobileVR)
+                {
+                    setting.Apply(layer, volume);
+                    return;
+                }
                 if (!setting.platforms.HasFlag(currentPlatform))
+                    continue;
+                if (settings.platforms.HasFlag(NativePlatform.MOBILE_VR) && !isMobileVR)
                     continue;
                 setting.Apply(layer, volume);
                 return;
