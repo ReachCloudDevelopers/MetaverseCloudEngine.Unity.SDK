@@ -108,7 +108,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
                 }
                 if (!setting.platforms.HasFlag(currentPlatform))
                     continue;
-                if (settings.platforms.HasFlag(NativePlatform.MOBILE_VR) && !isMobileVR)
+                if (setting.platforms.HasFlag(NativePlatform.MOBILE_VR) && !isMobileVR)
                     continue;
                 setting.Apply(layer, volume);
                 return;
