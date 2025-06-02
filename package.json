@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.166.15",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.15\n- Fix typo in platform-specific post-process logic for Mobile VR handling\n\nUpdated on May 30, 2025",
+  "version": "2.166.16",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.16\n- Fix session subsystem check to rely solely on tracking state\n\nUpdated on June 02, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

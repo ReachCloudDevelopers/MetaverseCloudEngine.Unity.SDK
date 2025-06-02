@@ -1824,8 +1824,7 @@ namespace MetaverseCloudEngine.Unity
                 return;
             }
 
-            if (sessionSubsystem.trackingState != TrackingState.Tracking ||
-                sessionSubsystem.worldMappingStatus != ARWorldMappingStatus.Mapped)
+            if (sessionSubsystem.trackingState != TrackingState.Tracking)
             {
                 onFailed?.Invoke("World map not ready");
                 return;

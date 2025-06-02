@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.166.15
-- Fix typo in platform-specific post-process logic for Mobile VR handling
+## 2.166.16
+- Fix session subsystem check to rely solely on tracking state
 
-Updated on May 30, 2025
+Updated on June 02, 2025
