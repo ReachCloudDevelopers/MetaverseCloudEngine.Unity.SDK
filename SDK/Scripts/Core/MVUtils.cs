@@ -1738,7 +1738,7 @@ namespace MetaverseCloudEngine.Unity
                 MetaverseProgram.Logger.Log($"Reading {path}...");
 
                 var allBytes = new List<byte>();
-                const int bytesPerFrame = 1024 * 10;
+                const int bytesPerFrame = 1024 * 1024; // 1 mb/s
 
                 var file = File.Open(path, FileMode.Open);
                 var binaryReader = new BinaryReader(file);

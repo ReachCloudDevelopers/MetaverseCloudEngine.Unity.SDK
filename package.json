@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.166.16",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.166.16\n- Fix session subsystem check to rely solely on tracking state\n\nUpdated on June 02, 2025",
+  "version": "2.167.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.167.0\n- Adjusted loading speed of ARKit Worldmaps\n\nUpdated on June 05, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
