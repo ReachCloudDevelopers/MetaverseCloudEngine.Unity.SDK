@@ -1101,8 +1101,18 @@ namespace MetaverseCloudEngine.Unity.Editors
             string bundlePath,
             IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
             TAssetUpsertForm assetUpsertForm,
-            Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null)
+            Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null,
+            int tries = 0)
         {
+            if (tries >= 3)
+            {
+                EditorUtility.DisplayDialog(
+                    "Upload Failed",
+                    "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
+                    "Ok");
+                return;
+            }
+            
             var buildsEnumerable = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
             var openStreams = new List<Stream>();
             var options = buildsEnumerable.Select(x =>
@@ -1155,13 +1165,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                     throw exception;
                 }
 
+                var platformsString = string.Join("\n- ", buildsEnumerable.Select(x => x.Platforms.ToString()));
                 if (result.Result.Succeeded)
                 {
                     var dto = result.Result.GetResultAsync().Result;
                     MetaverseProgram.Logger.Log(
-                        $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.");
+                        $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.\n" + 
+                            platformsString);
                     EditorUtility.DisplayDialog("Upload Successful",
-                        $"\"{assetUpsertForm.Name}\" was uploaded successfully!", "Ok");
+                        $"\"{assetUpsertForm.Name}\" was uploaded successfully!" + platformsString, "Ok");
 
                     if (assetUpsertForm.Listings != dto.Listings)
                     {
@@ -1175,39 +1187,45 @@ namespace MetaverseCloudEngine.Unity.Editors
                     {
                         if (!typeof(MetaSpace).IsAssignableFrom(typeof(TAsset)))
                             return;
-
                         var asset = FindObjectOfType<TAsset>(true);
                         if (asset)
                             ApplyMetaData(new SerializedObject(asset), dto);
                     }
                     else
-                    {
                         ApplyMetaData(serializedObject, dto);
-                    }
                     
                     onBuildSuccess?.Invoke(dto, buildsEnumerable);
                 }
                 else
                 {
                     MetaverseProgram.Logger.Log(
-                        $"<b><color=red>Failed</color></b> to upload bundles for '{assetUpsertForm.Name}'.");
+                        $"<b><color=red>Failed</color></b> to upload bundles for '{assetUpsertForm.Name}'." + platformsString);
 
                     if (uploadCancellation.IsCancellationRequested)
                         return;
 
                     if (result.Result.StatusCode == HttpStatusCode.Unauthorized)
                     {
-                        _ = Task.Run(async () => await MetaverseProgram.ApiClient.Account.ValidateTokenAsync(), uploadCancellation.Token).Result;
-                        
-                        if (MetaverseProgram.ApiClient.Account.IsLoggedIn)
+                        var validation = Task.Run(async () => 
+                            await MetaverseProgram.ApiClient.Account.ValidateTokenAsync(), 
+                            uploadCancellation.Token).Result;
+                        if (validation.Succeeded)
                         {
-                            UploadBundles(controller, bundlePath, buildsEnumerable, assetUpsertForm, onBuildSuccess);
+                            UploadBundles(
+                                controller, 
+                                bundlePath, 
+                                buildsEnumerable, 
+                                assetUpsertForm, 
+                                onBuildSuccess,
+                                ++tries);
                             return;
                         }
                     }
 
                     var prettyErrorString = Task
-                        .Run(async () => await result.Result.GetErrorAsync(), uploadCancellation.Token).Result
+                        .Run(async () => 
+                            await result.Result.GetErrorAsync(), 
+                            uploadCancellation.Token).Result
                         .ToPrettyErrorString();
                     
                     UploadFailure(prettyErrorString);
@@ -1216,9 +1234,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             finally
             {
                 foreach (var stream in openStreams)
-                {
                     try { stream?.Dispose(); } catch { /* ignored */ }
-                }
             }
         }
 
