@@ -1165,7 +1165,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     throw exception;
                 }
 
-                var platformsString = string.Join("\n- ", buildsEnumerable.Select(x => x.Platforms.ToString()));
+                var platformsString = "\n- " + string.Join("\n- ", buildsEnumerable.Select(x => x.Platforms.ToString()));
                 if (result.Result.Succeeded)
                 {
                     var dto = result.Result.GetResultAsync().Result;
