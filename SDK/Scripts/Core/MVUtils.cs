@@ -1700,7 +1700,6 @@ namespace MetaverseCloudEngine.Unity
         /// </summary>
         /// <param name="session">The ARSession to load the world map into.</param>
         /// <param name="key">The key under which the world map was saved.</param>
-        /// <param name="cancellationToken">Cancellation token to cancel the operation.</param>
         /// <returns>A UniTask that completes when the operation is done or throws on error.</returns>
         public static async UniTask LoadArKitWorldMapAsync(
             this UnityEngine.XR.ARFoundation.ARSession session,
@@ -1708,13 +1707,13 @@ namespace MetaverseCloudEngine.Unity
         {
             await UniTask.Yield(PlayerLoopTiming.Update);
 
-            if (MetaSpace.Instance == null)
+            if (!MetaSpace.Instance)
                 throw new Exception("MetaSpace destroyed");
 
             if (MetaSpace.Instance.TryGetCachedValue(key, out _))
                 throw new Exception("World map already being loaded");
 
-            if (session == null)
+            if (!session)
                 throw new Exception("No AR session found");
 
     #if UNITY_IOS
@@ -1735,12 +1734,12 @@ namespace MetaverseCloudEngine.Unity
 
             try
             {
-                MetaverseProgram.Logger.Log($"Reading {path}...");
-
                 var allBytes = new List<byte>();
-                const int bytesPerFrame = 1024 * 1024; // 1 mb/s
+                const int bytesPerFrame = 1024 * 1024;
 
                 var file = File.Open(path, FileMode.Open);
+                MetaverseProgram.Logger.Log($"[LoadArKitWorldMapAsync] Reading {Path.GetFileName(path)} | {file.Length} bytes...");
+
                 var binaryReader = new BinaryReader(file);
                 var bytesRemaining = file.Length;
                 while (bytesRemaining > 0)
@@ -1755,19 +1754,18 @@ namespace MetaverseCloudEngine.Unity
                 var data = new NativeArray<byte>(allBytes.Count, Allocator.Temp);
                 data.CopyFrom(allBytes.ToArray());
 
-                MetaverseProgram.Logger.Log($"Deserializing to ARWorldMap from {path}...");
+                MetaverseProgram.Logger.Log($"[LoadArKitWorldMapAsync] Deserializing to ARWorldMap from {path}...");
 
                 if (!ARWorldMap.TryDeserialize(data, out var worldMap))
                     throw new Exception("Deserialization to ARWorldMap failed.");
 
                 if (!worldMap.valid)
                 {
-                    Debug.LogError("Data is not a valid ARWorldMap.");
+                    MetaverseProgram.Logger.LogError("[LoadArKitWorldMapAsync] Data is not a valid ARWorldMap.");
                     throw new Exception("Data is not a valid ARWorldMap.");
                 }
 
-                MetaverseProgram.Logger.Log("Deserialized successfully.");
-                MetaverseProgram.Logger.Log("Apply ARWorldMap to current session.");
+                MetaverseProgram.Logger.Log("[LoadArKitWorldMapAsync] Deserialized successfully... Applying world map.");
 #if UNITY_IOS
                 sessionSubsystem.ApplyWorldMap(worldMap);
 #endif

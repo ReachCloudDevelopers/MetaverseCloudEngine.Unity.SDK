@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.0
-- Adjusted loading speed of ARKit Worldmaps
+## 2.167.1
+- Cleaned up logging for loading ARKitWorldMap
 
 Updated on June 05, 2025
