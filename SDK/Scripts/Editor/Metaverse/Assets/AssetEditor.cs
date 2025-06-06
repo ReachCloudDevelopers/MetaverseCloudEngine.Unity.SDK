@@ -846,8 +846,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized && allowUnauthorizedRetry)
                         {
-                            _ = Task.Run(async () => await MetaverseProgram.ApiClient.Account.ValidateTokenAsync()).Result;
-                            if (MetaverseProgram.ApiClient.Account.IsLoggedIn)
+                            var validate = Task.Run(async () => await MetaverseProgram.ApiClient.Account.ValidateTokenAsync()).Result;
+                            if (validate.Succeeded)
                             {
                                 Upload(mainAsset, asset, serObj, true, false);
                                 return;

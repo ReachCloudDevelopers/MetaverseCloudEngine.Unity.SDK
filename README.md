@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.2
-- Improved upload system
+## 2.167.3
+- Improved asset bundle build API
 
 Updated on June 06, 2025

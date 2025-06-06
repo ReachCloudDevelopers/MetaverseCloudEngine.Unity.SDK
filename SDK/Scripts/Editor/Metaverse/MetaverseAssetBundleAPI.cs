@@ -43,24 +43,12 @@ namespace MetaverseCloudEngine.Unity.Editors
             var lockedAssemblies = true;
             EditorApplication.LockReloadAssemblies();
             AssetDatabase.ReleaseCachedFileHandles();
+            
+            var originalBuildTarget = EditorUserBuildSettings.activeBuildTarget;
 
             preProcessBuild?.Invoke();
             try
             {
-                // Ensure we start out with the default build target.
-                const BuildTarget defaultBuildTarget =
-#if UNITY_EDITOR_WIN
-                        BuildTarget.StandaloneWindows64
-#elif UNITY_EDITOR_OSX
-                        BuildTarget.StandaloneOSX
-#endif
-                    ;
-
-                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(defaultBuildTarget), defaultBuildTarget);
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                if (defaultBuildTarget == BuildTarget.StandaloneOSX)
-                    EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
-
                 // Make sure all dirty assets are saved and cleaned up.
                 AssetDatabase.SaveAssets();
                 MetaPrefabLoadingAPI.ClearPool(false);
@@ -230,6 +218,22 @@ namespace MetaverseCloudEngine.Unity.Editors
                         successfulBuilds.Clear();
                         break;
                     }
+                    catch (AccessViolationException e)
+                    {
+                        MetaverseProgram.Logger.Log(
+                            $"<b><color=red>Failed</color></b> to build platform {platform}: Access violation. Check the console for build errors: " +
+                            e.Message);
+                        successfulBuilds.Clear();
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        MetaverseProgram.Logger.Log(
+                            $"<b><color=red>Failed</color></b> to build platform {platform}: An unexpected error occurred. Check the console for build errors: " +
+                            e.Message);
+                        successfulBuilds.Clear();
+                        break;
+                    }
 
                     AssetDatabase.ReleaseCachedFileHandles();
                     AssetDatabase.Refresh();
@@ -241,30 +245,12 @@ namespace MetaverseCloudEngine.Unity.Editors
             finally
             {
                 if (lockedAssemblies)
-                {
                     EditorApplication.UnlockReloadAssemblies();
-                }
-                
-                const BuildTarget defaultTarget =
-#if UNITY_EDITOR_WIN
-                        BuildTarget.StandaloneWindows64
-#elif UNITY_EDITOR_OSX
-                        BuildTarget.StandaloneOSX
-#endif
-                    ;
-                
-                if (EditorUserBuildSettings.activeBuildTarget != defaultTarget &&
-                    !Application.isBatchMode && EditorUtility.DisplayDialog("Reset Build Target",
-                    "Would you like to reset the build target to the default platform to " + defaultTarget + "?", 
-                    "Yes (Recommended)", "No, stay on " + EditorUserBuildSettings.activeBuildTarget))
-                {
-                    var defaultGroup = BuildPipeline.GetBuildTargetGroup(defaultTarget);
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(defaultGroup, defaultTarget);
-                    EditorUserBuildSettings.selectedBuildTargetGroup = defaultGroup;
-                    if (defaultGroup == BuildTargetGroup.Standalone)
-                        EditorUserBuildSettings.selectedStandaloneTarget = defaultTarget;
-                }
-                
+                var defaultGroup = BuildPipeline.GetBuildTargetGroup(originalBuildTarget);
+                EditorUserBuildSettings.SwitchActiveBuildTarget(defaultGroup, originalBuildTarget);
+                EditorUserBuildSettings.selectedBuildTargetGroup = defaultGroup;
+                if (defaultGroup == BuildTargetGroup.Standalone)
+                    EditorUserBuildSettings.selectedStandaloneTarget = originalBuildTarget;
                 postProcessBuild?.Invoke();
             }
         }
