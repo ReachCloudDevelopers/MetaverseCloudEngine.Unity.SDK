@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.4
-- Improve formatting of warning message for asset uploads.
+## 2.167.5
+- refactor: use 'using' statement for BinaryReader and NativeArray in LoadArKitWorldMapAsync
 
-Updated on June 06, 2025
+Updated on June 09, 2025

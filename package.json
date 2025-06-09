@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.167.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.167.4\n- Improve formatting of warning message for asset uploads.\n\nUpdated on June 06, 2025",
+  "version": "2.167.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.167.5\n- refactor: use 'using' statement for BinaryReader and NativeArray in LoadArKitWorldMapAsync\n\nUpdated on June 09, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

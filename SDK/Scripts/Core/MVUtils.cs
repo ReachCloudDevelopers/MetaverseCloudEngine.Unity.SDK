@@ -1740,7 +1740,7 @@ namespace MetaverseCloudEngine.Unity
                 var file = File.Open(path, FileMode.Open);
                 MetaverseProgram.Logger.Log($"[LoadArKitWorldMapAsync] Reading {Path.GetFileName(path)} | {file.Length} bytes...");
 
-                var binaryReader = new BinaryReader(file);
+                using var binaryReader = new BinaryReader(file);
                 var bytesRemaining = file.Length;
                 while (bytesRemaining > 0)
                 {
@@ -1750,8 +1750,8 @@ namespace MetaverseCloudEngine.Unity
                     bytesRemaining -= chunk.Length;
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
-
-                var data = new NativeArray<byte>(allBytes.Count, Allocator.Temp);
+                
+                using var data = new NativeArray<byte>(allBytes.Count, Allocator.Temp);
                 data.CopyFrom(allBytes.ToArray());
 
                 MetaverseProgram.Logger.Log($"[LoadArKitWorldMapAsync] Deserializing to ARWorldMap from {path}...");
