@@ -45,6 +45,16 @@ namespace MetaverseCloudEngine.Unity.Editors
             AssetDatabase.ReleaseCachedFileHandles();
             
             var originalBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
+            EditorUserBuildSettings.selectedStandaloneTarget = 
+#if UNITY_EDITOR_OSX
+                BuildTarget.StandaloneOSX;
+#else
+                BuildTarget.StandaloneWindows64;
+#endif
+#if UNITY_EDITOR_OSX && UNITY_2022_3_OR_NEWER
+        UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
+#endif
 
             preProcessBuild?.Invoke();
             try
