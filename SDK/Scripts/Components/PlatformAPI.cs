@@ -2,6 +2,7 @@
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
+using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Attributes;
 using MetaverseCloudEngine.Unity.XR;
 using TriInspectorMVCE;
@@ -93,6 +94,11 @@ namespace MetaverseCloudEngine.Unity.Components
              "A flag indicating whether mobile platforms accessed through WebGL should be considered supported. If this flag is true and the application is running on WebGL, the Android and iOS platforms will be considered supported if the current platform is a mobile platform accessed through WebGL.")]
         [HideInInspector]
         private bool includeMobileWebPlatforms = true;
+
+        [SerializeField]
+        [Tooltip(
+            "If true, the platform check will be performed after the Start method is called.")]
+        private bool afterStart;
 
         [FormerlySerializedAs("waitForMetaSpace")]
         [Tooltip("If true, will wait until the metaspace is initialized before performing the platform check.")]
@@ -190,10 +196,10 @@ namespace MetaverseCloudEngine.Unity.Components
 
         private void Awake()
         {
-            if (waitForMetaSpaceInitialize && MetaSpace.Instance)
-                MetaSpace.OnReady(Check);
+            if (!afterStart)
+                Init();
             else
-                Check();
+                MetaverseDispatcher.AtEndOfFrame(Init);
 
 #if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
             ARSession.stateChanged += OnARSessionStateChanged;
@@ -201,13 +207,20 @@ namespace MetaverseCloudEngine.Unity.Components
 
             XRInputTrackingAPI.HmdConnected += OnDeviceConnected;
             XRInputTrackingAPI.HmdDisconnected += OnDeviceDisconnected;
-            return;
+        }
 
-            void Check()
-            {
-                _awakeCalled = true;
-                PerformCheck();
-            }
+        private void Init()
+        {
+            if (waitForMetaSpaceInitialize && MetaSpace.Instance)
+                MetaSpace.OnReady(Check);
+            else
+                Check();
+        }
+
+        private void Check()
+        {
+            _awakeCalled = true;
+            PerformCheck();
         }
 
 #if (UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID) && MV_UNITY_AR_FOUNDATION
