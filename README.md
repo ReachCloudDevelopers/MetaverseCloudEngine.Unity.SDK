@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.7
-- Preliminary support for OculusMenuButton
+## 2.167.8
+- Added support for detecting Oculus button input using OculusButtonAPI
 
 Updated on June 20, 2025

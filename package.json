@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.167.7",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.167.7\n- Preliminary support for OculusMenuButton\n\nUpdated on June 20, 2025",
+  "version": "2.167.8",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.167.8\n- Added support for detecting Oculus button input using OculusButtonAPI\n\nUpdated on June 20, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
