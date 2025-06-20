@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.6
-- Improved asset bundle build pipeline
+## 2.167.7
+- Preliminary support for OculusMenuButton
 
-Updated on June 10, 2025
+Updated on June 20, 2025
