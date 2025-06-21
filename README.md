@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.9
-- Added ability to wait till after start before performing PlatformAPI checks.
+## 2.167.10
+- Add support for Meta XR Core Package to MetaverseScript
 
-Updated on June 20, 2025
+Updated on June 21, 2025

@@ -1329,6 +1329,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(UniTask).Assembly /* UniTask */,
                 typeof(UniTaskExtensions).Assembly, /* UniTask */
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
+#if MV_META_CORE
+                ,typeof(OVRSpatialAnchor).Assembly
+                ,typoef(OVRManager).Assembly
+                ,typeof(OVRInput).Assembly
+#endif
 #if MV_XRCOREUTILS
                 , typeof(XROrigin).Assembly
 #endif
