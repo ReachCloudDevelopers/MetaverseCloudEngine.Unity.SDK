@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.10
-- Add support for Meta XR Core Package to MetaverseScript
+## 2.167.11
+- Fixed typo
 
 Updated on June 21, 2025

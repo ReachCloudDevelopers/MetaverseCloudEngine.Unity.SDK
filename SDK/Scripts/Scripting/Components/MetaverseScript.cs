@@ -1331,7 +1331,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
 #if MV_META_CORE
                 ,typeof(OVRSpatialAnchor).Assembly
-                ,typoef(OVRManager).Assembly
+                ,typeof(OVRManager).Assembly
                 ,typeof(OVRInput).Assembly
 #endif
 #if MV_XRCOREUTILS
