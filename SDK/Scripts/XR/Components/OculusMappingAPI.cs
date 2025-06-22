@@ -135,7 +135,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     return;
 
                 var spatialAnchor = obj.GetOrAddComponent<OVRSpatialAnchor>();
-                spatialAnchor.WhenLocalizedAsync().ContinueWith(result =>
+                spatialAnchor.WhenCreatedAsync().ContinueWith(result =>
                 {
                     MetaverseDispatcher.AtEndOfFrame(() =>
                     {

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.168.1
-- Update GetEmbeddedGlobalMembers method to accept Engine parameter, and add support for all OVR types to global namespace for MetaverseScripts.
+## 2.169.0
+- Fixed SaveAnchor so that it awaits "WhenCreatedAsync" instead of the localization equal.
 
 Updated on June 22, 2025
