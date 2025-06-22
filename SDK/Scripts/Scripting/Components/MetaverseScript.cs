@@ -1329,7 +1329,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(UniTask).Assembly /* UniTask */,
                 typeof(UniTaskExtensions).Assembly, /* UniTask */
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
-#if MV_META_CORE
+#if MV_META_CORE // Oculus.VR
                 ,typeof(OVRSpatialAnchor).Assembly
                 ,typeof(OVRManager).Assembly
                 ,typeof(OVRInput).Assembly

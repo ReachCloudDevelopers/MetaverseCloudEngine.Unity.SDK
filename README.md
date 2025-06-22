@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.167.11
-- Fixed typo
+## 2.168.0
+- Add OculusMappingAPI for enhanced Oculus device integration
 
-Updated on June 21, 2025
+Updated on June 22, 2025
