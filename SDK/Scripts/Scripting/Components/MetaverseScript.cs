@@ -105,6 +105,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             nameof(PlayerPrefs),
         };
 
+        [Flags]
+        public enum GlobalTypeImports
+        {
+            None = 0,
+            [InspectorName("Oculus.VR")]
+            MetaQuest = 1,
+        }
+
         /// <summary>
         /// The supported <see cref="MetaverseScript"/> functions.
         /// </summary>
@@ -188,6 +196,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
+        [SerializeField] private GlobalTypeImports globalTypeImports = GlobalTypeImports.None;
         [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
         [SerializeField] private Variables variables;
 
@@ -845,7 +854,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 return;
 
             _engine = new Engine(o => DefaultEngineOptions(o, true))
-                .Do(e => GetEmbeddedGlobalMembers(this)
+                .Do(e => GetEmbeddedGlobalMembers(e, this)
                     .ForEach(m =>
                     {
                         if (m.Value is Delegate d)
@@ -943,258 +952,360 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <summary>
         /// Gets the global members that are accessible within any given javascript file.
         /// </summary>
+        /// <param name="engine"></param>
         /// <param name="context">The context to get the members for.</param>
         /// <returns>The global members.</returns>
-        public static unsafe Dictionary<string, object> GetEmbeddedGlobalMembers(MetaverseScript context) => new()
+        public static unsafe Dictionary<string, object> GetEmbeddedGlobalMembers(Engine engine, MetaverseScript context)
         {
-            // Context Properties and Methods
-            { ThisProperty, context },
-            { GameObjectProperty, context.gameObject },
-            { TransformProperty, context.transform },
-            { ConsoleObjectProperty, context.console },
-            { nameof(Vars), context.Vars },
-            { GetEnabledFunction, (Func<bool>)(() => context.enabled) },
-            { SetEnabledFunction, (Action<bool>)(b => context.enabled = b) },
-            { nameof(GetVar), (Func<string, object>)context.GetVar },
-            { nameof(SetVar), (Action<string, object>)context.SetVar },
-            { nameof(TryGetVar), (Func<string, object, object>)context.TryGetVar },
-            { nameof(TrySetVar), (Func<string, object, bool>)context.TrySetVar },
-            { nameof(DefineVar), (Func<string, object, Func<object>>)context.DefineVar },
-            { nameof(DefineTypedVar), (Func<string, string, object, Func<object>>)context.DefineTypedVar },
+            var ret = new Dictionary<string, object>
+            {
+                // Context Properties and Methods
+                { ThisProperty, context },
+                { GameObjectProperty, context.gameObject },
+                { TransformProperty, context.transform },
+                { ConsoleObjectProperty, context.console },
+                { nameof(Vars), context.Vars },
+                { GetEnabledFunction, (Func<bool>)(() => context.enabled) },
+                { SetEnabledFunction, (Action<bool>)(b => context.enabled = b) },
+                { nameof(GetVar), (Func<string, object>)context.GetVar },
+                { nameof(SetVar), (Action<string, object>)context.SetVar },
+                { nameof(TryGetVar), (Func<string, object, object>)context.TryGetVar },
+                { nameof(TrySetVar), (Func<string, object, bool>)context.TrySetVar },
+                { nameof(DefineVar), (Func<string, object, Func<object>>)context.DefineVar },
+                { nameof(DefineTypedVar), (Func<string, string, object, Func<object>>)context.DefineTypedVar },
 
-            // MetaSpace Property
-            { MetaSpaceProperty, MetaSpace.Instance },
+                // MetaSpace Property
+                { MetaSpaceProperty, MetaSpace.Instance },
 
-            // Global Variable Functions
-            { GetGlobalFunction, (Func<string, object>)(k => MetaverseScriptCache.Current.GetStaticReference(k)) },
-            { SetGlobalFunction, (Action<string, object>)((k, v) => MetaverseScriptCache.Current.SetStaticReference(k, v)) },
+                // Global Variable Functions
+                { GetGlobalFunction, (Func<string, object>)(k => MetaverseScriptCache.Current.GetStaticReference(k)) },
+                {
+                    SetGlobalFunction,
+                    (Action<string, object>)((k, v) => MetaverseScriptCache.Current.SetStaticReference(k, v))
+                },
 
-            // Networking Functions
-            { GetNetworkObjectFunction, (Func<NetworkObject>)(() => context.NetworkObject.uNull()) },
-            { IsInputAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsInputAuthority ?? false) },
-            { IsStateAuthorityFunction, (Func<bool>)(() => context.NetworkObject.uNull()?.IsStateAuthority ?? false) },
-            { GetHostIDFunction, (Func<int>)(() => context.NetworkObject.uNull()?.Networking.HostID ?? -1) },
-            {
-                RegisterRPCFunction,
-                (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.RegisterRPC(rpc, h))
-            },
-            {
-                UnregisterRPCFunction,
-                (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.UnregisterRPC(rpc, h))
-            },
-            {
-                ServerRPCFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p))
-            },
-            {
-                ServerRPCBufferedFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p, buffered: true))
-            },
-            {
-                ClientRPCFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p))
-            },
-            {
-                ClientRPCBufferedFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p, buffered: true))
-            },
-            {
-                ClientRPCOthersFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p))
-            },
-            {
-                ClientRPCOthersBufferedFunction,
-                (Action<short, object>)((rpc, p) =>
-                    context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p, buffered: true))
-            },
-            {
-                PlayerRPCFunction,
-                (Action<short, int, object>)((rpc, player, p) => context.NetworkObject.uNull()?.InvokeRPC(rpc, player, p))
-            },
-            {
-                SpawnNetworkPrefabFunction,
-                (System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>)(
-                    (pref, pos, rot, parent, cb) =>
-                    {
-                        if (!pref)
+                // Networking Functions
+                { GetNetworkObjectFunction, (Func<NetworkObject>)(() => context.NetworkObject.uNull()) },
+                {
+                    IsInputAuthorityFunction,
+                    (Func<bool>)(() => context.NetworkObject.uNull()?.IsInputAuthority ?? false)
+                },
+                {
+                    IsStateAuthorityFunction,
+                    (Func<bool>)(() => context.NetworkObject.uNull()?.IsStateAuthority ?? false)
+                },
+                { GetHostIDFunction, (Func<int>)(() => context.NetworkObject.uNull()?.Networking.HostID ?? -1) },
+                {
+                    RegisterRPCFunction,
+                    (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.RegisterRPC(rpc, h))
+                },
+                {
+                    UnregisterRPCFunction,
+                    (Action<short, RpcEventDelegate>)((rpc, h) => context.NetworkObject.uNull()?.UnregisterRPC(rpc, h))
+                },
+                {
+                    ServerRPCFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p))
+                },
+                {
+                    ServerRPCBufferedFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Host, p, buffered: true))
+                },
+                {
+                    ClientRPCFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p))
+                },
+                {
+                    ClientRPCBufferedFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.All, p, buffered: true))
+                },
+                {
+                    ClientRPCOthersFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p))
+                },
+                {
+                    ClientRPCOthersBufferedFunction,
+                    (Action<short, object>)((rpc, p) =>
+                        context.NetworkObject.uNull()
+                            ?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p, buffered: true))
+                },
+                {
+                    PlayerRPCFunction,
+                    (Action<short, int, object>)((rpc, player, p) =>
+                        context.NetworkObject.uNull()?.InvokeRPC(rpc, player, p))
+                },
+                {
+                    SpawnNetworkPrefabFunction,
+                    (System.Action<GameObject, Vector3, Quaternion, Transform, Action<GameObject>>)(
+                        (pref, pos, rot, parent, cb) =>
                         {
-                            MetaverseProgram.Logger.LogError("[MetaverseScript] Cannot spawn null prefab.");
-                            return;
-                        }
-                        var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
-                        if (netSvc == null)
-                        {
-                            MetaverseProgram.Logger.LogError("[MetaverseScript] Networking is not available.");
-                            return;
-                        }
-                        var sPos = parent ? parent.InverseTransformPoint(pos) : pos;
-                        var sRot = parent ? Quaternion.Inverse(parent.rotation) * rot : rot;
-                        netSvc.SpawnGameObject(pref, spawned =>
-                        {
-                            if (!context || !context.isActiveAndEnabled || spawned.IsStale)
+                            if (!pref)
                             {
-                                spawned.IsStale = true;
+                                MetaverseProgram.Logger.LogError("[MetaverseScript] Cannot spawn null prefab.");
                                 return;
                             }
-                            if (parent) spawned.Transform.parent = parent;
-                            spawned.Transform.SetLocalPositionAndRotation(sPos, sRot);
-                            cb?.Invoke(spawned.GameObject);
-                        }, pos, rot, false);
-                    })
-            },
 
-            // Timing Functions
-            {
-                SetTimeoutFunction, (Func<Action, int, int>)((a, t) =>
+                            var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
+                            if (netSvc == null)
+                            {
+                                MetaverseProgram.Logger.LogError("[MetaverseScript] Networking is not available.");
+                                return;
+                            }
+
+                            var sPos = parent ? parent.InverseTransformPoint(pos) : pos;
+                            var sRot = parent ? Quaternion.Inverse(parent.rotation) * rot : rot;
+                            netSvc.SpawnGameObject(pref, spawned =>
+                            {
+                                if (!context || !context.isActiveAndEnabled || spawned.IsStale)
+                                {
+                                    spawned.IsStale = true;
+                                    return;
+                                }
+
+                                if (parent) spawned.Transform.parent = parent;
+                                spawned.Transform.SetLocalPositionAndRotation(sPos, sRot);
+                                cb?.Invoke(spawned.GameObject);
+                            }, pos, rot, false);
+                        })
+                },
+
+                // Timing Functions
                 {
-                    if (!context || !context.isActiveAndEnabled)
-                        return -1;
-                    var h = ++_timeoutHandleIndex;
-                    context._timeoutHandles.Add(h);
-                    MetaverseDispatcher.WaitForSeconds(t / 1000f, () =>
+                    SetTimeoutFunction, (Func<Action, int, int>)((a, t) =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return -1;
+                        var h = ++_timeoutHandleIndex;
+                        context._timeoutHandles.Add(h);
+                        MetaverseDispatcher.WaitForSeconds(t / 1000f, () =>
+                        {
+                            if (!context || !context.isActiveAndEnabled)
+                                return;
+                            if (!context._timeoutHandles.Remove(h)) return;
+                            try
+                            {
+                                a?.Invoke();
+                            }
+                            catch (Exception e)
+                            {
+                                MetaverseProgram.Logger.LogError(
+                                    $"[MetaverseScript] Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                            }
+                        });
+                        return h;
+                    })
+                },
+                { ClearTimeoutFunction, (Action<int>)(h => context._timeoutHandles.Remove(h)) },
+
+                // Coroutine Function
+                { CoroutineFunction, (Action<Func<object>>)(o => context.StartCoroutine(CoroutineUpdate(o))) },
+
+                // Utility Functions
+                { PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)) },
+                { NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()) },
+                { IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()) },
+                { IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()) },
+                {
+                    GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) =>
+                        go.GetComponents<MetaverseScript>()
+                            .FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n))
+                },
+
+                // Async/Await Function
+                {
+                    AwaitFunction, (Action<object, Action<object>>)((t, a) =>
                     {
                         if (!context || !context.isActiveAndEnabled)
                             return;
-                        if (!context._timeoutHandles.Remove(h)) return;
-                        try
+                        if (t is not Task task)
                         {
-                            a?.Invoke();
+                            if (t is IEnumerator e)
+                            {
+                                _ = e.ToUniTask().ContinueWith(() =>
+                                {
+                                    if (!context || !context.isActiveAndEnabled)
+                                        return;
+                                    a?.Invoke(t);
+                                });
+                                return;
+                            }
+#if MV_META_CORE
+                            // Support OVRTask.cs
+                            if (t is not null && t.GetType().Name.StartsWith(nameof(OVRTask)))
+                            {
+                                var continueWithMethod = t.GetType()
+                                    .GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                                    .FirstOrDefault(x => x.Name == "ContinueWith");
+                                
+                                // public void ContinueWith(Action<TResult> onCompleted)
+                                if (continueWithMethod != null && continueWithMethod.GetParameters().Length == 1)
+                                {
+                                    // OVRTask<TResult>  →  we need an Action<TResult>
+                                    var resultType = t.GetType().GenericTypeArguments[0];
+                                    var actionType = typeof(Action<>).MakeGenericType(resultType); // Action<TResult>
+                                    var rParam = System.Linq.Expressions.Expression.Parameter(resultType, "r");
+                                    var ctxConst = System.Linq.Expressions.Expression.Constant(context, typeof(MonoBehaviour));
+                                    var cbConst = System.Linq.Expressions.Expression.Constant(a, typeof(Action<object>));
+
+                                    // (!context || !context.isActiveAndEnabled) ↦ guard expression
+                                    var guard = System.Linq.Expressions.Expression.OrElse(
+                                        System.Linq.Expressions.Expression.Equal(
+                                            ctxConst, 
+                                            System.Linq.Expressions.Expression.Constant(null, typeof(MonoBehaviour))),
+                                        System.Linq.Expressions.Expression.Not(
+                                            System.Linq.Expressions.Expression.Property(ctxConst, nameof(isActiveAndEnabled)))
+                                    );
+                                    var body = System.Linq.Expressions.Expression.IfThenElse(
+                                        guard,
+                                        System.Linq.Expressions.Expression.Empty(), // early-out
+                                        System.Linq.Expressions.Expression.Invoke(cbConst,
+                                            System.Linq.Expressions.Expression.Convert(rParam, typeof(object)))
+                                    );
+
+                                    // finally: ovrTask.ContinueWith(lambda);
+                                    var lambda = System.Linq.Expressions.Expression.Lambda(actionType, body, rParam).Compile();
+                                    continueWithMethod.Invoke(t, new object[] { lambda });
+                                }
+                                else
+                                {
+                                    MetaverseProgram.Logger.LogError(
+                                        "[MetaverseScript] OVRTask ContinueWith method not found or invalid parameters.");
+                                }
+                                // ReSharper disable once RedundantJumpStatement
+                                return;
+                            }
+#endif
+                            return;
                         }
-                        catch (Exception e)
+
+                        if (task.GetType().GenericTypeArguments.Length == 0)
                         {
-                            MetaverseProgram.Logger.LogError(
-                                $"[MetaverseScript] Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
-                        }
-                    });
-                    return h;
-                })
-            },
-            { ClearTimeoutFunction, (Action<int>)(h => context._timeoutHandles.Remove(h)) },
-
-            // Coroutine Function
-            { CoroutineFunction, (Action<Func<object>>)(o => context.StartCoroutine(CoroutineUpdate(o))) },
-
-            // Utility Functions
-            { PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)) },
-            { NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()) },
-            { IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()) },
-            { IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()) },
-            {
-                GetMetaverseScriptFunction, (Func<string, GameObject, object>)((n, go) =>
-                    go.GetComponents<MetaverseScript>().FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n))
-            },
-
-            // Async/Await Function
-            {
-                AwaitFunction, (Action<object, Action<object>>)((t, a) =>
-                {
-                    if (!context || !context.isActiveAndEnabled)
-                        return;
-                    if (t is not Task task)
-                    {
-                        if (t is IEnumerator e)
-                            _ = e.ToUniTask().ContinueWith(() =>
+                            _ = task.AsUniTask().ContinueWith(() =>
                             {
                                 if (!context || !context.isActiveAndEnabled)
                                     return;
-                                a?.Invoke(t);
+                                a(task);
                             });
-                        return;
-                    }
-                    if (task.GetType().GenericTypeArguments.Length == 0)
-                    {
-                        _ = task.AsUniTask().ContinueWith(() =>
-                        {
-                            if (!context || !context.isActiveAndEnabled)
-                                return;
-                            a(task);
-                        });
-                        return;
-                    }
-                    const string asUniTaskName = "AsUniTask";
-                    var asUniTask = task.GetType()
-                        .GetExtensionMethods()
-                        .FirstOrDefault(x =>
-                            x.Name == asUniTaskName &&
-                            x.GetParameters().Length == 2 &&
-                            x.IsGenericMethod &&
-                            x.ReturnType == typeof(UniTask));
-                    if (asUniTask == null) return;
-                    const string continueWithName = "ContinueWith";
-                    var uniTask = asUniTask.Invoke(null, new[] { t, true });
-                    var continueWith = uniTask
-                        .GetType()
-                        .GetExtensionMethods()
-                        .FirstOrDefault(x => x.Name == continueWithName && x.ReturnType == typeof(UniTask));
-                    if (continueWith == null) return;
-                    _ = continueWith.Invoke(uniTask, new[]
-                    {
-                        uniTask,
-                        (Action<object>)((t1) =>
-                        {
-                            if (!context || !context.isActiveAndEnabled)
-                                return;
-                            a(t1);
-                        })
-                    });
-                })
-            },
+                            return;
+                        }
 
-            // Show Dialog
-            {
-                AlertFunction, (System.Action<string>)(message =>
+                        const string asUniTaskName = "AsUniTask";
+                        var asUniTask = task.GetType()
+                            .GetExtensionMethods()
+                            .FirstOrDefault(x =>
+                                x.Name == asUniTaskName &&
+                                x.GetParameters().Length == 2 &&
+                                x.IsGenericMethod &&
+                                x.ReturnType == typeof(UniTask));
+                        if (asUniTask == null) return;
+                        const string continueWithName = "ContinueWith";
+                        var uniTask = asUniTask.Invoke(null, new[] { t, true });
+                        var continueWith = uniTask
+                            .GetType()
+                            .GetExtensionMethods()
+                            .FirstOrDefault(x => x.Name == continueWithName && x.ReturnType == typeof(UniTask));
+                        if (continueWith == null) return;
+                        _ = continueWith.Invoke(uniTask, new[]
+                        {
+                            uniTask,
+                            (Action<object>)((t1) =>
+                            {
+                                if (!context || !context.isActiveAndEnabled)
+                                    return;
+                                a(t1);
+                            })
+                        });
+                    })
+                },
+
+                // Show Dialog
                 {
+                    AlertFunction, (System.Action<string>)(message =>
+                    {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                     MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog("Alert", message, "OK", () => {},
                         force: true);
 #endif
-                })
-            },
-            {
-                ShowDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                    })
+                },
                 {
+                    ShowDialogFunction,
+                    (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                    {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                     MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback);
 #endif
-                })
-            },
-            {
-                ShowForcedDialogFunction, (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                    })
+                },
                 {
+                    ShowForcedDialogFunction,
+                    (System.Action<string, string, string, Action>)((title, message, ok, okCallback) =>
+                    {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                     MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, okCallback,
                         force: true);
 #endif
-                })
-            },
-            {
-                ShowDialogComplexFunction,
-                (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback,
-                    cancelCallback) =>
+                    })
+                },
                 {
+                    ShowDialogComplexFunction,
+                    (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel,
+                        okCallback,
+                        cancelCallback) =>
+                    {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                     MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel,
                         okCallback, cancelCallback);
 #endif
-                })
-            },
-            {
-                ShowForcedDialogComplexFunction,
-                (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel, okCallback,
-                    cancelCallback) =>
+                    })
+                },
                 {
+                    ShowForcedDialogComplexFunction,
+                    (System.Action<string, string, string, string, Action, Action>)((title, message, ok, cancel,
+                        okCallback,
+                        cancelCallback) =>
+                    {
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                     MetaverseProgram.RuntimeServices.InternalNotificationManager.ShowDialog(title, message, ok, cancel,
                         okCallback, cancelCallback, force: true);
 #endif
-                })
-            },
-        };
+                    })
+                },
+            };
+            
+#if MV_META_CORE
+            if (context && context.globalTypeImports.HasFlag(GlobalTypeImports.MetaQuest))
+            {
+                _ovrTypes ??= AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(x => x.FullName.Contains("Oculus.VR") && !x.FullName.Contains("Editor"))?
+                    .GetTypes()
+                    .Where(t => 
+                        string.IsNullOrEmpty(t.Namespace) && 
+                        t.IsPublic && 
+                        !t.Name.Contains("`") &&
+                        t.Name.StartsWith("OVR") &&
+                        t.GenericTypeArguments.Length == 0)
+                    .ToArray() ?? Array.Empty<Type>();
+
+                if (_ovrTypes != null)
+                    foreach (var ovrClass in _ovrTypes)
+                    {
+                        ret[ovrClass.Name] = 
+                            Jint.Runtime.Interop.TypeReference.CreateTypeReference(
+                                engine, ovrClass);
+                    }
+            }
+#endif
+
+            return ret;
+        }
+
+        private static Type[] _ovrTypes = null;
 
         /// <summary>
         /// Gets the global member types that are accessible within any given javascript file.
