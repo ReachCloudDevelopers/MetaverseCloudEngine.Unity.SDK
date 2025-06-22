@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.169.0
-- Fixed SaveAnchor so that it awaits "WhenCreatedAsync" instead of the localization equal.
+## 2.170.0
+- Fixed SaveAnchor so that it awaits 'WhenCreatedAsync' instead of the localization equal.
 
 Updated on June 22, 2025
