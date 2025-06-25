@@ -121,6 +121,30 @@ namespace MetaverseCloudEngine.Unity.XR
             });
         }
 
+        public static void RestartXR()
+        {
+            if (_instance)
+                _instance.StartCoroutine(RestartXRCoroutine());
+            else
+                MetaverseProgram.Logger.LogError("[XRSubsystemAPI] Instance is null, cannot restart XR.");
+        }
+
+        private static IEnumerator RestartXRCoroutine()
+        {
+            if (_instance)
+            {
+                _instance.StopAllCoroutines();
+                XRGeneralSettings.Instance.Manager.StopSubsystems();
+                XRGeneralSettings.Instance.Manager.DeinitializeLoader();
+                yield return null;
+                yield return StartXRCoroutine();
+            }
+            else
+            {
+                MetaverseProgram.Logger.LogError("[XRSubsystemAPI] Instance is null, cannot restart XR.");
+            }
+        }
+        
         private static IEnumerator RestartHandTrackingCoroutine()
         {
 #if MV_XR_HANDS

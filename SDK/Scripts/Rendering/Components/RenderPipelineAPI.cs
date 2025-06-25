@@ -26,7 +26,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
 
         private Scene _setInScene;
         private static bool _isFirstTime = true;
-
+        
         private void OnValidate()
         {
 #if UNITY_EDITOR
@@ -85,7 +85,8 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
             MetaverseProgram.Logger.Log("[RenderPipelineAPI] Setting the render pipeline to " + ((pipeline ? pipeline.name : null) ?? "Standard") + " in scene " + gameObject.scene.name + ".");
             SwitchRenderPipeline(pipeline, () =>
             {
-                MetaverseProgram.Logger.Log("[RenderPipelineAPI] Render pipeline set to " + ((pipeline ? pipeline.name : null) ?? "Standard") + " in scene " + gameObject.scene.name + ".");
+                MetaverseProgram.Logger.Log(
+                    $"[RenderPipelineAPI] Render pipeline set to {(pipeline ? pipeline.name : null) ?? "Standard"} in scene {gameObject.scene.name}.");
             });
             _setInScene = gameObject.scene;
         }
@@ -121,7 +122,7 @@ namespace MetaverseCloudEngine.Unity.Rendering.Components
                 if (!enabledLegacyRenderer)
 #endif
 #endif
-                    GraphicsSettings.defaultRenderPipeline = pipeline;
+                GraphicsSettings.defaultRenderPipeline = pipeline;
 #if !ENABLE_LEGACY_FIRST
                 EnableLegacyRendering(pipeline);
 #endif

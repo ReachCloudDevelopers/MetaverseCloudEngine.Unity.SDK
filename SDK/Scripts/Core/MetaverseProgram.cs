@@ -137,9 +137,18 @@ namespace MetaverseCloudEngine.Unity
         /// This property will be populated with that data.
         /// </summary>
         internal static IDictionary<string, string> LaunchArguments { get; set; }
+        
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void OnSubsystemRegistration()
+        {
+            GraphicsSettings.defaultRenderPipeline = null; // Reset the default render pipeline to allow custom pipelines.
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        private static void UnloadAllAssetBundles() => AssetBundle.UnloadAllAssetBundles(true);
+        private static void UnloadAllAssetBundles()
+        {
+            AssetBundle.UnloadAllAssetBundles(true);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Main_Runtime()

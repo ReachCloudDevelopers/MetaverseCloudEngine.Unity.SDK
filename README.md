@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.170.0
-- Fixed SaveAnchor so that it awaits 'WhenCreatedAsync' instead of the localization equal.
+## 2.171.0
+- Switched primary Oculus usage to OpenXR
 
-Updated on June 22, 2025
+Updated on June 25, 2025

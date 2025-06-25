@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.170.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.170.0\n- Fixed SaveAnchor so that it awaits 'WhenCreatedAsync' instead of the localization equal.\n\nUpdated on June 22, 2025",
+  "version": "2.171.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.171.0\n- Switched primary Oculus usage to OpenXR\n\nUpdated on June 25, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

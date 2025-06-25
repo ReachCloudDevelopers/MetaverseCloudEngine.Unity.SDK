@@ -289,12 +289,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                         ToggleOpenXRFeature<MetaQuestFeature>(openXRSettings, usingOpenXR && group == BuildTargetGroup.Android);
                         var metaXRFeatureSet = UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.GetFeatureSetWithId(
                             BuildTargetGroup.Standalone, "com.meta.openxr.featureset.metaxr");
-                        metaXRFeatureSet.isEnabled = false;
+                        metaXRFeatureSet.isEnabled = usingOpenXR;
                         UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
-                        ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, false);
-                        ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, false);
-                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, false);
-                        ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, false);
+                        ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, usingOpenXR);
+                        ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, usingOpenXR);
+                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, usingOpenXR);
+                        ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, usingOpenXR);
 #endif
 #if MV_XR_HANDS
                         ToggleOpenXRFeature<UnityEngine.XR.Hands.OpenXR.MetaHandTrackingAim>(openXRSettings, usingOpenXR);
