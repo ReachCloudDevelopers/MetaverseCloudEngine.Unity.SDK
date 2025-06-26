@@ -101,10 +101,16 @@ namespace MetaverseCloudEngine.Unity.XR
         /// </summary>
         public static void StopXR()
         {
+            if (MetaverseProgram.IsQuitting)
+                return;
+
             if (_instance)
                 _instance.StopAllCoroutines();
 
             if (!XRGeneralSettings.Instance || !XRGeneralSettings.Instance.Manager)
+                return;
+
+            if (!XRGeneralSettings.Instance.Manager.activeLoader) // No loader is active, nothing to stop
                 return;
             
             XRGeneralSettings.Instance.Manager.StopSubsystems();
