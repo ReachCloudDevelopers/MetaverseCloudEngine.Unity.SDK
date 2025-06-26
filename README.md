@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.171.0
-- Switched primary Oculus usage to OpenXR
+## 2.171.1
+- Add OVRRoomMeshMaterial component and update assembly definition
 
-Updated on June 25, 2025
+Updated on June 26, 2025
