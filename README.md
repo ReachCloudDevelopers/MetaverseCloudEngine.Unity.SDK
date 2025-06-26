@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.171.2
-- Improved log formatting in MetaverseScript
+## 2.171.3
+- Added MV_META_PLATFORM script symbol to MetaverseCloudEngine.Unity.asmdef
 
 Updated on June 26, 2025

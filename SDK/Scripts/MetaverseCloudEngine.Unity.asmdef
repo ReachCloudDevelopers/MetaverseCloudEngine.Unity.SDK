@@ -216,6 +216,11 @@
             "name": "com.unity.postprocessing",
             "expression": "",
             "define": "MV_UNITY_POSTPROCESSING"
+        },
+        {
+            "name": "com.meta.xr.sdk.platform",
+            "expression": "",
+            "define": "MV_META_PLATFORM"
         }
     ],
     "noEngineReferences": false

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.171.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.171.2\n- Improved log formatting in MetaverseScript\n\nUpdated on June 26, 2025",
+  "version": "2.171.3",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.171.3\n- Added MV_META_PLATFORM script symbol to MetaverseCloudEngine.Unity.asmdef\n\nUpdated on June 26, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
