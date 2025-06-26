@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.171.1
-- Add OVRRoomMeshMaterial component and update assembly definition
+## 2.171.2
+- Improved log formatting in MetaverseScript
 
 Updated on June 26, 2025

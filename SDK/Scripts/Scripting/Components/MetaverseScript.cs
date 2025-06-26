@@ -37,7 +37,7 @@ using TriInspectorMVCE;
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
     /// <summary>
-    /// A component that's used to execute javascript with Unity-style functions.
+    /// A component that's used to execute JavaScript with Unity-style functions.
     /// By default, Unity only supports C# scripts, but this component allows you to write scripts in javascript
     /// using the Jint library.
     /// </summary>
@@ -54,17 +54,21 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         [UsedImplicitly]
         public class ConsoleObject
         {
-            // ReSharper disable once InconsistentNaming
-            public void log(object o) => MetaverseProgram.Logger.Log(o);
+            private readonly string _prefix;
+
+            public ConsoleObject(string prefix) => _prefix = prefix;
 
             // ReSharper disable once InconsistentNaming
-            public void error(object o) => MetaverseProgram.Logger.LogError(o);
+            public void log(object o) => MetaverseProgram.Logger.Log($"[{_prefix}] {o}");
 
             // ReSharper disable once InconsistentNaming
-            public void warn(object o) => MetaverseProgram.Logger.LogWarning(o);
+            public void error(object o) => MetaverseProgram.Logger.LogError($"[{_prefix}] {o}");
 
             // ReSharper disable once InconsistentNaming
-            public void info(object o) => MetaverseProgram.Logger.Log(o);
+            public void warn(object o) => MetaverseProgram.Logger.LogWarning($"[{_prefix}] {o}");
+
+            // ReSharper disable once InconsistentNaming
+            public void info(object o) => MetaverseProgram.Logger.Log($"[{_prefix}] {o}");
         }
 
 #pragma warning disable CS0618
@@ -211,12 +215,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         // ReSharper disable once InconsistentNaming
         /// <summary>
-        /// Retrieves the console object that is allowed to be accessed from javascript.
+        /// Retrieves the console object allowed to be accessed from JavaScript.
         /// </summary>
-        private ConsoleObject console => _console ??= new ConsoleObject();
+        private ConsoleObject console => _console ??= new ConsoleObject(javascriptFile ? javascriptFile.name : "Missing Script");
 
         /// <summary>
-        /// Gets the variable declarations for the javascript file.
+        /// Gets the variable declarations for the JavaScript file.
         /// </summary>
         public VariableDeclarations Vars => variables ? variables.declarations : null;
 
@@ -275,8 +279,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             void OnFailed(object e)
             {
-                MetaverseProgram.Logger.LogError(
-                    $"[MetaverseScript] Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e}");
+                console.error(
+                    $"Failed to initialize MetaverseScript '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {e}");
                 if (this) enabled = false;
             }
 
@@ -584,8 +588,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log(
-                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                console.warn(
+                    $"The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -614,8 +618,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log(
-                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                console.log(
+                    $"Script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
@@ -627,7 +631,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         }
 
         /// <summary>
-        /// Executes a javascript function with arguments.
+        /// Executes a JavaScript function with arguments.
         /// </summary>
         /// <param name="fn">The function to execute.</param>
         /// <param name="arguments">The arguments to pass to the function.</param>
@@ -645,8 +649,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log(
-                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                console.warn(
+                    $"Script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -677,8 +681,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             if (!_ready)
             {
-                MetaverseProgram.Logger.Log(
-                    $"[MetaverseScript] The script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                console.log(
+                    $"Script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return null;
             }
 
@@ -902,8 +906,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         private unsafe bool OnJavaScriptCLRException(Exception exception)
         {
-            MetaverseProgram.Logger.LogError(
-                $"[MetaverseScript] An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
+            console.error(
+                $"An exception occurred in a javascript script '{(javascriptFile ? javascriptFile.name : "Missing Script")}': {exception.GetBaseException()}");
             return true;
         }
 
@@ -1046,14 +1050,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         {
                             if (!pref)
                             {
-                                MetaverseProgram.Logger.LogError("[MetaverseScript] Cannot spawn null prefab.");
+                                context.console.error($"Cannot spawn null prefab: {pref?.name ?? "null"}");
                                 return;
                             }
 
                             var netSvc = context.MetaSpace.GetService<IMetaSpaceNetworkingService>();
                             if (netSvc == null)
                             {
-                                MetaverseProgram.Logger.LogError("[MetaverseScript] Networking is not available.");
+                                context.console.error("Networking is not available.");
                                 return;
                             }
 
@@ -1093,8 +1097,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             }
                             catch (Exception e)
                             {
-                                MetaverseProgram.Logger.LogError(
-                                    $"[MetaverseScript] Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                                context.console.error(
+                                    $"Error in setTimeout on {(context.javascriptFile ? context.javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
                             }
                         });
                         return h;
@@ -1106,7 +1110,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 { CoroutineFunction, (Action<Func<object>>)(o => context.StartCoroutine(CoroutineUpdate(o))) },
 
                 // Utility Functions
-                { PrintFunction, (Action<object>)(o => MetaverseProgram.Logger.Log(o)) },
+                { PrintFunction, (Action<object>)(o => context.console.log(o)) },
                 { NewGuidFunction, (Func<string>)(() => Guid.NewGuid().ToString()) },
                 { IsUnityNullFunctionOld1, (Func<object, bool>)(o => o.IsUnityNull()) },
                 { IsUnityNullFunctionOld2, (Func<object, bool>)(o => o.IsUnityNull()) },
@@ -1115,7 +1119,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         go.GetComponents<MetaverseScript>()
                             .FirstOrDefault(x => x.javascriptFile && x.javascriptFile.name == n))
                 },
-
                 // Async/Await Function
                 {
                     AwaitFunction, (Action<object, Action<object>>)((t, a) =>
@@ -1173,8 +1176,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                                 }
                                 else
                                 {
-                                    MetaverseProgram.Logger.LogError(
-                                        "[MetaverseScript] OVRTask ContinueWith method not found or invalid parameters.");
+                                    context.console.error("OVRTask ContinueWith method not found or invalid parameters.");
                                 }
                                 // ReSharper disable once RedundantJumpStatement
                                 return;
