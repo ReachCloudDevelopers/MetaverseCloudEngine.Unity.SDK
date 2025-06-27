@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.0
-- Added ability to specify local paths for YouOnlyLookOnce.cs
+## 2.172.1
+- Fixed incorrect code for disabling foveation features in ConfigureXRLoaders
 
 Updated on June 27, 2025
