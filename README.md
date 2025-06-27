@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.1
-- Fixed incorrect code for disabling foveation features in ConfigureXRLoaders
+## 2.172.2
+- Added support for Unity.InferenceEngine to MetaverseScript
 
 Updated on June 27, 2025

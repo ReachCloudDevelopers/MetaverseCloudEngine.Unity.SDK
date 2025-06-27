@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.172.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.172.1\n- Fixed incorrect code for disabling foveation features in ConfigureXRLoaders\n\nUpdated on June 27, 2025",
+  "version": "2.172.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.172.2\n- Added support for Unity.InferenceEngine to MetaverseScript\n\nUpdated on June 27, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -32,6 +32,10 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using TriInspectorMVCE;
 
+#if MV_UNITY_AI_INFERENCE
+using Unity.InferenceEngine;
+#endif
+
 // ReSharper disable RedundantUnsafeContext
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
@@ -1397,6 +1401,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
                 , typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions)
 #endif
+#if MV_UNITY_AI_INFERENCE
+                , typeof(CommandBufferWorkerExtensions)
+                , typeof(FunctionalExtensions)
+#endif
             };
         }
 
@@ -1476,6 +1484,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
 #endif
                 , typeof(CoordinateSharp.Coordinate).Assembly, typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
+#if MV_UNITY_AI_INFERENCE
+                , typeof(ModelAsset).Assembly
+                , typeof(CommandBufferWorkerExtensions).Assembly
+                , typeof(FunctionalExtensions).Assembly
+#endif
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())
