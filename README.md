@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.2
-- Added support for Unity.InferenceEngine to MetaverseScript
+## 2.172.3
+- Added all extensions methods for Unity.InferenceEngine
 
 Updated on June 27, 2025

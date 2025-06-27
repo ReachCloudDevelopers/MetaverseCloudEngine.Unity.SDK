@@ -1404,6 +1404,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_UNITY_AI_INFERENCE
                 , typeof(CommandBufferWorkerExtensions)
                 , typeof(FunctionalExtensions)
+                , typeof(Functional)
+                , typeof(TextureConverter)
 #endif
             };
         }
@@ -1488,6 +1490,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(ModelAsset).Assembly
                 , typeof(CommandBufferWorkerExtensions).Assembly
                 , typeof(FunctionalExtensions).Assembly
+                , typeof(Functional).Assembly
+                , typeof(TextureConverter).Assembly
 #endif
             };
             return assemblies
