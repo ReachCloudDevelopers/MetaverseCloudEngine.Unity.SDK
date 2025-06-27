@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.171.5
-- Fixed OpenXR using Vulkan specific feature during build
+## 2.171.6
+- Fixed missing reference
 
 Updated on June 27, 2025

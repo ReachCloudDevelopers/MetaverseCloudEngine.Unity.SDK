@@ -293,7 +293,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
                         ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, usingOpenXR);
                         ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, usingOpenXR);
-                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, usingOpenXR && PlayerSettings.GetGraphicsAPIs(group).Contains(GraphicsDeviceType.Vulkan));
+                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, usingOpenXR && PlayerSettings.GetGraphicsAPIs(group).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan));
                         ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, usingOpenXR);
 #endif
 #if MV_XR_HANDS
