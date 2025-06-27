@@ -40,7 +40,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
         protected ICameraFrameProvider TextureProvider;
 
         private readonly ConcurrentQueue<(IInferenceOutputData, Mat)> _outputDataQueue = new();
-
+        
         private void Start()
         {
             TextureProvider = GetComponent<ICameraFrameProvider>();
@@ -52,7 +52,6 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             }
             
             TextureProvider.Disposed += OnTexToMatDisposed;
-
             FetchResources();
         }
 
@@ -63,14 +62,11 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 "ComputerVision",
                 filePaths =>
                 {
+                    if (!this)
                     if (filePaths.Length > 0)
-                    {
                         Run(filePaths);
-                    }
                     else
-                    {
                         Debug.LogError("Failed to fetch model and classes files.");
-                    }
                 }
             );
         }
@@ -91,8 +87,15 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                 while (_outputDataQueue.Count > 0)
                     if (_outputDataQueue.TryDequeue(out var d))
                     {
-                        d.Item1.Dispose();
-                        d.Item2.Dispose();
+                        try
+                        {
+                            d.Item1.Dispose();
+                            d.Item2.Dispose();
+                        } 
+                        catch (Exception e)
+                        {
+                            /* ignored */
+                        }
                     }
                 return;
             }
@@ -195,7 +198,7 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                     
                     if (TextureProvider == null || !TextureProvider.IsStreaming())
                     {
-                        await Task.Yield();
+                        await Task.Delay(100);
                         continue;
                     }
 
@@ -204,19 +207,19 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
                         using var frame = TextureProvider.DequeueNextFrame();
                         if (frame is null)
                         {
-                            await Task.Yield();
+                            await Task.Delay(100);
                             continue;
                         }
 
                         var outputData = PerformInference(frame);
                         _outputDataQueue.Enqueue(outputData);
-                        await Task.Yield();
+                        await Task.Delay(10);
                     }
                     catch (ObjectDisposedException e)
                     {
                         // Camera was probably rotated or deactivated somehow.
                         MetaverseProgram.Logger.LogWarning(e);
-                        await Task.Yield();
+                        await Task.Delay(100);
                     }
                     catch (Exception e)
                     {

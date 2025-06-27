@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using System.Runtime.Serialization;
@@ -2204,6 +2205,12 @@ namespace MetaverseCloudEngine.Unity
         {
             if (f(o)) a(o);
             return o;
+        }
+        
+        public static bool TryGetFirstOrDefault<T>(this IEnumerable<T> e, Expression<Func<T, bool>> predicate, out T value)
+        {
+            value = e.FirstOrDefault(predicate.Compile());
+            return value?.Equals(default(T)) != true;
         }
 
         public static bool TryGet<TIn, TOut>(this TIn o, out TOut v, Func<TIn, TOut> get, Func<TOut, bool> check)

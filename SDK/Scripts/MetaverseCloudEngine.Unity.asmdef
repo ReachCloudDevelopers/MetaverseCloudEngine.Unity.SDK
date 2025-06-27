@@ -46,7 +46,8 @@
         "GUID:63cab5ddbd23cf34ca160a9b3d74438d",
         "GUID:36796cdf0b177bd40b75ac45f74d1378",
         "GUID:04376767bc1f3b428aefa3d20743e819",
-        "GUID:d0574574baafe9d4aa78d8df4a5e3e5e"
+        "GUID:d0574574baafe9d4aa78d8df4a5e3e5e",
+        "GUID:63a57c8b658089e49a173b0f0c4870a7"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -221,6 +222,11 @@
             "name": "com.meta.xr.sdk.platform",
             "expression": "",
             "define": "MV_META_PLATFORM"
+        },
+        {
+            "name": "com.unity.ai.inference",
+            "expression": "",
+            "define": "MV_UNITY_AI_INFERENCE"
         }
     ],
     "noEngineReferences": false

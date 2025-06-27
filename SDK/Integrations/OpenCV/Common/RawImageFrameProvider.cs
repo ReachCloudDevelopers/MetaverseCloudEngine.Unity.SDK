@@ -677,14 +677,10 @@ namespace MetaverseCloudEngine.Unity.OpenCV.Common
             }
 
             // Dispose Mats OWNED BY THE PROVIDER in the ring buffer
-             if (_ringBufferMats != null)
-             {
+            if (_ringBufferMats != null)
                  for (int i = 0; i < _ringBufferMats.Length; i++)
-                 {
                      _ringBufferMats[i]?.Dispose();
-                 }
-                 _ringBufferMats = null;
-             }
+            _ringBufferMats = null;
 
             currentTextureWidth = 0;
             currentTextureHeight = 0;

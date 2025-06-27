@@ -293,7 +293,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         UnityEditor.XR.OpenXR.Features.OpenXRFeatureSetManager.SetFeaturesFromEnabledFeatureSets(BuildTargetGroup.Standalone);
                         ToggleOpenXRFeature<Meta.XR.MetaXRFeature>(openXRSettings, usingOpenXR);
                         ToggleOpenXRFeature<Meta.XR.MetaXRSubsampledLayout>(openXRSettings, usingOpenXR);
-                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, usingOpenXR && PlayerSettings.GetGraphicsAPIs(group).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan));
+                        ToggleOpenXRFeature<Meta.XR.MetaXRFoveationFeature>(openXRSettings, usingOpenXR && GetGraphicsAPIs(group).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan));
                         ToggleOpenXRFeature<Meta.XR.MetaXREyeTrackedFoveationFeature>(openXRSettings, usingOpenXR);
 #endif
 #if MV_XR_HANDS
@@ -327,6 +327,31 @@ namespace MetaverseCloudEngine.Unity.Editors
 #else
             return false;
 #endif
+        }
+        
+        private static GraphicsDeviceType[] GetGraphicsAPIs(BuildTargetGroup buildTargetGroup)
+        {
+            var buildTarget = GetBuildTarget(buildTargetGroup);
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(buildTarget))
+            {
+                return Array.Empty<GraphicsDeviceType>();
+            }
+
+            // Recommends OpenGL ES 3 or Vulkan
+            return PlayerSettings.GetGraphicsAPIs(buildTarget);
+        }
+    
+        private static BuildTarget GetBuildTarget(this BuildTargetGroup buildTargetGroup)
+        {
+            // It is a bit tricky to get the build target from the build target group
+            // because of some additional variations on build targets that the build target group doesn't know about
+            // This function aims at offering an approximation of the build target, but it's not guaranteed
+            return buildTargetGroup switch
+            {
+                BuildTargetGroup.Android => BuildTarget.Android,
+                BuildTargetGroup.Standalone => BuildTarget.StandaloneWindows64,
+                _ => BuildTarget.NoTarget
+            };
         }
 
 #if !UNITY_IOS && MV_OPENXR
