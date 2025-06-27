@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.171.7
-- Add support for InferenceEngine
+## 2.172.0
+- Added ability to specify local paths for YouOnlyLookOnce.cs
 
 Updated on June 27, 2025

@@ -1,12 +1,14 @@
 #if MV_UNITY_AI_INFERENCE
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TriInspectorMVCE;
 using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -20,7 +22,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [InfoBox("This component supports version 8-12 of the YOLO model. Please click the documentation link for model downloads and usage details.")]
         [Header("Embedded Resources (optional)")]
         public ModelAsset modelAsset;
+        public string modelLocalPath;
         public TextAsset classesAsset;
+        public string classesLocalPath;
 
         /// <summary>
         /// Input method for the YOLO model.
@@ -149,7 +153,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void FetchResources()
         {
             MetaverseResourcesAPI.Fetch(
-                GetFallbackDependencies().Select(n => (MetaverseResourcesAPI.CloudResourcePath.AIModels, name: n)).ToList(),
+                GetExternalDependencies()
+                    .Select(n => (MetaverseResourcesAPI.CloudResourcePath.AIModels, name: n))
+                    .ToList(),
                 "ComputerVision",
                 filePaths =>
                 {
@@ -161,12 +167,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 });
         }
 
-        private IEnumerable<string> GetFallbackDependencies()
+        private IEnumerable<string> GetExternalDependencies()
         {
             var deps = new List<string>();
-            if (!modelAsset)
+            if (!modelAsset && !File.Exists(modelLocalPath))
                 deps.Add("yolo.v8.classification.onnx");
-            if (!classesAsset)
+            if (!classesAsset && !File.Exists(classesLocalPath))
                 deps.Add("yolo.v8.coco.names");
             return deps;
         }
@@ -174,11 +180,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void Run(string[] fetchedPaths = null)
         {
             string classesText;
-            if (fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".names"), out var classesPath) &&
+            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".names"), out var classesPath) &&
                 !string.IsNullOrEmpty(classesPath))
-                classesText = System.IO.File.ReadAllText(classesPath);
+                classesText = File.ReadAllText(classesPath);
             else if (classesAsset)
                 classesText = classesAsset.text;
+            else if (!string.IsNullOrEmpty(classesLocalPath) && File.Exists(classesLocalPath))
+                classesText = File.ReadAllText(classesLocalPath);
             else
             {
                 MetaverseProgram.Logger.LogError("Classes file is missing or not found.");
@@ -196,10 +204,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var backend = Application.platform == RuntimePlatform.WebGLPlayer
                 ? BackendType.CPU
                 : BackendType.GPUCompute;
-            var model = fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".onnx"), out var modelPath) && 
-                        !string.IsNullOrEmpty(modelPath)
-                ? ModelLoader.Load(modelPath)
-                : ModelLoader.Load(modelAsset);
+            Model model = null;
+            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(
+                    x => x.EndsWith(".onnx") || x.EndsWith(".sentis"), out var modelPath) &&
+                !string.IsNullOrEmpty(modelPath))
+                model = ModelLoader.Load(modelPath);
+            else if (modelAsset)
+                model = ModelLoader.Load(modelAsset);
+            else if (!string.IsNullOrEmpty(modelLocalPath) && File.Exists(modelLocalPath))
+                model = ModelLoader.Load(modelLocalPath);
+            if (model == null)
+            {
+                MetaverseProgram.Logger.LogError("Model is missing or not found.");
+                return;
+            }
+            
             BuildWorker(model, backend);
 
             if (inputMethod != InputMethod.WebCamTexture) return;
