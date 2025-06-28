@@ -8,7 +8,6 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -44,17 +43,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("If RawImage input method is selected, this RawImage will be used as input for the YOLO model.")]
         [ShowIf(nameof(inputMethod), InputMethod.RawImage)]
         public RawImage inputRawImage;
+        /// <summary>
+        /// The name of the webcam to use as input for the YOLO model.
+        /// </summary>
         [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
+        [Tooltip("If WebCamTexture input method is selected, this name will be used to find the webcam. Leave empty to use the default webcam.")]
         public string webCamName;
+        /// <summary>
+        /// The width and height of the webcam texture to use as input for the YOLO model.
+        /// </summary>
+        [Tooltip("If WebCamTexture input method is selected, this width and height will be used for the webcam texture. Default is 640x480.")]
         [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
         public int webCamWidth = 640;
+        /// <summary>
+        /// The height of the webcam texture to use as input for the YOLO model.
+        /// </summary>
+        [Tooltip("If WebCamTexture input method is selected, this height will be used for the webcam texture. Default is 480.")]
         [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
         public int webCamHeight = 480;
         
         /// <summary>
-        /// Intersection over Union (IoU) and score thresholds for filtering detections.
+        /// Whether to run the YOLO model in the Update loop.
         /// </summary>
         [Header("Detection Settings")]
+        [Tooltip("Whether to run the YOLO model in the Update loop. If false, you must call Infer() manually.")]
+        public bool runInUpdate = true;
+        /// <summary>
+        /// Intersection over Union (IoU) for filtering detections.
+        /// </summary>
         [Tooltip("Intersection over Union (IoU) threshold for filtering detections.")]
         [Range(0, 1)] public float iouThreshold = 0.5f;
         /// <summary>
@@ -75,8 +91,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// </summary>
         public enum InputMethod
         {
+            /// <summary>
+            /// Use a Texture as input for the YOLO model.
+            /// </summary>
             Texture,
+            /// <summary>
+            /// Use a RawImage as input for the YOLO model.
+            /// </summary>
             RawImage,
+            /// <summary>
+            /// Use a WebCamTexture as input for the YOLO model.
+            /// </summary>
             WebCamTexture
         }
 
@@ -122,20 +147,27 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             _worker?.Dispose();
             _centersToCorners?.Dispose();
-            if (_webCamTex != null)
+            if (_webCamTex)
             {
                 _webCamTex.Stop();
                 Destroy(_webCamTex);
             }
-            Destroy(_scratchRT);
+            if (_scratchRT)
+                Destroy(_scratchRT);
         }
 
         private void Update()
         {
+            if (runInUpdate)
+                Infer();
+        }
+
+        public void Infer()
+        {
             if (_worker == null) return;
 
             var source = AcquireSourceTexture();
-            if (!source) return;
+            if (!source || (_webCamTex && !_webCamTex.isPlaying)) return;
 
             Graphics.Blit(source, _scratchRT);
 

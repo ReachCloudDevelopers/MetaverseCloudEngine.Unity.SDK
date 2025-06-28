@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.3
-- Added all extensions methods for Unity.InferenceEngine
+## 2.172.4
+- Improve API, documentation, and performance for YouOnlyLookOnce
 
-Updated on June 27, 2025
+Updated on June 28, 2025
