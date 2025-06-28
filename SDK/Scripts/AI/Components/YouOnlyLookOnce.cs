@@ -69,6 +69,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Whether to run the YOLO model in the Update loop. If false, you must call Infer() manually.")]
         public bool runInUpdate = true;
         /// <summary>
+        /// How often to perform inference on the YOLO model.
+        /// </summary>
+        [Tooltip("The rate at which the update runs in times per second. Set to 0 to run every frame.")]
+        [Range(0, 30)]
+        public int updatesPerSecond;
+        /// <summary>
         /// Intersection over Union (IoU) for filtering detections.
         /// </summary>
         [Tooltip("Intersection over Union (IoU) threshold for filtering detections.")]
@@ -121,6 +127,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             public string label = "";
             [Tooltip("Event to invoke when the label is detected.")]
             public RectEvent onDetected = new();
+            [Tooltip("Event to invoke when the label was originally detected but is no longer detected after the most recent inference.")]
+            public UnityEvent onDetectionLost = new();
+
+            /// <summary>
+            /// A flag applied by the <see cref="YouOnlyLookOnce"/> code
+            /// that allows the system to know whether this detection was
+            /// already made.
+            /// </summary>
+            [NonSerialized]
+            internal bool WasDetected;
         }
 
         private const int ModelInputWidth = 640;
@@ -131,13 +147,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private string[] _labels;
         private RenderTexture _scratchRT;
         private WebCamTexture _webCamTex;
-        private readonly Dictionary<string, RectEvent> _eventLookup = new();
+        private readonly Dictionary<string, LabelEventPair> _eventLookup = new();
+        private readonly HashSet<string> _detectedLabels = new();
+        private float _nextUpdateTime;
 
         private void Awake()
         {
             foreach (var p in labelEvents
-                         .Where(p => !string.IsNullOrEmpty(p.label) && p.onDetected != null))
-                _eventLookup[p.label.Trim()] = p.onDetected;
+                         .Where(p => !string.IsNullOrEmpty(p.label)))
+                _eventLookup[p.label.Trim()] = p;
             _scratchRT = new RenderTexture(ModelInputWidth, ModelInputHeight, 0);
             if (!modelAsset || !classesAsset) FetchResources();
             else Run();
@@ -158,8 +176,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void Update()
         {
-            if (runInUpdate)
-                Infer();
+            if (!runInUpdate)
+                return;
+            var currentUnscaledTime = Time.unscaledTime;
+            if (updatesPerSecond != 0 && currentUnscaledTime <= _nextUpdateTime)
+                return;
+            Infer();
+            if (updatesPerSecond > 0)
+                _nextUpdateTime = currentUnscaledTime + 1f / updatesPerSecond;
         }
 
         public void Infer()
@@ -294,23 +318,39 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void DispatchEvents(Tensor<float> boxes, Tensor<int> ids, int texW, int texH)
         {
+            if (_detectedLabels.Count > 0)
+                _detectedLabels.Clear();
+            
             var count = boxes.shape[0];
             for (var i = 0; i < count; i++)
             {
                 var id = ids[i];
-                if (id < 0 || id >= _labels.Length) continue;
-
+                if (id < 0 || id >= _labels.Length)
+                    continue;
                 var label = _labels[id];
-                if (!_eventLookup.TryGetValue(label, out var evt) || evt == null) continue;
-
+                if (!_eventLookup.TryGetValue(label, out var evt) || evt == null)
+                    continue;
                 var cx = boxes[i, 0] * texW;
                 var cy = boxes[i, 1] * texH;
                 var w = boxes[i, 2] * texW;
                 var h = boxes[i, 3] * texH;
-
                 var rect = new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h);
-                try { evt.Invoke(rect); }
+                try
+                {
+                    evt.onDetected.Invoke(rect);
+                    evt.WasDetected = true;
+                    _detectedLabels.Add(label);
+                }
                 catch (Exception ex) { MetaverseProgram.Logger.LogError(ex); }
+            }
+
+            if (_detectedLabels.Count <= 0) return;
+            for (var i = labelEvents.Count - 1; i >= 0; i--)
+            {
+                var l = labelEvents[i];
+                if (!l.WasDetected || _detectedLabels.Contains(l.label)) continue;
+                l.WasDetected = false;
+                l.onDetectionLost?.Invoke();
             }
         }
     }
