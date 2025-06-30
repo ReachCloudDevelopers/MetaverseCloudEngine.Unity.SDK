@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.5
-- Added updatesPerSecond to YouOnlyLookOnce
+## 2.172.6
+- Added event for initial detection of YOLO inference.
 
-Updated on June 28, 2025
+Updated on June 30, 2025

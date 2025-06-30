@@ -125,6 +125,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             [Tooltip("Label to detect. Must match the labels in the classes file.")]
             public string label = "";
+            [Tooltip("Event to invoke when the detection has started.")]
+            public UnityEvent onDetectionBegan = new();
             [Tooltip("Event to invoke when the label is detected.")]
             public RectEvent onDetected = new();
             [Tooltip("Event to invoke when the label was originally detected but is no longer detected after the most recent inference.")]
@@ -195,7 +197,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             Graphics.Blit(source, _scratchRT);
 
-            using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
+            using var input = new Tensor<float>(
+                new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
             TextureConverter.ToTensor(_scratchRT, input);
             _worker.Schedule(input);
 
@@ -337,18 +340,24 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var rect = new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h);
                 try
                 {
+                    if (_detectedLabels.Add(label))
+                    {
+                        if (!evt.WasDetected)
+                        {
+                            evt.onDetectionBegan?.Invoke();
+                            evt.WasDetected = true;
+                        }
+                    }
                     evt.onDetected.Invoke(rect);
-                    evt.WasDetected = true;
-                    _detectedLabels.Add(label);
                 }
                 catch (Exception ex) { MetaverseProgram.Logger.LogError(ex); }
             }
 
-            if (_detectedLabels.Count <= 0) return;
             for (var i = labelEvents.Count - 1; i >= 0; i--)
             {
                 var l = labelEvents[i];
-                if (!l.WasDetected || _detectedLabels.Contains(l.label)) continue;
+                if (!l.WasDetected || _detectedLabels.Contains(l.label))
+                    continue;
                 l.WasDetected = false;
                 l.onDetectionLost?.Invoke();
             }
