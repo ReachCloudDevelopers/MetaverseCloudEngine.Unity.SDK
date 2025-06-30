@@ -63,7 +63,7 @@ namespace MetaverseCloudEngine.Unity.XR
         private static void OnDeviceDisconnected(InputDevice device)
         {
             if (CurrentDevice != device) return;
-            MetaverseProgram.Logger?.Log("HMD Disconnected");
+            MetaverseProgram.Logger?.Log("[XRInputTrackingAPI] XRNode.CenterEye Disconnected");
             if (CurrentDevice.subsystem != null)
             {
                 CurrentDevice.subsystem.trackingOriginUpdated -= OnTrackingOriginUpdated;
@@ -82,7 +82,7 @@ namespace MetaverseCloudEngine.Unity.XR
 
             CurrentDevice = InputDevices.GetDeviceAtXRNode(XRNode.CenterEye);
             if (CurrentDevice != device) return;
-            MetaverseProgram.Logger?.Log("HMD Connected");
+            MetaverseProgram.Logger?.Log("[XRInputTrackingAPI] XRNode.CenterEye Connected");
             if (CurrentDevice.subsystem != null)
             {
                 CurrentDevice.subsystem.trackingOriginUpdated += OnTrackingOriginUpdated;
@@ -92,7 +92,11 @@ namespace MetaverseCloudEngine.Unity.XR
             UpdateXRApplicationState();
         }
 
-        private static void OnTrackingOriginUpdated(XRInputSubsystem system) => OriginCentered?.Invoke(system);
+        private static void OnTrackingOriginUpdated(XRInputSubsystem system)
+        {
+            OriginCentered?.Invoke(system);
+            MetaverseProgram.Logger?.Log("[XRInputTrackingAPI] Tracking Origin Updated");
+        }
 
         /// <summary>
         /// Tells the connected input subsystem for the connected HMD to recenter it's origin.

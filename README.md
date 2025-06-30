@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.172.6
-- Added event for initial detection of YOLO inference.
+## 2.172.7
+- Improved log clarity for XRInputTrackingAPI
 
 Updated on June 30, 2025
