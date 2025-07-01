@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.173.0
-- Remove OpenCV support for now.
+## 2.173.1
+- Remove body estimation space enum from BodyEstimationAPI
 
-Updated on June 30, 2025
+Updated on July 01, 2025

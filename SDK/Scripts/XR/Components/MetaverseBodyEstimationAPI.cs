@@ -15,8 +15,6 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         [Header("Begin Body Estimation Options")]
         public PoseEstimationSpace poseSpace = PoseEstimationSpace.World;
-        [LabelText("Body Space (if \"World\" pose space)")]
-        public BodyEstimationSpace bodySpace = BodyEstimationSpace.RoomScale;
 
         public void BeginBodyEstimation()
         {
@@ -26,12 +24,6 @@ namespace MetaverseCloudEngine.Unity.XR.Components
         public void EndBodyEstimation()
         {
             EndBodyEstimationInternal();
-        }
-        
-        public void SetBodyEstimationSpace(int space)
-        {
-            bodySpace = (BodyEstimationSpace) space;
-            BeginBodyEstimationInternal();
         }
         
         public void SetPoseEstimationSpace(int space)
