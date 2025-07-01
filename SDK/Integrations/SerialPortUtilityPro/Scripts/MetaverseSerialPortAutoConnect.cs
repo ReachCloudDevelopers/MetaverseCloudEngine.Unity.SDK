@@ -113,6 +113,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
             _deviceAPI.Dispose();
             if (_currentAutoConnect == this)
                 _currentAutoConnect = null;
+            MetaverseSerialPortUtilityInterop.RemoveSystemEventCallback(
+                serialPortUtilityPro,
+                ref _onSystemEventField,
+                OnSystemEventCallback);
+            
         }
 
         private void Start()
