@@ -132,6 +132,15 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
         public Guid? ID => Guid.TryParse(prefab, out var id) ? id : null;
 
         /// <summary>
+        /// Sets the ID via a string. The string must be a valid GUID.
+        /// </summary>
+        public string IDString
+        {
+            get => prefab;
+            set => prefab = Guid.TryParse(value, out var id) ? id.ToString() : string.Empty; 
+        }
+
+        /// <summary>
         /// True if the prefab is currently being loaded/spawned.
         /// </summary>
         public bool IsLoading { get; private set; }

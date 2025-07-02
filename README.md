@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.173.2
-- Improved MetaverseSerialPortUtilityBridge and MetaverseSerialPortAutoConnect APIs
+## 2.173.3
+- Added IDString property to MetaPrefabSpawner
 
 Updated on July 01, 2025
