@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.173.4
-- Improved MetaverseSerialPortDeviceAPI to display actual bluetooth device name instead of just com port.
+## 2.174.0
+- Reverted MetaverseSerialPortDeviceAPI and added a new WindowsComPortDeviceNameResolver class for resolving port names.
 
-Updated on July 01, 2025
+Updated on July 02, 2025
