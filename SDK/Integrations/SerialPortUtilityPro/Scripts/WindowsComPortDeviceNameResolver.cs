@@ -8,116 +8,230 @@ namespace MetaverseCloudEngine.Unity.SPUP
 {
     public static class WindowsComPortDeviceNameResolver
     {
-        public static string GetDeviceName(string comPort)            // entry-point
+        public static string GetDeviceName(string comPort)
         {
             if (string.IsNullOrWhiteSpace(comPort)) return null;
-            comPort = comPort.Trim().ToUpperInvariant();              // “COM3” → upper-case
-
-            string macBE = GetMacOfComPort(comPort);                  // step ❶ + ❷
-            return macBE == null ? null : NameFromBthport(macBE);     // step ❸
+            comPort = comPort.Trim().ToUpperInvariant();
+            var macBe = GetMacForComPort(comPort);
+            return string.IsNullOrWhiteSpace(macBe) ? null : NameFromBthport(macBe);
         }
 
-        #region ❶ + ❷  Bluetooth-MAC extraction (SetupAPI)
-
-        private static string GetMacOfComPort(string comPort)
+        private static string GetMacForComPort(string comPort)
         {
-            Guid portsClass = new("4D36E978-E325-11CE-BFC1-08002BE10318");   // “Ports (COM & LPT)”
-            IntPtr hSet = SetupDiGetClassDevs(ref portsClass, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT);
-            if (hSet == INVALID_HANDLE_VALUE) return null;
+            Guid portsGuid = new("4D36E978-E325-11CE-BFC1-08002BE10318");
+            IntPtr portsSet = SetupDiGetClassDevs(ref portsGuid, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT);
+            if (portsSet == INVALID_HANDLE_VALUE) return null;
 
             try
             {
                 SP_DEVINFO_DATA info = new() { cbSize = (uint)Marshal.SizeOf<SP_DEVINFO_DATA>() };
 
-                for (uint i = 0; SetupDiEnumDeviceInfo(hSet, i, ref info); i++)
+                for (uint i = 0; SetupDiEnumDeviceInfo(portsSet, i, ref info); i++)
                 {
-                    string portName = ReadPortName(hSet, ref info);
-                    if (!string.Equals(portName, comPort, StringComparison.OrdinalIgnoreCase)) continue;
-
-                    string[] hwIds = ReadMultiSzProperty(hSet, ref info, SPDRP_HARDWAREID);
-                    foreach (var id in hwIds)
+                    var portName = ReadPortName(portsSet, ref info);
+                    if (!string.Equals(portName, comPort, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        int p = id.IndexOf("DEV_", StringComparison.OrdinalIgnoreCase);
-                        if (p >= 0 && id.Length >= p + 16)                 // “DEV_” + 12 hex chars
-                            return id.Substring(p + 4, 12).ToUpperInvariant();
+                        if (string.IsNullOrWhiteSpace(portName))
+                        {
+                            var deviceUniqueId = ReadDeviceUniqueId(portsSet, ref info);
+                            if (!string.IsNullOrWhiteSpace(deviceUniqueId))
+                            {
+                                var split = deviceUniqueId.Split("#");
+                                if (split.Length == 2)
+                                    return split[1].Split("_")[0];
+                            }
+                        }
+                        continue;
                     }
+
+                    string instanceId = GetInstanceId(portsSet, ref info);
+                    string containerId = GetContainerIdFromInstanceId(instanceId);
+                    if (containerId == null) continue;
+
+                    string mac = FindMacByContainerId(containerId);
+                    if (mac != null) return mac;
                 }
             }
-            finally { SetupDiDestroyDeviceInfoList(hSet); }
+            finally { SetupDiDestroyDeviceInfoList(portsSet); }
+
             return null;
         }
 
-        private static string ReadPortName(IntPtr hSet, ref SP_DEVINFO_DATA info)
+        private static string FindMacByContainerId(string containerId)
         {
-            IntPtr hKey = SetupDiOpenDevRegKey(hSet, ref info, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ);
-            if (hKey == INVALID_HANDLE_VALUE) return null;
+            Guid[] searchGuids =
+            {
+                new Guid("E0CBF06C-CD8B-4647-BB8A-263B43F0F974"),
+                new Guid("4D36E96C-E325-11CE-BFC1-08002BE10318")
+            };
 
+            foreach (var id in searchGuids)
+            {
+                var g = id;
+                IntPtr set = SetupDiGetClassDevs(ref g, IntPtr.Zero, IntPtr.Zero, DIGCF_PRESENT);
+                if (set == INVALID_HANDLE_VALUE) continue;
+
+                try
+                {
+                    SP_DEVINFO_DATA info = new() { cbSize = (uint)Marshal.SizeOf<SP_DEVINFO_DATA>() };
+
+                    for (uint i = 0; SetupDiEnumDeviceInfo(set, i, ref info); i++)
+                    {
+                        string instId = GetInstanceId(set, ref info);
+                        string contId = GetContainerIdFromInstanceId(instId);
+
+                        if (!string.Equals(contId, containerId, StringComparison.InvariantCultureIgnoreCase))
+                            continue;
+
+                        if (TryMacViaParents(info.DevInst, out var mac))
+                            return mac;
+                    }
+                }
+                finally { SetupDiDestroyDeviceInfoList(set); }
+            }
+            return null;
+        }
+
+        private static string ReadDeviceUniqueId(IntPtr set, ref SP_DEVINFO_DATA info)
+        {
+            IntPtr hKey = SetupDiOpenDevRegKey(set, ref info, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ);
+            if (hKey == INVALID_HANDLE_VALUE) return null;
+            try { return ReadRegSz(hKey, "Bluetooth_UniqueID"); }
+            finally { RegCloseKey(hKey); }
+        }
+
+        private static string ReadPortName(IntPtr set, ref SP_DEVINFO_DATA info)
+        {
+            IntPtr hKey = SetupDiOpenDevRegKey(set, ref info, DICS_FLAG_GLOBAL, 0, DIREG_DEV, KEY_READ);
+            if (hKey == INVALID_HANDLE_VALUE) return null;
+            try { return ReadRegSz(hKey, "PortName"); }
+            finally { RegCloseKey(hKey); }
+        }
+
+        private static string GetInstanceId(IntPtr set, ref SP_DEVINFO_DATA info)
+        {
+            uint req = 0;
+            SetupDiGetDeviceInstanceId(set, ref info, null, 0, out req);
+            if (req == 0) return null;
+
+            var sb = new StringBuilder((int)req);
+            return SetupDiGetDeviceInstanceId(set, ref info, sb, req, out _) ? sb.ToString() : null;
+        }
+
+        private static string GetContainerIdFromInstanceId(string instanceId)
+        {
+            if (string.IsNullOrEmpty(instanceId)) return null;
+
+            const uint HKLM = 0x80000002u;
+            string path = $@"SYSTEM\CurrentControlSet\Enum\{instanceId}";
+
+            if (RegOpenKeyEx((UIntPtr)HKLM, path, 0, KEY_READ, out var hKey) != 0) return null;
             try
             {
-                return ReadRegSz(hKey, "PortName");
+                uint type = 0, sz = 0;
+                if (RegQueryValueEx(hKey, "ContainerID", IntPtr.Zero, ref type, null, ref sz) != 0 || sz == 0)
+                    return null;
+
+                byte[] buf = new byte[sz];
+                if (RegQueryValueEx(hKey, "ContainerID", IntPtr.Zero, ref type, buf, ref sz) != 0)
+                    return null;
+
+                if (type == 1)
+                    return Encoding.Unicode.GetString(buf).TrimEnd('\0').Trim('{', '}').ToUpperInvariant();
+
+                if (type == 3 && sz >= 16)
+                {
+                    byte[] gbytes = new byte[16];
+                    Array.Copy(buf, gbytes, 16);
+                    return new Guid(gbytes).ToString("D").ToUpperInvariant();
+                }
+            }
+            finally { RegCloseKey(hKey); }
+
+            return null;
+        }
+
+        private static bool TryMacViaParents(uint childDevInst, out string mac)
+        {
+            mac = null;
+            uint dev = childDevInst;
+            const int MAX_DEPTH = 8;
+
+            for (int d = 0; d < MAX_DEPTH; d++)
+            {
+                StringBuilder idBuf = new(512);
+                if (CM_Get_Device_ID(dev, idBuf, idBuf.Capacity, 0) != CR_SUCCESS) break;
+
+                if (TryExtractMac(idBuf.ToString(), out mac)) return true;
+                if (CM_Get_Parent(out uint parent, dev, 0) != CR_SUCCESS) break;
+                dev = parent;
+            }
+            return false;
+        }
+
+        private static bool TryExtractMac(string source, out string mac)
+        {
+            mac = null;
+            if (string.IsNullOrEmpty(source)) return false;
+
+            int p = source.IndexOf("DEV_", StringComparison.InvariantCultureIgnoreCase);
+            if (p >= 0 && source.Length >= p + 16)
+            {
+                mac = source.Substring(p + 4, 12).ToUpperInvariant();
+                return true;
+            }
+
+            for (int i = 0; i <= source.Length - 12; i++)
+            {
+                bool ok = true;
+                for (int j = 0; j < 12 && ok; j++)
+                    ok &= Uri.IsHexDigit(source[i + j]);
+                if (ok)
+                {
+                    mac = source.Substring(i, 12).ToUpperInvariant();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static string ReadRegSz(IntPtr hKey, string name)
+        {
+            uint type = 0, sz = 0;
+            if (RegQueryValueEx(hKey, name, IntPtr.Zero, ref type, null, ref sz) != 0 || sz == 0) return null;
+
+            byte[] buf = new byte[sz];
+            return RegQueryValueEx(hKey, name, IntPtr.Zero, ref type, buf, ref sz) == 0
+                 ? Encoding.ASCII.GetString(buf).TrimEnd('\0')
+                 : null;
+        }
+
+        private static string NameFromBthport(string macBE)
+        {
+            if (macBE?.Length != 12) return null;
+            const uint HKLM = 0x80000002u;
+            string path = $@"SYSTEM\CurrentControlSet\Services\BTHPORT\Parameters\Devices\{macBE}";
+
+            if (RegOpenKeyEx((UIntPtr)HKLM, path, 0, KEY_READ, out var hKey) != 0) return null;
+            try
+            {
+                uint t = 0, sz = 0;
+                if (RegQueryValueEx(hKey, "Name", IntPtr.Zero, ref t, null, ref sz) != 0 || sz == 0) return null;
+
+                byte[] buf = new byte[sz];
+                return RegQueryValueEx(hKey, "Name", IntPtr.Zero, ref t, buf, ref sz) == 0
+                     ? Encoding.UTF8.GetString(buf).TrimEnd('\0')
+                     : null;
             }
             finally { RegCloseKey(hKey); }
         }
 
-        private static string[] ReadMultiSzProperty(IntPtr hSet, ref SP_DEVINFO_DATA info, uint prop)
-        {
-            uint req = 0;
-            SetupDiGetDeviceRegistryProperty(hSet, ref info, prop, out _, null, 0, out req);
-            if (req == 0) return Array.Empty<string>();
+        private const uint DIGCF_PRESENT        = 0x00000002;
+        private const uint KEY_READ             = 0x20019;
+        private const uint DICS_FLAG_GLOBAL     = 0x00000001;
+        private const uint DIREG_DEV            = 0x00000001;
+        private const uint CR_SUCCESS           = 0x00000000;
 
-            byte[] buf = new byte[req];
-            if (!SetupDiGetDeviceRegistryProperty(hSet, ref info, prop, out _, buf, req, out _))
-                return Array.Empty<string>();
-
-            string all = Encoding.Unicode.GetString(buf).TrimEnd('\0');
-            return all.Split('\0', StringSplitOptions.RemoveEmptyEntries);
-        }
-
-        private static string ReadRegSz(IntPtr hKey, string value)
-        {
-            uint type = 0, size = 0;
-            if (RegQueryValueEx(hKey, value, IntPtr.Zero, ref type, null, ref size) != 0 || size == 0)
-                return null;
-
-            byte[] data = new byte[size];
-            if (RegQueryValueEx(hKey, value, IntPtr.Zero, ref type, data, ref size) != 0)
-                return null;
-
-            return Encoding.ASCII.GetString(data).TrimEnd('\0');
-        }
-
-        #endregion
-
-        #region ❸  Bluetooth-friendly-name lookup (unchanged method)
-
-        private static string NameFromBthport(string macBE)
-        {
-            if (macBE.Length != 12) return null;
-            const uint HKLM = 0x80000002u;
-            string path = $@"SYSTEM\CurrentControlSet\Services\BTHPORT\Parameters\Devices\{macBE}";
-
-            if (RegOpenKeyEx((UIntPtr)HKLM, path, 0, KEY_READ, out var h) != 0) return null;
-            try
-            {
-                uint t = 0, sz = 0;
-                if (RegQueryValueEx(h, "Name", IntPtr.Zero, ref t, null, ref sz) != 0 || sz == 0) return null;
-                byte[] buf = new byte[sz];
-                return RegQueryValueEx(h, "Name", IntPtr.Zero, ref t, buf, ref sz) == 0
-                     ? Encoding.UTF8.GetString(buf).TrimEnd('\0')
-                     : null;
-            }
-            finally { RegCloseKey(h); }
-        }
-
-        #endregion
-
-        #region  Native interop + constants
-
-        private const uint DIGCF_PRESENT     = 0x00000002;
-        private const uint KEY_READ          = 0x20019;
-        private const uint DICS_FLAG_GLOBAL  = 0x00000001;
-        private const uint DIREG_DEV         = 0x00000001;
-        private const uint SPDRP_HARDWAREID  = 0x00000001;
         private static readonly IntPtr INVALID_HANDLE_VALUE = new(-1);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -134,31 +248,34 @@ namespace MetaverseCloudEngine.Unity.SPUP
             IntPtr hwndParent, uint flags);
 
         [DllImport("setupapi.dll", SetLastError = true)]
-        private static extern bool SetupDiEnumDeviceInfo(IntPtr hSet, uint index,
-            ref SP_DEVINFO_DATA devInfo);
+        private static extern bool SetupDiEnumDeviceInfo(IntPtr set, uint idx, ref SP_DEVINFO_DATA data);
 
         [DllImport("setupapi.dll", SetLastError = true)]
-        private static extern bool SetupDiGetDeviceRegistryProperty(IntPtr hSet,
-            ref SP_DEVINFO_DATA devInfo, uint prop, out uint proptype,
-            byte[] buffer, uint buflen, out uint reqsize);
+        private static extern bool SetupDiGetDeviceInstanceId(IntPtr set, ref SP_DEVINFO_DATA data,
+            StringBuilder id, uint len, out uint req);
 
         [DllImport("setupapi.dll", SetLastError = true)]
-        private static extern IntPtr SetupDiOpenDevRegKey(IntPtr hSet, ref SP_DEVINFO_DATA devInfo,
-            uint scope, uint hwProfile, uint keyType, uint samDesired);
+        private static extern IntPtr SetupDiOpenDevRegKey(IntPtr set, ref SP_DEVINFO_DATA data,
+            uint scope, uint hwProfile, uint keyType, uint sam);
 
         [DllImport("setupapi.dll", SetLastError = true)]
-        private static extern bool SetupDiDestroyDeviceInfoList(IntPtr hSet);
+        private static extern bool SetupDiDestroyDeviceInfoList(IntPtr set);
+
+        [DllImport("cfgmgr32.dll")]
+        private static extern uint CM_Get_Parent(out uint parent, uint devInst, uint flags);
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+        private static extern uint CM_Get_Device_ID(uint devInst, StringBuilder id, int len, uint flags);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int RegOpenKeyEx(UIntPtr hk, string sub, uint opts, uint sam, out IntPtr phk);
+        private static extern int RegOpenKeyEx(UIntPtr root, string path, uint opts, uint sam, out IntPtr hKey);
 
-        [DllImport("advapi32.dll")] private static extern int RegCloseKey(IntPtr h);
+        [DllImport("advapi32.dll")]
+        private static extern int RegCloseKey(IntPtr hKey);
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-        private static extern int RegQueryValueEx(IntPtr h, string name, IntPtr r,
+        private static extern int RegQueryValueEx(IntPtr hKey, string value, IntPtr r,
             ref uint type, byte[] data, ref uint size);
-
-        #endregion
     }
 }
 

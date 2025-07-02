@@ -71,7 +71,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
                 OnDeviceName?.Invoke(_openSystem == MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp
-                    ? WindowsComPortDeviceNameResolver.GetDeviceName(_data.PortName)
+                    ? WindowsComPortDeviceNameResolver.GetDeviceName(_data.PortName) ?? displayName
                     : displayName);
 #else
                 OnDeviceName?.Invoke(displayName);

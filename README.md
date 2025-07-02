@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.174.0
+## 2.175.0
 - Reverted MetaverseSerialPortDeviceAPI and added a new WindowsComPortDeviceNameResolver class for resolving port names.
 
 Updated on July 02, 2025
