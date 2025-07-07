@@ -324,6 +324,39 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             }
         }
 
+        /// <summary>
+        /// Checks the API to see if there's an update available to the currently loaded meta space.
+        /// </summary>
+        /// <param name="updateAvailable">Invoked if there's an available update.</param>
+        /// <param name="upToDate">Invoked when the MetaSpace is up to date.</param>
+        /// <param name="onError">Invoked when there was an error fetching the meta space status.</param>
+        public void CheckForUpdateM(Action<MetaSpaceDto> updateAvailable, Action upToDate = null, Action<object> onError = null)
+        {
+            OnReady(() =>
+            {
+                if (CurrentlyLoadedMetaSpaceDto is null)
+                {
+                    onError?.Invoke("MetaSpace has not fully loaded.");
+                    return;
+                }
+                MetaverseProgram.ApiClient
+                    .MetaSpaces.FindAsync(CurrentlyLoadedMetaSpaceDto.Id)
+                    .ResponseThen(r =>
+                    {
+                        if (r.UpdatedDate is not null && 
+                            r.UpdatedDate > (
+                                CurrentlyLoadedMetaSpaceDto.UpdatedDate ??
+                                    CurrentlyLoadedMetaSpaceDto.CreatedDate))
+                        {
+                            updateAvailable?.Invoke(r);
+                            return;
+                        }
+                        upToDate?.Invoke();
+                    }, e => onError?.Invoke(e));
+                
+            }, () => onError?.Invoke("MetaSpace failed to initialize."));
+        }
+
         #endregion
 
         #region Private Methods

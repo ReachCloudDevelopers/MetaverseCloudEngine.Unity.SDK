@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.175.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.175.0\n- Reverted MetaverseSerialPortDeviceAPI and added a new WindowsComPortDeviceNameResolver class for resolving port names.\n\nUpdated on July 02, 2025",
+  "version": "2.176.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.176.0\n- Added new CheckForUpdate method to MetaSpace\n\nUpdated on July 07, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
