@@ -165,7 +165,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     case "LICENSE_ERROR":
                         MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Device Closed: ${e.ToUpperInvariant().Trim()}");
                         onDeviceClosed?.Invoke();
-                        AutoConnect();
+                        if (HasSavedDevice)
+                            AutoConnect();
                         break;
                     case "OPENED":
                         onDeviceOpened?.Invoke();
