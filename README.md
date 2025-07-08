@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.176.0
-- Added new CheckForUpdate method to MetaSpace
+## 2.176.1
+- Fixed method name
 
 Updated on July 07, 2025

@@ -330,7 +330,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         /// <param name="updateAvailable">Invoked if there's an available update.</param>
         /// <param name="upToDate">Invoked when the MetaSpace is up to date.</param>
         /// <param name="onError">Invoked when there was an error fetching the meta space status.</param>
-        public void CheckForUpdateM(Action<MetaSpaceDto> updateAvailable, Action upToDate = null, Action<object> onError = null)
+        public void CheckForUpdate(Action<MetaSpaceDto> updateAvailable, Action upToDate = null, Action<object> onError = null)
         {
             OnReady(() =>
             {
