@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.176.1
-- Fixed method name
+## 2.176.2
+- Fixed auto connect not continuously watching the connection.
 
-Updated on July 07, 2025
+Updated on July 08, 2025

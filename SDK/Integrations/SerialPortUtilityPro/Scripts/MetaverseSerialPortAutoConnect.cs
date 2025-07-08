@@ -31,9 +31,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
         }
 
         [Required]
-        [SerializeField] private Component serialPortUtilityPro;
-        [SerializeField] private bool onStart = true;
-        [SerializeField] private bool saveLastDevice = true;
+        [SerializeField]
+        private Component serialPortUtilityPro;
+        [SerializeField]
+        private bool onStart = true;
+        [SerializeField]
+        private bool saveLastDevice = true;
 
         [ShowIf(nameof(saveLastDevice))]
         [SerializeField]
@@ -43,15 +46,22 @@ namespace MetaverseCloudEngine.Unity.SPUP
         [SerializeField]
         private string regexSearchString;
 
-        [SerializeField] private DeviceField searchField = (DeviceField)(-1);
-        [SerializeField] private DeviceType searchType = (DeviceType)(-1);
-        [SerializeField] private bool debugLog = true;
-        
+        [SerializeField]
+        private DeviceField searchField = (DeviceField)(-1);
+        [SerializeField]
+        private DeviceType searchType = (DeviceType)(-1);
+        [SerializeField]
+        private bool debugLog = true;
+
         [Header("Events")]
-        [SerializeField] private UnityEvent onHasSavedDevice = new();
-        [SerializeField] private UnityEvent onNoSavedDevice = new();
-        [SerializeField] private UnityEvent onDeviceOpened = new();
-        [SerializeField] private UnityEvent onDeviceClosed = new();
+        [SerializeField]
+        private UnityEvent onHasSavedDevice = new();
+        [SerializeField]
+        private UnityEvent onNoSavedDevice = new();
+        [SerializeField]
+        private UnityEvent onDeviceOpened = new();
+        [SerializeField]
+        private UnityEvent onDeviceClosed = new();
 
         private FieldInfo _isAutoOpenField;
         private FieldInfo _onSystemEventField;
@@ -65,38 +75,40 @@ namespace MetaverseCloudEngine.Unity.SPUP
             get => saveKey;
             set => saveKey = value;
         }
-        
+
         public string RegexSearchString
         {
             get => regexSearchString;
             set => regexSearchString = value;
         }
-        
+
         public UnityEvent OnHasSavedDevice
         {
             get => onHasSavedDevice;
             set => onHasSavedDevice = value;
         }
-        
+
         public UnityEvent OnNoSavedDevice
         {
             get => onNoSavedDevice;
             set => onNoSavedDevice = value;
         }
-        
+
         public UnityEvent OnDeviceOpened
         {
             get => onDeviceOpened;
             set => onDeviceOpened = value;
         }
-        
+
         public UnityEvent OnDeviceClosed
         {
             get => onDeviceClosed;
             set => onDeviceClosed = value;
         }
-        
-        public bool HasSavedDevice => !string.IsNullOrEmpty(saveKey) && MetaverseProgram.Prefs.GetString(GetSaveKey(), null) != null;
+
+        public bool HasSavedDevice => 
+            !string.IsNullOrEmpty(saveKey) &&
+                MetaverseProgram.Prefs.GetString(GetSaveKey(), null) != null;
 
         private void OnValidate()
         {
@@ -117,14 +129,15 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 serialPortUtilityPro,
                 ref _onSystemEventField,
                 OnSystemEventCallback);
-            
         }
 
         private void Start()
         {
             if (!serialPortUtilityPro) return;
-            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField, MetaverseSerialPortUtilityInterop.SettableFieldID.IsAutoOpen, false);
-            MetaverseSerialPortUtilityInterop.AddSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField, OnSystemEventCallback, ref _onSystemEventCallback);
+            MetaverseSerialPortUtilityInterop.SetField(serialPortUtilityPro, ref _isAutoOpenField,
+                MetaverseSerialPortUtilityInterop.SettableFieldID.IsAutoOpen, false);
+            MetaverseSerialPortUtilityInterop.AddSystemEventCallback(serialPortUtilityPro, ref _onSystemEventField,
+                OnSystemEventCallback, ref _onSystemEventCallback);
             if (!string.IsNullOrWhiteSpace(saveKey) && MetaverseProgram.Prefs.GetString(GetSaveKey(), null) != null)
                 onHasSavedDevice?.Invoke();
             else onNoSavedDevice?.Invoke();
@@ -134,18 +147,25 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void OnSystemEventCallback(object sender, string e)
         {
             if (!this) return;
+            OnSerialPortMessage(e);
+        }
+
+        private void OnSerialPortMessage(string e)
+        {
             MetaverseDispatcher.AtEndOfFrame(() =>
             {
                 if (!this) return;
                 if (_currentAutoConnect == this)
                     _currentAutoConnect = null;
-                switch (e.ToUpper())
+                switch (e.ToUpperInvariant().Trim())
                 {
                     case "CLOSED":
                     case "OPEN_ERROR":
                     case "BT_DISCONNECT_TO_SERVERMODE":
                     case "LICENSE_ERROR":
+                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Device Closed: ${e.ToUpperInvariant().Trim()}");
                         onDeviceClosed?.Invoke();
+                        AutoConnect();
                         break;
                     case "OPENED":
                         onDeviceOpened?.Invoke();
@@ -154,11 +174,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         PropertyInfo vendorIdProperty = null;
                         PropertyInfo portProperty = null;
                         PropertyInfo productIdProperty = null;
-                        var openMethod = MetaverseSerialPortUtilityInterop.GetField<int>(serialPortUtilityPro, ref openMethodField, MetaverseSerialPortUtilityInterop.GettableFieldID.OpenMethod);
-                        var vendorId = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro, ref vendorIdProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.VendorID);
-                        var port = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro, ref portProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.Port);
-                        var productId = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro, ref productIdProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.ProductID);
-                        var serialNumber = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro, ref serialNumberProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.SerialNumber);
+                        var openMethod = MetaverseSerialPortUtilityInterop.GetField<int>(serialPortUtilityPro,
+                            ref openMethodField, MetaverseSerialPortUtilityInterop.GettableFieldID.OpenMethod);
+                        var vendorId = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro,
+                            ref vendorIdProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.VendorID);
+                        var port = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro,
+                            ref portProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.Port);
+                        var productId = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro,
+                            ref productIdProperty, MetaverseSerialPortUtilityInterop.GettablePropertyID.ProductID);
+                        var serialNumber = MetaverseSerialPortUtilityInterop.GetProperty<string>(serialPortUtilityPro,
+                            ref serialNumberProperty,
+                            MetaverseSerialPortUtilityInterop.GettablePropertyID.SerialNumber);
                         var deviceInfo = new MetaverseSerialPortUtilityInterop.DeviceInfo
                         {
                             SerialNumber = serialNumber,
@@ -176,8 +202,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         }
                         else if (debugLog)
                         {
-                            MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Device opened: {deviceInfo} | SaveLastDevice: {saveLastDevice} | SaveKey: {saveKey}");
+                            MetaverseProgram.Logger.Log(
+                                $"[SPUP AutoConnect] Device opened: {deviceInfo} | SaveLastDevice: {saveLastDevice} | SaveKey: {saveKey}");
                         }
+
                         break;
                 }
             });
@@ -196,9 +224,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (debugLog)
                 MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->DisconnectAndForget()");
-            
+
             MethodInfo closeMethod = null;
-            MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod, MetaverseSerialPortUtilityInterop.InstanceMethodID.Close);
+            MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod,
+                MetaverseSerialPortUtilityInterop.InstanceMethodID.Close);
 
             if (!saveLastDevice || string.IsNullOrEmpty(saveKey)) return;
             MetaverseProgram.Prefs.DeleteKey(GetSaveKey());
@@ -213,38 +242,41 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             MetaverseDispatcher.WaitForSeconds(0.5f, () =>
             {
-                if (debugLog)
-                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
-                
                 if (!this || !isActiveAndEnabled)
                 {
                     if (this && debugLog)
-                        MetaverseProgram.Logger.Log("[SPUP AutoConnect] Canceled because the component is not enabled.");
+                        MetaverseProgram.Logger.Log(
+                            "[SPUP AutoConnect] Canceled because the component is not enabled.");
                     return;
                 }
-                
+
+                if (debugLog)
+                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
+
                 if (_currentAutoConnect != this && _currentAutoConnect)
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log(
                             $"[SPUP AutoConnect] {saveKey} Waiting to auto connect...");
-                    
-                    MetaverseDispatcher.WaitUntil(() => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
-                    {
-                        if (this && isActiveAndEnabled)
-                            AutoConnect();
-                    });
+
+                    MetaverseDispatcher.WaitUntil(
+                        () => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
+                        {
+                            if (this && isActiveAndEnabled)
+                                AutoConnect();
+                        });
 
                     return;
                 }
-            
+
                 if (serialPortUtilityPro is Behaviour { isActiveAndEnabled: false })
                 {
                     if (debugLog)
-                        MetaverseProgram.Logger.Log("AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
+                        MetaverseProgram.Logger.Log(
+                            "AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
                     return;
                 }
-                
+
                 if (!_triedToOpenSavedDevice)
                 {
                     _triedToOpenSavedDevice = true;
@@ -259,8 +291,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             else
                                 MetaverseProgram.Logger.Log("[SPUP AutoConnect] No saved device found for " + saveKey);
                         }
-                        
-                        if (!string.IsNullOrEmpty(deviceInfoString) && 
+
+                        if (!string.IsNullOrEmpty(deviceInfoString) &&
                             MetaverseSerialPortUtilityInterop.DeviceInfo.TryParse(deviceInfoString, out var i) &&
                             i.ParsedOpenSystem is not null)
                         {
@@ -290,7 +322,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseSerialPortUtilityInterop.OpenSystem.Usb);
                 var pciDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.Pci);
-                
+
                 if (btDevices is null or { Length: 0 } &&
                     usbDevices is null or { Length: 0 } &&
                     pciDevices is null or { Length: 0 })
@@ -342,9 +374,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log($"AutoConnect found a device: {deviceInfo.Item1.SerialNumber}");
-                    
                     _currentAutoConnect = this;
-
                     _deviceAPI.Initialize(
                         serialPortUtilityPro,
                         deviceInfo.Item1.SerialNumber,
@@ -352,12 +382,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         deviceInfo.Item2);
                     _deviceAPI.Open();
                 }
-                else
-                {
-                    if (debugLog)
-                        MetaverseProgram.Logger.Log(
-                            $"AutoConnect did not find a device for: {regexSearchString} | {searchField} | {searchType}");
-                }
+                else if (debugLog)
+                    MetaverseProgram.Logger.Log(
+                        $"AutoConnect did not find a device for: {regexSearchString} | {searchField} | {searchType}");
 
                 if (!IsInvoking(nameof(WatchConnection)))
                     Invoke(nameof(WatchConnection), 1f);
