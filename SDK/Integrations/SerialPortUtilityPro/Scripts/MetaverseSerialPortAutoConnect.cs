@@ -157,6 +157,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (!this) return;
                 if (_currentAutoConnect == this)
                     _currentAutoConnect = null;
+                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Event ID: ${e.ToUpperInvariant().Trim()}");
                 switch (e.ToUpperInvariant().Trim())
                 {
                     case "CLOSED":

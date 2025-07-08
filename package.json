@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.176.3",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.176.3\n- Created check to see if a saved device is available.\n\nUpdated on July 08, 2025",
+  "version": "2.176.4",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.176.4\n- Added better logging to MetaverseSerialPortAutoConnect\n\nUpdated on July 08, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
