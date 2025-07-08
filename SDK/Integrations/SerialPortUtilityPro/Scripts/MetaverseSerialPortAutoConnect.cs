@@ -291,7 +291,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 MetaverseProgram.Logger.Log(
                                     $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}");
                             else
-                                MetaverseProgram.Logger.Log("[SPUP AutoConnect] No saved device found for " + saveKey);
+                                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] No saved device found for {saveKey}");
                         }
 
                         if (!string.IsNullOrEmpty(deviceInfoString) &&
@@ -331,6 +331,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log("[SPUP AutoConnect] Canceled because no devices are connected.");
+                    if (!IsInvoking(nameof(WatchConnection)))
+                        Invoke(nameof(WatchConnection), 1f);
                     return;
                 }
 

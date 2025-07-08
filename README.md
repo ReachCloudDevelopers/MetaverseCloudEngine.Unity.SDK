@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.176.4
-- Added better logging to MetaverseSerialPortAutoConnect
+## 2.176.5
+- Ensure watch connection in MetaverseSerialPortAutoConnect
 
 Updated on July 08, 2025
