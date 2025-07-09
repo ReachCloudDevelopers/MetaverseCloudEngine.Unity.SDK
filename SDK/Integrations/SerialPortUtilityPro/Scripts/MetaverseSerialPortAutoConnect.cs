@@ -170,6 +170,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     case "LICENSE_ERROR":
                         _triedToOpenSavedDevice = false;
                         onDeviceClosed?.Invoke();
+                        if (_currentAutoConnect == this)
+                            _currentAutoConnect = null;
                         if (HasSavedDevice && !IsInvoking(nameof(WatchConnection)))
                             Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         break;
@@ -223,6 +225,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 WatchConnection();
         }
 
+        private void OnDisable()
+        {
+            if (_currentAutoConnect == this)
+                _currentAutoConnect = null;
+            _triedToOpenSavedDevice = false;
+        }
+
         /// <summary>
         /// Disconnects from the device and clears the saved device info.
         /// </summary>
@@ -230,6 +239,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (debugLog)
                 MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->DisconnectAndForget()");
+            
+            if (_currentAutoConnect == this)
+                _currentAutoConnect = null;
+            _triedToOpenSavedDevice = false;
 
             MethodInfo closeMethod = null;
             MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod,
@@ -292,7 +305,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             MetaverseProgram.Logger.Log(
                                 !string.IsNullOrEmpty(deviceInfoString)
                                     ? $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}"
-                                    : $"[SPUP AutoConnect] No saved device found for {saveKey}");
+                                    : $"[SPUP AutoConnect] No saved device found for: {saveKey}");
                         }
 
                         if (!string.IsNullOrEmpty(deviceInfoString) &&
@@ -310,11 +323,28 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 i.SerialNumber,
                                 i,
                                 i.ParsedOpenSystem.Value);
+                            _deviceAPI.OnStoppedOpening.RemoveAllListeners();
+                            _deviceAPI.OnStoppedOpening.AddListener(() =>
+                            {
+                                if (!_deviceAPI.IsThisDeviceOpened())
+                                {
+                                    if (_triedToOpenSavedDevice)
+                                    {
+                                        OnSerialPortMessage("OPEN_ERROR");
+                                        _triedToOpenSavedDevice = false;
+                                    }
+                                    
+                                    if (_currentAutoConnect == this)
+                                        _currentAutoConnect = null;
+                                }
+                            });
                             _deviceAPI.Open();
                             return;
                         }
                     }
                 }
+                else if (debugLog)
+                    MetaverseProgram.Logger.Log("[SPUP AutoConnect] Already tried opening saved device... Awaiting result...");
 
                 if (string.IsNullOrEmpty(regexSearchString))
                 {
@@ -345,7 +375,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseProgram.Logger.Log(
                         $"Connected Bluetooth Devices: {btDevices?.Length ?? 0} | " +
                         $"Connected USB Devices: {usbDevices?.Length ?? 0} | " +
-                        $"Connected PCI Devices: {(pciDevices?.Length ?? 0)}");
+                        $"Connected PCI Devices: {pciDevices?.Length ?? 0}");
 
                 var reg = regexSearchString?.Replace("\\_", "_") ?? string.Empty;
                 var deviceInfo =
