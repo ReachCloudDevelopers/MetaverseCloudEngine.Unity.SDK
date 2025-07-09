@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.176.11
-- Fixed current device being opened not being cleared out of memory after connection was successful
+## 2.177.0
+- Updated SPUP device logic
 
 Updated on July 09, 2025

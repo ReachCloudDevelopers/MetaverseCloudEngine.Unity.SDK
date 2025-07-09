@@ -69,7 +69,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private FieldInfo _isAutoOpenField;
         private FieldInfo _onSystemEventField;
         private UnityAction<object, string> _onSystemEventCallback;
-        private bool _triedToOpenSavedDevice;
+        private bool _opening;
         private readonly MetaverseSerialPortDeviceAPI _deviceAPI = new();
         private static MetaverseSerialPortAutoConnect _currentAutoConnect;
 
@@ -168,7 +168,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     case "OPEN_ERROR":
                     case "BT_DISCONNECT_TO_SERVERMODE":
                     case "LICENSE_ERROR":
-                        _triedToOpenSavedDevice = false;
+                        _opening = false;
                         onDeviceClosed?.Invoke();
                         if (_currentAutoConnect == this)
                             _currentAutoConnect = null;
@@ -176,7 +176,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         break;
                     case "OPENED":
-                        _triedToOpenSavedDevice = false;
+                        _opening = false;
                         onDeviceOpened?.Invoke();
                         if (_currentAutoConnect == this)
                             _currentAutoConnect = null;
@@ -232,7 +232,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (_currentAutoConnect == this)
                 _currentAutoConnect = null;
-            _triedToOpenSavedDevice = false;
+            _opening = false;
         }
 
         /// <summary>
@@ -245,7 +245,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             
             if (_currentAutoConnect == this)
                 _currentAutoConnect = null;
-            _triedToOpenSavedDevice = false;
+            _opening = false;
 
             MethodInfo closeMethod = null;
             MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod,
@@ -296,10 +296,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (debugLog && !string.IsNullOrEmpty(saveKey))
                     MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
 
-                if (!_triedToOpenSavedDevice)
+                if (!_opening)
                 {
-                    _triedToOpenSavedDevice = true;
-                    
                     if (!string.IsNullOrEmpty(saveKey))
                     {
                         var deviceInfoString = MetaverseProgram.Prefs.GetString(GetSaveKey(), string.Empty);
@@ -320,6 +318,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     $"[SPUP AutoConnect] Found a saved device: {i.SerialNumber}");
 
                             _currentAutoConnect = this;
+                            _opening = true;
 
                             _deviceAPI.Initialize(
                                 serialPortUtilityPro,
@@ -331,15 +330,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             {
                                 if (!_deviceAPI.IsThisDeviceOpened())
                                 {
-                                    if (_triedToOpenSavedDevice)
-                                    {
+                                    if (_opening)
                                         OnSerialPortMessage("OPEN_ERROR");
-                                        _triedToOpenSavedDevice = false;
-                                    }
-                                    
-                                    if (_currentAutoConnect == this)
-                                        _currentAutoConnect = null;
                                 }
+                                                                    
+                                if (_currentAutoConnect == this)
+                                    _currentAutoConnect = null;
+                                
+                                _opening = false;
                             });
                             _deviceAPI.Open();
                             return;
