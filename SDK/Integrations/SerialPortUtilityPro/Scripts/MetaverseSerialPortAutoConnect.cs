@@ -13,6 +13,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
     [DisallowMultipleComponent]
     public class MetaverseSerialPortAutoConnect : TriInspectorMonoBehaviour
     {
+        private const float WATCH_CONNECTION_INTERVAL = 5;
+        private const float AUTO_CONNECT_DELAY = 0.5f;
+        
         [Flags]
         public enum DeviceField
         {
@@ -165,9 +168,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     case "OPEN_ERROR":
                     case "BT_DISCONNECT_TO_SERVERMODE":
                     case "LICENSE_ERROR":
+                        _triedToOpenSavedDevice = false;
                         onDeviceClosed?.Invoke();
-                        if (HasSavedDevice)
-                            AutoConnect();
+                        if (HasSavedDevice && !IsInvoking(nameof(WatchConnection)))
+                            Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         break;
                     case "OPENED":
                         onDeviceOpened?.Invoke();
@@ -216,7 +220,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void OnEnable()
         {
             if (_deviceAPI.IsInitialized)
-                Invoke(nameof(WatchConnection), 1f);
+                WatchConnection();
         }
 
         /// <summary>
@@ -242,7 +246,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// </summary>
         public void AutoConnect()
         {
-            MetaverseDispatcher.WaitForSeconds(0.5f, () =>
+            MetaverseDispatcher.WaitForSeconds(AUTO_CONNECT_DELAY, () =>
             {
                 if (!this || !isActiveAndEnabled)
                 {
@@ -252,7 +256,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
 
-                if (debugLog)
+                if (debugLog && !string.IsNullOrEmpty(saveKey))
                     MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
 
                 if (_currentAutoConnect != this && _currentAutoConnect)
@@ -260,14 +264,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (debugLog)
                         MetaverseProgram.Logger.Log(
                             $"[SPUP AutoConnect] {saveKey} Waiting to auto connect...");
-
                     MetaverseDispatcher.WaitUntil(
                         () => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
                         {
                             if (this && isActiveAndEnabled)
                                 AutoConnect();
                         });
-
                     return;
                 }
 
@@ -287,11 +289,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         var deviceInfoString = MetaverseProgram.Prefs.GetString(GetSaveKey(), string.Empty);
                         if (debugLog)
                         {
-                            if (!string.IsNullOrEmpty(deviceInfoString))
-                                MetaverseProgram.Logger.Log(
-                                    $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}");
-                            else
-                                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] No saved device found for {saveKey}");
+                            MetaverseProgram.Logger.Log(
+                                !string.IsNullOrEmpty(deviceInfoString)
+                                    ? $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}"
+                                    : $"[SPUP AutoConnect] No saved device found for {saveKey}");
                         }
 
                         if (!string.IsNullOrEmpty(deviceInfoString) &&
@@ -320,7 +321,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (debugLog)
                         MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey} No Regex Search String.");
                     if (!IsInvoking(nameof(WatchConnection)))
-                        Invoke(nameof(WatchConnection), 1f);
+                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                     return;
                 }
 
@@ -338,14 +339,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (debugLog)
                         MetaverseProgram.Logger.Log("[SPUP AutoConnect] Canceled because no devices are connected.");
                     if (!IsInvoking(nameof(WatchConnection)))
-                        Invoke(nameof(WatchConnection), 1f);
+                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                     return;
                 }
 
                 if (debugLog)
                     MetaverseProgram.Logger.Log(
-                        $"Connected Bluetooth Devices: {(btDevices?.Length ?? 0)} | Connected USB Devices: {(usbDevices?.Length ?? 0)} | Connected PCI Devices: {(pciDevices?.Length ?? 0)}");
+                        $"Connected Bluetooth Devices: {btDevices?.Length ?? 0} | " +
+                        $"Connected USB Devices: {usbDevices?.Length ?? 0} | " +
+                        $"Connected PCI Devices: {(pciDevices?.Length ?? 0)}");
 
+                var reg = regexSearchString?.Replace("\\_", "_") ?? string.Empty;
                 var deviceInfo =
                     Array.Empty<(MetaverseSerialPortUtilityInterop.DeviceInfo,
                             MetaverseSerialPortUtilityInterop.OpenSystem)>()
@@ -368,16 +372,16 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         .FirstOrDefault(device =>
                             device.Item1 != null && (
                                 (!string.IsNullOrWhiteSpace(device.Item1.SerialNumber) &&
-                                 Regex.IsMatch(device.Item1.SerialNumber, regexSearchString.Replace("\\_", "_")) &&
+                                 Regex.IsMatch(device.Item1.SerialNumber, reg) &&
                                  searchField.HasFlag(DeviceField.SerialNumber)) ||
                                 (!string.IsNullOrWhiteSpace(device.Item1.Product) &&
-                                 Regex.IsMatch(device.Item1.Product, regexSearchString.Replace("\\_", "_")) &&
+                                 Regex.IsMatch(device.Item1.Product, reg) &&
                                  searchField.HasFlag(DeviceField.Product)) ||
                                 (!string.IsNullOrWhiteSpace(device.Item1.PortName) &&
-                                 Regex.IsMatch(device.Item1.PortName, regexSearchString.Replace("\\_", "_")) &&
+                                 Regex.IsMatch(device.Item1.PortName, reg) &&
                                  searchField.HasFlag(DeviceField.PortName)) ||
                                 (!string.IsNullOrWhiteSpace(device.Item1.Vendor) &&
-                                 Regex.IsMatch(device.Item1.Vendor, regexSearchString.Replace("\\_", "_")) &&
+                                 Regex.IsMatch(device.Item1.Vendor, reg) &&
                                  searchField.HasFlag(DeviceField.Vendor))));
 
                 if (deviceInfo.Item1 != null)
@@ -397,7 +401,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         $"AutoConnect did not find a device for: {regexSearchString} | {searchField} | {searchType}");
 
                 if (!IsInvoking(nameof(WatchConnection)))
-                    Invoke(nameof(WatchConnection), 1f); 
+                    Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL); 
             });
         }
 
@@ -408,13 +412,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (_deviceAPI.IsADeviceBeingOpened())
                 {
                     if (!IsInvoking(nameof(WatchConnection)))
-                        Invoke(nameof(WatchConnection), 1f);
+                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                 }
                 else if (!IsInvoking(nameof(AutoConnect)))
-                    Invoke(nameof(AutoConnect), 1f);
+                    Invoke(nameof(AutoConnect), WATCH_CONNECTION_INTERVAL);
             }
             else if (!IsInvoking(nameof(WatchConnection)))
-                Invoke(nameof(WatchConnection), 5f);
+                Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
         }
 
         private string GetSaveKey()

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.176.6
-- Ensure all code paths will invoke the WatchConnection method in MetaverseSerialPortAutoConnect
+## 2.176.7
+- Ensure that WatchConnection is called even after initial try to open saved device
 
 Updated on July 09, 2025
