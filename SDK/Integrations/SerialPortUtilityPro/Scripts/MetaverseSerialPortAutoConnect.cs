@@ -256,9 +256,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
 
-                if (debugLog && !string.IsNullOrEmpty(saveKey))
-                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
-
                 if (_currentAutoConnect != this && _currentAutoConnect)
                 {
                     if (debugLog)
@@ -275,14 +272,16 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 if (serialPortUtilityPro is Behaviour { isActiveAndEnabled: false })
                 {
-                    if (debugLog)
-                        MetaverseProgram.Logger.Log(
-                            "[SPUP AutoConnect] AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
+                    if (!IsInvoking(nameof(WatchConnection)))
+                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                     return;
                 }
 
                 if (!_triedToOpenSavedDevice)
                 {
+                    if (debugLog && !string.IsNullOrEmpty(saveKey))
+                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
+
                     _triedToOpenSavedDevice = true;
                     if (!string.IsNullOrEmpty(saveKey))
                     {
@@ -318,9 +317,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 if (string.IsNullOrEmpty(regexSearchString))
                 {
-                    if (debugLog)
-                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey} No Regex Search String.");
-                    if (!IsInvoking(nameof(WatchConnection)))
+                    if (!IsInvoking(nameof(WatchConnection)) && HasSavedDevice)
                         Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                     return;
                 }

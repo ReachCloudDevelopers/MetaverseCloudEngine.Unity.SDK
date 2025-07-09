@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.176.7",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.176.7\n- Ensure that WatchConnection is called even after initial try to open saved device\n\nUpdated on July 09, 2025",
+  "version": "2.176.8",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.176.8\n- Improved logging and reconnection logic in MetaverseSerialPortAutoConnect\n\nUpdated on July 09, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
