@@ -277,12 +277,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     return;
                 }
 
+                if (debugLog && !string.IsNullOrEmpty(saveKey))
+                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
+
                 if (!_triedToOpenSavedDevice)
                 {
-                    if (debugLog && !string.IsNullOrEmpty(saveKey))
-                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
-
                     _triedToOpenSavedDevice = true;
+                    
                     if (!string.IsNullOrEmpty(saveKey))
                     {
                         var deviceInfoString = MetaverseProgram.Prefs.GetString(GetSaveKey(), string.Empty);
