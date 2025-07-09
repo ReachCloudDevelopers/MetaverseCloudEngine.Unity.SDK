@@ -333,6 +333,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     MetaverseProgram.Logger.Log(
                                         $"[MetaverseSerialPortDeviceAPI] Serial Number: {GetSerialNumber()} Expected Serial Number: {_data.SerialNumber} Opened: {IsAnyDeviceOpened()}");
                                     OpenFailed();
+                                    CheckOpened();
                                 }
                             });
                     });

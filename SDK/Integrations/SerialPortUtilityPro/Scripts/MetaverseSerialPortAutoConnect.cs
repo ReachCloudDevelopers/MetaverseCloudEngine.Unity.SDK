@@ -176,7 +176,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         break;
                     case "OPENED":
+                        _triedToOpenSavedDevice = false;
                         onDeviceOpened?.Invoke();
+                        if (_currentAutoConnect == this)
+                            _currentAutoConnect = null;
                         FieldInfo openMethodField = null;
                         PropertyInfo serialNumberProperty = null;
                         PropertyInfo vendorIdProperty = null;
