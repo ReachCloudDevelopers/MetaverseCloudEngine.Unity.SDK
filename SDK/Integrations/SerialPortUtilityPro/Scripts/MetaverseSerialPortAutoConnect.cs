@@ -157,14 +157,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (!this) return;
                 if (_currentAutoConnect == this)
                     _currentAutoConnect = null;
-                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Event ID: ${e.ToUpperInvariant().Trim()}");
+                if (debugLog)
+                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Event ID: {e.ToUpperInvariant().Trim()}");
                 switch (e.ToUpperInvariant().Trim())
                 {
                     case "CLOSED":
                     case "OPEN_ERROR":
                     case "BT_DISCONNECT_TO_SERVERMODE":
                     case "LICENSE_ERROR":
-                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Device Closed: ${e.ToUpperInvariant().Trim()}");
                         onDeviceClosed?.Invoke();
                         if (HasSavedDevice)
                             AutoConnect();
@@ -275,7 +275,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                         MetaverseProgram.Logger.Log(
-                            "AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
+                            "[SPUP AutoConnect] AutoConnect canceled because the SerialPortUtilityPro component is disabled.");
                     return;
                 }
 
@@ -316,7 +316,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 }
 
                 if (string.IsNullOrEmpty(regexSearchString))
+                {
+                    if (debugLog)
+                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey} No Regex Search String.");
+                    if (!IsInvoking(nameof(WatchConnection)))
+                        Invoke(nameof(WatchConnection), 1f);
                     return;
+                }
 
                 var btDevices = MetaverseSerialPortUtilityInterop.GetConnectedDeviceList(
                     MetaverseSerialPortUtilityInterop.OpenSystem.BluetoothSsp);
@@ -391,7 +397,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         $"AutoConnect did not find a device for: {regexSearchString} | {searchField} | {searchType}");
 
                 if (!IsInvoking(nameof(WatchConnection)))
-                    Invoke(nameof(WatchConnection), 1f);
+                    Invoke(nameof(WatchConnection), 1f); 
             });
         }
 
