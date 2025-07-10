@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.0
-- Updated SPUP device logic
+## 2.177.1
+- Improved MetaverseSerialPortAutoConnect connection timeout logic
 
-Updated on July 09, 2025
+Updated on July 10, 2025

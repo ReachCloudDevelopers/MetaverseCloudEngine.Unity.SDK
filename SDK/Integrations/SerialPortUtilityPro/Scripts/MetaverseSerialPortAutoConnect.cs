@@ -14,6 +14,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
     public class MetaverseSerialPortAutoConnect : TriInspectorMonoBehaviour
     {
         private const float WATCH_CONNECTION_INTERVAL = 5;
+        private const float MAX_CONNECTION_TIMEOUT = 20;
         private const float AUTO_CONNECT_DELAY = 0.5f;
         
         [Flags]
@@ -72,6 +73,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private bool _opening;
         private readonly MetaverseSerialPortDeviceAPI _deviceAPI = new();
         private static MetaverseSerialPortAutoConnect _currentAutoConnect;
+
+        private float _lastConnectionAttemptTime;
 
         public string SaveKey
         {
@@ -172,6 +175,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         onDeviceClosed?.Invoke();
                         if (_currentAutoConnect == this)
                             _currentAutoConnect = null;
+                        StopAllCoroutines();
                         if (HasSavedDevice && !IsInvoking(nameof(WatchConnection)))
                             Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         break;
@@ -230,9 +234,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OnDisable()
         {
-            if (_currentAutoConnect == this)
-                _currentAutoConnect = null;
-            _opening = false;
+            Close();
         }
 
         /// <summary>
@@ -242,19 +244,24 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (debugLog)
                 MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->DisconnectAndForget()");
-            
-            if (_currentAutoConnect == this)
-                _currentAutoConnect = null;
-            _opening = false;
-
-            MethodInfo closeMethod = null;
-            MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod,
-                MetaverseSerialPortUtilityInterop.InstanceMethodID.Close);
-
+            Close();
             if (!saveLastDevice || string.IsNullOrEmpty(saveKey)) return;
             MetaverseProgram.Prefs.DeleteKey(GetSaveKey());
             if (debugLog)
                 MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Cleared saved device info for: {saveKey}");
+        }
+
+        /// <summary>
+        /// Closes the serial port connection.
+        /// </summary>
+        public void Close()
+        {
+            if (_currentAutoConnect == this)
+                _currentAutoConnect = null;
+            _opening = false;
+            MethodInfo closeMethod = null;
+            MetaverseSerialPortUtilityInterop.CallInstanceMethod(serialPortUtilityPro, ref closeMethod,
+                MetaverseSerialPortUtilityInterop.InstanceMethodID.Close);
         }
 
         /// <summary>
@@ -310,43 +317,50 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         }
 
                         if (!string.IsNullOrEmpty(deviceInfoString) &&
-                            MetaverseSerialPortUtilityInterop.DeviceInfo.TryParse(deviceInfoString, out var i) &&
-                            i.ParsedOpenSystem is not null)
+                            MetaverseSerialPortUtilityInterop.DeviceInfo.TryParse(deviceInfoString, out var dev) &&
+                            dev.ParsedOpenSystem is not null)
                         {
                             if (debugLog)
                                 MetaverseProgram.Logger.Log(
-                                    $"[SPUP AutoConnect] Found a saved device: {i.SerialNumber}");
+                                    $"[SPUP AutoConnect] Found a saved device OPEN: {dev.SerialNumber}");
 
                             _currentAutoConnect = this;
                             _opening = true;
 
                             _deviceAPI.Initialize(
                                 serialPortUtilityPro,
-                                i.SerialNumber,
-                                i,
-                                i.ParsedOpenSystem.Value);
+                                dev.SerialNumber,
+                                dev,
+                                dev.ParsedOpenSystem.Value);
                             _deviceAPI.OnStoppedOpening.RemoveAllListeners();
                             _deviceAPI.OnStoppedOpening.AddListener(() =>
                             {
-                                if (!_deviceAPI.IsThisDeviceOpened())
-                                {
-                                    if (_opening)
-                                        OnSerialPortMessage("OPEN_ERROR");
-                                }
-                                                                    
+                                if (!_deviceAPI.IsThisDeviceOpened() && _opening)
+                                    OnSerialPortMessage("OPEN_ERROR");
                                 if (_currentAutoConnect == this)
                                     _currentAutoConnect = null;
-                                
                                 _opening = false;
                             });
                             _deviceAPI.Open();
+                            _lastConnectionAttemptTime = Time.unscaledTime;
                             return;
                         }
                     }
                 }
-                else if (debugLog)
-                    MetaverseProgram.Logger.Log("[SPUP AutoConnect] Already tried opening saved device... Awaiting result...");
-
+                else if (!_deviceAPI.IsThisDeviceOpened())
+                {
+                    if (debugLog)
+                    {
+                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Awaiting Open: {_lastConnectionAttemptTime:N2}(s)");
+                        if (Time.unscaledTime - _lastConnectionAttemptTime > MAX_CONNECTION_TIMEOUT)
+                        {
+                            MetaverseProgram.Logger.Log(
+                                $"[SPUP AutoConnect] Open timeout after {MAX_CONNECTION_TIMEOUT:N2}(s).");
+                            Close();
+                        }
+                    }
+                }
+                
                 if (string.IsNullOrEmpty(regexSearchString))
                 {
                     if (!IsInvoking(nameof(WatchConnection)) && HasSavedDevice)
