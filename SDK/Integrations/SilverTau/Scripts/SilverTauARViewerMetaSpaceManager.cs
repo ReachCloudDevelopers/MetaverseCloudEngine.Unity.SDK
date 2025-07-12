@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.IO;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Enumerations;
@@ -25,7 +24,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
 
         [Space(10)]
         [Header("Common")]
-        [SerializeField] private string nameScanDirectory = "model-viewer";
         [SerializeField] private Camera mainCamera;
         [SerializeField] private Camera aRCamera;
         [SerializeField] private GameObject envObjects;
@@ -67,35 +65,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         /// <param name="value">Scan name.</param>
         private void SaveExperience(string value)
         {
-            try
-            {
-                var pathToScans = Path.Combine(Application.persistentDataPath, nameScanDirectory);
-                if (!Directory.Exists(pathToScans))
-                    Directory.CreateDirectory(pathToScans);
-                if (Directory.Exists(pathToScans))
-                {
-                    var dirs = Directory.GetDirectories(pathToScans);
-                    if (dirs.Any())
-                    {
-                        foreach (var dir in dirs)
-                        {
-                            if(string.IsNullOrEmpty(dir)) continue;
-                            var dirName = Path.GetFileName(dir);
-                            if (dirName != value) continue;
-                            popupHasScanName.SetActive(true);
-                            Debug.Log("A scan with this name already exists.");
-                            return;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.Log("An error occurred while saving a scan.");
-                Debug.Log(e);
-                return;
-            }
-            
             StartCoroutine(IESaveExperience(value));
         }
         

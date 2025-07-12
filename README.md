@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.3
-- Added land plot field so that custom land plot location could be specified
+## 2.177.4
+- Removed unnecessary code from SilverTauARViewerMetaSpaceManager
 
 Updated on July 12, 2025
