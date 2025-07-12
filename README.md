@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.2
-- Updated MetaverseSerialPortAutoConnect logging to support no SaveKey and added support for saving LadPlots using SilverTauARViewerMetaSpaceManager
+## 2.177.3
+- Added land plot field so that custom land plot location could be specified
 
 Updated on July 12, 2025

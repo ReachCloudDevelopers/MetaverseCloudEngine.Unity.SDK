@@ -18,6 +18,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
     public class SilverTauARViewerMetaSpaceManager : TriInspectorMonoBehaviour
     {
         [Header("Components")]
+        [SerializeField] private LandPlot landPlot;
         [SerializeField] private GameObject roomPlanUnityKit;
         [SerializeField] private GameObject capturedRoomSnapshot;
         [SerializeField] private GameObject placeObjectAR;
@@ -145,27 +146,26 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     })).GetResultAsync())?.ToArray();
                 
                 var space = spaces?.FirstOrDefault();
-                var landplot = envObjects.GetComponent<LandPlot>();
-                if (landplot is null)
+                if (landPlot is null)
                     return;
 
-                landplot.ID = space?.SourceLandPlotId;
-                landplot.name = $"ENV_SCAN: \"{space?.Name ?? value}\"";
+                landPlot.ID = space?.SourceLandPlotId;
+                landPlot.name = $"ENV_SCAN: \"{space?.Name ?? value}\"";
 
                 var finished = false;
-                landplot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);
-                landplot.Save();
+                landPlot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);
+                landPlot.Save();
                 
                 await UniTask.WaitUntil(() => finished, PlayerLoopTiming.Update, cancellationToken);
                 return;
 
                 void OnLandPlotSaveFinished()
                 {
-                    landplot.events.onSaveFinished.RemoveListener(OnLandPlotSaveFinished);
-                    var id = landplot.ID;
+                    landPlot.events.onSaveFinished.RemoveListener(OnLandPlotSaveFinished);
+                    var id = landPlot.ID;
                     if (id.HasValue)
                     {
-                        MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm { Id = id.Value, Name = value, SourceLandPlotId = landplot.ID })
+                        MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm { Id = id.Value, Name = value, SourceLandPlotId = landPlot.ID })
                             .ResponseThen(_ =>
                             {
                                 finished = true;
