@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.7
-- Updated SilverTauMetaPrefabMapping to support projects without package-based RoomPlan for Unity Kit installation
+## 2.177.8
+- Fixed endif statement not being in the right location
 
 Updated on July 12, 2025

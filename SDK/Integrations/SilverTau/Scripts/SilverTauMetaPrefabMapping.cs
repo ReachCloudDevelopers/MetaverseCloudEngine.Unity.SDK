@@ -107,6 +107,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             else
                 MetaverseProgram.Logger.LogWarning($"No prefab ID mapping found for category: {category}");
         }
-    }
 #endif
+    }
 }
