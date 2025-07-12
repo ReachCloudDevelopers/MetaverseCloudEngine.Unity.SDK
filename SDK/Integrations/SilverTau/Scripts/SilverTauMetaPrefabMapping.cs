@@ -1,10 +1,11 @@
-#if MV_SILVERTAU
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using MetaverseCloudEngine.Unity.Assets.Attributes;
 using MetaverseCloudEngine.Unity.Assets.MetaPrefabs;
+#if MV_SILVERTAU
 using SilverTau.RoomPlanUnity;
+#endif
 using TriInspectorMVCE;
 using UnityEngine;
 
@@ -17,6 +18,35 @@ namespace MetaverseCloudEngine.Unity.SilverTau
     [RequireComponent(typeof(MetaPrefabSpawner))]
     public class SilverTauMetaPrefabMapping : TriInspectorMonoBehaviour
     {
+        public enum Category
+        {
+            unknown,
+            bathtub,
+            bed,
+            chair,
+            dishwasher,
+            fireplace,
+            oven,
+            refrigerator,
+            sink,
+            sofa,
+            stairs,
+            storage,
+            stove,
+            table,
+            television,
+            toilet,
+            washerDryer,
+            window,
+            wall,
+            opening,
+            door,
+            doorOpen,
+            doorClose,
+            floor,
+            ceiling
+        }
+        
         /// <summary>
         /// A class that represents a mapping between a label and a prefab ID.
         /// </summary>
@@ -24,7 +54,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         public class PrefabLabelMapping
         {
             [Tooltip("The label to map to a prefab ID.")]
-            public CapturedRoom.Category label;
+            public Category label;
             [MetaPrefabIdProperty]
             [Tooltip("The prefab ID to map to the label.")]
             public string prefabID = "";
@@ -38,8 +68,10 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         [SerializeField] private PrefabLabelMapping[] prefabLabelMappings = Array.Empty<PrefabLabelMapping>();
 
         private MetaPrefabSpawner _metaPrefabSpawner;
+        
+#if MV_SILVERTAU
         private CapturedRoomObject _capturedRoomObject;
-        private Dictionary<CapturedRoom.Category, string> _labelToPrefabIDMap;
+        private Dictionary<Category, string> _labelToPrefabIDMap;
 
         private void Awake()
         {
@@ -69,12 +101,12 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         private void ApplyPrefabMapping()
         {
             if (!_capturedRoomObject) return;
-            CapturedRoom.Category category = _capturedRoomObject.category;
+            var category = Enum.Parse<Category>(_capturedRoomObject.category.ToString(), true);
             if (_labelToPrefabIDMap.TryGetValue(category, out var prefabID) && !string.IsNullOrEmpty(prefabID) && Guid.TryParse(prefabID, out var id))
                 _metaPrefabSpawner.IDString = id.ToString();
             else
                 MetaverseProgram.Logger.LogWarning($"No prefab ID mapping found for category: {category}");
         }
     }
-}
 #endif
+}
