@@ -35,7 +35,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         
         [Space(10)]
         [Header("Pop-ups")]
-        [SerializeField] private GameObject popupHasScanName;
         [SerializeField] private GameObject popupInputScanName;
         [SerializeField] private TMP_InputField inputFieldScanName;
 

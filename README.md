@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.4
-- Removed unnecessary code from SilverTauARViewerMetaSpaceManager
+## 2.177.5
+- Removed unused popup has scanned name
 
 Updated on July 12, 2025
