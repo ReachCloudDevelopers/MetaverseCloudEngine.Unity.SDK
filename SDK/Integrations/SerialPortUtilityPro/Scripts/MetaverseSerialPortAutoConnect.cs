@@ -281,7 +281,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
                 if (_currentAutoConnect != this && _currentAutoConnect)
                 {
-                    if (debugLog)
+                    if (debugLog && !string.IsNullOrWhiteSpace(saveKey))
                         MetaverseProgram.Logger.Log(
                             $"[SPUP AutoConnect] {saveKey} Waiting to auto connect...");
                     MetaverseDispatcher.WaitUntil(

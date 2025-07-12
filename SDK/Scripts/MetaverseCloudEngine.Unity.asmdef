@@ -47,7 +47,8 @@
         "GUID:36796cdf0b177bd40b75ac45f74d1378",
         "GUID:04376767bc1f3b428aefa3d20743e819",
         "GUID:d0574574baafe9d4aa78d8df4a5e3e5e",
-        "GUID:63a57c8b658089e49a173b0f0c4870a7"
+        "GUID:63a57c8b658089e49a173b0f0c4870a7",
+        "GUID:cbe3c34c5ea3d458291b0192a5af50a9"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -227,6 +228,11 @@
             "name": "com.unity.ai.inference",
             "expression": "",
             "define": "MV_UNITY_AI_INFERENCE"
+        },
+        {
+            "name": "com.silvertau.roomplanunitykit",
+            "expression": "",
+            "define": "MV_ROOM_PLAN_UNITY_KIT"
         }
     ],
     "noEngineReferences": false

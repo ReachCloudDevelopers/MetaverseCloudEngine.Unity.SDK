@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.1
-- Improved MetaverseSerialPortAutoConnect connection timeout logic
+## 2.177.2
+- Updated MetaverseSerialPortAutoConnect logging to support no SaveKey and added support for saving LadPlots using SilverTauARViewerMetaSpaceManager
 
-Updated on July 10, 2025
+Updated on July 12, 2025
