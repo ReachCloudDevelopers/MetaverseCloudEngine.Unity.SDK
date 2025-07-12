@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.5
-- Removed unused popup has scanned name
+## 2.177.6
+- Added SilverTauMetaPrefabMapping to map object categories to MetaPrefabs
 
 Updated on July 12, 2025

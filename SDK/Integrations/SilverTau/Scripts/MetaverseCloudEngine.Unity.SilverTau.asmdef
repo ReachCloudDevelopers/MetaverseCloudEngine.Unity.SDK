@@ -1,40 +1,46 @@
 {
-  "name": "MetaverseCloudEngine.Unity.SilverTau",
-  "rootNamespace": "MetaverseCloudEngine.Unity.SilverTau",
-  "references": [
-    "GUID:f19b7182756095a428b94d1459e7491e",
-    "GUID:f51ebe6a0ceec4240a699833d6309b23",
-    "GUID:6055be8ebefd69e48b49212b09b47b2f",
-    "GUID:774f0e7b520e24644b448f5ac7fa5d94"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": true,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [
-    "METAVERSE_CLOUD_ENGINE",
-    "MV_UNITASK",
-    "MV_TMP",
-    "MV_GLTF"
-  ],
-  "noEngineReferences": false,
-  "versionDefines": [
-    {
-      "name": "com.unity.textmeshpro",
-      "expression": "",
-      "define": "MV_TMP"
-    },
-    {
-        "name": "com.cysharp.unitask",
-        "expression": "",
-        "define": "MV_UNITASK"
-    },
-    {
-      "name": "com.siccity.gltfutility",
-      "expression": "",
-      "define": "MV_GLTF"
-    }
-  ]
+    "name": "MetaverseCloudEngine.Unity.SilverTau",
+    "rootNamespace": "MetaverseCloudEngine.Unity.SilverTau",
+    "references": [
+        "GUID:f19b7182756095a428b94d1459e7491e",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:774f0e7b520e24644b448f5ac7fa5d94",
+        "GUID:cbe3c34c5ea3d458291b0192a5af50a9"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "METAVERSE_CLOUD_ENGINE",
+        "MV_UNITASK",
+        "MV_TMP",
+        "MV_GLTF"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.textmeshpro",
+            "expression": "",
+            "define": "MV_TMP"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "MV_UNITASK"
+        },
+        {
+            "name": "com.siccity.gltfutility",
+            "expression": "",
+            "define": "MV_GLTF"
+        },
+        {
+            "name": "com.silvertau.roomplanunitykit",
+            "expression": "",
+            "define": "MV_SILVERTAU"
+        }
+    ],
+    "noEngineReferences": false
 }
