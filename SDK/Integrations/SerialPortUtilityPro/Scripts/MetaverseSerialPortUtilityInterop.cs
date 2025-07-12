@@ -118,15 +118,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         public static void EnsureComponent(ref Component spupComponent, GameObject gameObject)
         {
+            if (!gameObject)
+                return;
+            
             if (!spupComponent)
             {
                 spupComponent = gameObject.GetComponentsInParent<Component>()
-                    .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
+                    .FirstOrDefault(x => x && x.GetType()?.Name == "SerialPortUtilityPro");
             }
             else if (spupComponent.GetType().Name != "SerialPortUtilityPro")
             {
                 spupComponent = spupComponent.GetComponents<Component>()
-                    .FirstOrDefault(x => x.GetType().Name == "SerialPortUtilityPro");
+                    .FirstOrDefault(x => x && x.GetType()?.Name == "SerialPortUtilityPro");
             }
         }
 
