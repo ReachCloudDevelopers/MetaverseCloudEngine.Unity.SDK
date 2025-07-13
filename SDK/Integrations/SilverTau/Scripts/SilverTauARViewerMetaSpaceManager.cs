@@ -118,6 +118,20 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     return;
 
                 landPlot.ID = space?.SourceLandPlotId;
+                if (string.IsNullOrEmpty(landPlot.IDString))
+                {
+                    var upsert = await (await MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm
+                    {
+                        SourceLandPlotId = Guid.NewGuid(),
+                        Name = value,
+                    })).GetResultAsync();
+                    
+                    if (upsert is null)
+                        return;
+                    
+                    landPlot.ID = upsert.SourceLandPlotId;
+                }
+                
                 landPlot.name = $"ENV_SCAN: \"{space?.Name ?? value}\"";
 
                 var finished = false;
