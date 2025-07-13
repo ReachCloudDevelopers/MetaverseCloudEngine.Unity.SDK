@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.13
-- Updated upsert logic to properly support source landplot
+## 2.177.14
+- Finalized SilverTau scripts
 
-Updated on July 12, 2025
+Updated on July 13, 2025

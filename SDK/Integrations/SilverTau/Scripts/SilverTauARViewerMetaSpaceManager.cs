@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Common.Models.QueryParams;
 using MetaverseCloudEngine.Unity.Assets.LandPlots;
+using MetaverseCloudEngine.Unity.Assets.MetaPrefabs;
 using MetaverseCloudEngine.Unity.Async;
 using TMPro;
 using TriInspectorMVCE;
@@ -99,11 +101,11 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             {
                 if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
                     return;
-                
+
                 var spaces = (await (await MetaverseProgram.ApiClient.MetaSpaces.GetAllAsync(
                     new MetaSpaceQueryParams
                     {
-                        Count = 1,
+                        Count = 100,
                         NameFilter = value,
                         Writeable = true,
                         ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser.UserName,
@@ -112,18 +114,20 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                         HasSourceLandPlot = true,
 
                     })).GetResultAsync())?.ToArray();
-                
-                var space = spaces?.FirstOrDefault();
+
+                var space = spaces?.FirstOrDefault(x => x.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
                 if (landPlot is null)
                     return;
 
                 landPlot.ID = space?.SourceLandPlotId;
+
                 if (string.IsNullOrEmpty(landPlot.IDString))
                 {
                     var upsert = await (await MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm
                     {
                         SourceLandPlotId = Guid.NewGuid(),
                         Name = value,
+                        
                     })).GetResultAsync();
                     
                     if (upsert is null)
@@ -131,14 +135,41 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     
                     landPlot.ID = upsert.SourceLandPlotId;
                 }
+
+                var childCapturedRoomObject = capturedRoomSnapshot.GetComponentsInChildren<SilverTauMetaPrefabMapping>();
+                var savableObjects = new List<GameObject>(childCapturedRoomObject.Length);
+                foreach (var ro in childCapturedRoomObject)
+                {
+                    if (string.IsNullOrEmpty(ro.ID))
+                        continue;
+
+                    var obj = MetaPrefabSpawner.CreateSpawner(Guid.Parse(ro.ID),
+                        ro.transform.position,
+                        ro.transform.rotation,
+                        spawnerParent: landPlot.transform,
+                        spawnerID: Guid.NewGuid(),
+                        loadOnStart: false
+                    ).gameObject;
+                    
+                    savableObjects.Add(obj);
+                    obj.transform.localScale = ro.transform.localScale;
+                }
                 
-                landPlot.name = $"ENV_SCAN: \"{space?.Name ?? value}\"";
+                await UniTask.Delay(1, cancellationToken: cancellationToken);
+                
+                landPlot.name = $"ENV_SCAN:\"{space?.Name ?? value}\"";
 
                 var finished = false;
                 landPlot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);
                 landPlot.Save();
                 
                 await UniTask.WaitUntil(() => finished, PlayerLoopTiming.Update, cancellationToken);
+                
+                foreach (var obj in savableObjects.ToArray())
+                {
+                    if (!obj) continue;
+                    Destroy(obj);
+                }
                 return;
 
                 void OnLandPlotSaveFinished()
