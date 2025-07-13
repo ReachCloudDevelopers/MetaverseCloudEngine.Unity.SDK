@@ -174,27 +174,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 void OnLandPlotSaveFinished()
                 {
                     landPlot.events.onSaveFinished.RemoveListener(OnLandPlotSaveFinished);
-                    var id = landPlot.ID;
-                    if (id.HasValue)
-                    {
-                        MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm
-                            {
-                                Id = space?.Id,
-                                Name = value, 
-                                SourceLandPlotId = space?.SourceLandPlotId is null ? landPlot.ID : null,
-                            })
-                            .ResponseThen(_ =>
-                            {
-                                finished = true;
-                                MetaverseProgram.Logger.Log($"MetaSpace '{value}' saved successfully with ID: {id}");
-                            }, e =>
-                            {
-                                MetaverseProgram.Logger.LogError(e);
-                                finished = true;
-                            }, cancellationToken: cancellationToken);
-                        return;
-                    }
-
                     finished = true;
                 }
             }, destroyCancellationToken).ToCoroutine();

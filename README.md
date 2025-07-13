@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.15
-- Fixed error when trying to create SourceLandPlotId of MetaSpace.
+## 2.177.16
+- Fixed unnecessary MetaSpace Upsert call in SilverTauARViewerMetaSpaceManager
 
 Updated on July 13, 2025
