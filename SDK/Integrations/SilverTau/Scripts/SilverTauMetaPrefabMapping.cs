@@ -78,6 +78,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             _labelToPrefabIDMap = prefabLabelMappings
                 .ToDictionary(mapping => mapping.label, mapping => mapping.prefabID);
             _capturedRoomObject = GetComponent<CapturedRoomObject>();
+            _metaPrefabSpawner = GetComponent<MetaPrefabSpawner>();
         }
 
         private void OnEnable()
