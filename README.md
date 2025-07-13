@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.10
-- Fixed enabled/disabled toggle not being available in builds without MV_SILVERTAU
+## 2.177.11
+- Fixed proper support for fallback prefab on MetaPrefabSpawner in SilverTauMetaPrefabMapping
 
 Updated on July 12, 2025

@@ -105,7 +105,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             if (_labelToPrefabIDMap.TryGetValue(category, out var prefabID) && !string.IsNullOrEmpty(prefabID) && Guid.TryParse(prefabID, out var id))
                 _metaPrefabSpawner.IDString = id.ToString();
             else
-                MetaverseProgram.Logger.LogWarning($"No prefab ID mapping found for category: {category}");
+                _metaPrefabSpawner.IDString = fallbackPrefabID;
         }
 #else
         private void Start() { /* for enabled/disabled toggle. */ }
