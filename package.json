@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.177.9",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.177.9\n- Fixed null reference in EnsureComponent of MetaverseSerialPortUtilityInterop\n\nUpdated on July 12, 2025",
+  "version": "2.177.10",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.177.10\n- Fixed enabled/disabled toggle not being available in builds without MV_SILVERTAU\n\nUpdated on July 12, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

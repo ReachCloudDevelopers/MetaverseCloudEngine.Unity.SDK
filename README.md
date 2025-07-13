@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.9
-- Fixed null reference in EnsureComponent of MetaverseSerialPortUtilityInterop
+## 2.177.10
+- Fixed enabled/disabled toggle not being available in builds without MV_SILVERTAU
 
 Updated on July 12, 2025
