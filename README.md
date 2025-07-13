@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.14
-- Finalized SilverTau scripts
+## 2.177.15
+- Fixed error when trying to create SourceLandPlotId of MetaSpace.
 
 Updated on July 13, 2025
