@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.17
-- Generated a spawner ID
+## 2.178.0
+- Add support for SilverTauMetaSpaceList.cs and SilverTauMetaSpaceListItem.cs
 
-Updated on July 13, 2025
+Updated on July 14, 2025
