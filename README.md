@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.177.16
-- Fixed unnecessary MetaSpace Upsert call in SilverTauARViewerMetaSpaceManager
+## 2.177.17
+- Generated a spawner ID
 
 Updated on July 13, 2025

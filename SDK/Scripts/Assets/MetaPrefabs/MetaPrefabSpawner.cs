@@ -246,6 +246,14 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaPrefabs
         #region Public Methods
 
         /// <summary>
+        /// Generates a new prefab ID for this spawner.
+        /// </summary>
+        public void GenerateSpawnerID()
+        {
+            SpawnerID = Guid.NewGuid();
+        }
+
+        /// <summary>
         /// Spawns the prefab.
         /// </summary>
         public void Spawn()
