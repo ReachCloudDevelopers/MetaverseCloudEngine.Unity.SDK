@@ -157,6 +157,8 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                         pos = visibleBounds.center;
                         rot = Quaternion.identity;
                         scl = visibleBounds.size;
+                        if (scl.y <= 0)
+                            scl.y = 0.01f;
                     }
 
                     var obj = MetaPrefabSpawner.CreateSpawner(Guid.Parse(ro.ID),

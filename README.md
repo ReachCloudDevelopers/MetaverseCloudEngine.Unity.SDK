@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.178.2
-- Compute lowest coordinate of SilverTauARViewerMetaSpaceManager.cs to ensure that it correctly computes.
+## 2.178.3
+- Ensure that the scale of the ceiling and floor objects is appropriate.
 
 Updated on July 16, 2025
