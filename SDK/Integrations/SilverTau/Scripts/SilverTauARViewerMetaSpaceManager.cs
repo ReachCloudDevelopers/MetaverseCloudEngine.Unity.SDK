@@ -138,12 +138,15 @@ namespace MetaverseCloudEngine.Unity.SilverTau
 
                 var childCapturedRoomObject = capturedRoomSnapshot.GetComponentsInChildren<SilverTauMetaPrefabMapping>();
                 var savableObjects = new List<GameObject>();
+                var lowestPosition = Mathf.Infinity;
                 foreach (var ro in childCapturedRoomObject)
                 {
                     if (string.IsNullOrEmpty(ro.ID))
                         continue;
                     
                     var pos = ro.transform.position;
+                    if (pos.y < lowestPosition)
+                        lowestPosition = pos.y;
                     var rot = ro.transform.rotation;
                     var scl = ro.transform.localScale;
                     
@@ -167,6 +170,14 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     obj.transform.localScale = scl;
                     
                     savableObjects.Add(obj);
+                }
+                
+                foreach (var obj in savableObjects)
+                {
+                    if (!obj) continue;
+                    var pos = obj.transform.position;
+                    pos.y -= lowestPosition;
+                    obj.transform.position = pos;
                 }
                 
                 await UniTask.Delay(1);

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.178.1
-- Added better support for floor and ceiling bounds on SilverTauMetaPrefabMapping.cs
+## 2.178.2
+- Compute lowest coordinate of SilverTauARViewerMetaSpaceManager.cs to ensure that it correctly computes.
 
 Updated on July 16, 2025
