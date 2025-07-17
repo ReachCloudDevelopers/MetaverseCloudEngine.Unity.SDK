@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.178.0
-- Add support for SilverTauMetaSpaceList.cs and SilverTauMetaSpaceListItem.cs
+## 2.178.1
+- Added better support for floor and ceiling bounds on SilverTauMetaPrefabMapping.cs
 
-Updated on July 14, 2025
+Updated on July 16, 2025

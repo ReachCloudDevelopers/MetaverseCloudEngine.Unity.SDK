@@ -142,16 +142,31 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 {
                     if (string.IsNullOrEmpty(ro.ID))
                         continue;
+                    
+                    var pos = ro.transform.position;
+                    var rot = ro.transform.rotation;
+                    var scl = ro.transform.localScale;
+                    
+                    if (ro.GetCategory() == SilverTauMetaPrefabMapping.Category.floor ||
+                        ro.GetCategory() == SilverTauMetaPrefabMapping.Category.ceiling)
+                    {
+                        var visibleBounds = ro.gameObject.GetVisibleBounds();
+                        pos = visibleBounds.center;
+                        rot = Quaternion.identity;
+                        scl = visibleBounds.size;
+                    }
 
                     var obj = MetaPrefabSpawner.CreateSpawner(Guid.Parse(ro.ID),
-                        ro.transform.position,
-                        ro.transform.rotation,
+                        pos,
+                        rot,
                         spawnerParent: landPlot.transform,
                         spawnerID: Guid.NewGuid(),
                         loadOnStart: false
                     ).gameObject;
+                    
+                    obj.transform.localScale = scl;
+                    
                     savableObjects.Add(obj);
-                    obj.transform.localScale = ro.transform.localScale;
                 }
                 
                 await UniTask.Delay(1);

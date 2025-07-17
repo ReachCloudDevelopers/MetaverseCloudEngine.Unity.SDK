@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.178.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.178.0\n- Add support for SilverTauMetaSpaceList.cs and SilverTauMetaSpaceListItem.cs\n\nUpdated on July 14, 2025",
+  "version": "2.178.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.178.1\n- Added better support for floor and ceiling bounds on SilverTauMetaPrefabMapping.cs\n\nUpdated on July 16, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

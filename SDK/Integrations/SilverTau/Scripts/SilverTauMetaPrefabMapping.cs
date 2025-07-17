@@ -100,14 +100,24 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         private void ApplyPrefabMapping()
         {
             if (!_capturedRoomObject) return;
-            var category = Enum.Parse<Category>(_capturedRoomObject.category.ToString(), true);
+            var category = GetCategory();
             if (_labelToPrefabIDMap.TryGetValue(category, out var prefabID) && !string.IsNullOrEmpty(prefabID) && Guid.TryParse(prefabID, out var id))
                 ID = id.ToString();
             else
                 ID = fallbackPrefabID;
         }
+
+        public Category GetCategory()
+        {
+            return Enum.Parse<Category>(_capturedRoomObject.category.ToString(), true);
+        }
 #else
         private void Start() { /* for enabled/disabled toggle. */ }
+        
+        public Category GetCategory()
+        {
+            return Category.unknown;
+        }
 #endif
     }
 }
