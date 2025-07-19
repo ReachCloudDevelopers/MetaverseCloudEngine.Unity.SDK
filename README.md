@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.6
-- Improved progress bar during package install
+## 2.179.7
+- Updated package installation to support cancellation.
 
 Updated on July 19, 2025

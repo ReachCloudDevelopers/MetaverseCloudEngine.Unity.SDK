@@ -145,17 +145,22 @@ namespace MetaverseCloudEngine.Unity.Installer
 
             if (packagesToAdd.Length == 0)
             {
-                _packageRequest = null;
                 OnPackagesInstalled();
+                _packageRequest = null;
                 return true;
             }
 
             _packageRequest ??= Client.AddAndRemove(packagesToAdd: packagesToAdd);
-            
-            EditorUtility.DisplayProgressBar(
-                "Metaverse Cloud Engine SDK Update", 
-                "Updating the SDK to the latest version...",
-                (_packageRequest.Result?.Count() ?? 0f) / packagesToAdd.Length);
+
+            if (EditorUtility.DisplayCancelableProgressBar(
+                    "Metaverse Cloud Engine SDK Update",
+                    "Updating the SDK to the latest version...",
+                    (_packageRequest.Result?.Count() ?? 0f) / packagesToAdd.Length))
+            {
+                OnPackagesFailed();
+                _packageRequest = null;
+                return true;
+            }
 
             switch (_packageRequest.Status)
             {
