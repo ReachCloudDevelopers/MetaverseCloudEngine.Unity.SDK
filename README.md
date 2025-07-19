@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.178.4
-- Updated Naming scheme for SilverTau MetaSpace management.
+## 2.179.0
+- Fixed issue where name was not including the ENV_SCAN: prefix.
 
 Updated on July 19, 2025
