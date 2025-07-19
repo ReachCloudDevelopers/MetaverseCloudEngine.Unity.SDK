@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.2
-- Using layout helper instead of rect transform layout.
+## 2.179.3
+- Added meta space events in SilverTauMetaSpaceListItem.
 
 Updated on July 19, 2025

@@ -12,6 +12,8 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         public UnityEvent<string> onName = new();
         public string dateFormat = "dd/MM/yy";
         public UnityEvent<string> onDate = new();
+        public UnityEvent<MetaSpaceDto> onMetaSpace = new();
+        public UnityEvent<string> onMetaSpaceId = new();
         
         private SilverTauMetaSpaceList _list;
         
@@ -31,6 +33,8 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             MetaSpace = metaSpace;
             onName.Invoke(metaSpace.Name.Replace("ENV_SCAN:", string.Empty));
             onDate.Invoke((metaSpace.UpdatedDate ?? metaSpace.CreatedDate).ToString(dateFormat));
+            onMetaSpace?.Invoke(metaSpace);
+            onMetaSpaceId?.Invoke(metaSpace.Id.ToString());
         }
 
         /// <summary>
