@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.3
-- Added meta space events in SilverTauMetaSpaceListItem.
+## 2.179.4
+- Fixed OnDeleteRequested to call UpdateRectTransforms and activate the noItemsGameObject when list is empty.
 
 Updated on July 19, 2025

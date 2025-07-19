@@ -120,18 +120,20 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         /// <summary>
         /// Called when a delete request is made for a MetaSpace item.
         /// </summary>
-        /// <param name="metaSpaceList">The MetaSpace list item to delete.</param>
-        public void OnDeleteRequested(SilverTauMetaSpaceListItem metaSpaceList)
+        /// <param name="item">The MetaSpace list item to delete.</param>
+        public void OnDeleteRequested(SilverTauMetaSpaceListItem item)
         {
-            MetaverseProgram.ApiClient.MetaSpaces.DeleteAsync(metaSpaceList.MetaSpace.Id)
+            MetaverseProgram.ApiClient.MetaSpaces.DeleteAsync(item.MetaSpace.Id)
                 .ResponseThen(() =>
                 {
-                    if (!this || !isActiveAndEnabled)
+                    if (!this || !isActiveAndEnabled || !item)
                         return;
-
-                    _items.Remove(metaSpaceList);
-                    Destroy(metaSpaceList.gameObject);
-                    
+                    if (!_items.Remove(item))
+                        return;
+                    Destroy(item.gameObject);
+                    if (!_items.Any() && noItemsGameObject)
+                        noItemsGameObject.SetActive(true);
+                    UpdateRectTransforms();
                 }, e =>
                 {
                     MetaverseProgram.Logger.LogError($"[SilverTauMetaSpaceList] Failed to delete MetaSpace: {e}");
