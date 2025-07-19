@@ -90,11 +90,6 @@ namespace MetaverseCloudEngine.Unity.Installer
                             "Update (Recommended)", "Skip"))
                         return;
                     
-                    EditorUtility.DisplayProgressBar(
-                        "Metaverse Cloud Engine SDK Update", 
-                        "Updating the SDK to the latest version...", 
-                        0.9f);
-                    
                     Debug.Log($"Updating Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
                 }
 
@@ -143,10 +138,25 @@ namespace MetaverseCloudEngine.Unity.Installer
                 _packageRequest = null;
                 return true;
             }
-            
-            _packageRequest ??= Client.AddAndRemove(packagesToAdd: PackagesToInstall.Concat(!string.IsNullOrEmpty(commitHash) ? new[] {
+
+            var packagesToAdd = PackagesToInstall.Concat(!string.IsNullOrEmpty(commitHash) ? new[] {
                 $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{commitHash}"
-            } : Array.Empty<string>()).ToArray());
+            } : Array.Empty<string>()).ToArray();
+
+            if (packagesToAdd.Length == 0)
+            {
+                _packageRequest = null;
+                OnPackagesInstalled();
+                return true;
+            }
+
+            _packageRequest ??= Client.AddAndRemove(packagesToAdd: packagesToAdd);
+            
+            EditorUtility.DisplayProgressBar(
+                "Metaverse Cloud Engine SDK Update", 
+                "Updating the SDK to the latest version...",
+                (_packageRequest.Result?.Count() ?? 0f) / packagesToAdd.Length);
+
             switch (_packageRequest.Status)
             {
                 case StatusCode.InProgress:
