@@ -47,10 +47,14 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             MetaverseProgram.ApiClient.MetaSpaces.GetAllAsync(
                 new MetaSpaceQueryParams
                 {
+                    NameFilter = "ENV_SCAN:",
                     AdvancedSearch = false,
                     HasSourceLandPlot = true,
                     ContentType = AssetContentType.Bundle,
                     Count = 100,
+                    ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser.UserName,
+					Writeable = true,
+
                 }).ResponseThen(r =>
             {
                 if (!this || !isActiveAndEnabled)
@@ -66,11 +70,12 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 
                 var spaces = r.OrderByDescending(x => x.UpdatedDate ?? x.CreatedDate).ToArray();
                 if (noItemsGameObject)
-                    noItemsGameObject.SetActive(spaces.Any());
+                    noItemsGameObject.SetActive(!spaces.Any());
 
                 foreach (var dto in spaces)
                 {
-                    var instance = Instantiate(itemPrefab.gameObject, container).GetComponent<SilverTauMetaSpaceListItem>();
+                    var instance = Instantiate(itemPrefab.gameObject, container)
+                        .GetComponent<SilverTauMetaSpaceListItem>();
                     if (!instance)
                     {
                         MetaverseProgram.Logger.LogError("[SilverTauMetaSpaceList] Item prefab is not set.");

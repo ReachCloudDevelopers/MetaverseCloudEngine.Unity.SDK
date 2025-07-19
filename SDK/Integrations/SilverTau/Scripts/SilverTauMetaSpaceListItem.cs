@@ -29,7 +29,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         {
             _list = list;
             MetaSpace = metaSpace;
-            onName.Invoke(metaSpace.Name);
+            onName.Invoke(metaSpace.Name.Replace("ENV_SCAN:", string.Empty));
             onDate.Invoke((metaSpace.UpdatedDate ?? metaSpace.CreatedDate).ToString(dateFormat));
         }
 

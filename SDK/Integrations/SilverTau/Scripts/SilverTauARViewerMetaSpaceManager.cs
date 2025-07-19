@@ -106,7 +106,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     new MetaSpaceQueryParams
                     {
                         Count = 100,
-                        NameFilter = value,
+                        NameFilter = $"ENV_SCAN:{value}",
                         Writeable = true,
                         ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser.UserName,
                         ContentType = AssetContentType.Bundle,
@@ -184,7 +184,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 
                 await UniTask.Delay(1);
                 
-                landPlot.name = $"ENV_SCAN: \"{space?.Name ?? value}\"";
+                landPlot.name = $"ENV_SCAN:{space?.Name ?? value}";
 
                 var finished = false;
                 landPlot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);

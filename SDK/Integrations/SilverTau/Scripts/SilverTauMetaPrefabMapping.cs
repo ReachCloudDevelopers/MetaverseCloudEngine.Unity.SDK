@@ -70,6 +70,9 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         private CapturedRoomObject _capturedRoomObject;
         private Dictionary<Category, string> _labelToPrefabIDMap;
 
+        /// <summary>
+        /// The ID of the prefab that is currently applied to the captured room object.
+        /// </summary>
         public string ID { get; private set; }
 
         private void Awake()
@@ -101,12 +104,18 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         {
             if (!_capturedRoomObject) return;
             var category = GetCategory();
-            if (_labelToPrefabIDMap.TryGetValue(category, out var prefabID) && !string.IsNullOrEmpty(prefabID) && Guid.TryParse(prefabID, out var id))
+            if (_labelToPrefabIDMap.TryGetValue(category, out var prefabID) && 
+                !string.IsNullOrEmpty(prefabID) && 
+                Guid.TryParse(prefabID, out var id))
                 ID = id.ToString();
             else
                 ID = fallbackPrefabID;
         }
 
+        /// <summary>
+        /// Gets the category of the captured room object based on its label.
+        /// </summary>
+        /// <returns>The category of the captured room object.</returns>
         public Category GetCategory()
         {
             return Enum.Parse<Category>(_capturedRoomObject.category.ToString(), true);

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.178.3
-- Ensure that the scale of the ceiling and floor objects is appropriate.
+## 2.178.4
+- Updated Naming scheme for SilverTau MetaSpace management.
 
-Updated on July 16, 2025
+Updated on July 19, 2025
