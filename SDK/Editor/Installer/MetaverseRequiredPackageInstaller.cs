@@ -189,6 +189,7 @@ namespace MetaverseCloudEngine.Unity.Installer
         private static void OnPackagesFailed()
         {
             EditorUtility.ClearProgressBar();
+            if (_packageRequest.Error is null) return;
             EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Installation Failed", $"Failed to install Metaverse Cloud Engine SDK packages: {_packageRequest.Error.message}", "OK");
             throw new Exception("Failed to install packages: " + _packageRequest.Error.message);
         }

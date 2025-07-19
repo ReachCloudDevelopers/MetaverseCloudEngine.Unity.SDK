@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.7
-- Updated package installation to support cancellation.
+## 2.179.8
+- Fixed null reference error
 
 Updated on July 19, 2025
