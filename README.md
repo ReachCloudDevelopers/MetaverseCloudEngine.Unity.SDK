@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.0
-- Fixed issue where name was not including the ENV_SCAN: prefix.
+## 2.179.1
+- Added a fix for updating the rect transforms after adding and removing the list items.
 
 Updated on July 19, 2025

@@ -35,6 +35,8 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 if (!item) continue;
                 Destroy(item.gameObject);
             }
+
+            UpdateRectTransforms();
         }
 
         private void RepaintList()
@@ -86,6 +88,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     _isRepainting = false;
                 }
                 
+                UpdateRectTransforms();
             }, e =>
             {
                 if (!this || !isActiveAndEnabled)
@@ -93,8 +96,23 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 
                 if (noItemsGameObject)
                     noItemsGameObject.SetActive(true);
+
+                UpdateRectTransforms();
+                
                 _isRepainting = true;
             });
+        }
+
+        private void UpdateRectTransforms()
+        {
+            if (!container)
+            {
+                MetaverseProgram.Logger.LogError("[SilverTauMetaSpaceList] Container is not set.");
+                return;
+            }
+            var rt = container.GetComponent<RectTransform>();
+            if (rt)
+                rt.ForceUpdateRectTransforms();
         }
 
         /// <summary>
