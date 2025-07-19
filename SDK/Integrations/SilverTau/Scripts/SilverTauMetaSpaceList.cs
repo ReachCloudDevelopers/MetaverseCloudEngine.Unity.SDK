@@ -3,6 +3,7 @@ using System.Linq;
 using MetaverseCloudEngine.Common.Enumerations;
 using MetaverseCloudEngine.Common.Models.QueryParams;
 using MetaverseCloudEngine.Unity.Async;
+using MetaverseCloudEngine.Unity.UI.Components;
 using TriInspectorMVCE;
 using UnityEngine;
 
@@ -110,9 +111,10 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 MetaverseProgram.Logger.LogError("[SilverTauMetaSpaceList] Container is not set.");
                 return;
             }
-            var rt = container.GetComponent<RectTransform>();
-            if (rt)
-                rt.ForceUpdateRectTransforms();
+            
+            var layoutHelpers = container.GetComponentsInChildren<LayoutHelper>(true);
+            foreach (var layoutHelper in layoutHelpers)
+                layoutHelper.Layout();
         }
 
         /// <summary>

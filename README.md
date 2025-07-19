@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.1
-- Added a fix for updating the rect transforms after adding and removing the list items.
+## 2.179.2
+- Using layout helper instead of rect transform layout.
 
 Updated on July 19, 2025

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.179.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.1\n- Added a fix for updating the rect transforms after adding and removing the list items.\n\nUpdated on July 19, 2025",
+  "version": "2.179.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.2\n- Using layout helper instead of rect transform layout.\n\nUpdated on July 19, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
