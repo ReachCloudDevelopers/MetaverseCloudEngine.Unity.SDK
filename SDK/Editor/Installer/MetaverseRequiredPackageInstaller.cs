@@ -90,6 +90,11 @@ namespace MetaverseCloudEngine.Unity.Installer
                             "Update (Recommended)", "Skip"))
                         return;
                     
+                    EditorUtility.DisplayProgressBar(
+                        "Metaverse Cloud Engine SDK Update", 
+                        "Updating the SDK to the latest version...", 
+                        0.9f);
+                    
                     Debug.Log($"Updating Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
                 }
 

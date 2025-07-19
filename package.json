@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.179.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.4\n- Fixed OnDeleteRequested to call UpdateRectTransforms and activate the noItemsGameObject when list is empty.\n\nUpdated on July 19, 2025",
+  "version": "2.179.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.5\n- Added a progress bar to the metaverse sdk update process to help user see what's going on.\n\nUpdated on July 19, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

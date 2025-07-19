@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.4
-- Fixed OnDeleteRequested to call UpdateRectTransforms and activate the noItemsGameObject when list is empty.
+## 2.179.5
+- Added a progress bar to the metaverse sdk update process to help user see what's going on.
 
 Updated on July 19, 2025
