@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.8
-- Fixed null reference error
+## 2.179.9
+- Updated default formatting for dates in SilverTauMetaSpaceListItem.cs
 
-Updated on July 19, 2025
+Updated on July 21, 2025

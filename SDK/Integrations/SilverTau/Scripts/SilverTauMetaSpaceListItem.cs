@@ -10,7 +10,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
     public class SilverTauMetaSpaceListItem : TriInspectorMonoBehaviour
     {
         public UnityEvent<string> onName = new();
-        public string dateFormat = "dd/MM/yy";
+        public string dateFormat = "MM/dd/yy";
         public UnityEvent<string> onDate = new();
         public UnityEvent<MetaSpaceDto> onMetaSpace = new();
         public UnityEvent<string> onMetaSpaceId = new();
