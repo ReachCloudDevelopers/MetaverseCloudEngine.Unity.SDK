@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.9
-- Updated default formatting for dates in SilverTauMetaSpaceListItem.cs
+## 2.179.10
+- Added a constants class for organization
 
 Updated on July 21, 2025

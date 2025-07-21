@@ -50,12 +50,12 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             MetaverseProgram.ApiClient.MetaSpaces.GetAllAsync(
                 new MetaSpaceQueryParams
                 {
-                    NameFilter = "ENV_SCAN:",
+                    NameFilter = SilverTauIntegrationConstants.EnvironmentScanPrefix,
                     AdvancedSearch = false,
                     HasSourceLandPlot = true,
                     ContentType = AssetContentType.Bundle,
                     Count = 100,
-                    ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser.UserName,
+                    ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser?.UserName,
 					Writeable = true,
 
                 }).ResponseThen(r =>
