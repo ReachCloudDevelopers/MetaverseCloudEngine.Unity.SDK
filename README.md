@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.10
-- Added a constants class for organization
+## 2.179.11
+- Added onLandPlotId Unity Event to event callbacks on SilverTauMetaSpaceListItem.cs
 
 Updated on July 21, 2025
