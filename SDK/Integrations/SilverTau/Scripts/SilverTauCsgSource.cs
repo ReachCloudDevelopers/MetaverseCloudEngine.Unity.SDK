@@ -1,4 +1,3 @@
-using SilverTau.Utilities;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
@@ -28,6 +27,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         
         public void Carve()
         {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
             var bounds = gameObject.GetVisibleBounds();
             if (bounds.size.sqrMagnitude <= 0)
                 return;
@@ -62,6 +62,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             }
             if (carved) onCarveSuccess?.Invoke();
             else onCarveFailure?.Invoke();
+#endif
         }
     }
 }
