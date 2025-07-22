@@ -22,7 +22,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         private GameObject noItemsGameObject;
         
         private readonly List<SilverTauMetaSpaceListItem> _items = new ();
-        private bool _isRepainting;
 
         private void OnEnable()
         {
@@ -68,8 +67,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     MetaverseProgram.Logger.LogError("[SilverTauMetaSpaceList] Container is not set.");
                     return;
                 }
-
-                _isRepainting = true;
                 
                 var spaces = r.OrderByDescending(x => x.UpdatedDate ?? x.CreatedDate).ToArray();
                 if (noItemsGameObject)
@@ -86,11 +83,10 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     }
                     instance.Repaint(dto, this);
                     _items.Add(instance);
-                    _isRepainting = false;
                 }
                 
                 UpdateRectTransforms();
-            }, e =>
+            }, _ =>
             {
                 if (!this || !isActiveAndEnabled)
                     return;
@@ -99,8 +95,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     noItemsGameObject.SetActive(true);
 
                 UpdateRectTransforms();
-                
-                _isRepainting = true;
             });
         }
 

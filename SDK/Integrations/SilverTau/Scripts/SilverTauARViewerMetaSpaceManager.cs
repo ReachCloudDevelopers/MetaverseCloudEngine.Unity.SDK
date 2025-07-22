@@ -106,7 +106,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     new MetaSpaceQueryParams
                     {
                         Count = 100,
-                        NameFilter = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}:{value}",
+                        NameFilter = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}{value}",
                         Writeable = true,
                         ContributorName = MetaverseProgram.ApiClient.Account.CurrentUser.UserName,
                         ContentType = AssetContentType.Bundle,
@@ -126,7 +126,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     var upsert = await (await MetaverseProgram.ApiClient.MetaSpaces.UpsertAsync(new MetaSpaceUpsertForm
                     {
                         SourceLandPlotId = space is null ? Guid.NewGuid() : null,
-                        Name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}:{value}",
+                        Name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}{value}",
                         
                     })).GetResultAsync();
                     
@@ -184,7 +184,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 
                 await UniTask.Delay(1, cancellationToken: cancellationToken);
                 
-                landPlot.name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}:{space?.Name ?? value}";
+                landPlot.name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}{space?.Name ?? value}";
 
                 var finished = false;
                 landPlot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);

@@ -38,22 +38,28 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         #region Inspector
 
         [Group("MetaSpace Options")]
-        [SerializeField, Tooltip("Options related to how the Meta Space behaves at runtime.")]
+        [SerializeField]
+        [Tooltip("Options related to how the Meta Space behaves at runtime.")]
         private MetaSpaceRuntimeOptions runtime = new();
         [Group("MetaSpace Options")]
-        [SerializeField, Tooltip("Options related to how players are spawned in the Meta Space.")]
+        [SerializeField]
+		[Tooltip("Options related to how players are spawned in the Meta Space.")]
         private MetaSpacePlayerSpawnOptions playerSpawn = new();
         [Group("MetaSpace Options")]
-        [SerializeField, Tooltip("Options related to player groups in the Meta Space.")]
+        [SerializeField]
+		[Tooltip("Options related to player groups in the Meta Space.")]
         private MetaSpacePlayerGroupOptions playerGroups = new();
         [Group("MetaSpace Options")]
-        [SerializeField, Tooltip("Options related to networking in the Meta Space.")]
+        [SerializeField]
+		[Tooltip("Options related to networking in the Meta Space.")]
         private MetaSpaceNetworkOptions network = new();
         [Group("MetaSpace Options")]
-        [SerializeField, Tooltip("Options related to integrating the Meta Space with other systems.")]
+        [SerializeField]
+		[Tooltip("Options related to integrating the Meta Space with other systems.")]
         private MetaSpaceIntegrationOptions integrations = new();
 
-        [SerializeField, HideInInspector] private bool useDeprecatedQualityApi = true;
+        [SerializeField]
+		[HideInInspector] private bool useDeprecatedQualityApi = true;
 
         #endregion
 
@@ -346,7 +352,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                         if (r.UpdatedDate is not null && 
                             r.UpdatedDate > (
                                 CurrentlyLoadedMetaSpaceDto.UpdatedDate ??
-                                    CurrentlyLoadedMetaSpaceDto.CreatedDate))
+                                CurrentlyLoadedMetaSpaceDto.CreatedDate))
                         {
                             updateAvailable?.Invoke(r);
                             return;
@@ -488,13 +494,13 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 
             var loadOnStartSpawners = 
                 loadOnStartPrefabs.Where(x => Guid.TryParse(x.prefab, out _) && !x.disabled).Select(loadOnStartPrefab =>
-                    MetaPrefabSpawner.CreateSpawner(
-                        Guid.Parse(loadOnStartPrefab.prefab), 
-                        position: Vector3.zero,
-                        rotation: Quaternion.identity,
-                        requireStateAuthority: loadOnStartPrefab.spawnAuthority == MetaPrefabToLoadOnStart.SpawnMode.MasterClient,
-                        loadOnStart: loadOnStartPrefab.spawnAuthority != MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly))
-                .ToList();
+                        MetaPrefabSpawner.CreateSpawner(
+                            Guid.Parse(loadOnStartPrefab.prefab), 
+                            position: Vector3.zero,
+                            rotation: Quaternion.identity,
+                            requireStateAuthority: loadOnStartPrefab.spawnAuthority == MetaPrefabToLoadOnStart.SpawnMode.MasterClient,
+                            loadOnStart: loadOnStartPrefab.spawnAuthority != MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly))
+                    .ToList();
             
             _preAllocatedPrefabIds.AddRange(loadOnStartSpawners.Select(x => x.ID!.Value));
 
@@ -626,8 +632,8 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                    !UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode &&
                    !UnityEditor.BuildPipeline.isBuildingPlayer &&
                    !UnityEditor.EditorApplication.isCompiling &&
-                    go.scene.IsValid() &&
-                    go.scene.isLoaded &&
+                   go.scene.IsValid() &&
+                   go.scene.isLoaded &&
                    !UnityEditor.EditorUtility.IsPersistent(go) &&
                    !UnityEditor.SceneManagement.PrefabStageUtility.GetPrefabStage(go) &&
                    !UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();

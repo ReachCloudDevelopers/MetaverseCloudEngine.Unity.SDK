@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.11
-- Added onLandPlotId Unity Event to event callbacks on SilverTauMetaSpaceListItem.cs
+## 2.179.12
+- Updated MetaSpace.cs class styling. Fixed prefix for SilverTau scanned metaspaces.
 
-Updated on July 21, 2025
+Updated on July 22, 2025
