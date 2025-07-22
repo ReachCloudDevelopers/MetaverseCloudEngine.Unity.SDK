@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.2
-- Ensured no compilation errors
+## 2.180.3
+- Updated editor icons for scripts
 
 Updated on July 22, 2025
