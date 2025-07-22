@@ -1,3 +1,4 @@
+using MetaverseCloudEngine.Unity.Assets.LandPlots;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
@@ -10,10 +11,13 @@ namespace MetaverseCloudEngine.Unity.SilverTau
     {
         [Tooltip("If true, will call the 'Carve' method on start.")]
         [SerializeField] private bool carveOnStart = true;
+        [SerializeField] private bool carveOnLandPlotLoad = true;
         [Tooltip("Invoked if any CSG operation was successful.")]
         [SerializeField] private UnityEvent onCarveSuccess = new();
         [Tooltip("Invoked if no CSG operation was successful.")]
         [SerializeField] private UnityEvent onCarveFailure = new();
+        
+        private LandPlot _landPlot;
         
         public UnityEvent OnCarveSuccess => onCarveSuccess;
         public UnityEvent OnCarveFailure => onCarveFailure;
@@ -22,10 +26,21 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         
         private void Start()
         {
+            if (carveOnLandPlotLoad)
+            {
+                _landPlot = GetComponentInParent<LandPlot>();
+                _landPlot.events.onLoadSuccess.AddListener(Carve);
+            }
+            
             if (carveOnStart)
                 Carve();
         }
-        
+
+        private void OnDestroy()
+        {
+            if (_landPlot) _landPlot.events.onLoadSuccess.RemoveListener(Carve);
+        }
+
         public void Carve()
         {
             MetaverseDispatcher.AtEndOfFrame(() => 

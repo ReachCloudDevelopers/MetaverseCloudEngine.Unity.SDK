@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.5
-- Fixed missing namespace
+## 2.180.6
+- Added support for landplot load events to perform carve
 
 Updated on July 22, 2025
