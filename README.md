@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.14
-- Added RPU assembly to MetaverseScript.cs
+## 2.180.0
+- Added support for SilverTau runtime CSG operations using components.
 
 Updated on July 22, 2025
