@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.4
-- Added single frame delay to Carve method in SilverTauCsgSource.cs
+## 2.180.5
+- Fixed missing namespace
 
 Updated on July 22, 2025
