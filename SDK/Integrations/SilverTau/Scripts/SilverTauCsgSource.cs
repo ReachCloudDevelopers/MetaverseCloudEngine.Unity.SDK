@@ -27,42 +27,47 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         
         public void Carve()
         {
+            MetaverseDispatcher.AtEndOfFrame(() => 
+			{
+				if (!this || !isActiveAndEnabled)
+                    return;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-            var bounds = gameObject.GetVisibleBounds();
-            if (bounds.size.sqrMagnitude <= 0)
-                return;
-            var carved = false;
-            var size = Physics.OverlapBoxNonAlloc(bounds.center, bounds.extents * 0.5f, OverlapResults, transform.rotation);
-            for (var index = 0; index < size; index++)
-            {
-                var col = OverlapResults[index];
-                var csgTarget = col.GetComponent<SilverTauCsgTarget>();
-                if (!csgTarget) continue;
-                if (csgTarget.transform.IsChildOf(transform)) continue;
-                MeshMakerNamespace.CSG.EPSILON = 1e-5f;
-                var csgOp = new MeshMakerNamespace.CSG
+                var bounds = gameObject.GetVisibleBounds();
+                if (bounds.size.sqrMagnitude <= 0)
+                    return;
+                var carved = false;
+                var size = Physics.OverlapBoxNonAlloc(bounds.center, bounds.extents * 0.5f, OverlapResults, transform.rotation);
+                for (var index = 0; index < size; index++)
                 {
-                    Brush = gameObject,
-                    Target = col.gameObject,
-                    OperationType = MeshMakerNamespace.CSG.Operation.Subtract,
-                    useCustomMaterial = false,
-                    hideGameObjects = false,
-                    keepSubmeshes = true
-                };
-                var newObj = csgOp.PerformCSG();
-                if (newObj.TryGetComponent(out MeshFilter mf))
-                {
-                    var newMesh = mf.sharedMesh;
-                    if (col.gameObject.TryGetComponent(out mf))
-                        mf.sharedMesh = newMesh;
-                    if (col.gameObject.TryGetComponent(out MeshCollider m))
-                        m.sharedMesh = newMesh;
+                    var col = OverlapResults[index];
+                    var csgTarget = col.GetComponent<SilverTauCsgTarget>();
+                    if (!csgTarget) continue;
+                    if (csgTarget.transform.IsChildOf(transform)) continue;
+                    MeshMakerNamespace.CSG.EPSILON = 1e-5f;
+                    var csgOp = new MeshMakerNamespace.CSG
+                    {
+                        Brush = gameObject,
+                        Target = col.gameObject,
+                        OperationType = MeshMakerNamespace.CSG.Operation.Subtract,
+                        useCustomMaterial = false,
+                        hideGameObjects = false,
+                        keepSubmeshes = true
+                    };
+                    var newObj = csgOp.PerformCSG();
+                    if (newObj.TryGetComponent(out MeshFilter mf))
+                    {
+                        var newMesh = mf.sharedMesh;
+                        if (col.gameObject.TryGetComponent(out mf))
+                            mf.sharedMesh = newMesh;
+                        if (col.gameObject.TryGetComponent(out MeshCollider m))
+                            m.sharedMesh = newMesh;
+                    }
+                    carved = true;
                 }
-                carved = true;
-            }
-            if (carved) onCarveSuccess?.Invoke();
-            else onCarveFailure?.Invoke();
+                if (carved) onCarveSuccess?.Invoke();
+                else onCarveFailure?.Invoke();
 #endif
+			});
         }
     }
 }
