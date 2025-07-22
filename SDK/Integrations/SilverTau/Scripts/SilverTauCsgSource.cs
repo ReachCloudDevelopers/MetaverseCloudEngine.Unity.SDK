@@ -36,10 +36,28 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             for (var index = 0; index < size; index++)
             {
                 var col = OverlapResults[index];
-                var csg = col.GetComponentInParent<SilverTauCsgTarget>();
-                if (!csg) continue;
-                if (csg.transform.IsChildOf(transform)) continue;
-                CSGeometry.Subtractive(csg.gameObject, new[] { gameObject });
+                var csgTarget = col.GetComponent<SilverTauCsgTarget>();
+                if (!csgTarget) continue;
+                if (csgTarget.transform.IsChildOf(transform)) continue;
+                MeshMakerNamespace.CSG.EPSILON = 1e-5f;
+                var csgOp = new MeshMakerNamespace.CSG
+                {
+                    Brush = gameObject,
+                    Target = col.gameObject,
+                    OperationType = MeshMakerNamespace.CSG.Operation.Subtract,
+                    useCustomMaterial = false,
+                    hideGameObjects = false,
+                    keepSubmeshes = true
+                };
+                var newObj = csgOp.PerformCSG();
+                if (newObj.TryGetComponent(out MeshFilter mf))
+                {
+                    var newMesh = mf.sharedMesh;
+                    if (col.gameObject.TryGetComponent(out mf))
+                        mf.sharedMesh = newMesh;
+                    if (col.gameObject.TryGetComponent(out MeshCollider m))
+                        m.sharedMesh = newMesh;
+                }
                 carved = true;
             }
             if (carved) onCarveSuccess?.Invoke();

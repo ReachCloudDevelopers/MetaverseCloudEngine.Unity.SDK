@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.0
-- Added support for SilverTau runtime CSG operations using components.
+## 2.180.1
+- Improved SilverTau CSG
 
 Updated on July 22, 2025
