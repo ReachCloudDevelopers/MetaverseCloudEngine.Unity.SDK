@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.6
-- Added support for landplot load events to perform carve
+## 2.180.7
+- Added ability to disable source renderer when performing carving and to update collider when carving also.
 
 Updated on July 22, 2025
