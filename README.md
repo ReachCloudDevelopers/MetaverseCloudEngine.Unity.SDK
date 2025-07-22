@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.13
-- Fixed name comparison on SilverTauARViewerMetaSpaceManager.cs
+## 2.179.14
+- Added RPU assembly to MetaverseScript.cs
 
 Updated on July 22, 2025

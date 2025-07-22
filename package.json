@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.179.13",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.13\n- Fixed name comparison on SilverTauARViewerMetaSpaceManager.cs\n\nUpdated on July 22, 2025",
+  "version": "2.179.14",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.179.14\n- Added RPU assembly to MetaverseScript.cs\n\nUpdated on July 22, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

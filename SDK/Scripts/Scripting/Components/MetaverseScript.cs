@@ -1453,9 +1453,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(UniTaskExtensions).Assembly, /* UniTask */
                 typeof(NativeArray<>).Assembly /* Unity.Collections */
 #if MV_META_CORE // Oculus.VR
-                ,typeof(OVRSpatialAnchor).Assembly
-                ,typeof(OVRManager).Assembly
-                ,typeof(OVRInput).Assembly
+                , typeof(OVRSpatialAnchor).Assembly
+                , typeof(OVRManager).Assembly
+                , typeof(OVRInput).Assembly
 #endif
 #if MV_XRCOREUTILS
                 , typeof(XROrigin).Assembly
@@ -1464,34 +1464,43 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(UnityEngine.SpatialTracking.TrackedPoseDriver).Assembly /* UnityEngine.SpatialTracking.dll */
 #endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
-                ,typeof(Vuforia.VuforiaApplication).Assembly
-                ,typeof(Vuforia.VuforiaConfiguration).Assembly
+                , typeof(Vuforia.VuforiaApplication).Assembly
+                , typeof(Vuforia.VuforiaConfiguration).Assembly
 #endif
 #if MV_UNITY_AR_FOUNDATION && (UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR)
-                , typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly,
-                typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
+                , typeof(UnityEngine.XR.ARSubsystems.XRRaycastHit).Assembly
+                , typeof(UnityEngine.XR.ARFoundation.ARRaycastHit).Assembly
 #endif
 #if MV_UNITY_AR_CORE && (UNITY_ANDROID || UNITY_EDITOR)
                 , typeof(UnityEngine.XR.ARCore.ARCoreSessionSubsystem).Assembly
 #endif
 #if MV_UNITY_AR_CORE && MV_AR_CORE_EXTENSIONS && ((UNITY_IOS || UNITY_ANDROID) || UNITY_EDITOR)
-                , typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly,
-                typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly,
-                typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
+                , typeof(Google.XR.ARCoreExtensions.ARAnchorManagerExtensions).Assembly
+                , typeof(Google.XR.ARCoreExtensions.ARStreetscapeGeometryManager).Assembly
+                , typeof(Google.XR.ARCoreExtensions.GeospatialCreator.ARGeospatialCreatorOrigin).Assembly
 #if MV_CESIUM_UNITY
-                ,typeof(CesiumForUnity.CesiumGeoreference).Assembly
+                , typeof(CesiumForUnity.CesiumGeoreference).Assembly
 #endif
 #endif
 #if MV_UNITY_AR_KIT && (UNITY_IOS || UNITY_EDITOR)
                 , typeof(UnityEngine.XR.ARKit.ARKitSessionSubsystem).Assembly
 #endif
-                , typeof(CoordinateSharp.Coordinate).Assembly, typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
+                , typeof(CoordinateSharp.Coordinate).Assembly
+                , typeof(CoordinateSharp.Magnetic.Magnetic).Assembly
 #if MV_UNITY_AI_INFERENCE
                 , typeof(ModelAsset).Assembly
                 , typeof(CommandBufferWorkerExtensions).Assembly
                 , typeof(FunctionalExtensions).Assembly
                 , typeof(Functional).Assembly
                 , typeof(TextureConverter).Assembly
+#endif
+#if MV_ROOM_PLAN_UNITY_KIT
+                , typeof(SilverTau.Utilities.CSGeometry).Assembly
+                , typeof(SilverTau.ConcaveHull.Hull).Assembly
+                , typeof(SilverTau.CSGeometry.CSGeometryWorker).Assembly
+                , typeof(SilverTau.CSGeometry.v2.BinarySpacePartitioningHelper).Assembly
+                , typeof(SilverTau.RoomPlanUnity.CapturedObjectAttributes).Assembly
+                , typeof(SilverTau.Triangulation.AdvancingFront).Assembly
 #endif
             };
             return assemblies
