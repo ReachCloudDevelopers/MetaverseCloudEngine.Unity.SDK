@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.179.12
-- Updated MetaSpace.cs class styling. Fixed prefix for SilverTau scanned metaspaces.
+## 2.179.13
+- Fixed name comparison on SilverTauARViewerMetaSpaceManager.cs
 
 Updated on July 22, 2025

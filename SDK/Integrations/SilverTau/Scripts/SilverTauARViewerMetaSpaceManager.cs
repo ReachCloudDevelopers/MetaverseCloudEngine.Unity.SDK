@@ -8,7 +8,6 @@ using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Common.Models.QueryParams;
 using MetaverseCloudEngine.Unity.Assets.LandPlots;
 using MetaverseCloudEngine.Unity.Assets.MetaPrefabs;
-using MetaverseCloudEngine.Unity.Async;
 using TMPro;
 using TriInspectorMVCE;
 using UnityEngine;
@@ -115,7 +114,10 @@ namespace MetaverseCloudEngine.Unity.SilverTau
 
                     })).GetResultAsync())?.ToArray();
 
-                var space = spaces?.FirstOrDefault(x => x.Name.Equals(value, StringComparison.OrdinalIgnoreCase));
+                var space = spaces?.FirstOrDefault(x => 
+                    x.Name
+                        .Replace(SilverTauIntegrationConstants.EnvironmentScanPrefix, string.Empty)
+                        .Equals(value, StringComparison.InvariantCulture));
                 if (landPlot is null)
                     return;
 
