@@ -1,17 +1,15 @@
 ﻿using System;
-using MetaverseCloudEngine.Unity.Attributes;
 using System.Collections;
 using TriInspectorMVCE;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
-    [HideMonoScript]
     public class XRHeadFollowRig : TriInspectorMonoBehaviour
     {
         [Header("Player")]
-        [DisallowNull] public Transform xrRoot;
-        [DisallowNull] public Transform xrHead;
+        [Required] public Transform xrRoot;
+        [Required] public Transform xrHead;
 
         [Header("Settings")]
         public float moveTime = 1f;

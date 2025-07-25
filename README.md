@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.8
-- Improved implementation of XRHandManager.cs
+## 2.180.9
+- Fixed weird attribute drawing issues in XrFollowRig.cs
 
 Updated on July 25, 2025
