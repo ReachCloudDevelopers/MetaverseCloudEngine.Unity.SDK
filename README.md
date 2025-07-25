@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.9
-- Fixed weird attribute drawing issues in XrFollowRig.cs
+## 2.181.0
+- Added XRRayInteractorReticle component
 
 Updated on July 25, 2025
