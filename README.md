@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.181.0
-- Added XRRayInteractorReticle component
+## 2.181.1
+- Rolled back to supporting XR hands explicitly in XRHandManager.cs
 
 Updated on July 25, 2025
