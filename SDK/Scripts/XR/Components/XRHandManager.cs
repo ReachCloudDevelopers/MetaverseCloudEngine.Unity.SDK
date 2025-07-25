@@ -1,7 +1,7 @@
 ﻿#pragma warning disable IDE0079 // Remove unnecessary suppression
 #pragma warning disable IDE0035
 
-#if MV_OCULUS_PLUGIN && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && UNITY_ANDROID
+#if (MV_OCULUS_PLUGIN || MV_META_CORE) && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && UNITY_ANDROID
 #define MV_USING_OCULUS_SDK
 #endif
 
@@ -199,7 +199,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 
         private bool UpdateOvrHandState(bool isLeftHand, bool usePointerPose, GameObject deviceGameObject)
         {
-#if MV_USING_OCULUS_SDK && MV_META_CORE
+#if MV_USING_OCULUS_SDK
             OVRPlugin.HandState handState = default;
             if (!OVRPlugin.GetHandState(
                     OVRPlugin.Step.Render,
@@ -336,7 +336,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                         return new Pose(
                             vive.pointerPosition.value + GetControllerPositionOffset(vive.deviceRotation.value, Quaternion.identity, isLHand),
                             vive.pointerRotation.value * GetControllerRotationOffset(isLHand));
-#if MV_USING_OCULUS_SDK && MV_META_CORE
+#if MV_USING_OCULUS_SDK
                     case OculusTouchController oculusTouchController:
                     {
                         OVRPlugin.HandState handState = default;

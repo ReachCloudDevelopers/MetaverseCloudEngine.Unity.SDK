@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.180.7
-- Added ability to disable source renderer when performing carving and to update collider when carving also.
+## 2.180.8
+- Improved implementation of XRHandManager.cs
 
-Updated on July 22, 2025
+Updated on July 25, 2025
