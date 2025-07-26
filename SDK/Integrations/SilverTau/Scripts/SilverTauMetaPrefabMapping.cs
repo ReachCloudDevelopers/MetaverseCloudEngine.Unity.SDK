@@ -66,14 +66,14 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         [Tooltip("A list of prefab label mappings to map labels to prefab IDs.")]
         [SerializeField] private PrefabLabelMapping[] prefabLabelMappings = Array.Empty<PrefabLabelMapping>();
         
-#if MV_SILVERTAU
-        private CapturedRoomObject _capturedRoomObject;
-        private Dictionary<Category, string> _labelToPrefabIDMap;
-
         /// <summary>
         /// The ID of the prefab that is currently applied to the captured room object.
         /// </summary>
         public string ID { get; private set; }
+
+#if MV_SILVERTAU
+        private CapturedRoomObject _capturedRoomObject;
+        private Dictionary<Category, string> _labelToPrefabIDMap;
 
         private void Awake()
         {
