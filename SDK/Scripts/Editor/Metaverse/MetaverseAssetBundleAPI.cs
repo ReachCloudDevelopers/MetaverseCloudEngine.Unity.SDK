@@ -46,15 +46,12 @@ namespace MetaverseCloudEngine.Unity.Editors
             
             var originalBuildTarget = EditorUserBuildSettings.activeBuildTarget;
             EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
-            EditorUserBuildSettings.selectedStandaloneTarget = 
-#if UNITY_EDITOR_OSX
-                BuildTarget.StandaloneOSX;
-#else
-                BuildTarget.StandaloneWindows64;
-#endif
-#if UNITY_EDITOR_OSX && UNITY_2022_3_OR_NEWER
-        UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
-#endif
+            EditorUserBuildSettings.selectedStandaloneTarget = Application.platform == RuntimePlatform.OSXEditor
+                ? BuildTarget.StandaloneOSX
+                : BuildTarget.StandaloneWindows64;
+            
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
 
             preProcessBuild?.Invoke();
             try

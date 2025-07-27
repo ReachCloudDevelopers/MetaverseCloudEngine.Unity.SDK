@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.181.2
-- Fixed placement of ID property to ensure compilation works.
+## 2.181.3
+- Fixed initial selected platform before building an Asset Bundle.
 
-Updated on July 26, 2025
+Updated on July 27, 2025
