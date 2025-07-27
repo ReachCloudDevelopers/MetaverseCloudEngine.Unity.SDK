@@ -185,26 +185,6 @@ namespace MetaverseCloudEngine.Unity.Assets
         }
 
         /// <summary>
-        /// Updates the internal updated date.
-        /// </summary>
-        public void SavePublishedDate()
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
-        }
-        
-        /// <summary>
-        /// Clears the internal updated date.
-        /// </summary>
-        public void ClearPublishedDate()
-        {
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
-        }
-
-        /// <summary>
         /// Updates the asset from the given DTO.
         /// </summary>
         /// <param name="dto">The data transfer object to update from.</param>

@@ -1281,9 +1281,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     UpdateBlockchainReferences(dto, obj);
                 }
                 
-                if (objTargetObject)
-                    objTargetObject.SavePublishedDate();
-
                 if (obj.ApplyModifiedProperties())
                     EditorUtility.SetDirty(obj.targetObject);
 
@@ -1291,9 +1288,6 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
             else
             {
-                if (objTargetObject)
-                    objTargetObject.ClearPublishedDate();
-                
                 OnClearMetaDataInternal(objTargetObject);
             }
 
