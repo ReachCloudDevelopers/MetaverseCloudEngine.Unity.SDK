@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.181.5
-- Make sure that all cesium georeference objects are disabled during build.
+## 2.181.6
+- Fixed compilation error in Cesium compatbility
 
 Updated on July 29, 2025

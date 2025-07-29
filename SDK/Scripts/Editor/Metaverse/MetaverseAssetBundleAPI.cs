@@ -592,7 +592,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 				"Yes (Recommended)",
 				"No"))
 				return;
-            var components = Resources.FindObjectsOfTypeAll<CesiumGeoreference>();
+            var components = Resources.FindObjectsOfTypeAll<CesiumForUnity.CesiumGeoreference>();
 			foreach (var component in components)
             {
                 if (component.gameObject.activeInHierarchy)
