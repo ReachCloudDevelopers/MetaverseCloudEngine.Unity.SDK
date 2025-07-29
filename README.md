@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.181.6
-- Fixed compilation error in Cesium compatbility
+## 2.182.0
+- Rolled back changes with Cesium and Asset Bundle Build API
 
 Updated on July 29, 2025

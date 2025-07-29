@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.181.6",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.181.6\n- Fixed compilation error in Cesium compatbility\n\nUpdated on July 29, 2025",
+  "version": "2.182.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.182.0\n- Rolled back changes with Cesium and Asset Bundle Build API\n\nUpdated on July 29, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
