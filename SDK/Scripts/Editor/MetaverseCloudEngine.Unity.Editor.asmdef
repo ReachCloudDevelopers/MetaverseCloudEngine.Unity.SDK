@@ -39,7 +39,8 @@
         "GUID:6506d016782ec1d4082f393438028cd1",
         "GUID:21b0c8d1703a94250bfac916590cea4f",
         "GUID:d2761a0af0f567748a72629d4bb18a26",
-        "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30"
+        "GUID:f64c9ebcd7899c3448a08dc9f9ddbe30",
+        "GUID:63cab5ddbd23cf34ca160a9b3d74438d"
     ],
     "includePlatforms": [
         "Editor"
@@ -116,6 +117,11 @@
             "name": "com.unity.xr.arfoundation",
             "expression": "",
             "define": "MV_AR_FOUNDATION"
+        },
+        {
+            "name": "com.cesium.unity",
+            "expression": "",
+            "define": "MV_CESIUM_UNITY"
         }
     ],
     "noEngineReferences": false

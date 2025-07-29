@@ -148,6 +148,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
+                    DisableAllCesiumComponents();
                     ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
                     if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
@@ -580,6 +581,24 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }, includeIOSFix: false);
 
             EditorCoroutineUtility.StartCoroutineOwnerless(buildRoutine);
+        }
+
+        private static void DisableAllCesiumComponents()
+        {
+#if MV_CESIUM_UNITY
+			if (!EditorUtility.DisplayDialog(
+				"Disable Cesium Components",
+				"Because of the way Cesium for Unity works, it is recommended to disable all Cesium components before building the asset bundle. Do you want to disable them now?",
+				"Yes (Recommended)",
+				"No"))
+				return;
+            var components = Resources.FindObjectsOfTypeAll<CesiumGeoreference>();
+			foreach (var component in components)
+            {
+                if (component.gameObject.activeInHierarchy)
+                    component.gameObject.SetActive(false);
+            }
+#endif
         }
     }
 }
