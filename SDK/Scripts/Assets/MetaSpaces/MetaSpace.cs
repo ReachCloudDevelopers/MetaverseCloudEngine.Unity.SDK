@@ -539,8 +539,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             AddService<IMetaSpaceStateService>(new MetaSpaceStateService(
                 GetService<IMetaSpaceNetworkingService>(),
                 GetService<IPlayerGroupsService>(),
-                RuntimeOptions,
-                logger));
+                RuntimeOptions));
 
             AddService<IPlayerSpawnService>(new PlayerSpawnService(
                 GetService<IMetaSpaceNetworkingService>(),

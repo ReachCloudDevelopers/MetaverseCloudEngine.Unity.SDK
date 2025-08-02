@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.182.1
-- Removed log from MetaSpaceNetworkingService
+## 2.182.2
+- Removed unused logging
 
 Updated on August 02, 2025

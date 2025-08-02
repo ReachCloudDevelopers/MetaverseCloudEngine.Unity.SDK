@@ -19,18 +19,15 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
         private readonly IMetaSpaceNetworkingService _networkingService;
         private readonly IPlayerGroupsService _playerGroupService;
         private readonly IMetaSpaceStateOptions _gameStateOptions;
-        private readonly IDebugLogger _logger;
 
         public MetaSpaceStateService(
             IMetaSpaceNetworkingService networkingService,
             IPlayerGroupsService playerGroupService,
-            IMetaSpaceStateOptions gameStateOptions,
-            IDebugLogger logger = null)
+            IMetaSpaceStateOptions gameStateOptions)
         {
             _networkingService = networkingService;
             _playerGroupService = playerGroupService;
             _gameStateOptions = gameStateOptions;
-            _logger = logger;
 
             networkingService.AddEventHandler((short)NetworkEventType.HostSayingGameStarted, OnGameStarted);
             networkingService.AddEventHandler((short)NetworkEventType.HostSayingGameEnded, OnGameEnded);
@@ -49,12 +46,10 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
                 if (value)
                 {
-                    _logger?.Log("Meta space started.");
                     MetaSpaceStarted?.Invoke();
                 }
                 else
                 {
-                    _logger?.Log("Meta space ended.");
                     MetaSpaceEnded?.Invoke();
                 }
 
