@@ -135,10 +135,7 @@ namespace MetaverseCloudEngine.Unity.Networking.Impl
         public void Initialize()
         {
             if (IsOfflineMode)
-            {
                 Ready?.Invoke();
-                _logger?.Log("Currently in offline mode.");
-            }
 
             InitializeInternal();
 
