@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.182.3
-- Updated logs in PlayerSpawnService.cs and PlayerGroupService.cs
+## 2.183.0
+- Updated MetaverseScript and added support for the Xvisio library.
 
 Updated on August 02, 2025

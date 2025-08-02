@@ -48,7 +48,8 @@
         "GUID:04376767bc1f3b428aefa3d20743e819",
         "GUID:d0574574baafe9d4aa78d8df4a5e3e5e",
         "GUID:63a57c8b658089e49a173b0f0c4870a7",
-        "GUID:cbe3c34c5ea3d458291b0192a5af50a9"
+        "GUID:cbe3c34c5ea3d458291b0192a5af50a9",
+        "GUID:6e0b5f5d9e5c50e4385765ff81fab7b0"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -233,6 +234,11 @@
             "name": "com.silvertau.roomplanunitykit",
             "expression": "",
             "define": "MV_ROOM_PLAN_UNITY_KIT"
+        },
+        {
+            "name": "com.xvisio-technology.xvsdk-unity",
+            "expression": "",
+            "define": "MV_XVISIO"
         }
     ],
     "noEngineReferences": false

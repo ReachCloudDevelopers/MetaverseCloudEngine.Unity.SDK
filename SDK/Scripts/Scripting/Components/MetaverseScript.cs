@@ -1502,6 +1502,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(SilverTau.RoomPlanUnity.CapturedObjectAttributes).Assembly
                 , typeof(SilverTau.Triangulation.AdvancingFront).Assembly
 #endif
+#if MV_XVISIO
+                , typeof(Xvisio.Unity.XvisioUnityWrapper).Assembly
+#endif
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())
