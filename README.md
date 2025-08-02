@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.182.2
-- Removed unused logging
+## 2.182.3
+- Updated logs in PlayerSpawnService.cs and PlayerGroupService.cs
 
 Updated on August 02, 2025
