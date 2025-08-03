@@ -12,6 +12,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
     /// </summary>
     public class MetaverseSerialPortDeviceAPI : IDisposable
     {
+        public bool loggingEnabled;
         [Tooltip("The serial port utility component.")]
         public readonly UnityEvent<string> OnDeviceName = new();
         [Tooltip("Invoked when the device starts opening.")]
@@ -88,7 +89,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (_isDisposed)
             {
-                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
                 return;
             }
 
@@ -110,7 +112,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (_isDisposed)
             {
-                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
                 return;
             }
 
@@ -126,7 +129,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             try
             {
                 CloseSerial();
-                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Closing device...");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Closing device...");
                 
                 var timeout = DateTime.UtcNow.AddSeconds(15);
                 MetaverseDispatcher.WaitUntil(() => _isDisposed || !_spup || _opening != this || DateTime.UtcNow > timeout || (!IsAnyDeviceOpened() && !IsThisDeviceOpened()), () =>
@@ -140,12 +144,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     
                     if (DateTime.UtcNow > timeout)
                     {
-                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device close timeout");
+                        if (loggingEnabled)
+                            MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device close timeout");
                         OpenFailed();
                         return;
                     }
                     
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device closed");
+                    if (loggingEnabled)
+                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device closed");
                     OpenInternal();
                 });
             }
@@ -153,7 +159,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 if (!_isDisposed && _opening == this)
                     OpenFailed();
-                MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device close error: {e.Message}");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device close error: {e.Message}");
             }
         }
 
@@ -205,7 +212,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (_isDisposed || !_spup || _opening != this)
             {
-                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open cancelled");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open cancelled");
                 if (!_isDisposed && _opening == this)
                     OpenFailed();
                 return;
@@ -231,13 +239,15 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
             catch (Exception e)
             {
-                MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device open error: {e.Message}");
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device open error: {e.Message}");
                 OpenFailed();
                 return;
             }
 
-            MetaverseProgram.Logger.Log(
-                $"[MetaverseSerialPortDeviceAPI] Specified device to open:-VID:{_data.Vendor},PID:{_data.Product},SER:{_data.SerialNumber},PORT:{_data.PortName}");
+            if (loggingEnabled)
+                MetaverseProgram.Logger.Log(
+                    $"[MetaverseSerialPortDeviceAPI] Specified device to open:-VID:{_data.Vendor},PID:{_data.Product},SER:{_data.SerialNumber},PORT:{_data.PortName}");
 
             var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
@@ -263,7 +273,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         return;
                     }
 
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Opening device");
+                    if (loggingEnabled)
+                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Opening device");
 
                     OpenSerial();
                     
@@ -287,12 +298,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         
                         if (DateTime.UtcNow > timeout)
                         {
-                            MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
+                            if (loggingEnabled)
+                                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
                             OpenFailed();
                             return;
                         }
                         
-                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device processing finished");
+                        if (loggingEnabled)
+                            MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device processing finished");
                         
                         timeout = DateTime.UtcNow.AddSeconds(5);
                         MetaverseDispatcher.WaitUntil(
@@ -315,7 +328,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     
                                 if (DateTime.UtcNow > timeout)
                                 {
-                                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
+                                    if (loggingEnabled)
+                                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
                                     OpenFailed();
                                     return;
                                 }
@@ -324,14 +338,16 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 {
                                     OnStoppedOpening?.Invoke();
                                     OnDeviceOpen?.Invoke();
-                                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device opened.");
+                                    if (loggingEnabled)
+                                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device opened.");
                                     if (_opening == this)
                                         _opening = null;
                                 }
                                 else
                                 {
-                                    MetaverseProgram.Logger.Log(
-                                        $"[MetaverseSerialPortDeviceAPI] Serial Number: {GetSerialNumber()} Expected Serial Number: {_data.SerialNumber} Opened: {IsAnyDeviceOpened()}");
+                                    if (loggingEnabled)
+                                        MetaverseProgram.Logger.Log(
+                                            $"[MetaverseSerialPortDeviceAPI] Serial Number: {GetSerialNumber()} Expected Serial Number: {_data.SerialNumber} Opened: {IsAnyDeviceOpened()}");
                                     OpenFailed();
                                     CheckOpened();
                                 }

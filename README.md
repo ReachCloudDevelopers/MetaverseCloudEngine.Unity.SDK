@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.183.0
-- Updated MetaverseScript and added support for the Xvisio library.
+## 2.183.1
+- Added loggingEnabled flag to MetaverseSerialPortDeviceAPI
 
-Updated on August 02, 2025
+Updated on August 03, 2025

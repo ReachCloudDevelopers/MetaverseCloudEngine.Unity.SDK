@@ -148,6 +148,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 onHasSavedDevice?.Invoke();
             else onNoSavedDevice?.Invoke();
             if (onStart) AutoConnect();
+            _deviceAPI.loggingEnabled = debugLog;
         }
 
         private void OnSystemEventCallback(object sender, string e)
