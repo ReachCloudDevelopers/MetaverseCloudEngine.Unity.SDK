@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.183.1
-- Added loggingEnabled flag to MetaverseSerialPortDeviceAPI
+## 2.184.0
+- Added Auth0 Sign In support.
 
-Updated on August 03, 2025
+Updated on August 06, 2025
