@@ -14,7 +14,12 @@ namespace MetaverseCloudEngine.Unity
         {
             UniTask.Void(async () =>
             {
-                var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync();
+                Guid? organizationId = null;
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                organizationId = MetaverseProgram.RuntimeServices.InternalOrganizationManager.SelectedOrganization?.Id;
+#endif
+                var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(
+                    organizationId);
                 if (!startRequest.Succeeded)
                 {
                     failed?.Invoke();
@@ -28,7 +33,7 @@ namespace MetaverseCloudEngine.Unity
                 var endRequest = await MetaverseProgram.ApiClient.Account.CompleteAuth0SignInAsync(
                     new GenerateSystemUserTokenAuth0Form
                     {
-                        RequestToken = startResponse.RequestToken
+                        RequestToken = startResponse.RequestToken,
                     }, cancellationToken: _cancellationToken);
                 Debug.Log("Done: " + endRequest.Succeeded);
                 finished?.Invoke();
