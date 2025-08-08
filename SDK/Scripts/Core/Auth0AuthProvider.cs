@@ -16,7 +16,7 @@ namespace MetaverseCloudEngine.Unity
             {
                 Guid? organizationId = null;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                organizationId = MetaverseProgram.RuntimeServices.InternalOrganizationManager.SelectedOrganization?.Id;
+                organizationId = MetaverseProgram.RuntimeServices?.InternalOrganizationManager?.SelectedOrganization?.Id;
 #endif
                 var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(
                     organizationId);

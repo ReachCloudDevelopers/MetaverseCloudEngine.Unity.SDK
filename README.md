@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.185.0
-- Updated ApiClient DLLs
+## 2.185.1
+- Fix null reference error with google sign in.
 
-Updated on August 06, 2025
+Updated on August 07, 2025
