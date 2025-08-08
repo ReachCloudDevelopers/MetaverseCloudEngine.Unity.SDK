@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.185.2
-- Ensure threading works on WebGL platforms.
+## 2.185.3
+- Updated client DLLs
 
 Updated on August 07, 2025
