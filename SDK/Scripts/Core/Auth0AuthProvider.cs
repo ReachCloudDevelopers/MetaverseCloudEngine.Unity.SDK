@@ -8,12 +8,15 @@ namespace MetaverseCloudEngine.Unity
 {
     public class Auth0AuthProvider
     {
-        private readonly CancellationToken _cancellationToken;
+        private CancellationTokenSource _cancellationToken;
 
         public void Start(Action finished, Action failed)
         {
+            _cancellationToken = new CancellationTokenSource();
+            
             UniTask.Void(async () =>
             {
+                await UniTask.SwitchToMainThread();
                 Guid? organizationId = null;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                 organizationId = MetaverseProgram.RuntimeServices?.InternalOrganizationManager?.SelectedOrganization?.Id;
@@ -26,7 +29,7 @@ namespace MetaverseCloudEngine.Unity
                     return;
                 }
 
-                await UniTask.Delay(5, cancellationToken: _cancellationToken);
+                await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
                 
                 var startResponse = await startRequest.GetResultAsync();
                 Application.OpenURL(startResponse.SignInUrl);
@@ -34,7 +37,7 @@ namespace MetaverseCloudEngine.Unity
                     new GenerateSystemUserTokenAuth0Form
                     {
                         RequestToken = startResponse.RequestToken,
-                    }, cancellationToken: _cancellationToken);
+                    }, cancellationToken: _cancellationToken.Token);
                 Debug.Log("Done: " + endRequest.Succeeded);
                 finished?.Invoke();
             });
@@ -42,7 +45,7 @@ namespace MetaverseCloudEngine.Unity
         
         public void Cancel()
         {
-            
+            _cancellationToken?.Cancel();
         }
     }
 }

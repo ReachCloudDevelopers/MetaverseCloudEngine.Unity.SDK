@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.185.1
-- Fix null reference error with google sign in.
+## 2.185.2
+- Ensure threading works on WebGL platforms.
 
 Updated on August 07, 2025
