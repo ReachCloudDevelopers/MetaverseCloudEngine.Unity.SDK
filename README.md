@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.185.3
-- Updated client DLLs
+## 2.186.0
+- Fixed network text mesh pro not properly syncing upon requesting text string.
 
-Updated on August 07, 2025
+Updated on August 11, 2025

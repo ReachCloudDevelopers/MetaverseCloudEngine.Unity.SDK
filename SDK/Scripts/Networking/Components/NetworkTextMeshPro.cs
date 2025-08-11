@@ -59,7 +59,7 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
 
         public override void OnRemoteStateAuthority()
         {
-            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, NetworkObject.StateAuthorityID, NetworkObject.Networking.LocalPlayerID);
+            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, NetworkObject.InputAuthorityID, null);
         }
 
         private void FixedUpdate()
@@ -83,24 +83,23 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
 
         private void RPC_OnTextMeshProTextRequested(short procedureID, int playerID, object content)
         {
-            if (content is not int identifier)
-                return;
-            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, identifier, new object[] { text.text ?? string.Empty, ID });
+            NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextUpdate, playerID, new object[]
+            {
+                text.text ?? string.Empty,
+                ID
+            });
         }
 
         private void RPC_OnTextMeshProTextUpdated(short procedureID, int playerID, object content)
         {
             if (content is not object[] args || args.Length != 2)
                 return;
-
             Guid? id = args[1] as Guid?;
             if (id == null || id.Value != ID)
                 return;
-
-            if (args[0] is not string text)
+            if (args[0] is not string s)
                 return;
-
-            this.text.text = text;
+            text.text = s;
         }
 
         private bool IsRpcIdCopied()
