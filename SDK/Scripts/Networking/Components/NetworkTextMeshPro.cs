@@ -11,7 +11,8 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
     [HideMonoScript]
     public class NetworkTextMeshPro : NetworkObjectBehaviour
     {
-        [SerializeField, Attributes.ReadOnly] private string id;
+        [SerializeField]
+        [Attributes.ReadOnly] private string id;
         [SerializeField] private TMP_Text text;
 
         private string _lastTextValue;
@@ -71,14 +72,15 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
                 return;
             }
 
-            if (!NetworkObject.IsStateAuthority)
+            if (!NetworkObject.IsInputAuthority)
                 return;
 
-            if (_lastTextValue != text.text)
-            {
-                _lastTextValue = text.text;
-                NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextUpdate, NetworkMessageReceivers.Others, new object[] { text.text ?? string.Empty, ID });
-            }
+            if (_lastTextValue == text.text) return;
+            _lastTextValue = text.text;
+            NetworkObject.InvokeRPC(
+                (short)NetworkRpcType.TextMeshProTextUpdate, 
+                NetworkMessageReceivers.Others, 
+                new object[] { text.text ?? string.Empty, ID });
         }
 
         private void RPC_OnTextMeshProTextRequested(short procedureID, int playerID, object content)
@@ -92,10 +94,9 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
 
         private void RPC_OnTextMeshProTextUpdated(short procedureID, int playerID, object content)
         {
-            if (content is not object[] args || args.Length != 2)
+            if (content is not object[] { Length: 2 } args)
                 return;
-            Guid? id = args[1] as Guid?;
-            if (id == null || id.Value != ID)
+            if (args[1] is not Guid guid || guid != ID)
                 return;
             if (args[0] is not string s)
                 return;
