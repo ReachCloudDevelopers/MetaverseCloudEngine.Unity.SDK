@@ -16,6 +16,7 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
         [SerializeField] private TMP_Text text;
 
         private string _lastTextValue;
+        private float _nextUpdateTime;
 
         private Guid? _id;
         private Guid ID {
@@ -75,8 +76,9 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
             if (!NetworkObject.IsInputAuthority)
                 return;
 
-            if (_lastTextValue == text.text) return;
+            if (_lastTextValue == text.text || Time.unscaledTime > _nextUpdateTime) return;
             _lastTextValue = text.text;
+            _nextUpdateTime = Time.unscaledTime + 5;
             NetworkObject.InvokeRPC(
                 (short)NetworkRpcType.TextMeshProTextUpdate, 
                 NetworkMessageReceivers.Others, 

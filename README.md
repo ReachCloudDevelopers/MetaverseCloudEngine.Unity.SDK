@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.1
-- Updated formatting
+## 2.186.2
+- Added a regular update tick to the NetworkTextMeshPro component.
 
-Updated on August 11, 2025
+Updated on August 13, 2025
