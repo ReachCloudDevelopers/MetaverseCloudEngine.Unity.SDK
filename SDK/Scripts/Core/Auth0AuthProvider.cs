@@ -22,7 +22,7 @@ namespace MetaverseCloudEngine.Unity
         {
             get
             {
-#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED
+#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
                 return false;
 #else
                 return true;
@@ -83,10 +83,10 @@ namespace MetaverseCloudEngine.Unity
 
         private static async Task OpenLoginPopup(string url, CancellationTokenSource cancellationToken = null)
         {
-#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED
+#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
             Application.OpenURL(url);
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-            return Task.CompletedTask;
+            await Task.CompletedTask;
 #endif
 #else
             await GenerateStandaloneLogInUi(url, cancellationToken);

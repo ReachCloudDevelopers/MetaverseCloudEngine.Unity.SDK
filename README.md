@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.4
-- Fixed Auth0AuthProvider layout spacing to better support mobile layouts.
+## 2.186.5
+- Made sure webgl returned application openurl for Auth0AuthProvider
 
 Updated on August 16, 2025
