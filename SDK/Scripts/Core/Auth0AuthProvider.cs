@@ -85,11 +85,15 @@ namespace MetaverseCloudEngine.Unity
         {
 #if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
             Application.OpenURL(url);
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
             await Task.CompletedTask;
-#endif
 #else
-            await GenerateStandaloneLogInUi(url, cancellationToken);
+            if (Application.isPlaying)
+                await GenerateStandaloneLogInUi(url, cancellationToken);
+            else
+            {
+                Application.OpenURL(url);
+                await Task.CompletedTask;
+            }
 #endif
         }
 
