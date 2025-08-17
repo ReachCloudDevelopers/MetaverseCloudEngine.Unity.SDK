@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.7
-- Fixed login not opening new browser tab when not playing
+## 2.186.8
+- Ensure that unity standalone does not use in-app ui for external login.
 
 Updated on August 17, 2025

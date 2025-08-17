@@ -22,7 +22,7 @@ namespace MetaverseCloudEngine.Unity
         {
             get
             {
-#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
+#if !MV_VUPLEX_DEFINED || UNITY_STANDALONE
                 return false;
 #else
                 return true;
@@ -81,13 +81,13 @@ namespace MetaverseCloudEngine.Unity
             _cancellationToken?.Cancel();
         }
 
-        private static async Task OpenLoginPopup(string url, CancellationTokenSource cancellationToken = null)
+        private async Task OpenLoginPopup(string url, CancellationTokenSource cancellationToken = null)
         {
 #if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
             Application.OpenURL(url);
             await Task.CompletedTask;
 #else
-            if (Application.isPlaying)
+            if (Application.isPlaying && SupportsInAppUI)
                 await GenerateStandaloneLogInUi(url, cancellationToken);
             else
             {
