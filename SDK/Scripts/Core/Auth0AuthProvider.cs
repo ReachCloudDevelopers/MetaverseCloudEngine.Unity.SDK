@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
+using MetaverseCloudEngine.Unity.UI.Components;
 using UnityEngine;
 #if MV_VUPLEX_DEFINED
 using TMPro;
@@ -113,8 +114,17 @@ namespace MetaverseCloudEngine.Unity
             image.rectTransform.offsetMin = Vector2.zero;
             image.rectTransform.offsetMax = Vector2.zero;
             
+            var layout = new GameObject("Layout", typeof(RectTransform));
+            layout.transform.SetParent(canvas.transform, false);
+            var layoutRt = layout.GetComponent<RectTransform>();
+            layoutRt.anchorMin = new Vector2(0, 0);
+            layoutRt.anchorMax = new Vector2(1, 1);
+            layoutRt.offsetMin = Vector2.zero;
+            layoutRt.offsetMax = Vector2.zero;
+            layoutRt.gameObject.AddComponent<RectTransformSafeZone>();
+            
             var closeButtonObj = new GameObject("CloseButton", typeof(Button));
-            closeButtonObj.transform.SetParent(canvas.transform, false);
+            closeButtonObj.transform.SetParent(layoutRt, false);
             var closeButton = closeButtonObj.GetComponent<Button>();
             closeButton.image = closeButtonObj.AddComponent<Image>();
             closeButton.image.color = new Color(1, 1, 1, 0);
@@ -123,7 +133,7 @@ namespace MetaverseCloudEngine.Unity
             closeButtonRt.anchorMax = new Vector2(1f, 1f);
             closeButtonRt.pivot = new Vector2(1f, 1f);
             closeButtonRt.sizeDelta = new Vector2(50, 50);
-            closeButtonRt.anchoredPosition3D = new Vector3(-100, -100, 0);
+            closeButtonRt.anchoredPosition3D = new Vector3(-50, -50, 0);
             
             var closeTxt = new GameObject("&times", typeof(TextMeshProUGUI));
             closeTxt.transform.SetParent(closeButtonObj.transform, false);
@@ -141,18 +151,18 @@ namespace MetaverseCloudEngine.Unity
             var mainWebViewPrefab = CanvasWebViewPrefab.Instantiate();
             mainWebViewPrefab.Native2DModeEnabled = true;
             mainWebViewPrefab.InitialUrl = url;
-            mainWebViewPrefab.transform.SetParent(canvas.transform, false);
+            mainWebViewPrefab.transform.SetParent(layoutRt, false);
             
             var rt = mainWebViewPrefab.transform as RectTransform;
             if (rt)
             {
                 rt.anchoredPosition3D = Vector3.zero;
-                rt.anchorMin = new Vector2(0.5f, 0.5f);
-                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.anchorMin = new Vector2(0, 0);
+                rt.anchorMax = new Vector2(1, 1);
+                rt.offsetMin = new Vector2(0, 300);
+                rt.offsetMax = new Vector2(0, 0);
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.localPosition = Vector3.zero;
-                rt.sizeDelta = new Vector2(500, 700);
-                mainWebViewPrefab.transform.localScale = Vector3.one;
             }
             
             await mainWebViewPrefab.WaitUntilInitialized();
