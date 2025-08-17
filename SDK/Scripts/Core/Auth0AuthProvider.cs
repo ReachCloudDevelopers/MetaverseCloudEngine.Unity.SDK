@@ -98,7 +98,7 @@ namespace MetaverseCloudEngine.Unity
             var canvas = new GameObject("WebViewCanvas");
             var canvasComponent = canvas.AddComponent<Canvas>();
             canvasComponent.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvasComponent.sortingOrder = int.MaxValue;
+            canvasComponent.sortingOrder = 32767;
             var canvasScaler = canvas.AddComponent<CanvasScaler>();
             canvasScaler.matchWidthOrHeight = 0.75f;
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

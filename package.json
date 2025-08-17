@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.186.5",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.186.5\n- Made sure webgl returned application openurl for Auth0AuthProvider\n\nUpdated on August 16, 2025",
+  "version": "2.186.6",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.186.6\n- Fixed sorting order not properly being set on canvas\n\nUpdated on August 17, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

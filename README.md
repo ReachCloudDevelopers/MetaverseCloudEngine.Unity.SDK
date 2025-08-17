@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.5
-- Made sure webgl returned application openurl for Auth0AuthProvider
+## 2.186.6
+- Fixed sorting order not properly being set on canvas
 
-Updated on August 16, 2025
+Updated on August 17, 2025
