@@ -124,7 +124,7 @@ namespace MetaverseCloudEngine.Unity
             return await Task.FromResult<string>(null);
 #else
             if (Application.isPlaying && SupportsInAppUI)
-                await GenerateStandaloneLogInUi(url, _cancellationToken);
+                await CreateEmbeddedLogInWindowAsync(url, _cancellationToken);
             else
                 Application.OpenURL(url);
             return "ok";
@@ -132,7 +132,7 @@ namespace MetaverseCloudEngine.Unity
         }
 
 #if MV_VUPLEX_DEFINED
-        private static async Task GenerateStandaloneLogInUi(string url, CancellationTokenSource cancellationToken = null)
+        private static async Task CreateEmbeddedLogInWindowAsync(string url, CancellationTokenSource cancellationToken = null)
         {
             var canvas = new GameObject("WebViewCanvas");
             var canvasComponent = canvas.AddComponent<Canvas>();
@@ -209,6 +209,21 @@ namespace MetaverseCloudEngine.Unity
                 mainWebViewPrefab.Destroy();
                 Object.Destroy(canvas);
                 return;
+            }
+
+            if (mainWebViewPrefab is IWithSettableUserAgent ua)
+            {
+                switch (Application.platform)
+                {
+                    case RuntimePlatform.Android:
+                        ua.SetUserAgent(
+                            "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Mobile Safari/537.36");
+                        break;
+                    case RuntimePlatform.IPhonePlayer:
+                        ua.SetUserAgent(
+                            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1");
+                        break;
+                }
             }
 
             mainWebViewPrefab.WebView.SetDefaultBackgroundEnabled(false);
