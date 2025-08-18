@@ -60,9 +60,14 @@ namespace MetaverseCloudEngine.Unity
                 var startResponse = await startRequest.GetResultAsync();
 
                 // 1) Open the login UI / popup
-                await OpenLoginPopup(startResponse.SignInUrl);
+                var code = await OpenLoginPopup(startResponse.SignInUrl);
 
                 // 2) If user closed or popup blocked (no code), treat as graceful failure (no cancel)
+                if (string.IsNullOrEmpty(code))
+                {
+                    failed?.Invoke();
+                    return;
+                }
 
                 // 3) Complete sign-in only after we actually received the code signal
                 try
@@ -96,7 +101,7 @@ namespace MetaverseCloudEngine.Unity
             _cancellationToken?.Cancel();
         }
 
-        private async Task OpenLoginPopup(string url)
+        private async Task<string> OpenLoginPopup(string url)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             var bridge = WebGLAuth0Bridge.GetOrCreate();
@@ -121,10 +126,10 @@ namespace MetaverseCloudEngine.Unity
             }
 
             // Await either return code (success) or closed (null)
-            await bridge.WaitForAuthCodeAsync();
+            return await bridge.WaitForAuthCodeAsync();
 #elif !MV_VUPLEX_DEFINED
             Application.OpenURL(url);
-            await Task.CompletedTask; // Just wait for the URL to open, no in-app UI support
+            return await Task.FromResult<string>(null);
 #else
             if (Application.isPlaying && SupportsInAppUI)
             {
@@ -137,6 +142,8 @@ namespace MetaverseCloudEngine.Unity
             {
                 Application.OpenURL(url);
             }
+
+            return null;
 #endif
         }
 

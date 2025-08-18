@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.10
-- Fixed popup closure causing failure
+## 2.186.11
+- Revert modification to auth code result
 
 Updated on August 18, 2025
