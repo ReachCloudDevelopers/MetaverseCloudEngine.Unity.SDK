@@ -195,13 +195,11 @@ namespace MetaverseCloudEngine.Unity
             var rt = mainWebViewPrefab.transform as RectTransform;
             if (rt)
             {
-                rt.anchoredPosition3D = Vector3.zero;
                 rt.anchorMin = new Vector2(0, 0);
                 rt.anchorMax = new Vector2(1, 1);
-                rt.offsetMin = new Vector2(0, 300);
-                rt.offsetMax = new Vector2(0, 0);
+                rt.offsetMin = new Vector2(0, 0);
+                rt.offsetMax = new Vector2(0, 150);
                 rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.localPosition = Vector3.zero;
             }
 
             await mainWebViewPrefab.WaitUntilInitialized();

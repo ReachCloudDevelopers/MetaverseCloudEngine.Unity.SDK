@@ -182,7 +182,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     BeginLogin();
                 }
 
-                if (_page == LoginPage.LogIn && GUILayout.Button("Google Sign In"))
+                if (_page == LoginPage.LogIn && GUILayout.Button("Auth0 Sign In"))
                 {
                     var auth0 = new Auth0AuthProvider();
                     _makingRequest = true;

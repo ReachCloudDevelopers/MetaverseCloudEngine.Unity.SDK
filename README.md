@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.12
-- Fixed issues with the code not properly causing the loading screen to close.
+## 2.186.13
+- Changed wording for Auth0 external sign-on.
 
 Updated on August 18, 2025
