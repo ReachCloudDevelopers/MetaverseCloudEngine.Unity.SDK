@@ -58,26 +58,19 @@ namespace MetaverseCloudEngine.Unity
                 await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
 
                 var startResponse = await startRequest.GetResultAsync();
-
-                // 1) Open the login UI / popup
-                var code = await OpenLoginPopup(startResponse.SignInUrl);
-
-                // 2) If user closed or popup blocked (no code), treat as graceful failure (no cancel)
-                if (string.IsNullOrEmpty(code))
+                var code = await OpenLoginPopupAsync(startResponse.SignInUrl);
+                if (code != "ok")
                 {
                     failed?.Invoke();
                     return;
                 }
-
-                // 3) Complete sign-in only after we actually received the code signal
+                
                 try
                 {
                     var endRequest = await MetaverseProgram.ApiClient.Account.CompleteAuth0SignInAsync(
                         new GenerateSystemUserTokenAuth0Form
                         {
                             RequestToken = startResponse.RequestToken,
-                            // If your backend expects an explicit code, add it here:
-                            // ReturnCode = code
                         },
                         cancellationToken: _cancellationToken.Token);
 
@@ -101,7 +94,7 @@ namespace MetaverseCloudEngine.Unity
             _cancellationToken?.Cancel();
         }
 
-        private async Task<string> OpenLoginPopup(string url)
+        private async Task<string> OpenLoginPopupAsync(string url)
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
             var bridge = WebGLAuth0Bridge.GetOrCreate();
@@ -121,29 +114,20 @@ namespace MetaverseCloudEngine.Unity
 
             if (opened == 0)
             {
-                // Popup blocked -> open in same tab and still await message if your redirect posts it.
                 Application.OpenURL(url);
+                return "ok";
             }
 
-            // Await either return code (success) or closed (null)
             return await bridge.WaitForAuthCodeAsync();
 #elif !MV_VUPLEX_DEFINED
             Application.OpenURL(url);
             return await Task.FromResult<string>(null);
 #else
             if (Application.isPlaying && SupportsInAppUI)
-            {
-                // Desktop/mobile in-app UI path stays as-is
                 await GenerateStandaloneLogInUi(url, _cancellationToken);
-                // When using in-app UI, you probably can detect success differently.
-                // Here we immediately return null so Start() won’t continue until you add a success hook.
-            }
             else
-            {
                 Application.OpenURL(url);
-            }
-
-            return null;
+            return "ok";
 #endif
         }
 

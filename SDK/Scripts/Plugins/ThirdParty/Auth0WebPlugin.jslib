@@ -31,10 +31,7 @@ var Auth0WebPlugin = {
                 try { popup.close(); } catch (err) {}
                 clearInterval(interval);
                 if (typeof SendMessage === 'function') {
-                    // Pass the auth code string to Unity
-                    var code = data.code;
-                    var buffer = allocate(intArrayFromString(code), 'i8', ALLOC_STACK);
-                    SendMessage(returnObjectName, 'OnAuth0ReturnCode', buffer);
+                    SendMessage(returnObjectName, 'OnAuth0ReturnCode', data.code);
                 }
                 window.removeEventListener('message', onMessage);
             }
