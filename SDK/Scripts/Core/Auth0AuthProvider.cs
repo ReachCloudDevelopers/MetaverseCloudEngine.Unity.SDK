@@ -11,12 +11,18 @@ using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Vuplex.WebView;
 #endif
+using UnityEngine.Scripting;
 
 namespace MetaverseCloudEngine.Unity
 {
     public class Auth0AuthProvider
     {
         private CancellationTokenSource _cancellationToken;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [System.Runtime.InteropServices.DllImport("__Internal")]
+        private static extern int OpenAuth0Popup(string popupUrl, string returnObjectName);
+#endif
 
         public bool SupportsInAppUI
         {
@@ -33,16 +39,16 @@ namespace MetaverseCloudEngine.Unity
         public void Start(Action finished, Action failed)
         {
             _cancellationToken = new CancellationTokenSource();
-            
+
             UniTask.Void(async () =>
             {
                 await UniTask.SwitchToMainThread();
+
                 Guid? organizationId = null;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
                 organizationId = MetaverseProgram.RuntimeServices?.InternalOrganizationManager?.SelectedOrganization?.Id;
 #endif
-                var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(
-                    organizationId);
+                var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(organizationId);
                 if (!startRequest.Succeeded)
                 {
                     failed?.Invoke();
@@ -50,53 +56,98 @@ namespace MetaverseCloudEngine.Unity
                 }
 
                 await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
-                
+
                 var startResponse = await startRequest.GetResultAsync();
-                await OpenLoginPopup(startResponse.SignInUrl, _cancellationToken);
+
+                // 1) Open the login UI / popup
+                var code = await OpenLoginPopup(startResponse.SignInUrl);
+
+                // 2) If user closed or popup blocked (no code), treat as graceful failure (no cancel)
+                if (string.IsNullOrEmpty(code))
+                {
+                    failed?.Invoke();
+                    return;
+                }
+
+                // 3) Complete sign-in only after we actually received the code signal
                 try
                 {
                     var endRequest = await MetaverseProgram.ApiClient.Account.CompleteAuth0SignInAsync(
                         new GenerateSystemUserTokenAuth0Form
                         {
                             RequestToken = startResponse.RequestToken,
-                        }, cancellationToken: _cancellationToken.Token);
-                    
+                            // If your backend expects an explicit code, add it here:
+                            // ReturnCode = code
+                        },
+                        cancellationToken: _cancellationToken.Token);
+
                     if (!endRequest.Succeeded)
                     {
                         failed?.Invoke();
                         return;
                     }
-                    
+
                     finished?.Invoke();
                 }
-                catch (Exception)
+                catch
                 {
                     failed?.Invoke();
                 }
             });
         }
-        
+
         public void Cancel()
         {
             _cancellationToken?.Cancel();
         }
 
-        private async Task OpenLoginPopup(string url, CancellationTokenSource cancellationToken = null)
+        private async Task<string> OpenLoginPopup(string url)
         {
-#if UNITY_STANDALONE_LINUX || !MV_VUPLEX_DEFINED || UNITY_WEBGL
+#if UNITY_WEBGL && !UNITY_EDITOR
+            var bridge = WebGLAuth0Bridge.GetOrCreate();
+
+            // reset and prepare to wait for code/closure
+            bridge.PrepareAwait();
+
+            int opened = 0;
+            try
+            {
+                opened = OpenAuth0Popup(url, bridge.gameObject.name);
+            }
+            catch
+            {
+                // fall through to fallback
+            }
+
+            if (opened == 0)
+            {
+                // Popup blocked -> open in same tab and still await message if your redirect posts it.
+                Application.OpenURL(url);
+            }
+
+            // Await either return code (success) or closed (null)
+            return await bridge.WaitForAuthCodeAsync();
+#elif !MV_VUPLEX_DEFINED
             Application.OpenURL(url);
-            await Task.CompletedTask;
+            return await Task.FromResult<string>(null);
 #else
             if (Application.isPlaying && SupportsInAppUI)
-                await GenerateStandaloneLogInUi(url, cancellationToken);
+            {
+                // Desktop/mobile in-app UI path stays as-is
+                await GenerateStandaloneLogInUi(url, _cancellationToken);
+                // When using in-app UI, you probably can detect success differently.
+                // Here we immediately return null so Start() won’t continue until you add a success hook.
+            }
             else
             {
                 Application.OpenURL(url);
-                await Task.CompletedTask;
             }
+
+            return null;
 #endif
         }
 
+#if MV_VUPLEX_DEFINED
         private static async Task GenerateStandaloneLogInUi(string url, CancellationTokenSource cancellationToken = null)
         {
             var canvas = new GameObject("WebViewCanvas");
@@ -108,7 +159,7 @@ namespace MetaverseCloudEngine.Unity
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(1920, 1080);
             canvas.AddComponent<GraphicRaycaster>();
-            
+
             var background = new GameObject("Background", typeof(Image));
             background.transform.SetParent(canvas.transform, false);
             var image = background.GetComponent<Image>();
@@ -117,7 +168,7 @@ namespace MetaverseCloudEngine.Unity
             image.rectTransform.anchorMax = new Vector2(1, 1);
             image.rectTransform.offsetMin = Vector2.zero;
             image.rectTransform.offsetMax = Vector2.zero;
-            
+
             var layout = new GameObject("Layout", typeof(RectTransform));
             layout.transform.SetParent(canvas.transform, false);
             var layoutRt = layout.GetComponent<RectTransform>();
@@ -126,7 +177,7 @@ namespace MetaverseCloudEngine.Unity
             layoutRt.offsetMin = Vector2.zero;
             layoutRt.offsetMax = Vector2.zero;
             layoutRt.gameObject.AddComponent<RectTransformSafeZone>();
-            
+
             var closeButtonObj = new GameObject("CloseButton", typeof(Button));
             closeButtonObj.transform.SetParent(layoutRt, false);
             var closeButton = closeButtonObj.GetComponent<Button>();
@@ -138,7 +189,7 @@ namespace MetaverseCloudEngine.Unity
             closeButtonRt.pivot = new Vector2(1f, 1f);
             closeButtonRt.sizeDelta = new Vector2(50, 50);
             closeButtonRt.anchoredPosition3D = new Vector3(-50, -50, 0);
-            
+
             var closeTxt = new GameObject("&times", typeof(TextMeshProUGUI));
             closeTxt.transform.SetParent(closeButtonObj.transform, false);
             var tmp = closeTxt.GetComponent<TextMeshProUGUI>();
@@ -151,12 +202,12 @@ namespace MetaverseCloudEngine.Unity
             tmp.rectTransform.offsetMax = Vector2.zero;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.verticalAlignment = VerticalAlignmentOptions.Middle;
-            
+
             var mainWebViewPrefab = CanvasWebViewPrefab.Instantiate();
             mainWebViewPrefab.Native2DModeEnabled = true;
             mainWebViewPrefab.InitialUrl = url;
             mainWebViewPrefab.transform.SetParent(layoutRt, false);
-            
+
             var rt = mainWebViewPrefab.transform as RectTransform;
             if (rt)
             {
@@ -168,7 +219,7 @@ namespace MetaverseCloudEngine.Unity
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.localPosition = Vector3.zero;
             }
-            
+
             await mainWebViewPrefab.WaitUntilInitialized();
 
             if (cancellationToken?.IsCancellationRequested ?? false)
@@ -177,12 +228,12 @@ namespace MetaverseCloudEngine.Unity
                 Object.Destroy(canvas);
                 return;
             }
-            
+
             mainWebViewPrefab.WebView.SetDefaultBackgroundEnabled(false);
 
             if (cancellationToken == null)
                 return;
-            
+
             cancellationToken.Token.Register(Destroy);
             mainWebViewPrefab.WebView.CloseRequested += (_, _) => Destroy();
             mainWebViewPrefab.WebView.LoadFailed += (_, _) => cancellationToken.Cancel();
@@ -197,5 +248,52 @@ namespace MetaverseCloudEngine.Unity
                     Object.Destroy(canvas);
             }
         }
+#endif
     }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+    /// <summary>
+    /// WebGL bridge that awaits a return code from JS (no cancellation).
+    /// </summary>
+    internal sealed class WebGLAuth0Bridge : MonoBehaviour
+    {
+        private static WebGLAuth0Bridge _instance;
+        private TaskCompletionSource<string> _tcs;
+
+        [Preserve]
+        public static WebGLAuth0Bridge GetOrCreate()
+        {
+            if (_instance != null)
+                return _instance;
+
+            var go = new GameObject("WebGLAuth0Bridge");
+            DontDestroyOnLoad(go);
+            _instance = go.AddComponent<WebGLAuth0Bridge>();
+            return _instance;
+        }
+
+        public void PrepareAwait()
+        {
+            // New waiter each time
+            _tcs = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+
+        public Task<string> WaitForAuthCodeAsync() => _tcs?.Task ?? Task.FromResult<string>(null);
+
+        // Called by JS when popup closes without code
+        [Preserve]
+        public void OnAuth0PopupClosed()
+        {
+            // Resolve as null (graceful failure), do not Cancel/throw
+            _tcs?.TrySetResult(null);
+        }
+
+        // Called by JS with the return code (string)
+        [Preserve]
+        public void OnAuth0ReturnCode(string code)
+        {
+            _tcs?.TrySetResult(code);
+        }
+    }
+#endif
 }

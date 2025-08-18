@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.8
-- Ensure that unity standalone does not use in-app ui for external login.
+## 2.186.9
+- Improved support for WebGL Auth0 sign-in
 
-Updated on August 17, 2025
+Updated on August 18, 2025
