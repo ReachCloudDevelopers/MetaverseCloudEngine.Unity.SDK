@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.9
-- Improved support for WebGL Auth0 sign-in
+## 2.186.10
+- Fixed popup closure causing failure
 
 Updated on August 18, 2025
