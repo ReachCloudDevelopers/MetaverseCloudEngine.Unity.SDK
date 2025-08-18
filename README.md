@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.15
-- Updated user agent used for embedded login windows
+## 2.186.16
+- Disable embedded browser since it's unsupported by Google OAuth
 
 Updated on August 18, 2025
