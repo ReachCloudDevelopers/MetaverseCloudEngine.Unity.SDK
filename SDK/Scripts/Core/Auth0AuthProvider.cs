@@ -147,7 +147,7 @@ namespace MetaverseCloudEngine.Unity
             var background = new GameObject("Background", typeof(Image));
             background.transform.SetParent(canvas.transform, false);
             var image = background.GetComponent<Image>();
-            image.color = new Color(0, 0, 0, 1);
+            image.color = ColorUtility.TryParseHtmlString("#1C1D1E", out var color) ? color : Color.black;
             image.rectTransform.anchorMin = new Vector2(0, 0);
             image.rectTransform.anchorMax = new Vector2(1, 1);
             image.rectTransform.offsetMin = Vector2.zero;
@@ -172,7 +172,7 @@ namespace MetaverseCloudEngine.Unity
             closeButtonRt.anchorMax = new Vector2(1f, 1f);
             closeButtonRt.pivot = new Vector2(1f, 1f);
             closeButtonRt.sizeDelta = new Vector2(50, 50);
-            closeButtonRt.anchoredPosition3D = new Vector3(-50, -50, 0);
+            closeButtonRt.anchoredPosition3D = new Vector3(-25, -15, 0);
 
             var closeTxt = new GameObject("&times", typeof(TextMeshProUGUI));
             closeTxt.transform.SetParent(closeButtonObj.transform, false);
@@ -198,7 +198,7 @@ namespace MetaverseCloudEngine.Unity
                 rt.anchorMin = new Vector2(0, 0);
                 rt.anchorMax = new Vector2(1, 1);
                 rt.offsetMin = new Vector2(0, 0);
-                rt.offsetMax = new Vector2(0, 150);
+                rt.offsetMax = new Vector2(0, -75);
                 rt.pivot = new Vector2(0.5f, 0.5f);
             }
 
