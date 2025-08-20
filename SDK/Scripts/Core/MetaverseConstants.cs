@@ -125,6 +125,11 @@ namespace MetaverseCloudEngine.Unity
             public static string WebGL => "https://" + WebGLHost + "/";
 
             /// <summary>
+            /// The assumed web address for the Metaverse Cloud Engine website.
+            /// </summary>
+            public static string Website { get; set; } = "https://reachcloud.org/";
+
+            /// <summary>
             /// The assumed web address for the Metaverse Cloud Engine AI resources endpoint.
             /// </summary>
             public const string ResourcesUrl = "https://resources.reachcloud.org";
