@@ -11,7 +11,6 @@ using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Vuplex.WebView;
 #endif
-using UnityEngine.Scripting;
 
 namespace MetaverseCloudEngine.Unity
 {

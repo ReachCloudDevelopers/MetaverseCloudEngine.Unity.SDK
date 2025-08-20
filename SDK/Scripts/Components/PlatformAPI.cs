@@ -83,15 +83,42 @@ namespace MetaverseCloudEngine.Unity.Components
             Required
         }
 
-        [InfoBox("Use this component to define behavior that occurs only on specific platforms.")]
-        [SerializeField,
-         Tooltip(
-             "The platforms that are considered supported by this PlatformHelper instance. If the current platform is included in this value, the IsCurrentPlatformSupported property will return true.")]
-        private Platform platform = (Platform)~0;
+        /// <summary>
+        /// The type of version comparison to perform.
+        /// </summary>
+        [Flags]
+        public enum VersionComparison
+        {
+            /// <summary>
+            /// Versions are equal.
+            /// </summary>
+            Equal = 1 << 0,
+            /// <summary>
+            /// The current version is greater than the specified version.
+            /// </summary>
+            GreaterThan = 1 << 1,
+            /// <summary>
+            /// The current version is less than the specified version.
+            /// </summary>
+            LessThan = 1 << 2,
+        }
 
-        [SerializeField,
-         Tooltip(
-             "A flag indicating whether mobile platforms accessed through WebGL should be considered supported. If this flag is true and the application is running on WebGL, the Android and iOS platforms will be considered supported if the current platform is a mobile platform accessed through WebGL.")]
+        [InfoBox("Use this component to define behavior that occurs only on specific platforms.")]
+        [SerializeField]
+        [Tooltip(
+            "The platforms that are considered supported by this PlatformHelper instance. If the current platform is included in this value, the IsCurrentPlatformSupported property will return true.")]
+        private Platform platform = (Platform)~0;
+        
+        [SerializeField]
+        [Tooltip("The application version to compare against the current application version.")]
+        private string applicationVersion = "";
+        [SerializeField]
+        [Tooltip("The type of comparison to perform between the current application version and the specified application version.")]
+        private VersionComparison versionComparison;
+
+        [SerializeField]
+        [Tooltip(
+            "A flag indicating whether mobile platforms accessed through WebGL should be considered supported. If this flag is true and the application is running on WebGL, the Android and iOS platforms will be considered supported if the current platform is a mobile platform accessed through WebGL.")]
         [HideInInspector]
         private bool includeMobileWebPlatforms = true;
 
@@ -106,31 +133,32 @@ namespace MetaverseCloudEngine.Unity.Components
         private bool waitForMetaSpaceInitialize;
 
         [Group("AR / VR")]
-        [SerializeField,
-         Tooltip(
-             "The level of VR support required or allowed by this PlatformHelper instance. If this value is Required, the IsCurrentPlatformSupported property will return false if VR is not supported or not currently active. If this value is NotSupported, the IsCurrentPlatformSupported property will return false if VR is currently active. If this value is Supported, VR support has no effect on the IsCurrentPlatformSupported property.")]
+        [SerializeField]
+        [Tooltip(
+            "The level of VR support required or allowed by this PlatformHelper instance. If this value is Required, the IsCurrentPlatformSupported property will return false if VR is not supported or not currently active. If this value is NotSupported, the IsCurrentPlatformSupported property will return false if VR is currently active. If this value is Supported, VR support has no effect on the IsCurrentPlatformSupported property.")]
         private XRSupportType vrSupport = XRSupportType.Supported;
 
         [Group("AR / VR")]
-        [SerializeField,
-         Tooltip(
-             "The level of AR support required or allowed by this PlatformHelper instance. If this value is Required, the IsCurrentPlatformSupported property will return false if AR is not supported or not currently active. If this value is NotSupported, the IsCurrentPlatformSupported property will return false if AR is currently active. If this value is Supported, AR support has no effect on the IsCurrentPlatformSupported property.")]
+        [SerializeField]
+        [Tooltip(
+            "The level of AR support required or allowed by this PlatformHelper instance. If this value is Required, the IsCurrentPlatformSupported property will return false if AR is not supported or not currently active. If this value is NotSupported, the IsCurrentPlatformSupported property will return false if AR is currently active. If this value is Supported, AR support has no effect on the IsCurrentPlatformSupported property.")]
         private XRSupportType arSupport = XRSupportType.Supported;
 
         [Group("Behavior")]
-        [SerializeField,
-         Tooltip(
-             "A flag indicating whether the IsCurrentPlatformSupported property should return the opposite of its normal value. If this flag is true, the IsCurrentPlatformSupported property will return the opposite of its normal value.")]
+        [SerializeField]
+        [Tooltip(
+            "A flag indicating whether the IsCurrentPlatformSupported property should return the opposite of its normal value. If this flag is true, the IsCurrentPlatformSupported property will return the opposite of its normal value.")]
         private bool invert;
 
         [Group("Behavior")]
-        [SerializeField,
-         Tooltip(
-             "The behavior to apply when the current platform is not supported. If this value is Nothing, no action will be taken. If this value is Deactivate, the game object that this component is attached to will be deactivated. If this value is Destroy, the game object that this component is attached to will be destroyed.")]
+        [SerializeField]
+        [Tooltip(
+            "The behavior to apply when the current platform is not supported. If this value is Nothing, no action will be taken. If this value is Deactivate, the game object that this component is attached to will be deactivated. If this value is Destroy, the game object that this component is attached to will be destroyed.")]
         private UnsupportedBehaviorType unsupportedBehavior;
 
         [Space]
-        [SerializeField, Tooltip("A set of events that are raised based on the IsCurrentPlatformSupported property.")]
+        [SerializeField]
+        [Tooltip("A set of events that are raised based on the IsCurrentPlatformSupported property.")]
         private PlatformEvents events = new();
 
         private bool _supported;
@@ -189,7 +217,9 @@ namespace MetaverseCloudEngine.Unity.Components
                     platform,
                     vrSupport,
                     arSupport,
-                    includeMobileWebPlatforms);
+                    includeMobileWebPlatforms,
+                    applicationVersion,
+                    versionComparison);
                 return _isCurrentPlatformSupported.Value;
             }
         }
@@ -328,23 +358,21 @@ namespace MetaverseCloudEngine.Unity.Components
             }
             else
             {
-                if (!_supported)
+                if (_supported) return;
+                if (unsupportedBehavior == UnsupportedBehaviorType.Deactivate)
+                    gameObject.SetActive(true);
+
+                UniTask.Void(async c =>
                 {
-                    if (unsupportedBehavior == UnsupportedBehaviorType.Deactivate)
-                        gameObject.SetActive(true);
+                    await UniTask.DelayFrame(1, cancellationToken: c);
+                    if (!this) return;
+                    if (destroyCancellationToken.IsCancellationRequested) return;
+                    if (!_supported) return;
+                    if (!enabled) return;
+                    events?.onSupported?.Invoke();
+                }, destroyCancellationToken);
 
-                    UniTask.Void(async c =>
-                    {
-                        await UniTask.DelayFrame(1, cancellationToken: c);
-                        if (!this) return;
-                        if (destroyCancellationToken.IsCancellationRequested) return;
-                        if (!_supported) return;
-                        if (!enabled) return;
-                        events?.onSupported?.Invoke();
-                    }, destroyCancellationToken);
-
-                    _supported = true;
-                }
+                _supported = true;
             }
         }
 
@@ -357,8 +385,31 @@ namespace MetaverseCloudEngine.Unity.Components
             Platform platform,
             XRSupportType vrSupport,
             XRSupportType arSupport,
-            bool includeMobileWebPlatforms)
+            bool includeMobileWebPlatforms,
+            string version,
+            VersionComparison versionComparison)
         {
+#if METAVERSE_CLOUD_ENGINE_INTERNAL || MV_SDK_DEV
+            if (!string.IsNullOrEmpty(version) && versionComparison != 0)
+            {
+                var currentVersion = Application.version;
+                if (Version.TryParse(currentVersion, out var currentVer) &&
+                    Version.TryParse(version, out var requiredVer))
+                {
+                    var isEqual = currentVer == requiredVer;
+                    var isGreaterThan = currentVer > requiredVer;
+                    var isLessThan = currentVer < requiredVer;
+                    
+                    if (isEqual && !versionComparison.HasFlag(VersionComparison.Equal))
+                        return false;
+                    if (isGreaterThan && !versionComparison.HasFlag(VersionComparison.GreaterThan))
+                        return false;
+                    if (isLessThan && !versionComparison.HasFlag(VersionComparison.LessThan))
+                        return false;
+                }
+            }
+#endif
+            
             if (MVUtils.IsVRCompatible())
             {
                 if (!IsVRDeviceConsideredActive() && vrSupport == XRSupportType.Required)
