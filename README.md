@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.188.3
-- Added redirect URI information to sign in url
+## 2.188.4
+- Updated spelling of redirect URL parameter
 
 Updated on August 24, 2025
