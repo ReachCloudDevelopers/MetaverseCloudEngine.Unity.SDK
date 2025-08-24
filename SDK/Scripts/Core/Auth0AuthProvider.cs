@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.UI.Components;
@@ -57,6 +58,20 @@ namespace MetaverseCloudEngine.Unity
                 await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
 
                 var startResponse = await startRequest.GetResultAsync();
+                if (Application.isMobilePlatform)
+                {
+                    var uri = new Uri(startResponse.SignInUrl);
+                    var query = HttpUtility.ParseQueryString(uri.Query);
+                    query["redirectUri"] = Application.absoluteURL;
+                    var uriBuilder = new UriBuilder(uri)
+                    {
+                        Query = query.ToString(),
+                        Scheme = "https",
+                        Port = -1
+                    };
+                    startResponse.SignInUrl = uriBuilder.ToString();
+                }
+                
                 var code = await OpenLoginPopupAsync(startResponse.SignInUrl);
                 if (code != "ok")
                 {
@@ -90,6 +105,13 @@ namespace MetaverseCloudEngine.Unity
 
         public void Cancel()
         {
+            _cancellationToken?.Cancel();
+        }
+
+        public void Unloaded()
+        {
+            if (Application.isMobilePlatform)
+                return;
             _cancellationToken?.Cancel();
         }
 

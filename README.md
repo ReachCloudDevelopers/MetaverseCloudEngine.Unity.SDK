@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.188.2
-- Ensure that scaling is accurate when using CSG
+## 2.188.3
+- Added redirect URI information to sign in url
 
 Updated on August 24, 2025
