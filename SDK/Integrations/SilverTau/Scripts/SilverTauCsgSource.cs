@@ -1,10 +1,11 @@
+using System.Runtime.CompilerServices;
 using MetaverseCloudEngine.Unity.Assets.LandPlots;
 using TriInspectorMVCE;
 using UnityEngine;
 using UnityEngine.Events;
 using MetaverseCloudEngine.Unity.Async;
-#if MV_PARABOX_CSG
-using Parabox.CSG; // pb_CSG
+#if MV_PROBUILDER
+using UnityEngine.ProBuilder.Csg;
 #endif
 
 namespace MetaverseCloudEngine.Unity.SilverTau
@@ -78,7 +79,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     if (!csgTarget) continue;
                     if (csgTarget.transform.IsChildOf(transform)) continue;
 
-#if MV_PARABOX_CSG
+#if MV_PROBUILDER
                     var targetGo = col.gameObject;
                     var brushGo = gameObject;
 
@@ -150,6 +151,8 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     if (targetGo.TryGetComponent<Rigidbody>(out _))
                         mc.convex = true;
 
+                    resultGo.gameObject.AddComponent<SilverTauCsgTarget>();
+                    
                     carved = true;
 #else
                     MetaverseProgram.Logger.LogWarning("pb_CSG is not enabled. Define MV_PARABOX_CSG and add Parabox CSG to use this feature.");

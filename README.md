@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.187.0
-- Updated to use pb_CSG instead of what we were using before due to issues with crashing.
+## 2.188.0
+- Added support for ProBuilder CSG
 
-Updated on August 23, 2025
+Updated on August 24, 2025

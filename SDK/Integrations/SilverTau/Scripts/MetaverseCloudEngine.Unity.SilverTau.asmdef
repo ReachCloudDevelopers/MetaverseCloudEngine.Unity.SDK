@@ -7,7 +7,7 @@
         "GUID:6055be8ebefd69e48b49212b09b47b2f",
         "GUID:774f0e7b520e24644b448f5ac7fa5d94",
         "GUID:cbe3c34c5ea3d458291b0192a5af50a9",
-        "GUID:dc7a76bbd6d37bf29a03b12fdc01a1cd"
+        "GUID:26434c0544da24d83a23c99deaa60965"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -43,9 +43,9 @@
             "define": "MV_SILVERTAU"
         },
         {
-            "name": "co.parabox.csg",
+            "name": "com.unity.probuilder",
             "expression": "",
-            "define": "MV_PARABOX_CSG"
+            "define": "MV_PROBUILDER"
         }
     ],
     "noEngineReferences": false
