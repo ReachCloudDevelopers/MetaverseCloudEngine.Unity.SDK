@@ -103,15 +103,13 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     if (resultModel == null || resultModel.mesh == null || resultModel.mesh.vertexCount == 0)
                         continue;
 
-                    // --- Create a NEW GameObject with MF/MR/MC ---
-                    var parent = targetGo.transform;
+                    var parent = targetGo.transform.parent;
                     var resultName = $"{targetGo.name}_Carved";
 
                     var resultGo = new GameObject(resultName);
-                    // Parent first, then set world-space transform to (0,0,0)
                     resultGo.transform.SetParent(parent, worldPositionStays: true);
-                    resultGo.transform.position = Vector3.zero;                     // world zero
-                    resultGo.transform.rotation = Quaternion.identity;              // world identity
+                    resultGo.transform.position = Vector3.zero;
+                    resultGo.transform.rotation = Quaternion.identity;
 
                     // Copy a few useful flags
                     resultGo.layer = targetGo.layer;
