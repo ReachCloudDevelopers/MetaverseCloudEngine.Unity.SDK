@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.186.18
-- Added a website URL constant
+## 2.187.0
+- Updated to use pb_CSG instead of what we were using before due to issues with crashing.
 
-Updated on August 20, 2025
+Updated on August 23, 2025
