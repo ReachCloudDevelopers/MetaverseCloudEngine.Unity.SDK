@@ -112,7 +112,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     resultGo.transform.SetParent(parent, worldPositionStays: true);
                     resultGo.transform.position = Vector3.zero;                     // world zero
                     resultGo.transform.rotation = Quaternion.identity;              // world identity
-                    resultGo.transform.localScale = Vector3.one;                    // unit scale
 
                     // Copy a few useful flags
                     resultGo.layer = targetGo.layer;
