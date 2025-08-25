@@ -6,7 +6,6 @@ using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.UI.Components;
 using UnityEngine;
-using UnityEngine.Networking;
 #if MV_VUPLEX_DEFINED
 using TMPro;
 using Object = UnityEngine.Object;
@@ -66,7 +65,8 @@ namespace MetaverseCloudEngine.Unity
                 {
                     var proxy = MetaverseProxy.LoadCurrentSettings();
                     if (!string.IsNullOrWhiteSpace(proxy.deepLink))
-                        startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
+                        startResponse.SignInUrl += 
+                            $"&returnUrl={UnityEngine.Networking.UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
                 }
 #endif
                 
