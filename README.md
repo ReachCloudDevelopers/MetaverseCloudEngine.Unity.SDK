@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.188.6
-- More manually added return url to end of query string
+## 2.188.7
+- Fixed issues with incorrect link.
 
 Updated on August 25, 2025

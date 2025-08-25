@@ -59,12 +59,14 @@ namespace MetaverseCloudEngine.Unity
                 await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
 
                 var startResponse = await startRequest.GetResultAsync();
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
                 if (Application.isMobilePlatform)
                 {
-#if METAVERSE_CLOUD_ENGINE_INTERNAL
-                    startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true))}";
-#endif
+                    var proxy = MetaverseProxy.LoadCurrentSettings();
+                    if (!string.IsNullOrWhiteSpace(proxy.deepLink))
+                        startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
                 }
+#endif
                 
                 var code = await OpenLoginPopupAsync(startResponse.SignInUrl);
                 if (code != "ok")
