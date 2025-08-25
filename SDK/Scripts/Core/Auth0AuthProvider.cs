@@ -6,6 +6,7 @@ using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.UI.Components;
 using UnityEngine;
+using UnityEngine.Networking;
 #if MV_VUPLEX_DEFINED
 using TMPro;
 using Object = UnityEngine.Object;
@@ -60,18 +61,9 @@ namespace MetaverseCloudEngine.Unity
                 var startResponse = await startRequest.GetResultAsync();
                 if (Application.isMobilePlatform)
                 {
-                    var uri = new Uri(startResponse.SignInUrl);
-                    var query = HttpUtility.ParseQueryString(uri.Query);
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                    query["redirectUrl"] = MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true);
+                    startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true))}";
 #endif
-                    var uriBuilder = new UriBuilder(uri)
-                    {
-                        Query = query.ToString(),
-                        Scheme = "https",
-                        Port = -1
-                    };
-                    startResponse.SignInUrl = uriBuilder.ToString();
                 }
                 
                 var code = await OpenLoginPopupAsync(startResponse.SignInUrl);

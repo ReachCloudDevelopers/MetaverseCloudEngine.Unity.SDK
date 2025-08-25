@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.188.5",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.188.5\n- Make sure to use deep link API for the redirect URL instead of Application.absoluteURL which never changes.\n\nUpdated on August 25, 2025",
+  "version": "2.188.6",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.188.6\n- More manually added return url to end of query string\n\nUpdated on August 25, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
