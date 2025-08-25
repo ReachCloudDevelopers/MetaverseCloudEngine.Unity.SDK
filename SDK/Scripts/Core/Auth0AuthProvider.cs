@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEngine.Scripting;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.UI.Components;
 using UnityEngine;
+using UnityEngine.Networking;
 #if MV_VUPLEX_DEFINED
 using TMPro;
 using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Vuplex.WebView;
 #endif
-
-[assembly: Preserve]
 
 namespace MetaverseCloudEngine.Unity
 {
@@ -65,8 +63,7 @@ namespace MetaverseCloudEngine.Unity
                 {
                     var proxy = MetaverseProxy.LoadCurrentSettings();
                     if (!string.IsNullOrWhiteSpace(proxy.deepLink))
-                        startResponse.SignInUrl += 
-                            $"&returnUrl={UnityEngine.Networking.UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
+                        startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
                 }
 #endif
                 
@@ -263,7 +260,7 @@ namespace MetaverseCloudEngine.Unity
         private static WebGLAuth0Bridge _instance;
         private TaskCompletionSource<string> _tcs;
 
-        [Preserve]
+        [UnityEngine.Scripting.Preserve]
         public static WebGLAuth0Bridge GetOrCreate()
         {
             if (_instance != null)
@@ -284,7 +281,7 @@ namespace MetaverseCloudEngine.Unity
         public Task<string> WaitForAuthCodeAsync() => _tcs?.Task ?? Task.FromResult<string>(null);
 
         // Called by JS when popup closes without code
-        [Preserve]
+        [UnityEngine.Scripting.Preserve]
         public void OnAuth0PopupClosed()
         {
             // Resolve as null (graceful failure), do not Cancel/throw
@@ -292,7 +289,7 @@ namespace MetaverseCloudEngine.Unity
         }
 
         // Called by JS with the return code (string)
-        [Preserve]
+        [UnityEngine.Scripting.Preserve]
         public void OnAuth0ReturnCode(string code)
         {
             _tcs?.TrySetResult(code);
