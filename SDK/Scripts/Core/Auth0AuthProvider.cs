@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
+using UnityEngine.Scripting;
 using Cysharp.Threading.Tasks;
 using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.UI.Components;
@@ -13,6 +13,8 @@ using Object = UnityEngine.Object;
 using UnityEngine.UI;
 using Vuplex.WebView;
 #endif
+
+[assembly: Preserve]
 
 namespace MetaverseCloudEngine.Unity
 {
