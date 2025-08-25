@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.188.4
-- Updated spelling of redirect URL parameter
+## 2.188.5
+- Make sure to use deep link API for the redirect URL instead of Application.absoluteURL which never changes.
 
-Updated on August 24, 2025
+Updated on August 25, 2025

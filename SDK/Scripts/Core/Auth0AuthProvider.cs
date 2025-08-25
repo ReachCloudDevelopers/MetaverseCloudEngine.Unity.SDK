@@ -62,7 +62,9 @@ namespace MetaverseCloudEngine.Unity
                 {
                     var uri = new Uri(startResponse.SignInUrl);
                     var query = HttpUtility.ParseQueryString(uri.Query);
-                    query["redirectUrl"] = Application.absoluteURL;
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                    query["redirectUrl"] = MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true);
+#endif
                     var uriBuilder = new UriBuilder(uri)
                     {
                         Query = query.ToString(),
