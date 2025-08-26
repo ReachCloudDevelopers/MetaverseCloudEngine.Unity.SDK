@@ -29,9 +29,14 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                 var meshFilter = GetComponent<MeshFilter>();
                 if (meshFilter == null) return;
                 meshFilter.mesh = m;
-                var meshCollider = GetComponent<MeshCollider>();
-                if (meshCollider == null) return;
-                meshCollider.sharedMesh = m;
+				
+				var currentCollider = GetComponent<Collider>();
+                if (currentCollider is not MeshCollider mc)
+                {
+                    currentCollider.enabled = false;
+                    mc = gameObject.AddComponent<MeshCollider>();
+                }
+                mc.sharedMesh = m;
             }
             
             if (obj is Mesh mesh)

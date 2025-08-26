@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.189.2
-- Fixed parsing issues with SilverTauRPUMeshData
+## 2.189.3
+- Fixed embedded meshes not loading their colliders properly.
 
 Updated on August 26, 2025
