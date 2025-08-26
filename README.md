@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.189.1
-- Added meeh genneration
+## 2.189.2
+- Fixed parsing issues with SilverTauRPUMeshData
 
 Updated on August 26, 2025
