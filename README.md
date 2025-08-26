@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.189.0
-- Added support for adding mesh data to scans.
+## 2.189.1
+- Added meeh genneration
 
 Updated on August 26, 2025
