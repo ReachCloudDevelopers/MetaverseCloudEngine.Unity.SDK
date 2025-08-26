@@ -153,7 +153,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
 
                 var spawnData =
                     new List<(Guid id, Vector3 pos, Quaternion rot, Vector3 scl, float bottomY,
-                        SilverTauMetaPrefabMapping.Category? cat)>();
+                        SilverTauMetaPrefabMapping.Category? cat, Mesh mesh)>();
                 var lowestFloorBottom = float.PositiveInfinity;
                 var anyFloors = false;
                 var lowestAnyBottom = float.PositiveInfinity;
@@ -179,17 +179,6 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     }
 
                     var cat = ro.GetCategory();
-                    if (cat is SilverTauMetaPrefabMapping.Category.floor or SilverTauMetaPrefabMapping.Category.ceiling)
-                    {
-                        if (visOpt.HasValue)
-                        {
-                            pos = visOpt.Value.center;
-                            rot = Quaternion.identity;
-                            scl = visOpt.Value.size;
-                            if (scl.y <= 0f) scl.y = 0.01f;
-                        }
-                    }
-
                     var bottomY = visOpt.HasValue ? visOpt.Value.min.y : ro.transform.position.y;
                     if (cat == SilverTauMetaPrefabMapping.Category.floor)
                     {
@@ -199,7 +188,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
 
                     if (bottomY < lowestAnyBottom) lowestAnyBottom = bottomY;
 
-                    spawnData.Add((Guid.Parse(ro.ID), pos, rot, scl, bottomY, cat));
+                    spawnData.Add((Guid.Parse(ro.ID), pos, rot, scl, bottomY, cat, ro.gameObject.GetComponentInChildren<MeshFilter>()?.sharedMesh));
                 }
 
                 var referenceBottom = anyFloors ? lowestFloorBottom : lowestAnyBottom;
@@ -211,7 +200,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     var spawnPos = sd.pos;
                     spawnPos.y += yOffset;
 
-                    var obj = MetaPrefabSpawner.CreateSpawner(
+                    var spawner = MetaPrefabSpawner.CreateSpawner(
                         sd.id,
                         spawnPos,
                         sd.rot,
@@ -219,9 +208,19 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                         spawnerID: Guid.NewGuid(),
                         loadOnStart: false
                     ).gameObject;
+                    
+                    if (sd.cat is 
+                        SilverTauMetaPrefabMapping.Category.floor or 
+                        SilverTauMetaPrefabMapping.Category.ceiling &&
+                        sd.mesh)
+                    {
+                        var meshData
+                            = spawner.AddComponent<SilverTauRPUMeshData>();
+                        meshData.Set(sd.mesh);
+                    }
 
-                    obj.transform.localScale = sd.scl;
-                    savableObjects.Add(obj);
+                    spawner.transform.localScale = sd.scl;
+                    savableObjects.Add(spawner);
                 }
 
                 await UniTask.Delay(1, cancellationToken: cancellationToken);
