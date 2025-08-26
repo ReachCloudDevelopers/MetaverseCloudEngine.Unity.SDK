@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.188.10
-- Fixed duplicate assembly preserve attribute
+## 2.188.11
+- Updated SilverTauARViewerMetaSpaceManager to better support floor and object offsets.
 
-Updated on August 25, 2025
+Updated on August 26, 2025

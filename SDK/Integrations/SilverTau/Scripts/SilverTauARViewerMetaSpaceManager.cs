@@ -18,26 +18,37 @@ namespace MetaverseCloudEngine.Unity.SilverTau
     public class SilverTauARViewerMetaSpaceManager : TriInspectorMonoBehaviour
     {
         [Header("Components")]
-        [SerializeField] private LandPlot landPlot;
-        [SerializeField] private GameObject roomPlanUnityKit;
-        [SerializeField] private GameObject capturedRoomSnapshot;
-        [SerializeField] private GameObject placeObjectAR;
+        [SerializeField]
+        private LandPlot landPlot;
+        [SerializeField]
+        private GameObject roomPlanUnityKit;
+        [SerializeField]
+        private GameObject capturedRoomSnapshot;
+        [SerializeField]
+        private GameObject placeObjectAR;
 
         [Space(10)]
         [Header("Common")]
-        [SerializeField] private Camera mainCamera;
-        [SerializeField] private Camera aRCamera;
-        [SerializeField] private GameObject envObjects;
-        
+        [SerializeField]
+        private Camera mainCamera;
+        [SerializeField]
+        private Camera aRCamera;
+        [SerializeField]
+        private GameObject envObjects;
+
         [Space(10)]
         [Header("UI")]
-        [SerializeField] private GameObject uIManager;
-        [SerializeField] private GameObject loader;
-        
+        [SerializeField]
+        private GameObject uIManager;
+        [SerializeField]
+        private GameObject loader;
+
         [Space(10)]
         [Header("Pop-ups")]
-        [SerializeField] private GameObject popupInputScanName;
-        [SerializeField] private TMP_InputField inputFieldScanName;
+        [SerializeField]
+        private GameObject popupInputScanName;
+        [SerializeField]
+        private TMP_InputField inputFieldScanName;
 
         /// <summary>
         /// A method that controls the pop-up for entering a scan name.
@@ -45,20 +56,20 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         /// <param name="status">Popup status parameter.</param>
         public void CallPopupInputScanName(bool status)
         {
-            if(!popupInputScanName) return;
+            if (!popupInputScanName) return;
             popupInputScanName.SetActive(status);
         }
-        
+
         /// <summary>
         /// A function that saves a scan from a pop-up window.
         /// </summary>
         public void SaveExperienceFromPopup()
         {
-            if(inputFieldScanName == null) return;
-            if(string.IsNullOrEmpty(inputFieldScanName.text)) return;
+            if (inputFieldScanName == null) return;
+            if (string.IsNullOrEmpty(inputFieldScanName.text)) return;
             SaveExperience(inputFieldScanName.text);
         }
-        
+
         /// <summary>
         /// A function that stores scanned experience, scan.
         /// </summary>
@@ -67,7 +78,7 @@ namespace MetaverseCloudEngine.Unity.SilverTau
         {
             StartCoroutine(IESaveExperience(value));
         }
-        
+
         /// <summary>
         /// A Coroutine that helps to save a scan correctly.
         /// </summary>
@@ -84,16 +95,16 @@ namespace MetaverseCloudEngine.Unity.SilverTau
             yield return new WaitForSeconds(0.2f);
             capturedRoomSnapshot.SendMessage("Dispose", (Action)(() =>
             {
-                if(mainCamera) mainCamera.gameObject.SetActive(true);
-                if(aRCamera) aRCamera.gameObject.SetActive(false);
-                if(envObjects) envObjects.gameObject.SetActive(false);
-                if(placeObjectAR) placeObjectAR.gameObject.SetActive(false);
+                if (mainCamera) mainCamera.gameObject.SetActive(true);
+                if (aRCamera) aRCamera.gameObject.SetActive(false);
+                if (envObjects) envObjects.gameObject.SetActive(false);
+                if (placeObjectAR) placeObjectAR.gameObject.SetActive(false);
                 CallPopupInputScanName(false);
                 uIManager.SendMessage("OpenMenu", "scans");
                 loader.gameObject.SetActive(false);
             }));
         }
-        
+
         private IEnumerator IECustomSave(string value)
         {
             yield return UniTask.Create(async cancellationToken =>
@@ -111,13 +122,12 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                         ContentType = AssetContentType.Bundle,
                         AdvancedSearch = false,
                         HasSourceLandPlot = true,
-
                     })).GetResultAsync())?.ToArray();
 
-                var space = spaces?.FirstOrDefault(x => 
-                    x.Name
-                        .Replace(SilverTauIntegrationConstants.EnvironmentScanPrefix, string.Empty)
+                var space = spaces?.FirstOrDefault(x =>
+                    x.Name.Replace(SilverTauIntegrationConstants.EnvironmentScanPrefix, string.Empty)
                         .Equals(value, StringComparison.InvariantCulture));
+
                 if (landPlot is null)
                     return;
 
@@ -129,76 +139,106 @@ namespace MetaverseCloudEngine.Unity.SilverTau
                     {
                         SourceLandPlotId = space is null ? Guid.NewGuid() : null,
                         Name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}{value}",
-                        
                     })).GetResultAsync();
-                    
+
                     if (upsert is null)
                         return;
-                    
+
                     landPlot.ID = upsert.SourceLandPlotId;
                 }
 
-                var childCapturedRoomObject = capturedRoomSnapshot.GetComponentsInChildren<SilverTauMetaPrefabMapping>();
+                var childCapturedRoomObject =
+                    capturedRoomSnapshot.GetComponentsInChildren<SilverTauMetaPrefabMapping>();
                 var savableObjects = new List<GameObject>();
-                var lowestPosition = Mathf.Infinity;
+
+                var spawnData =
+                    new List<(Guid id, Vector3 pos, Quaternion rot, Vector3 scl, float bottomY,
+                        SilverTauMetaPrefabMapping.Category? cat)>();
+                var lowestFloorBottom = float.PositiveInfinity;
+                var anyFloors = false;
+                var lowestAnyBottom = float.PositiveInfinity;
+
                 foreach (var ro in childCapturedRoomObject)
                 {
                     if (string.IsNullOrEmpty(ro.ID))
                         continue;
-                    
+
                     var pos = ro.transform.position;
-                    if (pos.y < lowestPosition)
-                        lowestPosition = pos.y;
                     var rot = ro.transform.rotation;
                     var scl = ro.transform.localScale;
-                    
-                    if (ro.GetCategory() == SilverTauMetaPrefabMapping.Category.floor ||
-                        ro.GetCategory() == SilverTauMetaPrefabMapping.Category.ceiling)
+
+                    Bounds? visOpt = null;
+                    try
                     {
-                        var visibleBounds = ro.gameObject.GetVisibleBounds();
-                        pos = visibleBounds.center;
-                        rot = Quaternion.identity;
-                        scl = visibleBounds.size;
-                        if (scl.y <= 0)
-                            scl.y = 0.01f;
+                        var b = ro.gameObject.GetVisibleBounds(); // assumed world-space render bounds
+                        if (b.size.sqrMagnitude > 0f) visOpt = b;
+                    }
+                    catch
+                    {
+                        /* ignore if extension throws on hidden/missing renderers */
                     }
 
-                    var obj = MetaPrefabSpawner.CreateSpawner(Guid.Parse(ro.ID),
-                        pos,
-                        rot,
+                    var cat = ro.GetCategory();
+                    if (cat is SilverTauMetaPrefabMapping.Category.floor or SilverTauMetaPrefabMapping.Category.ceiling)
+                    {
+                        if (visOpt.HasValue)
+                        {
+                            pos = visOpt.Value.center;
+                            rot = Quaternion.identity;
+                            scl = visOpt.Value.size;
+                            if (scl.y <= 0f) scl.y = 0.01f;
+                        }
+                    }
+
+                    var bottomY = visOpt.HasValue ? visOpt.Value.min.y : ro.transform.position.y;
+                    if (cat == SilverTauMetaPrefabMapping.Category.floor)
+                    {
+                        anyFloors = true;
+                        if (bottomY < lowestFloorBottom) lowestFloorBottom = bottomY;
+                    }
+
+                    if (bottomY < lowestAnyBottom) lowestAnyBottom = bottomY;
+
+                    spawnData.Add((Guid.Parse(ro.ID), pos, rot, scl, bottomY, cat));
+                }
+
+                var referenceBottom = anyFloors ? lowestFloorBottom : lowestAnyBottom;
+                if (!float.IsFinite(referenceBottom)) referenceBottom = 0f;
+
+                var yOffset = -referenceBottom;
+                foreach (var sd in spawnData)
+                {
+                    var spawnPos = sd.pos;
+                    spawnPos.y += yOffset;
+
+                    var obj = MetaPrefabSpawner.CreateSpawner(
+                        sd.id,
+                        spawnPos,
+                        sd.rot,
                         spawnerParent: landPlot.transform,
                         spawnerID: Guid.NewGuid(),
                         loadOnStart: false
                     ).gameObject;
-                    
-                    obj.transform.localScale = scl;
-                    
+
+                    obj.transform.localScale = sd.scl;
                     savableObjects.Add(obj);
                 }
-                
-                foreach (var obj in savableObjects)
-                {
-                    if (!obj) continue;
-                    var pos = obj.transform.position;
-                    pos.y -= lowestPosition;
-                    obj.transform.position = pos;
-                }
-                
+
                 await UniTask.Delay(1, cancellationToken: cancellationToken);
-                
+
                 landPlot.name = $"{SilverTauIntegrationConstants.EnvironmentScanPrefix}{space?.Name ?? value}";
 
                 var finished = false;
                 landPlot.events.onSaveFinished.AddListener(OnLandPlotSaveFinished);
                 landPlot.Save();
-                
+
                 await UniTask.WaitUntil(() => finished, PlayerLoopTiming.Update, cancellationToken);
-                
+
                 foreach (var obj in savableObjects.ToArray())
                 {
-                    if (!obj) continue;
-                    Destroy(obj);
+                    if (obj) Destroy(obj);
                 }
+
                 return;
 
                 void OnLandPlotSaveFinished()
