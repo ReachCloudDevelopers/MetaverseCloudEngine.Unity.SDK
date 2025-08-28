@@ -9,6 +9,7 @@ using UnityEditor.Callbacks;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEngine;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace MetaverseCloudEngine.Unity.Installer
 {
@@ -60,38 +61,12 @@ namespace MetaverseCloudEngine.Unity.Installer
                 }
                 
                 var package = list.Result.FirstOrDefault(x => x.name.StartsWith("com.reachcloud.metaverse-cloud-sdk"));
-                var latestCommitHash = string.Empty;
-                if (package is { git: not null })
-                {
-                    var currentVersion = package.git.hash;
+                var latestCommitHash = GetLatestCommit(package);
                 
-                    var httpClient = new WebClient();
-                    httpClient.Headers.Add("Accept", "application/vnd.github+json");
-                    httpClient.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
-                    httpClient.Headers.Add("User-Agent", "MetaverseCloudEngine.Unity.SDK");
-                    var response = httpClient.DownloadString("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
-                    var match = System.Text.RegularExpressions.Regex.Match(response, "\"sha\"\\s*:\\s*\"(.+?)\"");
-                    if (!match.Success)
-                    {
-                        Debug.LogError("Failed to fetch latest commit hash from Metaverse Cloud Engine SDK repository:" + response);
-                        return;
-                    }
-            
-                    latestCommitHash = match.Groups[1].Value;
-                    if (currentVersion == latestCommitHash)
-                    {
-                        // Display "Already up to date" message
-                        Debug.Log("Metaverse Cloud Engine SDK is already up to date.");
-                        return;
-                    }
-                
-                    if (!EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", 
-                            "A new version of Metaverse Cloud Engine SDK is available. This may take a few minutes but rest assured we'll be done in no time.", 
-                            "Update (Recommended)", "Skip"))
-                        return;
-                    
-                    Debug.Log($"Updating Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
-                }
+                if (!string.IsNullOrEmpty(latestCommitHash) && !EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", 
+                        "A new version of Metaverse Cloud Engine SDK is available. This may take a few minutes but rest assured we'll be done in no time.", 
+                        "Update (Recommended)", "Skip"))
+                    return;
 
                 while (!TryUpdatePackages(latestCommitHash))
                     System.Threading.Thread.Sleep(500);
@@ -104,7 +79,30 @@ namespace MetaverseCloudEngine.Unity.Installer
                 HideProgressBar();
             }
         }
-        
+
+        private static string GetLatestCommit(PackageInfo package)
+        {
+            if (package is not { git: not null })
+                return string.Empty;
+            
+            var currentVersion = package.git.hash;
+            var httpClient = new WebClient();
+            httpClient.Headers.Add("Accept", "application/vnd.github+json");
+            httpClient.Headers.Add("X-GitHub-Api-Version", "2022-11-28");
+            httpClient.Headers.Add("User-Agent", "MetaverseCloudEngine.Unity.SDK");
+            var response = httpClient.DownloadString("https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK/commits?per_page=1");
+            var match = System.Text.RegularExpressions.Regex.Match(response, "\"sha\"\\s*:\\s*\"(.+?)\"");
+            if (!match.Success)
+                return string.Empty;
+            
+            var latestCommitHash = match.Groups[1].Value;
+            if (currentVersion == latestCommitHash)
+                return string.Empty;
+
+            Debug.Log($"Updating Metaverse Cloud Engine SDK: {currentVersion} -> {latestCommitHash}");
+            return latestCommitHash;
+        }
+
         private static void OnPostprocessAllAssets(
             string[] importedAssets, 
             string[] deletedAssets, 
@@ -139,9 +137,14 @@ namespace MetaverseCloudEngine.Unity.Installer
                 return true;
             }
 
-            var packagesToAdd = PackagesToInstall.Concat(!string.IsNullOrEmpty(commitHash) ? new[] {
-                $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{commitHash}"
-            } : Array.Empty<string>()).ToArray();
+            var packagesToAdd = PackagesToInstall.ToArray();
+            if (!string.IsNullOrEmpty(commitHash))
+            {
+                packagesToAdd = packagesToAdd.Concat(!string.IsNullOrEmpty(commitHash) ? new[] {
+                    $"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{commitHash}"
+                } : Array.Empty<string>())
+                .ToArray();
+            }
 
             if (packagesToAdd.Length == 0)
             {
