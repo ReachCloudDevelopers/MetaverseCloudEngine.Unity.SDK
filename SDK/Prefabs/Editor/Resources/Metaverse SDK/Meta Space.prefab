@@ -116,7 +116,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   platform: -1
+  applicationVersion: 
+  versionComparison: 0
   includeMobileWebPlatforms: 1
+  afterStart: 0
   waitForMetaSpaceInitialize: 0
   vrSupport: 0
   arSupport: 1
@@ -283,7 +286,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   platform: -1
+  applicationVersion: 
+  versionComparison: 0
   includeMobileWebPlatforms: 1
+  afterStart: 0
   waitForMetaSpaceInitialize: 0
   vrSupport: 2
   arSupport: 1
@@ -890,7 +896,8 @@ MonoBehaviour:
         m_PersistentCalls:
           m_Calls: []
   - name: MVCE_DEFAULT_UI_CHAT_ENABLED
-    aliases: []
+    aliases:
+    - Chat
     enabled: 1
     setOnStart: 1
     events:
@@ -904,7 +911,8 @@ MonoBehaviour:
         m_PersistentCalls:
           m_Calls: []
   - name: MVCE_DEFAULT_UI_FRIENDS_LIST_ENABLED
-    aliases: []
+    aliases:
+    - Friends List
     enabled: 1
     setOnStart: 1
     events:
@@ -1813,7 +1821,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   platform: -1
+  applicationVersion: 
+  versionComparison: 0
   includeMobileWebPlatforms: 1
+  afterStart: 0
   waitForMetaSpaceInitialize: 0
   vrSupport: 2
   arSupport: 1
@@ -2807,7 +2818,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   platform: -1
+  applicationVersion: 
+  versionComparison: 0
   includeMobileWebPlatforms: 1
+  afterStart: 0
   waitForMetaSpaceInitialize: 0
   vrSupport: 0
   arSupport: 1

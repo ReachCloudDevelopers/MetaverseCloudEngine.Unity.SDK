@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.189.4
-- Imoproved package installer.
+## 2.190.0
+- Added a new PlayerGroupAvatarOverride component
 
 Updated on August 28, 2025
