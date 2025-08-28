@@ -29,8 +29,12 @@ namespace MetaverseCloudEngine.Unity.Editors
         private static bool _makingRequest;
         private Vector2 _scroll;
 
+        private Action _loggedInAction;
+
         [MenuItem(MetaverseConstants.MenuItems.WindowsMenuRootPath + "Account")]
-        public static void Open()
+        public static void Open() => Open(null);
+        
+        public static void Open(Action loggedInAction)
         {
             _page = LoginPage.LogIn;
             _password = string.Empty;
@@ -38,6 +42,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             _revealPassword = false;
             _revealConfirmPassword = false;
             var window = GetWindow<MetaverseAccountWindow>();
+            window._loggedInAction = loggedInAction;
             window.maxSize = window.minSize = new Vector2(400, 300);
             window.ShowUtility();
         }
@@ -80,12 +85,20 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private void Update() => Repaint();
 
-        private static void Draw()
+        private void Draw()
         {
             if (MetaverseProgram.ApiClient == null)
                 return;
             if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
+            {
+                if (_loggedInAction != null)
+                {
+                    _loggedInAction?.Invoke();
+                    _loggedInAction = null;
+                    Close();
+                }
                 DrawLogin();
+            }
             else
                 DrawLoggedIn();
         }

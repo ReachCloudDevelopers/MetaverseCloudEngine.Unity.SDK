@@ -852,6 +852,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 Upload(mainAsset, asset, serObj, true, false);
                                 return;
                             }
+
+                            OnUnauthorizedUpload(() => Upload(mainAsset, asset, serObj, true, false));
+                            return;
                         }
 
                         UploadFailure(Task.Run(async () => await response.GetErrorAsync()).Result);
@@ -1220,6 +1223,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 ++tries);
                             return;
                         }
+                        
+                        OnUnauthorizedUpload(() =>
+                        {
+                            UploadBundles(
+                                controller, 
+                                bundlePath, 
+                                buildsEnumerable, 
+                                assetUpsertForm, 
+                                onBuildSuccess,
+                                ++tries);
+                        });
+                        return;
                     }
 
                     var prettyErrorString = Task
@@ -1236,6 +1251,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                 foreach (var stream in openStreams)
                     try { stream?.Dispose(); } catch { /* ignored */ }
             }
+        }
+
+        private static void OnUnauthorizedUpload(Action loginAction = null)
+        {
+            EditorUtility.ClearProgressBar();
+            Task.Run(async () => await MetaverseProgram.ApiClient.Account
+                .LogOutAsync(AccountController.LogOutKind.InvalidAccessToken)).Wait();
+            if (!EditorUtility.DisplayDialog(
+                "Upload Failed", 
+                "Your session has expired or you are not authorized to modify the asset. " +
+                "Please log in to an authorized account to continue uploading.", 
+                "Log In", "Cancel Upload"))
+                return;
+            MetaverseAccountWindow.Open(loginAction);
         }
 
         private static void UploadFailure(object error)
