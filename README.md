@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.1
-- Improved workflow for unauthorized uploads.
+## 2.190.2
+- Updated script icons
 
 Updated on August 28, 2025
