@@ -1257,14 +1257,15 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             EditorUtility.ClearProgressBar();
             Task.Run(async () => await MetaverseProgram.ApiClient.Account
-                .LogOutAsync(AccountController.LogOutKind.InvalidAccessToken)).Wait();
+                .LogOutAsync()).Wait();
             if (!EditorUtility.DisplayDialog(
                 "Upload Failed", 
                 "Your session has expired or you are not authorized to modify the asset. " +
                 "Please log in to an authorized account to continue uploading.", 
                 "Log In", "Cancel Upload"))
                 return;
-            MetaverseAccountWindow.Open(loginAction);
+            EditorApplication.delayCall += () =>
+                MetaverseAccountWindow.Open(loginAction);
         }
 
         private static void UploadFailure(object error)
