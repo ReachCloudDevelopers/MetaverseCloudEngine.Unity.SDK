@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.4
-- Fixed issues with window open calls freezing threads
+## 2.190.5
+- Fixed potential null reference error with OpenXR
 
 Updated on August 30, 2025

@@ -361,9 +361,11 @@ namespace MetaverseCloudEngine.Unity.Editors
             OpenXRFeature feature = buildTargetInstance.GetFeature<TFeature>();
             if (feature == null) return;
             if (feature.enabled == enable) return;
-            feature.enabled = enable;
-            EditorUtility.SetDirty(feature);
-            EditorUtility.SetDirty(feature);
+            try { 
+                feature.enabled = enable; 
+                EditorUtility.SetDirty(feature);
+                EditorUtility.SetDirty(feature);
+            } catch { /* ignored */ }
         }
 #endif
 
