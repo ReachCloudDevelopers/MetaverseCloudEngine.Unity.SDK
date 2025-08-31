@@ -93,16 +93,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                 return;
             if (!MetaverseProgram.ApiClient.Account.IsLoggedIn)
             {
+                DrawLogin();
+            }
+            else
+            {
                 if (_loggedInAction != null)
                 {
                     _loggedInAction?.Invoke();
                     _loggedInAction = null;
                     Close();
                 }
-                DrawLogin();
-            }
-            else
-                DrawLoggedIn();
+				DrawLoggedIn();
+			}
         }
 
         private static void DrawLoggedIn()

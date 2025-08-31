@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.190.6",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.190.6\n- Added ShowModalUtility to MetaverseAccountWindow when login action is used.\n\nUpdated on August 31, 2025",
+  "version": "2.190.7",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.190.7\n- Fixed incorrect login check.\n\nUpdated on August 31, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

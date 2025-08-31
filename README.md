@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.6
-- Added ShowModalUtility to MetaverseAccountWindow when login action is used.
+## 2.190.7
+- Fixed incorrect login check.
 
 Updated on August 31, 2025
