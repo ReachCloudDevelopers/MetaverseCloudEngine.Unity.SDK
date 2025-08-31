@@ -40,63 +40,72 @@ namespace MetaverseCloudEngine.Unity
         {
             _cancellationToken = new CancellationTokenSource();
 
-            UniTask.Void(async () =>
-            {
+			if (!Application.isEditor)
+            	UniTask.Void(async () => { await ExecuteAsync(finished, failed); });
+			else 
+				Task.Run(async () => { await ExecuteAsync(finished, failed); });
+        }
+
+		private async Task ExecuteAsync(Action finished, Action failed) 
+		{
+			if (!Application.isEditor)
                 await UniTask.SwitchToMainThread();
 
-                Guid? organizationId = null;
+            Guid? organizationId = null;
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                organizationId = MetaverseProgram.RuntimeServices?.InternalOrganizationManager?.SelectedOrganization?.Id;
+            organizationId = MetaverseProgram.RuntimeServices?.InternalOrganizationManager?.SelectedOrganization?.Id;
 #endif
-                var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(organizationId);
-                if (!startRequest.Succeeded)
-                {
-                    failed?.Invoke();
-                    return;
-                }
+            var startRequest = await MetaverseProgram.ApiClient.Account.StartAuth0SignInAsync(organizationId);
+            if (!startRequest.Succeeded)
+            {
+                failed?.Invoke();
+                return;
+            }
 
+			if (Application.isEditor)
+				await Task.Delay(5, cancellationToken: _cancellationToken.Token);
+			else
                 await UniTask.Delay(5, cancellationToken: _cancellationToken.Token);
 
-                var startResponse = await startRequest.GetResultAsync();
+            var startResponse = await startRequest.GetResultAsync();
 #if METAVERSE_CLOUD_ENGINE_INTERNAL
-                if (Application.isMobilePlatform)
-                {
-                    var proxy = MetaverseProxy.LoadCurrentSettings();
-                    if (!string.IsNullOrWhiteSpace(proxy.deepLink))
-                        startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
-                }
+            if (Application.isMobilePlatform)
+            {
+                var proxy = MetaverseProxy.LoadCurrentSettings();
+                if (!string.IsNullOrWhiteSpace(proxy.deepLink))
+                    startResponse.SignInUrl += $"&returnUrl={UnityWebRequest.EscapeURL(MetaverseDeepLinkAPI.GenerateCurrentLink(includeSitePath: true).Replace("https://", proxy.deepLink + "://"))}";
+            }
 #endif
-                
-                var code = await OpenLoginPopupAsync(startResponse.SignInUrl);
-                if (code != "ok")
+            
+            var code = await OpenLoginPopupAsync(startResponse.SignInUrl);
+            if (code != "ok")
+            {
+                failed?.Invoke();
+                return;
+            }
+            
+            try
+            {
+                var endRequest = await MetaverseProgram.ApiClient.Account.CompleteAuth0SignInAsync(
+                    new GenerateSystemUserTokenAuth0Form
+                    {
+                        RequestToken = startResponse.RequestToken,
+                    },
+                    cancellationToken: _cancellationToken.Token);
+
+                if (!endRequest.Succeeded)
                 {
                     failed?.Invoke();
                     return;
                 }
-                
-                try
-                {
-                    var endRequest = await MetaverseProgram.ApiClient.Account.CompleteAuth0SignInAsync(
-                        new GenerateSystemUserTokenAuth0Form
-                        {
-                            RequestToken = startResponse.RequestToken,
-                        },
-                        cancellationToken: _cancellationToken.Token);
 
-                    if (!endRequest.Succeeded)
-                    {
-                        failed?.Invoke();
-                        return;
-                    }
-
-                    finished?.Invoke();
-                }
-                catch
-                {
-                    failed?.Invoke();
-                }
-            });
-        }
+                finished?.Invoke();
+            }
+            catch
+            {
+                failed?.Invoke();
+            }
+		}
 
         public void Cancel()
         {
@@ -136,7 +145,7 @@ namespace MetaverseCloudEngine.Unity
 
             return await bridge.WaitForAuthCodeAsync();
 #elif !MV_VUPLEX_DEFINED
-            Application.OpenURL(url);
+            MetaverseCloudEngine.Unity.Async.MetaverseDispatcher.AtEndOfFrame(() => Application.OpenURL(url));
             return "ok";
 #else
             if (Application.isPlaying && SupportsInAppUI)
