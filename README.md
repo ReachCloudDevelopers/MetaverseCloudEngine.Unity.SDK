@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.5
-- Fixed potential null reference error with OpenXR
+## 2.190.6
+- Added ShowModalUtility to MetaverseAccountWindow when login action is used.
 
-Updated on August 30, 2025
+Updated on August 31, 2025

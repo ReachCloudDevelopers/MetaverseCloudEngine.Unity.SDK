@@ -44,7 +44,9 @@ namespace MetaverseCloudEngine.Unity.Editors
             var window = GetWindow<MetaverseAccountWindow>();
             window._loggedInAction = loggedInAction;
             window.maxSize = window.minSize = new Vector2(400, 300);
-            window.ShowUtility();
+            if (loggedInAction != null)
+                window.ShowModalUtility();
+            else window.ShowUtility();
         }
 
         private void OnEnable()

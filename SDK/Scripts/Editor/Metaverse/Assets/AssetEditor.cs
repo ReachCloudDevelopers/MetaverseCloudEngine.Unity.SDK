@@ -1264,8 +1264,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 "Please log in to an authorized account to continue uploading.", 
                 "Log In", "Cancel Upload"))
                 return;
-            EditorApplication.delayCall += () =>
-                MetaverseAccountWindow.Open(loginAction);
+            MetaverseAccountWindow.Open(loginAction);
         }
 
         private static void UploadFailure(object error)
