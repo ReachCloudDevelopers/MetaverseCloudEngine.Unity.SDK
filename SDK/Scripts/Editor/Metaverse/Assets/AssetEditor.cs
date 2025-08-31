@@ -1226,6 +1226,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                         
                         OnUnauthorizedUpload(() =>
                         {
+                            EditorUtility.DisplayDialog(
+                                "Retrying Upload", 
+                                "You have successfully logged in. The upload will now be retried.", 
+                                "Ok");
+                            
                             UploadBundles(
                                 controller, 
                                 bundlePath, 

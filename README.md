@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.8
-- Fixed infinite waiting while in editor using Auth0AuthProvider
+## 2.190.9
+- Fixed issues with Application.OpenURL
 
 Updated on August 31, 2025

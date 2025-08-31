@@ -145,7 +145,18 @@ namespace MetaverseCloudEngine.Unity
 
             return await bridge.WaitForAuthCodeAsync();
 #elif !MV_VUPLEX_DEFINED
-            MetaverseCloudEngine.Unity.Async.MetaverseDispatcher.AtEndOfFrame(() => Application.OpenURL(url));
+            if (Application.isEditor)
+			{
+				System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+			}
+			else
+			{
+				Application.OpenURL(url);
+			}
             return "ok";
 #else
             if (Application.isPlaying && SupportsInAppUI)

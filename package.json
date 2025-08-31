@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.190.8",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.190.8\n- Fixed infinite waiting while in editor using Auth0AuthProvider\n\nUpdated on August 31, 2025",
+  "version": "2.190.9",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.190.9\n- Fixed issues with Application.OpenURL\n\nUpdated on August 31, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
