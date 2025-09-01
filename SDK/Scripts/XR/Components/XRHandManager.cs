@@ -4,7 +4,6 @@
 #if MV_OCULUS_PLUGIN && METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED && UNITY_ANDROID
 #define MV_USING_OCULUS_SDK
 #endif
-
 #if MV_XR_HANDS
 using TriInspectorMVCE;
 #pragma warning restore IDE0079 // Remove unnecessary suppression
@@ -17,9 +16,11 @@ using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
 using UnityEngine.XR.Hands;
+#if MV_OPENXR
 using UnityEngine.XR.OpenXR.Features.Interactions;
-using XRController = UnityEngine.InputSystem.XR.XRController;
 using UnityEngine.XR.Hands.OpenXR;
+#endif
+using XRController = UnityEngine.InputSystem.XR.XRController;
 
 namespace MetaverseCloudEngine.Unity.XR.Components
 {
@@ -138,6 +139,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 #pragma warning restore CS0162 // Unreachable code detected
                     rUpdated |= rHandUsePointerPose && UpdateDeviceState_UnityBugWorkaround(MetaAimHand.right, false, rHandUsePointerPose, rightHand);
 
+#if MV_OPENXR
                     if (HandTracking.subsystem != null)
                     {
                         if (!lUpdated)
@@ -147,6 +149,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                             rUpdated |= !rHandUsePointerPose && UpdateFallbackHandState(
                                 HandTracking.subsystem.rightHand, rightHand);
                     }
+#endif
                 }
                 else
                 {
@@ -266,12 +269,14 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 if (!((MetaAimFlags)metaAimHand.aimFlags.value).HasFlag(MetaAimFlags.Valid))
                     return false;
             }
-
+            
+#if MV_OPENXR
             if (HandTracking.subsystem != null &&
                 (lHand
                     ? !HandTracking.subsystem.leftHand.isTracked
                     : !HandTracking.subsystem.rightHand.isTracked))
                 return false;
+#endif
 
             if (deviceGameObject && updateTransforms)
             {
@@ -320,6 +325,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                 {
                     case MetaAimHand aimHand:
                         return new Pose(aimHand.devicePosition.value + GetHandPositionOffset(aimHand.deviceRotation.value, isLHand), aimHand.deviceRotation.value * GetHandRotationOffset(isLHand));
+#if MV_OPENXR
                     case MetaQuestTouchProControllerProfile.QuestProTouchController meta:
                         return new Pose(
                             meta.pointerPosition.value + GetControllerPositionOffset(meta.deviceRotation.value, Quaternion.identity, isLHand),
@@ -336,6 +342,7 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                         return new Pose(
                             vive.pointerPosition.value + GetControllerPositionOffset(vive.deviceRotation.value, Quaternion.identity, isLHand),
                             vive.pointerRotation.value * GetControllerRotationOffset(isLHand));
+#endif
 #if MV_USING_OCULUS_SDK
                     case OculusTouchController oculusTouchController:
                     {

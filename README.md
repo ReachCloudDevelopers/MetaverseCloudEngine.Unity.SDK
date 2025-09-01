@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.190.9
-- Fixed issues with Application.OpenURL
+## 2.191.0
+- Added XRGestureDirectInteractorControl and improved scripting defines of XRHandManager and XRSubsystemAPI
 
-Updated on August 31, 2025
+Updated on September 01, 2025

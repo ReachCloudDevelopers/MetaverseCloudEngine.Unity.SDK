@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR;
-#if MV_XR_HANDS
+#if MV_XR_HANDS && MV_OPENXR
 using UnityEngine.XR.Hands.OpenXR;
 #endif
 using UnityEngine.XR.Management;
@@ -153,7 +153,7 @@ namespace MetaverseCloudEngine.Unity.XR
         
         private static IEnumerator RestartHandTrackingCoroutine()
         {
-#if MV_XR_HANDS
+#if MV_XR_HANDS && MV_OPENXR
             if (_handTrackingRestarting)
                 yield break;
             _handTrackingRestarting = true;
@@ -203,7 +203,7 @@ namespace MetaverseCloudEngine.Unity.XR
             {
                 MetaverseProgram.Logger.Log("[XRSubsystemActivator] Starting XR...");
                 XRGeneralSettings.Instance.Manager.StartSubsystems();
-#if MV_XR_HANDS
+#if MV_XR_HANDS && MV_OPENXR
                 HandTracking.subsystem?.Start();
 #endif
             }
