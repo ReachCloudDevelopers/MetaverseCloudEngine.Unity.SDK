@@ -109,9 +109,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                         continue;
                     }
                     
-                    // Switch current build target before pre-processing assets.
-                    EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
-                        
 #if UNITY_2023_1_OR_NEWER
                     //UnityEditor.QNX.Settings.architecture = EmbeddedArchitecture.Arm64;
 #else
@@ -120,7 +117,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
 
-                    var targetBundleId = bundleId + "_" + platform;
+                    var targetBundleId = $"{bundleId}_{platform}";
                     var validAssetNames = new List<string>();
 
                     AssetDatabase.StartAssetEditing();
@@ -137,7 +134,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     }
 
                     // Create sub-output directory.
-                    var outputFolder = Path.Combine(MetaverseBuildDirectory, targetBundleId) + "_Data";
+                    var outputFolder = $"{Path.Combine(MetaverseBuildDirectory, targetBundleId)}_Data";
                     if (!Directory.Exists(outputFolder))
                         Directory.CreateDirectory(outputFolder);
 
@@ -338,9 +335,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (platformOptions == null || !platformOptions.TryGetValue(platform, out var options))
                 return;
 
-            var deps = AssetDatabase.GetDependencies(validAssetNames.ToArray(),
-                true); // Get only the necessary dependencies.
-
+            var deps = AssetDatabase.GetDependencies(validAssetNames.ToArray(), true);
             foreach (var path in deps)
             {
                 var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
