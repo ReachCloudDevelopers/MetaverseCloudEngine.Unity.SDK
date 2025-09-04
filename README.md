@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.191.2
-- Fixed issues with NetworkTextMeshPro not updating properly.
+## 2.191.3
+- Added editor script defines to MetaverseScript.cs
 
-Updated on September 03, 2025
+Updated on September 04, 2025

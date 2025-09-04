@@ -201,6 +201,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string ShowForcedDialogFunction = "ShowForcedDialog";
         private const string ShowDialogComplexFunction = "ShowDialogComplex";
         private const string ShowForcedDialogComplexFunction = "ShowForcedDialogComplex";
+        private const string MetaverseCloudEngineInternalTag = "METAVERSE_CLOUD_ENGINE_INTERNAL";
+        private const string UnityEditorTag = "UNITY_EDITOR";
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
@@ -1282,6 +1284,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #endif
                     })
                 },
+                {
+                    MetaverseCloudEngineInternalTag,
+#if METAVERSE_CLOUD_ENGINE_INTERNAL
+                    true
+#else
+                    false
+#endif
+                },
+                {
+                    UnityEditorTag,
+#if UNITY_EDITOR
+                    true
+#else
+                    false
+#endif
+                }
             };
             
 #if MV_META_CORE
