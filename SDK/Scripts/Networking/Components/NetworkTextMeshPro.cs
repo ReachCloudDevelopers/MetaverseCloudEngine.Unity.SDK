@@ -11,6 +11,8 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
     [HideMonoScript]
     public class NetworkTextMeshPro : NetworkObjectBehaviour
     {
+        private const float ForceUpdateInterval = 5f;
+        
         [SerializeField]
         [Attributes.ReadOnly] private string id;
         [SerializeField] private TMP_Text text;
@@ -64,11 +66,10 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
             NetworkObject.InvokeRPC((short)NetworkRpcType.TextMeshProTextRequest, NetworkObject.InputAuthorityID, null);
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             if (!text)
             {
-                MetaverseProgram.Logger.LogWarning("Text is not assigned.");
                 enabled = false;
                 return;
             }
@@ -76,9 +77,12 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
             if (!NetworkObject.IsInputAuthority)
                 return;
 
-            if (_lastTextValue == text.text || Time.unscaledTime > _nextUpdateTime) return;
+            if (_lastTextValue == text.text && Time.unscaledTime < _nextUpdateTime)
+                return;
+
             _lastTextValue = text.text;
-            _nextUpdateTime = Time.unscaledTime + 5;
+            _nextUpdateTime = Time.unscaledTime + ForceUpdateInterval;
+
             NetworkObject.InvokeRPC(
                 (short)NetworkRpcType.TextMeshProTextUpdate, 
                 NetworkMessageReceivers.Others, 

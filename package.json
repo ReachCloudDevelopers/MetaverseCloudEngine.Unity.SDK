@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.191.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.191.1\n- Fixed issue with multiple calls to SwitchActiveBuildTarget\n\nUpdated on September 02, 2025",
+  "version": "2.191.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.191.2\n- Fixed issues with NetworkTextMeshPro not updating properly.\n\nUpdated on September 03, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -319,12 +319,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                 if (!importer)
                     continue;
 
-                if (importer.assetBundleName != targetBundleId)
-                {
-                    importer.SetAssetBundleNameAndVariant(targetBundleId, string.Empty);
-                    validAssetNames.Add(assetName);
-                    importer.SaveAndReimport();
-                }
+                if (importer.assetBundleName == targetBundleId)
+                    continue;
+                
+                if ((importer.hideFlags & HideFlags.DontSave) != 0)
+                    continue;
+
+                importer.SetAssetBundleNameAndVariant(targetBundleId, string.Empty);
+                validAssetNames.Add(assetName);
+                importer.SaveAndReimport();
             }
         }
 

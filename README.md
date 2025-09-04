@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.191.1
-- Fixed issue with multiple calls to SwitchActiveBuildTarget
+## 2.191.2
+- Fixed issues with NetworkTextMeshPro not updating properly.
 
-Updated on September 02, 2025
+Updated on September 03, 2025
