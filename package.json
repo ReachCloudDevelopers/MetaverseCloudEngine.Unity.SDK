@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.192.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.192.0\n- Add YOLO detection event and new SafeZone component for enhanced detection handling\n\nUpdated on September 06, 2025",
+  "version": "2.192.1",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.192.1\n- Fixed issues with YouOnlyLookOnce detections and added support for automatically transforming the texture based on RawImage scale.\n\nUpdated on September 06, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
