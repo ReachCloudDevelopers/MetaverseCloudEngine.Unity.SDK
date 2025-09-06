@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.191.3
-- Added editor script defines to MetaverseScript.cs
+## 2.192.0
+- Add YOLO detection event and new SafeZone component for enhanced detection handling
 
-Updated on September 04, 2025
+Updated on September 06, 2025

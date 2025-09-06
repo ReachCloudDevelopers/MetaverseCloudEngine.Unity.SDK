@@ -8,9 +8,22 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using System.Collections.ObjectModel;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
+    public struct YoloDetection
+    {
+        public string Label;
+        public Rect Rect;
+
+        public YoloDetection(string label, Rect rect)
+        {
+            Label = label; 
+            Rect = rect;
+        }
+    }
+
     /// <summary>
     /// YOLO runtime that emits UnityEvents when a configured label is detected.
     /// </summary>
@@ -18,6 +31,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     [HelpURL("https://huggingface.co/unity/inference-engine-yolo")]
     public sealed class YouOnlyLookOnce : InferenceEngineComponent
     {
+        /// <summary>
+        /// Event invoked every time a frame is processed, providing the list of detections and the width and height of the source texture.
+        /// </summary>
+        public event Action<IReadOnlyList<YoloDetection>, int, int> DetectionsFrame;
+
         [InfoBox("This component supports version 8-12 of the YOLO model. Please click the documentation link for model downloads and usage details.")]
         [Header("Embedded Resources (optional)")]
         public ModelAsset modelAsset;
@@ -321,23 +339,28 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void DispatchEvents(Tensor<float> boxes, Tensor<int> ids, int texW, int texH)
         {
-            if (_detectedLabels.Count > 0)
-                _detectedLabels.Clear();
-            
+            if (_detectedLabels.Count > 0) _detectedLabels.Clear();
+
+            var frame = new List<YoloDetection>(64);
+
             var count = boxes.shape[0];
             for (var i = 0; i < count; i++)
             {
                 var id = ids[i];
-                if (id < 0 || id >= _labels.Length)
-                    continue;
+                if (id < 0 || id >= _labels.Length) continue;
                 var label = _labels[id];
-                if (!_eventLookup.TryGetValue(label, out var evt) || evt == null)
-                    continue;
+
+                // Keep existing per-label flow
+                if (!_eventLookup.TryGetValue(label, out var evt) || evt == null) continue;
+
                 var cx = boxes[i, 0] * texW;
                 var cy = boxes[i, 1] * texH;
-                var w = boxes[i, 2] * texW;
-                var h = boxes[i, 3] * texH;
+                var w  = boxes[i, 2] * texW;
+                var h  = boxes[i, 3] * texH;
                 var rect = new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h);
+
+                frame.Add(new YoloDetection(label, rect)); // <-- collect
+
                 try
                 {
                     if (_detectedLabels.Add(label))
@@ -353,11 +376,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 catch (Exception ex) { MetaverseProgram.Logger.LogError(ex); }
             }
 
+            DetectionsFrame?.Invoke(new ReadOnlyCollection<YoloDetection>(frame), texW, texH);
+
             for (var i = labelEvents.Count - 1; i >= 0; i--)
             {
                 var l = labelEvents[i];
-                if (!l.WasDetected || _detectedLabels.Contains(l.label))
-                    continue;
+                if (!l.WasDetected || _detectedLabels.Contains(l.label)) continue;
                 l.WasDetected = false;
                 l.onDetectionLost?.Invoke();
             }
