@@ -334,8 +334,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var cy = boxes[i, 1];
                 var w  = boxes[i, 2];
                 var h  = boxes[i, 3];
-                var rect = new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h);
-                var det = new YoloDetection(label, rect, scores[i], classId); // <-- score included
+
+                var yMin = ModelInputHeight - (cy + h * 0.5f);
+                var xMin = cx - w * 0.5f;
+
+                var rect = new Rect(xMin, yMin, w, h);
+                var det  = new YoloDetection(label, rect, scores[i], classId);
 
                 if (PostProcessDetection != null)
                 {

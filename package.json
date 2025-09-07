@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.193.1",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.193.1\n- Added gizmos to YouOnlyLookOnceSafeZone\n\nUpdated on September 06, 2025",
+  "version": "2.193.2",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.193.2\n- Fixed rect output being inverted on Y axis for YouOnlyLookOnce detections.\n\nUpdated on September 06, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
