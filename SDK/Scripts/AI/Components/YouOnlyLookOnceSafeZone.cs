@@ -220,4 +220,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
     }
 }
+#else
+namespace MetaverseCloudEngine.Unity.AI.Components
+{
+    public class YouOnlyLookOnceSafeZone : InferenceEngineComponent {}
+}
 #endif

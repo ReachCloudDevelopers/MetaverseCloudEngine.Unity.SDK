@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.192.1
-- Fixed issues with YouOnlyLookOnce detections and added support for automatically transforming the texture based on RawImage scale.
+## 2.193.0
+- Added new YouOnlyLookOnceRenderer component.
 
 Updated on September 06, 2025
