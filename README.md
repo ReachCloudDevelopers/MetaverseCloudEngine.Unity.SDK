@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.193.2
-- Fixed rect output being inverted on Y axis for YouOnlyLookOnce detections.
+## 2.193.3
+- Updated script icons
 
-Updated on September 06, 2025
+Updated on September 07, 2025
