@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.193.0
-- Added new YouOnlyLookOnceRenderer component.
+## 2.193.1
+- Added gizmos to YouOnlyLookOnceSafeZone
 
 Updated on September 06, 2025

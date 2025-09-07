@@ -10,6 +10,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     /// Consumes detections from <see cref="YouOnlyLookOnce"/> and emits:
     ///  - STOP/OK based on threshold + mode (supports zone_sum/object/zone/iou)
     ///  - Continuous nav value in [-1,1] every frame (−1=steer left, +1=steer right).
+    /// Also renders gizmos for frame bounds and the safe zone.
     /// </summary>
     [HideMonoScript]
     [RequireComponent(typeof(YouOnlyLookOnce))]
@@ -21,14 +22,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public YouOnlyLookOnce yolo;
 
         [Header("Danger Zone (normalized)")]
-        [Tooltip("Normalized [0..1] rect in source texture space.")]
+        [Tooltip("Normalized [0..1] rect in source texture space (origin bottom-left).")]
         public Rect zoneNorm = new(0.25f, 0.4f, 0.5f, 0.2f);
 
         [Header("Mode & Threshold")]
         public Mode mode = Mode.ZoneSum;
         [Range(0, 1)] public float threshold = 0.45f;
 
-        [Header("Classes to care about")] 
+        [Header("Classes to care about")]
         [Tooltip("Leave empty to care about ALL labels.")]
         public List<string> careLabels = new()
         {
@@ -39,7 +40,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Header("Navigation output")]
         public NavTransform navTransform = NavTransform.SignOneMinusAbs;
 
-        [Header("Events")] 
+        [Header("Events")]
         public UnityEvent<bool> onStop = new();
         public UnityEvent<float> onAvoid = new();
         public UnityEvent<string> onDebugText = new();
@@ -51,6 +52,32 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private float _lastMetric;
         private readonly List<YoloDetection> _buffer = new(64);
         private int _frameW = 1, _frameH = 1;
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // Gizmo settings
+        // ─────────────────────────────────────────────────────────────────────────────
+        [Header("Gizmos")]
+        [Tooltip("Draw gizmos for frame boundaries and safe zone.")]
+        public bool drawGizmos = true;
+
+        [Tooltip("When not running (no frames yet), use this size to preview frame bounds.")]
+        public Vector2 previewFrameSize = new(640, 640);
+
+        [Tooltip("Place gizmos on this local Z plane (XY plane).")]
+        public float gizmoZ = 0f;
+
+        [Tooltip("Uniform scale applied to 0..1 normalized space.")]
+        public float gizmoScale = 1f;
+
+        [Tooltip("If true, draw a vertical line through the safe-zone center.")]
+        public bool drawZoneMidline = true;
+
+        [Space]
+        public Color frameOutlineColor = new Color(1f, 1f, 1f, 0.4f);
+        public Color zoneOutlineColor = new Color(1f, 0.55f, 0f, 0.95f);
+        public Color zoneFillOk = new Color(0f, 1f, 0f, 0.15f);
+        public Color zoneFillStop = new Color(1f, 0f, 0f, 0.18f);
+        public Color midlineColor = new Color(1f, 1f, 1f, 0.25f);
 
         private void OnEnable()
         {
@@ -72,13 +99,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 if (careLabels == null || careLabels.Count == 0)
                 {
-                    // copy all
-                    foreach (var t in detections)
-                        _buffer.Add(t);
+                    foreach (var t in detections) _buffer.Add(t);
                 }
                 else
                 {
-                    // copy only cared-about labels
                     foreach (var d in detections)
                         if (careLabels.Contains(d.Label)) _buffer.Add(d);
                 }
@@ -120,7 +144,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (stop != _lastStop || !Mathf.Approximately(metric, _lastMetric))
             {
-                _lastStop = stop; 
+                _lastStop = stop;
                 _lastMetric = metric;
                 onStop?.Invoke(stop);
             }
@@ -144,14 +168,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (inter <= 0f) return 0f;
             var a = Area(obj);
             var z = Area(zone);
-            float denom;
-            switch (m)
+            float denom = m switch
             {
-                case Mode.Object: denom = a; break;
-                case Mode.Zone: denom = z; break;
-                case Mode.IoU: denom = a + z - inter; break;
-                default: denom = 1f; break;
-            }
+                Mode.Object => a,
+                Mode.Zone => z,
+                Mode.IoU => a + z - inter,
+                _ => 1f
+            };
             return denom <= 0f ? 0f : inter / denom;
         }
 
@@ -217,6 +240,83 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 NavTransform.SignOneMinusAbs => Mathf.Sign(raw) * (1f - Mathf.Abs(raw)),
                 _ => raw
             };
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // Gizmos
+        // ─────────────────────────────────────────────────────────────────────────────
+
+        private void OnDrawGizmos()
+        {
+            if (!drawGizmos) return;
+
+            // Determine frame size (pixels) – use live frame if available, otherwise preview.
+            var fw = (_frameW > 1 || _frameH > 1) ? _frameW : Mathf.RoundToInt(Mathf.Max(1f, previewFrameSize.x));
+            var fh = (_frameW > 1 || _frameH > 1) ? _frameH : Mathf.RoundToInt(Mathf.Max(1f, previewFrameSize.y));
+
+            // Frame in normalized [0..1] space so gizmoScale controls overall size.
+            var frame01 = new Rect(0f, 0f, 1f, 1f);
+            var zone01 = new Rect(
+                Mathf.Clamp01(zoneNorm.x),
+                Mathf.Clamp01(zoneNorm.y),
+                Mathf.Clamp01(Mathf.Max(0f, zoneNorm.width)),
+                Mathf.Clamp01(Mathf.Max(0f, zoneNorm.height))
+            );
+
+            // Draw frame outline
+            Gizmos.color = frameOutlineColor;
+            DrawRectOutline(frame01, gizmoScale, gizmoScale, gizmoZ);
+
+            // Zone fill (green=OK, red=STOP)
+            var fillCol = _lastStop ? zoneFillStop : zoneFillOk;
+            Gizmos.color = fillCol;
+            DrawRectFill(zone01, gizmoScale, gizmoScale, gizmoZ);
+
+            // Zone outline
+            Gizmos.color = zoneOutlineColor;
+            DrawRectOutline(zone01, gizmoScale, gizmoScale, gizmoZ);
+
+            // Optional vertical midline through zone center (helps visualize nav split)
+            if (drawZoneMidline)
+            {
+                Gizmos.color = midlineColor;
+                var cx = zone01.center.x;
+                var y0 = ToWorld(new Vector2(cx, zone01.yMin), gizmoScale, gizmoScale, gizmoZ);
+                var y1 = ToWorld(new Vector2(cx, zone01.yMax), gizmoScale, gizmoScale, gizmoZ);
+                Gizmos.DrawLine(y0, y1);
+            }
+
+            // Optionally: you could also render text via Handles.Label, but that requires UnityEditor.
+            // Keeping this runtime-safe: no UnityEditor dependency here.
+        }
+
+        private void DrawRectOutline(Rect r01, float sx, float sy, float z)
+        {
+            var p0 = ToWorld(new Vector2(r01.xMin, r01.yMin), sx, sy, z);
+            var p1 = ToWorld(new Vector2(r01.xMax, r01.yMin), sx, sy, z);
+            var p2 = ToWorld(new Vector2(r01.xMax, r01.yMax), sx, sy, z);
+            var p3 = ToWorld(new Vector2(r01.xMin, r01.yMax), sx, sy, z);
+
+            Gizmos.DrawLine(p0, p1);
+            Gizmos.DrawLine(p1, p2);
+            Gizmos.DrawLine(p2, p3);
+            Gizmos.DrawLine(p3, p0);
+        }
+
+        private void DrawRectFill(Rect r01, float sx, float sy, float z)
+        {
+            // Draw a thin cube as a filled quad on XY plane
+            var center01 = r01.center;
+            var size01 = r01.size;
+
+            var center = transform.TransformPoint(new Vector3(center01.x * sx, center01.y * sy, z));
+            var size = new Vector3(Mathf.Max(0f, size01.x) * sx, Mathf.Max(0f, size01.y) * sy, 0.0001f);
+            Gizmos.DrawCube(center, size);
+        }
+
+        private Vector3 ToWorld(Vector2 p01, float sx, float sy, float z)
+        {
+            return transform.TransformPoint(new Vector3(p01.x * sx, p01.y * sy, z));
         }
     }
 }
