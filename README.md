@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.193.3
-- Updated script icons
+## 2.194.0
+- Add SegFormerGroundMask component for ground segmentation using ONNX model
 
-Updated on September 07, 2025
+Updated on September 08, 2025
