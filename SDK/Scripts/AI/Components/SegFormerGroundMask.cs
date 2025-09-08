@@ -4,6 +4,7 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using System;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -18,6 +19,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public Texture sourceTexture;
         public RawImage sourceRawImage;
 
+        [Header("Webcam (optional)")]
+        [Tooltip("If enabled, uses a WebCamTexture as the source.")]
+        public bool useWebcam = false;
+        [Tooltip("Start the webcam automatically on Awake if enabled.")]
+        public bool webcamPlayOnAwake = true;
+        [Tooltip("Exact device name to open (leave empty for default/first).")]
+        public string webcamDeviceName = string.Empty;
+        [Tooltip("Requested webcam width in pixels.")]
+        public int webcamWidth = 640;
+        [Tooltip("Requested webcam height in pixels.")]
+        public int webcamHeight = 480;
+        [Tooltip("Requested webcam FPS.")]
+        [Range(0,120)] public int webcamFPS = 30;
+
         [Header("Output")]
         public int outputWidth  = 512;
         public int outputHeight = 512;
@@ -31,6 +46,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private RenderTexture _scratchRT;           // model input (512x512)
         private RenderTexture _maskRT;              // final mask (R8)
         private float _nextUpdateTime;
+        private WebCamTexture _webcam;
 
         private const int InputHW = 512;            // matches exporter
 
@@ -46,6 +62,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
             { filterMode = FilterMode.Point };
+
+            if (useWebcam && webcamPlayOnAwake)
+            {
+                TryStartWebcam();
+            }
         }
 
         void OnDestroy()
@@ -53,6 +74,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _worker?.Dispose();
             if (_scratchRT) Destroy(_scratchRT);
             if (_maskRT) Destroy(_maskRT);
+            TryStopWebcam();
         }
 
         void Update()
@@ -66,7 +88,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         public void Evaluate()
         {
-            var src = sourceTexture ? sourceTexture : (sourceRawImage ? sourceRawImage.texture : null);
+            if (useWebcam && _webcam == null)
+            {
+                // Lazily start webcam if toggled at runtime
+                TryStartWebcam();
+            }
+
+            Texture src = null;
+            if (useWebcam && _webcam != null && _webcam.isPlaying && _webcam.didUpdateThisFrame)
+            {
+                src = _webcam;
+            }
+            else
+            {
+                src = sourceTexture ? sourceTexture : (sourceRawImage ? sourceRawImage.texture : null);
+            }
             if (!src || _worker == null) return;
 
             if (_maskRT.width != outputWidth || _maskRT.height != outputHeight)
@@ -93,6 +129,56 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 TextureConverter.RenderToTexture(mask, _maskRT);
                 onMaskUpdated?.Invoke(_maskRT);
             }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // Webcam helpers
+        // ─────────────────────────────────────────────────────────────────────────────
+        public bool TryStartWebcam()
+        {
+            try
+            {
+                if (_webcam != null && _webcam.isPlaying) return true;
+
+                string devName = webcamDeviceName;
+                if (string.IsNullOrEmpty(devName))
+                {
+                    var devices = WebCamTexture.devices;
+                    if (devices != null && devices.Length > 0)
+                    {
+                        devName = devices[0].name;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(devName))
+                {
+                    Debug.LogWarning("No webcam devices found.");
+                    return false;
+                }
+
+                _webcam = new WebCamTexture(devName, Mathf.Max(16, webcamWidth), Mathf.Max(16, webcamHeight), Mathf.Max(1, webcamFPS));
+                _webcam.Play();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Failed to start webcam: {e.Message}");
+                return false;
+            }
+        }
+
+        public void TryStopWebcam()
+        {
+            try
+            {
+                if (_webcam != null)
+                {
+                    if (_webcam.isPlaying) _webcam.Stop();
+                    Destroy(_webcam);
+                    _webcam = null;
+                }
+            }
+            catch { /* ignore */ }
         }
     }
 }

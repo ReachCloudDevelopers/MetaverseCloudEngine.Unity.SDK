@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.195.0
-- Refactor SegFormerGroundMask: streamline initialization, remove unused meta handling, and optimize GPU processing
+## 2.196.0
+- Added SegFormerSafeZone component to allow for visual ground based navigation safely
 
 Updated on September 08, 2025
