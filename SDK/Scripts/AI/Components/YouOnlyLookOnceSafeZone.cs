@@ -23,7 +23,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Header("Danger Zone (normalized)")]
         [Tooltip("Normalized [0..1] rect in source texture space (origin bottom-left).")]
-        public Rect zoneNorm = new(0.25f, 0.4f, 0.5f, 0.2f);
+        public Rect zoneNorm = new(0.25f, 0.0f, 0.5f, 0.4f);
 
         [Header("Mode & Threshold")]
         public Mode mode = Mode.ZoneSum;
@@ -44,6 +44,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public UnityEvent<bool> onStop = new();
         public UnityEvent<float> onAvoid = new();
         public UnityEvent<string> onDebugText = new();
+
+        [Header("Avoidance Outputs (read-only)")]
+        [Range(-1, 1f)]
+        [ReadOnly] public float avoidanceValue;
+        [ReadOnly] public bool avoidanceStop;
 
         public enum Mode { Object, Zone, IoU, ZoneSum }
         public enum NavTransform { None, SignOneMinusAbs }
@@ -121,6 +126,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             var navRaw = ComputeNavRaw(zonePx, _buffer);
             var nav = ApplyNavTransform(navRaw);
+            avoidanceValue = nav;
             onAvoid?.Invoke(nav);
 
             bool stop;
@@ -146,6 +152,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 _lastStop = stop;
                 _lastMetric = metric;
+                avoidanceStop = stop;
                 onStop?.Invoke(stop);
             }
 
