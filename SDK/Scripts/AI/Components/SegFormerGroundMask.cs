@@ -19,8 +19,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Optional: Local file path to the ONNX/Sentis model. If not set, a default cloud model will be fetched when needed.")]
         public string modelLocalPath;
 
-        [Header("Input Settings")]
         public enum InputMethod { Texture, RawImage, WebCamTexture }
+
+        [Header("Input Settings")]
         [Tooltip("Input source for SegFormer model inference.")]
         public InputMethod inputMethod = InputMethod.WebCamTexture;
 

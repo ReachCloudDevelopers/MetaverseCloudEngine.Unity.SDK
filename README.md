@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.196.4
-- Updated SegFormerGroundMask with remote AI model download ability, and YouOnlyLookOnce with native bounds rendering
+## 2.196.5
+- Fixed error with SegFormerGroundMask and added new in-app console log window
 
 Updated on September 09, 2025
