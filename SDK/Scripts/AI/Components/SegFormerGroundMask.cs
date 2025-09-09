@@ -5,6 +5,8 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System;
+using System.IO;
+using System.Collections.Generic;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -14,62 +16,63 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Header("Model")]
         [Tooltip("Fused ONNX exported by export_segformer_b0_groundmask_onnx.py")]
         public ModelAsset modelAsset;
+        [Tooltip("Optional: Local file path to the ONNX/Sentis model. If not set, a default cloud model will be fetched when needed.")]
+        public string modelLocalPath;
 
-        [Header("Source")]
-        public Texture sourceTexture;
-        public RawImage sourceRawImage;
+        [Header("Input Settings")]
+        public enum InputMethod { Texture, RawImage, WebCamTexture }
+        [Tooltip("Input source for SegFormer model inference.")]
+        public InputMethod inputMethod = InputMethod.WebCamTexture;
 
-        [Header("Webcam (optional)")]
-        [Tooltip("If enabled, uses a WebCamTexture as the source.")]
-        public bool useWebcam = false;
-        [Tooltip("Start the webcam automatically on Awake if enabled.")]
-        public bool webcamPlayOnAwake = true;
-        [Tooltip("Exact device name to open (leave empty for default/first).")]
-        public string webcamDeviceName = string.Empty;
-        [Tooltip("Requested webcam width in pixels.")]
-        public int webcamWidth = 640;
-        [Tooltip("Requested webcam height in pixels.")]
-        public int webcamHeight = 480;
-        [Tooltip("Requested webcam FPS.")]
-        [Range(0,120)] public int webcamFPS = 30;
+        [ShowIf(nameof(inputMethod), InputMethod.Texture)]
+        [Tooltip("Texture source for model input when using Texture mode.")]
+        public Texture inputTexture;
+
+        [ShowIf(nameof(inputMethod), InputMethod.RawImage)]
+        [Tooltip("RawImage source for model input when using RawImage mode.")]
+        public RawImage inputRawImage;
+
+        [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
+        [Tooltip("If WebCamTexture input is selected, this name will be used to find the webcam. Leave empty for default.")]
+        public string webCamName;
+        [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
+        [Tooltip("Requested webcam width in pixels (WebCamTexture mode).")]
+        public int webCamWidth = 640;
+        [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
+        [Tooltip("Requested webcam height in pixels (WebCamTexture mode).")]
+        public int webCamHeight = 480;
 
         [Header("Output")]
         public int outputWidth  = 512;
         public int outputHeight = 512;
-        public UnityEvent<RenderTexture> onMaskUpdated;
+        public UnityEvent<RenderTexture> onMaskUpdated = new();
 
         [Header("Run Loop")]
         public bool runInUpdate = true;
-        [Range(0, 60)] public int updatesPerSecond = 30;
+        [Range(0, 60)] public int updatesPerSecond = 10;
 
         private Worker _worker;
         private RenderTexture _scratchRT;           // model input (512x512)
         private RenderTexture _maskRT;              // final mask (R8)
         private float _nextUpdateTime;
-        private WebCamTexture _webcam;
+        private WebCamTexture _webCamTex;
 
         private const int InputHW = 512;            // matches exporter
 
-        void Awake()
+        private void Awake()
         {
-            if (!modelAsset) { Debug.LogError("ModelAsset missing."); enabled = false; return; }
-
-            var model = ModelLoader.Load(modelAsset);
-            _worker = new Worker(model, BackendType.GPUCompute);
-
-            _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
-            { filterMode = FilterMode.Bilinear };
-
-            _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
-            { filterMode = FilterMode.Point };
-
-            if (useWebcam && webcamPlayOnAwake)
+            // If neither embedded model nor local path is available, fetch from cloud, else run immediately.
+            if (!modelAsset && (string.IsNullOrEmpty(modelLocalPath) || !File.Exists(modelLocalPath)))
             {
-                TryStartWebcam();
+                FetchResources();
+            }
+            else
+            {
+                Run();
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
             _worker?.Dispose();
             if (_scratchRT) Destroy(_scratchRT);
@@ -77,7 +80,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             TryStopWebcam();
         }
 
-        void Update()
+        private void Update()
         {
             if (!runInUpdate) return;
             var t = Time.unscaledTime;
@@ -88,32 +91,35 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         public void Evaluate()
         {
-            if (useWebcam && _webcam == null)
-            {
-                // Lazily start webcam if toggled at runtime
+            // Lazily start webcam in WebCamTexture mode
+            if (inputMethod == InputMethod.WebCamTexture && _webCamTex == null)
                 TryStartWebcam();
-            }
 
-            Texture src = null;
-            if (useWebcam && _webcam != null && _webcam.isPlaying && _webcam.didUpdateThisFrame)
-            {
-                src = _webcam;
-            }
-            else
-            {
-                src = sourceTexture ? sourceTexture : (sourceRawImage ? sourceRawImage.texture : null);
-            }
-            if (!src || _worker == null) return;
+            if (_worker == null) return;
 
-            if (_maskRT.width != outputWidth || _maskRT.height != outputHeight)
+            var src = AcquireSourceTexture(out var invertX, out var invertY);
+            if (!src || (_webCamTex && !_webCamTex.isPlaying)) return;
+
+            if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
             {
                 if (_maskRT) Destroy(_maskRT);
                 _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
                 { filterMode = FilterMode.Point };
             }
 
-            // Resize source → 512x512 on GPU
-            Graphics.Blit(src, _scratchRT);
+            // Ensure scratch RT exists
+            if (_scratchRT == null)
+            {
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
+                { filterMode = FilterMode.Bilinear };
+            }
+
+            // Resize + flip source → 512x512 on GPU
+            Graphics.Blit(
+                src,
+                _scratchRT,
+                scale: new Vector2(invertX ? -1 : 1, invertY ? -1 : 1),
+                offset: Vector2.zero);
 
             // Upload to device tensor (NCHW) on GPU
             using var input = new Tensor<float>(new TensorShape(1, 3, InputHW, InputHW));
@@ -131,6 +137,114 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
 
+        private Texture AcquireSourceTexture(out bool invertX, out bool invertY)
+        {
+            invertX = false;
+            invertY = false;
+            switch (inputMethod)
+            {
+                case InputMethod.Texture:
+                    return inputTexture;
+                case InputMethod.RawImage:
+                    if (inputRawImage)
+                    {
+                        if (inputRawImage.transform.localScale.y < 0) invertY = true;
+                        if (inputRawImage.transform.localScale.x < 0) invertX = true;
+                        return inputRawImage.texture;
+                    }
+                    return null;
+                case InputMethod.WebCamTexture:
+                    return _webCamTex;
+                default:
+                    return null;
+            }
+        }
+
+        private void FetchResources()
+        {
+            MetaverseResourcesAPI.Fetch(
+                GetExternalDependencies(),
+                "ComputerVision",
+                filePaths =>
+                {
+                    if (!this) return;
+                    if (filePaths != null && filePaths.Length > 0)
+                    {
+                        Run(filePaths);
+                    }
+                    else
+                    {
+                        MetaverseProgram.Logger.LogError("Failed to fetch SegFormer model resources.");
+                    }
+                });
+        }
+
+        private List<(MetaverseResourcesAPI.CloudResourcePath, string)> GetExternalDependencies()
+        {
+            var deps = new List<(MetaverseResourcesAPI.CloudResourcePath, string)>();
+            // If neither embedded model nor local file exists, fetch default cloud model.
+            if (!modelAsset && (string.IsNullOrEmpty(modelLocalPath) || !File.Exists(modelLocalPath)))
+            {
+                // Default cloud filename (adjust on server to match).
+                deps.Add((MetaverseResourcesAPI.CloudResourcePath.AIModels, "segformer.b0.groundmask.onnx"));
+            }
+            return deps;
+        }
+
+        private void Run(string[] fetchedPaths = null)
+        {
+            // Select backend similar to YOLO component to support WebGL
+            var backend = Application.platform == RuntimePlatform.WebGLPlayer ? BackendType.CPU : BackendType.GPUCompute;
+
+            Model model = null;
+            if (fetchedPaths != null && fetchedPaths.Length > 0)
+            {
+                foreach (var p in fetchedPaths)
+                {
+                    if (string.IsNullOrEmpty(p)) continue;
+                    if (p.EndsWith(".onnx", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".sentis", StringComparison.OrdinalIgnoreCase))
+                    {
+                        model = ModelLoader.Load(p);
+                        break;
+                    }
+                }
+            }
+            else if (modelAsset)
+            {
+                model = ModelLoader.Load(modelAsset);
+            }
+            else if (!string.IsNullOrEmpty(modelLocalPath) && File.Exists(modelLocalPath))
+            {
+                model = ModelLoader.Load(modelLocalPath);
+            }
+
+            if (model == null)
+            {
+                MetaverseProgram.Logger.LogError("SegFormer model is missing or not found.");
+                enabled = false;
+                return;
+            }
+
+            _worker = new Worker(model, backend);
+
+            if (_scratchRT == null)
+            {
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
+                { filterMode = FilterMode.Bilinear };
+            }
+
+            if (_maskRT == null)
+            {
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
+                { filterMode = FilterMode.Point };
+            }
+
+            if (inputMethod == InputMethod.WebCamTexture)
+            {
+                TryStartWebcam();
+            }
+        }
+
         // ─────────────────────────────────────────────────────────────────────────────
         // Webcam helpers
         // ─────────────────────────────────────────────────────────────────────────────
@@ -138,9 +252,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             try
             {
-                if (_webcam != null && _webcam.isPlaying) return true;
+                if (_webCamTex != null && _webCamTex.isPlaying) return true;
 
-                string devName = webcamDeviceName;
+                string devName = webCamName;
                 if (string.IsNullOrEmpty(devName))
                 {
                     var devices = WebCamTexture.devices;
@@ -156,8 +270,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     return false;
                 }
 
-                _webcam = new WebCamTexture(devName, Mathf.Max(16, webcamWidth), Mathf.Max(16, webcamHeight), Mathf.Max(1, webcamFPS));
-                _webcam.Play();
+                int reqW = Mathf.Max(16, webCamWidth);
+                int reqH = Mathf.Max(16, webCamHeight);
+                _webCamTex = string.IsNullOrEmpty(devName) ? new WebCamTexture() : new WebCamTexture(devName);
+                _webCamTex.requestedWidth = reqW;
+                _webCamTex.requestedHeight = reqH;
+                _webCamTex.Play();
                 return true;
             }
             catch (Exception e)
@@ -167,15 +285,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
         }
 
-        public void TryStopWebcam()
+        private void TryStopWebcam()
         {
             try
             {
-                if (_webcam != null)
+                if (_webCamTex != null)
                 {
-                    if (_webcam.isPlaying) _webcam.Stop();
-                    Destroy(_webcam);
-                    _webcam = null;
+                    if (_webCamTex.isPlaying) _webCamTex.Stop();
+                    Destroy(_webCamTex);
+                    _webCamTex = null;
                 }
             }
             catch { /* ignore */ }

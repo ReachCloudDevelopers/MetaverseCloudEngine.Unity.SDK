@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections.ObjectModel;
+using UnityEngine.Rendering;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -83,7 +84,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Tooltip("The rate at which the update runs in times per second. Set to 0 to run every frame.")]
         [Range(0, 30)]
-        public int updatesPerSecond;
+        public int updatesPerSecond = 5;
 
         [Tooltip("Intersection over Union (IoU) threshold for filtering detections.")]
         [Range(0, 1)] public float iouThreshold = 0.5f;
@@ -94,6 +95,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [PropertySpace(25, 25)]
         [Tooltip("List of label-event pairs. When a label is detected, the corresponding event will be invoked.")]
         public List<LabelEventPair> labelEvents = new();
+
+        [Header("Overlay Output")]
+        [Tooltip("Overlay RenderTexture with 2D boxes + labels over transparent background.")]
+        public UnityEvent<RenderTexture> onOverlayUpdated = new();
+        [Tooltip("Box line thickness in pixels.")]
+        [Range(1, 12)] public int overlayLineThickness = 2;
+        [Tooltip("Box color for overlay.")]
+        public Color overlayBoxColor = new Color(0.1f, 1f, 0.1f, 1f);
+        [Tooltip("Text color for overlay labels.")]
+        public Color overlayTextColor = Color.white;
+        [Tooltip("Optional font used to draw label text. If null, text is omitted.")]
+        public Font overlayFont;
+        [Tooltip("Font size for overlay label text.")]
+        [Range(8, 48)] public int overlayFontSize = 16;
 
         public enum InputMethod { Texture, RawImage, WebCamTexture }
 
@@ -124,10 +139,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private Tensor<float> _centersToCorners;
         private string[] _labels;
         private RenderTexture _scratchRT;
+        private RenderTexture _overlayRT;
         private WebCamTexture _webCamTex;
         private readonly Dictionary<string, LabelEventPair> _eventLookup = new();
         private readonly HashSet<string> _detectedLabels = new();
         private float _nextUpdateTime;
+        private static Material _lineMaterial;
 
         private void Awake()
         {
@@ -147,6 +164,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 Destroy(_webCamTex);
             }
             if (_scratchRT) Destroy(_scratchRT);
+            if (_overlayRT) Destroy(_overlayRT);
         }
 
         private void Update()
@@ -185,6 +203,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (boxes == null || ids == null || scores == null) return;
 
             DispatchEvents(boxes, ids, scores, source.width, source.height);
+            RenderOverlay(boxes, ids, scores, source.width, source.height, invertX, invertY);
         }
 
         private void FetchResources()
@@ -373,6 +392,172 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (!l.WasDetected || _detectedLabels.Contains(l.label)) continue;
                 l.WasDetected = false;
                 l.onDetectionLost?.Invoke();
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────────
+        // Overlay Rendering
+        // ─────────────────────────────────────────────────────────────────────────────
+        private void EnsureLineMaterial()
+        {
+            if (_lineMaterial != null) return;
+            var shader = Shader.Find("Hidden/Internal-Colored");
+            if (!shader)
+            {
+                MetaverseProgram.Logger.LogError("Missing shader Hidden/Internal-Colored for overlay rendering.");
+                return;
+            }
+            _lineMaterial = new Material(shader)
+            {
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _lineMaterial.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
+            _lineMaterial.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
+            _lineMaterial.SetInt("_Cull", (int)CullMode.Off);
+            _lineMaterial.SetInt("_ZWrite", 0);
+        }
+
+        private void RenderOverlay(Tensor<float> boxes, Tensor<int> ids, Tensor<float> scores, int texW, int texH, bool invertX, bool invertY)
+        {
+            EnsureLineMaterial();
+            if (_lineMaterial == null) return;
+
+            // Ensure overlay texture matches source size
+            if (_overlayRT == null || _overlayRT.width != texW || _overlayRT.height != texH)
+            {
+                if (_overlayRT) Destroy(_overlayRT);
+                _overlayRT = new RenderTexture(texW, texH, 0, RenderTextureFormat.ARGB32)
+                {
+                    filterMode = FilterMode.Bilinear
+                };
+                _overlayRT.Create();
+            }
+
+            // Clear to transparent and set pixel matrix
+            var prevActive = RenderTexture.active;
+            RenderTexture.active = _overlayRT;
+            GL.Clear(true, true, new Color(0, 0, 0, 0));
+            GL.PushMatrix();
+            GL.LoadPixelMatrix(0, texW, texH, 0);
+
+            // Draw boxes
+            _lineMaterial.SetPass(0);
+            var thickness = Mathf.Max(1, overlayLineThickness);
+            var scaleX = texW / (float)ModelInputWidth;
+            var scaleY = texH / (float)ModelInputHeight;
+
+            var count = boxes.shape[0];
+            for (var i = 0; i < count; i++)
+            {
+                var classId = ids[i];
+                if (classId < 0 || classId >= _labels.Length) continue;
+                var label = _labels[classId];
+
+                // Apply either per-label filter (if configured) or global threshold
+                if (_eventLookup.TryGetValue(label, out var evt) && evt != null)
+                {
+                    if (scores[i] < Mathf.Max(0.0001f, evt.scoreFilter)) continue;
+                }
+                else if (scores[i] < scoreThreshold)
+                {
+                    continue;
+                }
+
+                var cx = boxes[i, 0];
+                var cy = boxes[i, 1];
+                var w  = boxes[i, 2];
+                var h  = boxes[i, 3];
+
+                var yMin = ModelInputHeight - (cy + h * 0.5f);
+                var xMin = cx - w * 0.5f;
+
+                // Scale to source texture dimensions
+                var x = xMin * scaleX;
+                var y = yMin * scaleY;
+                var rw = w * scaleX;
+                var rh = h * scaleY;
+
+                // Apply same mirror used when blitting into the model input
+                if (invertX)
+                    x = texW - (x + rw);
+                if (invertY)
+                    y = texH - (y + rh);
+
+                DrawRectOutline(new Rect(x, y, rw, rh), thickness, overlayBoxColor);
+
+                // Draw label text if a font is available
+                if (overlayFont && !string.IsNullOrEmpty(label))
+                {
+                    DrawText(label, (int)x + 2, (int)(y + 2), overlayTextColor, overlayFontSize);
+                }
+            }
+
+            GL.PopMatrix();
+            RenderTexture.active = prevActive;
+
+            onOverlayUpdated?.Invoke(_overlayRT);
+        }
+
+        private static void Quad(float x0, float y0, float x1, float y1, Color c)
+        {
+            GL.Begin(GL.QUADS);
+            GL.Color(c);
+            GL.Vertex3(x0, y0, 0);
+            GL.Vertex3(x1, y0, 0);
+            GL.Vertex3(x1, y1, 0);
+            GL.Vertex3(x0, y1, 0);
+            GL.End();
+        }
+
+        private void DrawRectOutline(Rect r, int t, Color c)
+        {
+            var x0 = r.xMin;
+            var y0 = r.yMin;
+            var x1 = r.xMax;
+            var y1 = r.yMax;
+            // top
+            Quad(x0, y0, x1, y0 + t, c);
+            // bottom
+            Quad(x0, y1 - t, x1, y1, c);
+            // left
+            Quad(x0, y0, x0 + t, y1, c);
+            // right
+            Quad(x1 - t, y0, x1, y1, c);
+        }
+
+        private void DrawText(string text, int x, int y, Color color, int size)
+        {
+            var font = overlayFont;
+            if (!font) return;
+
+            var mat = font.material;
+            if (!mat) return;
+            mat.color = Color.white; // use glyph color, we tint via GL.Color
+            mat.SetPass(0);
+
+            font.RequestCharactersInTexture(text, size, FontStyle.Normal);
+
+            int cursorX = x;
+            int cursorY = y + size; // baseline adjustment
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (!font.GetCharacterInfo(text[i], out var ch, size, FontStyle.Normal))
+                    continue;
+
+                var vx0 = cursorX + ch.vert.x;
+                var vy0 = cursorY + ch.vert.y;
+                var vx1 = vx0 + ch.vert.width;
+                var vy1 = vy0 + ch.vert.height;
+
+                GL.Begin(GL.QUADS);
+                GL.Color(color);
+                GL.TexCoord2(ch.uvBottomLeft.x, ch.uvBottomLeft.y); GL.Vertex3(vx0, vy0, 0);
+                GL.TexCoord2(ch.uvBottomRight.x, ch.uvBottomRight.y); GL.Vertex3(vx1, vy0, 0);
+                GL.TexCoord2(ch.uvTopRight.x, ch.uvTopRight.y); GL.Vertex3(vx1, vy1, 0);
+                GL.TexCoord2(ch.uvTopLeft.x, ch.uvTopLeft.y); GL.Vertex3(vx0, vy1, 0);
+                GL.End();
+
+                cursorX += ch.advance;
             }
         }
     }
