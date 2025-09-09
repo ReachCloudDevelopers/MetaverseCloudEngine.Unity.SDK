@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.196.1
-- Updated AIRealtimeCommunication to better support iOS, and updated naming schemes used for ObjectSignal
+## 2.196.2
+- Added additional signle word responses to feel more intuitive.
 
 Updated on September 09, 2025
