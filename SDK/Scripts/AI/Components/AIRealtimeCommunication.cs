@@ -1526,7 +1526,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var cleanedTranscript = transcript.Trim().Replace("\n", "").Replace("\r", "");
                 if (!string.IsNullOrEmpty(cleanedTranscript))
                 {
-                    const string allowedSinglePhrases = "Yes.,No.,Okay.,Cancel.,Thanks.,Hello?,Hello.,Hi.,Hi?,Sure.,Sure.,Alright.,Alright.,Goodbye.,Goodbye!,Bye.,Bye!,Thanks!,Nope.,Nope!,Yep.,Yep!,Yeah.,Yeah!,Yup.,Yup!,Sure!,Sure.,Ok.,Ok!,Okay.,Okay!,Alright!,Alright.,Great.,Great!,Perfect.,Perfect!,Awesome.,Awesome!,Cool.,Cool!";
+                    const string allowedSinglePhrases = "Yes.,No.,Okay.,Cancel.,Thanks.,Hello?,Hello.,Hi.,Hi?,Sure.,Sure.,Alright.,Alright.,Goodbye.,Goodbye!,Bye.,Bye!,Thanks!,Nope.,Nope!,Yep.,Yep!,Yeah.,Yeah!,Yup.,Yup!,Sure!,Sure.,Ok.,Ok!,Okay.,Okay!,Alright!,Alright.,Great.,Great!,Perfect.,Perfect!,Awesome.,Awesome!,Cool.,Cool!Stop.,Stop!Nevermind.,Nevermind!,Fine.,Fine!,Alrighty.,Alrighty!,Roger.,Roger!,Affirmative.,Affirmative!,Negative.,Negative!";
                     var wordCount = cleanedTranscript.Split(' ').Length;
                     if (wordCount == 1 && !allowedSinglePhrases.Split(',').Any(phrase => cleanedTranscript.Contains(phrase)))
                     {
