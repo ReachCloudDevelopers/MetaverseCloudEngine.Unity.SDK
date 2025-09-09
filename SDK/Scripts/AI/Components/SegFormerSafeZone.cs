@@ -57,6 +57,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _lastStop;
 
         [Header("Obstacle Mapping")]
+        [Tooltip("Create NavMeshObstacle proxies from runway samples.")]
+        public bool createObstacles = true;
+        [Tooltip("If true, created obstacles will carve the NavMesh.")]
+        public bool carveNavMesh = true;
         [Tooltip("Number of depth samples along the runway. One obstacle per sample.")]
         [Range(1, 64)] public int samples = 12;
         [Tooltip("Meters from origin at the runway base (near edge).")]
@@ -242,6 +246,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void UpdateObstaclesFromSamples()
         {
             if (_sampleHoleWidth == null) return;
+            if (!createObstacles)
+            {
+                DisableAllObstacles();
+                return;
+            }
             EnsureObstaclePool();
 
             for (int i = 0; i < samples; i++)
@@ -281,7 +290,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     obs.center = Vector3.zero;
                 }
 
-                obs.carving = true;
+                obs.carving = carveNavMesh;
                 obs.carveOnlyStationary = false;
             }
         }
@@ -294,7 +303,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var go = new GameObject($"RunwayObstacle[{_obstacles.Count}]");
                 go.transform.SetParent(transform, false);
                 var obs = go.AddComponent<NavMeshObstacle>();
-                obs.carving = true;
+                obs.carving = carveNavMesh;
                 obs.carveOnlyStationary = false;
                 obs.gameObject.SetActive(false);
                 _obstacles.Add(obs);
@@ -303,6 +312,28 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             for (int i = needed; i < _obstacles.Count; i++)
             {
                 if (_obstacles[i]) _obstacles[i].gameObject.SetActive(false);
+            }
+        }
+
+        private void DisableAllObstacles()
+        {
+            if (_obstacles == null) return;
+            for (int i = 0; i < _obstacles.Count; i++)
+            {
+                if (_obstacles[i]) _obstacles[i].gameObject.SetActive(false);
+            }
+        }
+
+        private void OnValidate()
+        {
+            // Keep existing obstacles in sync with flags when edited in Inspector
+            if (_obstacles == null) return;
+            for (int i = 0; i < _obstacles.Count; i++)
+            {
+                var obs = _obstacles[i];
+                if (!obs) continue;
+                obs.carving = carveNavMesh;
+                if (!createObstacles) obs.gameObject.SetActive(false);
             }
         }
 

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.196.5",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.196.5\n- Fixed error with SegFormerGroundMask and added new in-app console log window\n\nUpdated on September 09, 2025",
+  "version": "2.197.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.197.0\n- Add obstacle creation and NavMesh carving options to SegFormerSafeZone\n\nUpdated on September 09, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
