@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.196.0
-- Added SegFormerSafeZone component to allow for visual ground based navigation safely
+## 2.196.1
+- Updated AIRealtimeCommunication to better support iOS, and updated naming schemes used for ObjectSignal
 
-Updated on September 08, 2025
+Updated on September 09, 2025

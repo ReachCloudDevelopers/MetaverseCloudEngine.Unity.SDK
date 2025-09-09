@@ -365,6 +365,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _micActivationQueued; // Flag to indicate if mic activation is pending
 
         // --- Public Properties ---
+        
+        private float[] _micSampleBuffer;
+        private byte[] _micPcmBuffer;
+        private const int MaxAudioBufferSize = 48000; // Buffer for ~1 second of audio at 48kHz
 
         /// <summary>
         /// Gets the UnityEvent invoked when the WebSocket connection is established.
@@ -572,6 +576,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             outputVoiceSource.playOnAwake = false; // Ensure it doesn't play automatically
+            _micSampleBuffer = new float[MaxAudioBufferSize];
+            _micPcmBuffer = new byte[MaxAudioBufferSize * 2]; // 2 bytes per float sample for PCM16
         }
 
         /// <summary>
@@ -1286,14 +1292,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
 
                 var samplesAvailable = (currentPos - _lastMicPos + _micClip.samples) % _micClip.samples; // Handles wrap-around correctly
+                if (logs) Log($"Mic Debug: currentPos={currentPos}, lastMicPos={_lastMicPos}, samplesAvailable={samplesAvailable}");
 
                 if (samplesAvailable <= 0) { return; } // No new data
 
-                var samples = new float[samplesAvailable];
-                _micClip.GetData(samples, _lastMicPos); // Reads available samples from last position
+                if (samplesAvailable > MaxAudioBufferSize)
+                {
+                    LogWarning($"Audio buffer overflow detected. Clamping samples from {samplesAvailable} to {MaxAudioBufferSize}.");
+                    _lastMicPos = (currentPos - MaxAudioBufferSize + _micClip.samples) % _micClip.samples;
+                    samplesAvailable = MaxAudioBufferSize;
+                }
 
+                _micClip.GetData(_micSampleBuffer, _lastMicPos); // Reads into our reusable buffer
                 _lastMicPos = currentPos; // Update last position *after* reading
-                SendAudioChunk(samples);
+                SendAudioChunk(_micSampleBuffer, samplesAvailable); // Pass the buffer and count
             }
             catch (Exception e) { LogError($"Error processing audio frame: {e.Message}\n{e.StackTrace}"); }
         }
@@ -1301,34 +1313,34 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary>
         /// Converts float audio samples (-1.0 to 1.0) into 16-bit PCM byte array.
         /// </summary>
-        private static byte[] ConvertFloatsToPCM16Bytes(float[] samples)
+        private static int ConvertFloatsToPCM16Bytes(float[] samples, int sampleCount, byte[] pcmBytes)
         {
-            if (samples == null || samples.Length == 0) return Array.Empty<byte>();
-            var pcmBytes = new byte[samples.Length * 2];
+            if (samples == null || samples.Length == 0 || sampleCount == 0) return 0;
             var byteIndex = 0;
-            foreach (var t in samples)
+            for (var i = 0; i < sampleCount; i++)
             {
+                var t = samples[i];
                 var pcmValue = (short)(Mathf.Clamp(t, -1.0f, 1.0f) * 32767f);
                 pcmBytes[byteIndex++] = (byte)(pcmValue & 0xFF);
                 pcmBytes[byteIndex++] = (byte)((pcmValue >> 8) & 0xFF);
             }
-            return pcmBytes;
+            return byteIndex;
         }
 
         /// <summary>
         /// Sends a chunk of processed audio data (PCM16, Base64 encoded) over the WebSocket. Runs on Main Thread.
         /// </summary>
-        private void SendAudioChunk(float[] samples)
+        private void SendAudioChunk(float[] samples, int sampleCount)
         {
 #if MV_NATIVE_WEBSOCKETS
             if (_websocket == null || _websocket.State != WebSocketState.Open || _isShuttingDown) return;
-            if (samples == null || samples.Length == 0) return;
+            if (samples == null || sampleCount == 0) return;
 
             try
             {
-                var pcmBytes = ConvertFloatsToPCM16Bytes(samples);
-                if (pcmBytes.Length == 0) return;
-                var base64Chunk = Convert.ToBase64String(pcmBytes);
+                var pcmByteCount = ConvertFloatsToPCM16Bytes(samples, sampleCount, _micPcmBuffer);
+                if (pcmByteCount == 0) return;
+                var base64Chunk = Convert.ToBase64String(_micPcmBuffer, 0, pcmByteCount);
                 if (string.IsNullOrEmpty(base64Chunk)) return;
 
                 var appendMsg = new { type = "input_audio_buffer.append", audio = base64Chunk };

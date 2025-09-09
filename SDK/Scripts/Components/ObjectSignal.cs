@@ -22,7 +22,7 @@ namespace MetaverseCloudEngine.Unity.Components
         /// <summary>
         /// A dictionary of all registered <see cref="ObjectSignal"/>s by their <see cref="Identifier"/>.
         /// </summary>
-        private static Dictionary<string, List<ObjectSignal>> _registeredNotifications = new();
+        private static Dictionary<string, List<ObjectSignal>> _registeredReceivers = new();
 
         /// <summary>
         /// Invoked when an <see cref="ObjectSignal"/> is registered.
@@ -55,7 +55,7 @@ namespace MetaverseCloudEngine.Unity.Components
         [Tooltip("Invoked when no receiver exists for this signal.")]
         public UnityEvent onNoReceiverExists = new();
 
-        private bool _registered;
+        private bool _checkedReceivers;
 
         /// <summary>
         /// (Write Only) Sets the unique identifier of this object signal. Used to communicate with other
@@ -157,19 +157,18 @@ namespace MetaverseCloudEngine.Unity.Components
 
         private void CheckForReceivers()
         {
-            List<ObjectSignal> identifiers = null;
-            _registeredNotifications?.TryGetValue((string)ID, out identifiers);
+            List<ObjectSignal> signals = null;
+            _registeredReceivers?.TryGetValue((string)ID, out signals);
 
-            if (identifiers != null && identifiers.Any(x => x && x != this))
+            if (signals != null && signals.Any(x => x && x != this && x.countAsReceiver))
             {
-                if (!_registered)
-                    onReceiverExists?.Invoke();
-                _registered = true;
+                if (!_checkedReceivers) onReceiverExists?.Invoke();
+                _checkedReceivers = true;
             }
-            else if (_registered || identifiers == null || identifiers.Count == 1 && identifiers[0] == this)
+            else if (_checkedReceivers || signals == null || signals.Count == 1 && signals[0] == this)
             {
                 onNoReceiverExists?.Invoke();
-                _registered = false;
+                _checkedReceivers = false;
             }
         }
 
@@ -196,23 +195,23 @@ namespace MetaverseCloudEngine.Unity.Components
             if (!countAsReceiver) return;
             string id = (string)ID;
             if (string.IsNullOrEmpty(id)) return;
-            _registeredNotifications ??= new Dictionary<string, List<ObjectSignal>>();
-            if (!_registeredNotifications.TryGetValue(id, out _))
-                _registeredNotifications[id] = new List<ObjectSignal>();
-            _registeredNotifications[id].Add(this);
+            _registeredReceivers ??= new Dictionary<string, List<ObjectSignal>>();
+            if (!_registeredReceivers.TryGetValue(id, out _))
+                _registeredReceivers[id] = new List<ObjectSignal>();
+            _registeredReceivers[id].Add(this);
         }
 
         private void RemoveSelfFromRegistry()
         {
             string id = (string)ID;
             if (string.IsNullOrEmpty(id)) return;
-            if (_registeredNotifications == null) return;
-            if (!_registeredNotifications.TryGetValue(id, out _)) return;
-            _registeredNotifications[id].Remove(this);
-            if (_registeredNotifications[id].Count == 0)
-                _registeredNotifications.Remove(id);
-            if (_registeredNotifications.Count == 0)
-                _registeredNotifications = null;
+            if (_registeredReceivers == null) return;
+            if (!_registeredReceivers.TryGetValue(id, out _)) return;
+            _registeredReceivers[id].Remove(this);
+            if (_registeredReceivers[id].Count == 0)
+                _registeredReceivers.Remove(id);
+            if (_registeredReceivers.Count == 0)
+                _registeredReceivers = null;
             SignalUnregistered?.Invoke(id);
         }
     }
