@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.0
-- Add obstacle creation and NavMesh carving options to SegFormerSafeZone
+## 2.197.1
+- Update icon metadata for SegFormerSafeZone and ConsoleDebugWindow components
 
-Updated on September 09, 2025
+Updated on September 10, 2025
