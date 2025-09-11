@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.2
-- Improvements to allow for local video camera API emulation. Improved YouOnlyLookOnce capabilities allowing for inversion and fixing font when rendering detection rects.
+## 2.197.3
+- Updated InternalCommunicationService to mirrir Agora behaviour
 
 Updated on September 11, 2025

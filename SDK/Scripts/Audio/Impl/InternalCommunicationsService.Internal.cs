@@ -10,6 +10,10 @@ namespace MetaverseCloudEngine.Unity.Audio.Poco
 {
     public partial class InternalCommunicationsService
     {
+        // Flip constants
+        private const bool INVERT_X = false; // set true to mirror horizontally
+        private const bool INVERT_Y = true; // set true to mirror vertically
+
         // --- Video state ---
         private WebCamTexture _webCamTexture;
         private string _activeVideoDevice;
@@ -287,15 +291,35 @@ namespace MetaverseCloudEngine.Unity.Audio.Poco
         private void ApplyTextureToRenderer(Renderer r)
         {
             var mat = r.material;
-            if (mat != null)
-                mat.mainTexture = _videoDisabled ? null : _webCamTexture as Texture;
+            if (mat == null)
+                return;
+
+            mat.mainTexture = _videoDisabled ? null : _webCamTexture as Texture;
+
+            // Apply flips using texture scale/offset (no custom shader needed)
+            var sx = INVERT_X ? -1f : 1f;
+            var sy = INVERT_Y ? -1f : 1f;
+            mat.mainTextureScale = new Vector2(sx, sy);
+            mat.mainTextureOffset = new Vector2(INVERT_X ? 1f : 0f, INVERT_Y ? 1f : 0f);
         }
 
         private void ApplyTextureToRawImage(RawImage img)
         {
             img.texture = _videoDisabled ? null : _webCamTexture as Texture;
+
+            // Apply flips using uvRect on RawImage (no shader/blit)
+            if (_videoDisabled || img.texture == null)
+            {
+                img.uvRect = new Rect(0, 0, 1, 1);
+                return;
+            }
+
+            float x = INVERT_X ? 1f : 0f;
+            float y = INVERT_Y ? 1f : 0f;
+            float w = INVERT_X ? -1f : 1f;
+            float h = INVERT_Y ? -1f : 1f;
+            img.uvRect = new Rect(x, y, w, h);
         }
     }
 }
 #endif
-
