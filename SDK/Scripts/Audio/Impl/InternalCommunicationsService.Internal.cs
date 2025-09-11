@@ -1,4 +1,4 @@
-﻿#if !METAVERSE_CLOUD_ENGINE_INTERNAL
+﻿#if !METAVERSE_CLOUD_ENGINE_INTERNAL && (UNITY_EDITOR || !UNITY_WEBGL)
 using System;
 using System.Collections.Generic;
 using System.Linq;

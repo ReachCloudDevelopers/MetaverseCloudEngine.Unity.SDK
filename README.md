@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.3
-- Updated InternalCommunicationService to mirrir Agora behaviour
+## 2.197.4
+- Fixed incompatability with WebGL
 
 Updated on September 11, 2025
