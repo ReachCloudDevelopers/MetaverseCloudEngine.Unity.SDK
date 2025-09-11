@@ -109,6 +109,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public Font overlayFont;
         [Tooltip("Font size for overlay label text.")]
         [Range(8, 48)] public int overlayFontSize = 16;
+        [Tooltip("Render overlay text with pixel-snapped coordinates and point-filtered textures to avoid waviness.")]
+        public bool overlayCrispText = true;
+        [Tooltip("Snap only the baseline to integer pixels (keeps AA while preventing vertical wobble).")]
+        public bool overlaySnapBaseline = true;
+        [Tooltip("Invert X for overlay drawing only (flips detection rect horizontally without altering the source image).")]
+        public bool overlayInvertX = false;
+        [Tooltip("Invert Y for overlay drawing only (flips detection rect vertically without altering the source image).")]
+        public bool overlayInvertY = false;
 
         public enum InputMethod { Texture, RawImage, WebCamTexture }
 
@@ -428,7 +436,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (_overlayRT) Destroy(_overlayRT);
                 _overlayRT = new RenderTexture(texW, texH, 0, RenderTextureFormat.ARGB32)
                 {
-                    filterMode = FilterMode.Bilinear
+                    filterMode = overlayCrispText ? FilterMode.Point : FilterMode.Bilinear
                 };
                 _overlayRT.Create();
             }
@@ -436,6 +444,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Clear to transparent and set pixel matrix
             var prevActive = RenderTexture.active;
             RenderTexture.active = _overlayRT;
+            _overlayRT.filterMode = overlayCrispText ? FilterMode.Point : FilterMode.Bilinear;
             GL.Clear(true, true, new Color(0, 0, 0, 0));
             GL.PushMatrix();
             GL.LoadPixelMatrix(0, texW, texH, 0);
@@ -483,6 +492,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (invertY)
                     y = texH - (y + rh);
 
+                // Apply user-controlled overlay inversions (do not touch source texture)
+                if (overlayInvertX)
+                    x = texW - (x + rw);
+                if (overlayInvertY)
+                    y = texH - (y + rh);
+
+                // Ensure the untextured colored material is bound before drawing the box.
+                // DrawText() below binds the font's textured material, so we must rebind per detection.
+                _lineMaterial.SetPass(0);
                 DrawRectOutline(new Rect(x, y, rw, rh), thickness, overlayBoxColor);
 
                 // Draw label text if a font is available
@@ -535,19 +553,44 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             mat.color = Color.white; // use glyph color, we tint via GL.Color
             mat.SetPass(0);
 
+            if (mat.mainTexture)
+            {
+                if (overlayCrispText)
+                {
+                    mat.mainTexture.filterMode = FilterMode.Point; // avoid shimmering/wavy sampling
+                    mat.mainTexture.anisoLevel = 0;
+                }
+                else
+                {
+                    mat.mainTexture.filterMode = FilterMode.Bilinear; // smoother edges with stable baseline
+                }
+            }
+
             font.RequestCharactersInTexture(text, size, FontStyle.Normal);
 
+            // Compute a consistent baseline using the font ascender.
+            // TextGenerator does this internally, but we're drawing via GL.
+            var ascender = font.ascent; // normalized in some Unity versions; multiply by size to get pixels
+            float baseline = y + ascender * size;
+            if (overlaySnapBaseline) baseline = Mathf.Round(baseline);
+
             int cursorX = x;
-            int cursorY = y + size; // baseline adjustment
             for (int i = 0; i < text.Length; i++)
             {
                 if (!font.GetCharacterInfo(text[i], out var ch, size, FontStyle.Normal))
                     continue;
 
-                var vx0 = cursorX + ch.vert.x;
-                var vy0 = cursorY + ch.vert.y;
-                var vx1 = vx0 + ch.vert.width;
-                var vy1 = vy0 + ch.vert.height;
+                // Use min/max relative to baseline to avoid per-glyph rounding drift.
+                float vx0 = cursorX + ch.minX;
+                float vx1 = cursorX + ch.maxX;
+                float vy0 = baseline + ch.minY;
+                float vy1 = baseline + ch.maxY;
+
+                if (overlayCrispText)
+                {
+                    vx0 = Mathf.Round(vx0); vx1 = Mathf.Round(vx1);
+                    vy0 = Mathf.Round(vy0); vy1 = Mathf.Round(vy1);
+                }
 
                 GL.Begin(GL.QUADS);
                 GL.Color(color);

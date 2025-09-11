@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Unity.Components;
 using MetaverseCloudEngine.Unity.Video.Abstract;
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Video.Components
 {
@@ -11,6 +12,7 @@ namespace MetaverseCloudEngine.Unity.Video.Components
         public VideoCameraEvents events;
 
         private bool _initialized;
+        private static WebCamTexture _offlineTexture;
 
         private IVideoCameraService _videoService;
 
@@ -110,8 +112,24 @@ namespace MetaverseCloudEngine.Unity.Video.Components
             {
                 if (VideoService == null)
                 {
-                    MetaverseProgram.Logger.LogWarning(
-                        "Cannot start/stop video camera because service does not exist in the scene.");
+                    if (!value)
+                    {
+                        if (_offlineTexture == null)
+                            _offlineTexture = new WebCamTexture();
+                        _offlineTexture.Play();
+                        events?.onVideoActive?.Invoke();
+                    }
+                    else
+                    {
+                        if (_offlineTexture != null)
+                        {
+                            _offlineTexture.Stop();
+                            _offlineTexture = null;
+                        }
+
+                        events?.onVideoDisabled?.Invoke();
+                    }
+
                     return;
                 }
 
