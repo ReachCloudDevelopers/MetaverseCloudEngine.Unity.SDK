@@ -1,9 +1,7 @@
 ﻿using MetaverseCloudEngine.Unity.Attributes;
 using MetaverseCloudEngine.Unity.Networking.Components;
 using MetaverseCloudEngine.Unity.Video.Abstract;
-
 using TriInspectorMVCE;
-
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -29,6 +27,6 @@ namespace MetaverseCloudEngine.Unity.Video.Components
                 if (rawImageSource) videoService.AddSource(rawImageSource, NetworkObject);
             }
         }
-    }
 #endif
+    }
 }

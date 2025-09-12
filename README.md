@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.5
-- Refactor score threshold check for clarity in YOLO detection logic
+## 2.197.6
+- Fixed compiler error when using internal development pipeline.
 
-Updated on September 11, 2025
+Updated on September 12, 2025
