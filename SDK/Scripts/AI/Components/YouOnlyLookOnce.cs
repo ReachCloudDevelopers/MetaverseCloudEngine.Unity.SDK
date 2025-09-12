@@ -467,7 +467,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 {
                     if (scores[i] < Mathf.Max(0.0001f, evt.scoreFilter)) continue;
                 }
-                else if (scores[i] < scoreThreshold)
+                else
                 {
                     continue;
                 }

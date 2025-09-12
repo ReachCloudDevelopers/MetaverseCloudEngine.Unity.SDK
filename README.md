@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.4
-- Fixed incompatability with WebGL
+## 2.197.5
+- Refactor score threshold check for clarity in YOLO detection logic
 
 Updated on September 11, 2025
