@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.6
-- Fixed compiler error when using internal development pipeline.
+## 2.197.7
+- Fixed issues with account window state not being set properly.
 
-Updated on September 12, 2025
+Updated on September 13, 2025

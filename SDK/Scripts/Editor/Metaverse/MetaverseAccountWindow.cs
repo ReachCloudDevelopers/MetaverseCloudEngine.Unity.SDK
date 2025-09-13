@@ -73,6 +73,11 @@ namespace MetaverseCloudEngine.Unity.Editors
             _confirmPassword = string.Empty;
             _revealPassword = false;
             _revealConfirmPassword = false;
+            _makingRequest = false;
+            _errorMessage = null;
+            _successMessage = null;
+            _page = LoginPage.LogIn;
+            _loggedInAction = null;
         }
 
         private void OnGUI()
