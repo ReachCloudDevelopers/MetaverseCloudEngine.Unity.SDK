@@ -535,7 +535,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _overlayRT.filterMode = overlayCrispText ? FilterMode.Point : FilterMode.Bilinear;
             GL.Clear(true, true, new Color(0, 0, 0, 0));
             GL.PushMatrix();
-            GL.LoadPixelMatrix(0, texW, texH, 0);
+            GL.LoadPixelMatrix(0, texW, 0, texH);
 
             // Draw boxes
             _lineMaterial.SetPass(0);

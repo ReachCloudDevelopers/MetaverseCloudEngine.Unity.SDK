@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.0
-- The YouOnlyLookOnce overlay appears inverted vertically.
+## 2.198.1
+- Fixed rendered detections being inverted
 
-Updated on September 13, 2025
+Updated on September 14, 2025
