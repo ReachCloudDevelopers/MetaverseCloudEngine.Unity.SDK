@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.197.7
-- Fixed issues with account window state not being set properly.
+## 2.198.0
+- The YouOnlyLookOnce overlay appears inverted vertically.
 
 Updated on September 13, 2025

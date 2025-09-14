@@ -57,6 +57,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private RenderTexture _maskRT;              // final mask (R8)
         private float _nextUpdateTime;
         private WebCamTexture _webCamTex;
+        private BackendType _backendSelected = BackendType.CPU;
 
         private const int InputHW = 512;            // matches exporter
 
@@ -98,14 +99,19 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_worker == null) return;
 
-            var src = AcquireSourceTexture(out var invertX, out var invertY);
+            var src = AcquireSourceTexture();
             if (!src || (_webCamTex && !_webCamTex.isPlaying)) return;
 
             if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
             {
                 if (_maskRT) Destroy(_maskRT);
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
-                { filterMode = FilterMode.Point };
+                var fmt = SelectMaskFormat();
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
+                {
+                    filterMode = FilterMode.Point,
+                    enableRandomWrite = (_backendSelected == BackendType.GPUCompute)
+                };
+                _maskRT.Create();
             }
 
             // Ensure scratch RT exists
@@ -116,43 +122,46 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             // Resize + flip source → 512x512 on GPU
-            Graphics.Blit(
-                src,
-                _scratchRT,
-                scale: new Vector2(invertX ? -1 : 1, invertY ? -1 : 1),
-                offset: Vector2.zero);
+            Graphics.Blit(src, _scratchRT);
 
             // Upload to device tensor (NCHW) on GPU
             using var input = new Tensor<float>(new TensorShape(1, 3, InputHW, InputHW));
             TextureConverter.ToTensor(_scratchRT, input);     // stays on device
 
             // Run fused graph (normalization+argmax+upsample inside model)
-            _worker.Schedule(input);
+            try { _worker.Schedule(input); }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"SegFormer schedule failed on {_backendSelected}: {ex.Message}");
+                return;
+            }
 
             // Get output tensor and render directly to RT (no Readback)
             var mask = _worker.PeekOutput("ground_mask") as Tensor<float>;
-            if (mask != null)
+            if (mask != null && _maskRT != null)
             {
-                TextureConverter.RenderToTexture(mask, _maskRT);
-                onMaskUpdated?.Invoke(_maskRT);
+                try
+                {
+                    if (!_maskRT.IsCreated()) _maskRT.Create();
+                    TextureConverter.RenderToTexture(mask, _maskRT);
+                    onMaskUpdated?.Invoke(_maskRT);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"RenderToTexture failed: {ex.Message}");
+                }
             }
         }
 
-        private Texture AcquireSourceTexture(out bool invertX, out bool invertY)
+        private Texture AcquireSourceTexture()
         {
-            invertX = false;
-            invertY = false;
             switch (inputMethod)
             {
                 case InputMethod.Texture:
                     return inputTexture;
                 case InputMethod.RawImage:
                     if (inputRawImage)
-                    {
-                        if (inputRawImage.transform.localScale.y < 0) invertY = true;
-                        if (inputRawImage.transform.localScale.x < 0) invertX = true;
                         return inputRawImage.texture;
-                    }
                     return null;
                 case InputMethod.WebCamTexture:
                     return _webCamTex;
@@ -194,8 +203,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void Run(string[] fetchedPaths = null)
         {
-            // Select backend similar to YOLO component to support WebGL
-            var backend = Application.platform == RuntimePlatform.WebGLPlayer ? BackendType.CPU : BackendType.GPUCompute;
+            // Choose robust backend: prefer GPUCompute if supported, else CPU. WebGL uses CPU.
 
             Model model = null;
             if (fetchedPaths != null && fetchedPaths.Length > 0)
@@ -226,7 +234,19 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
 
-            _worker = new Worker(model, backend);
+            var backend = ChooseBackend(model);
+            _backendSelected = backend;
+
+            try
+            {
+                _worker = new Worker(model, backend);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to create Worker with {backend}: {ex.Message}. Falling back to CPU.");
+                _backendSelected = BackendType.CPU;
+                _worker = new Worker(model, BackendType.CPU);
+            }
 
             if (_scratchRT == null)
             {
@@ -236,14 +256,48 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_maskRT == null)
             {
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
-                { filterMode = FilterMode.Point };
+                var fmt = SelectMaskFormat();
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
+                {
+                    filterMode = FilterMode.Point,
+                    enableRandomWrite = (_backendSelected == BackendType.GPUCompute)
+                };
+                _maskRT.Create();
             }
 
             if (inputMethod == InputMethod.WebCamTexture)
             {
                 TryStartWebcam();
             }
+        }
+
+        private BackendType ChooseBackend(Model model)
+        {
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+                return BackendType.CPU;
+
+            if (!SystemInfo.supportsComputeShaders)
+                return BackendType.CPU;
+
+            // Attempt to instantiate a temporary GPU worker to validate support
+            try
+            {
+                using var temp = new Worker(model, BackendType.GPUCompute);
+                return BackendType.GPUCompute;
+            }
+            catch
+            {
+                return BackendType.CPU;
+            }
+        }
+
+        private RenderTextureFormat SelectMaskFormat()
+        {
+            if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8))
+                return RenderTextureFormat.R8;
+            if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RHalf))
+                return RenderTextureFormat.RHalf;
+            return RenderTextureFormat.ARGB32;
         }
 
         // ─────────────────────────────────────────────────────────────────────────────

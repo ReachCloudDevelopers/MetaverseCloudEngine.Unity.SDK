@@ -12,7 +12,7 @@ namespace MetaverseCloudEngine.Unity.Audio.Poco
     {
         // Flip constants
         private const bool INVERT_X = false; // set true to mirror horizontally
-        private const bool INVERT_Y = true; // set true to mirror vertically
+        private const bool INVERT_Y = false; // set true to mirror vertically
 
         // --- Video state ---
         private WebCamTexture _webCamTexture;

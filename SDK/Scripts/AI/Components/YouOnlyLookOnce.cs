@@ -96,9 +96,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("List of label-event pairs. When a label is detected, the corresponding event will be invoked.")]
         public List<LabelEventPair> labelEvents = new();
 
+
         [Header("Overlay Output")]
         [Tooltip("Overlay RenderTexture with 2D boxes + labels over transparent background.")]
         public UnityEvent<RenderTexture> onOverlayUpdated = new();
+        [Tooltip("If disabled, skips overlay rendering entirely (saves CPU/GPU).")]
+        public bool overlayEnabled = true;
         [Tooltip("Box line thickness in pixels.")]
         [Range(1, 12)] public int overlayLineThickness = 2;
         [Tooltip("Box color for overlay.")]
@@ -113,10 +116,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public bool overlayCrispText = true;
         [Tooltip("Snap only the baseline to integer pixels (keeps AA while preventing vertical wobble).")]
         public bool overlaySnapBaseline = true;
-        [Tooltip("Invert X for overlay drawing only (flips detection rect horizontally without altering the source image).")]
-        public bool overlayInvertX = false;
-        [Tooltip("Invert Y for overlay drawing only (flips detection rect vertically without altering the source image).")]
-        public bool overlayInvertY = false;
+        
 
         public enum InputMethod { Texture, RawImage, WebCamTexture }
 
@@ -144,22 +144,46 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private const int ModelInputHeight = 640;
 
         private Worker _worker;
+        private BackendType _backendSelected = BackendType.CPU;
         private Tensor<float> _centersToCorners;
         private string[] _labels;
         private RenderTexture _scratchRT;
         private RenderTexture _overlayRT;
         private WebCamTexture _webCamTex;
         private readonly Dictionary<string, LabelEventPair> _eventLookup = new();
+        private readonly List<LabelEventPair> _wildcardEvents = new();
         private readonly HashSet<string> _detectedLabels = new();
+        private bool _anyDetectedThisFrame;
         private float _nextUpdateTime;
         private static Material _lineMaterial;
+        private readonly List<YoloDetection> _frameBuffer = new(64);
+        private ReadOnlyCollection<YoloDetection> _frameView;
 
         private void Awake()
         {
+            _eventLookup.Clear();
+            _wildcardEvents.Clear();
             foreach (var p in labelEvents.Where(p => !string.IsNullOrEmpty(p.label)))
-                _eventLookup[p.label.Trim()] = p;
+            {
+                var key = p.label.Trim();
+                if (key == "*") _wildcardEvents.Add(p);
+                else _eventLookup[key] = p;
+            }
             if (!modelAsset || !classesAsset) FetchResources();
             else Run();
+            _frameView = new ReadOnlyCollection<YoloDetection>(_frameBuffer);
+        }
+
+        private void OnValidate()
+        {
+            _eventLookup.Clear();
+            _wildcardEvents.Clear();
+            foreach (var p in labelEvents.Where(p => !string.IsNullOrEmpty(p.label)))
+            {
+                var key = p.label.Trim();
+                if (key == "*") _wildcardEvents.Add(p);
+                else _eventLookup[key] = p;
+            }
         }
 
         private void OnDestroy()
@@ -188,21 +212,27 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             if (_worker == null) return;
 
-            var source = AcquireSourceTexture(out var invertX, out var invertY);
+            var source = AcquireSourceTexture();
             if (!source || (_webCamTex && !_webCamTex.isPlaying)) return;
 
             if (!_scratchRT)
                 _scratchRT = new RenderTexture(ModelInputWidth, ModelInputHeight, 0);
 
-            Graphics.Blit(
-                source, 
-                _scratchRT, 
-                scale: new Vector2(invertX ? -1 : 1, invertY ? -1 : 1), 
-                offset: Vector2.zero);
+            Graphics.Blit(source, _scratchRT);
 
             using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
             TextureConverter.ToTensor(_scratchRT, input);
-            _worker.Schedule(input);
+            try { _worker.Schedule(input); }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogWarning($"YOLO schedule failed on {_backendSelected}: {ex.Message}");
+                return;
+            }
+
+            // Determine if we need to consume outputs this frame
+            bool needOverlay = overlayEnabled && (onOverlayUpdated != null);
+            bool needEvents = _eventLookup.Count > 0 || _wildcardEvents.Count > 0 || DetectionsFrame != null;
+            if (!needOverlay && !needEvents) return;
 
             using var boxes  = (_worker.PeekOutput("output_0") as Tensor<float>)?.ReadbackAndClone();
             using var ids    = (_worker.PeekOutput("output_1") as Tensor<int>)?.ReadbackAndClone();
@@ -210,8 +240,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (boxes == null || ids == null || scores == null) return;
 
-            DispatchEvents(boxes, ids, scores, source.width, source.height);
-            RenderOverlay(boxes, ids, scores, source.width, source.height, invertX, invertY);
+            if (needEvents)
+                DispatchEvents(boxes, ids, scores, source.width, source.height);
+            if (needOverlay)
+                RenderOverlay(boxes, ids, scores, source.width, source.height);
         }
 
         private void FetchResources()
@@ -277,7 +309,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
 
-            BuildWorker(model, backend);
+            // Re-evaluate backend with a real capability check
+            try { backend = ChooseBackend(model); } catch { backend = BackendType.CPU; }
+            _backendSelected = backend;
+            try { BuildWorker(model, backend); }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogWarning($"Failed to build YOLO worker with {backend}: {ex.Message}. Falling back to CPU.");
+                BuildWorker(model, BackendType.CPU);
+                _backendSelected = BackendType.CPU;
+            }
 
             if (inputMethod != InputMethod.WebCamTexture) return;
             _webCamTex = new WebCamTexture(webCamName, webCamWidth, webCamHeight);
@@ -316,21 +357,28 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _worker = new Worker(graph.Compile(outBoxes, outIds, outScores), backend);
         }
 
-        private Texture AcquireSourceTexture(out bool invertX, out bool invertY)
+        private BackendType ChooseBackend(Model model)
         {
-            invertX = false;
-            invertY = false;
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+                return BackendType.CPU;
+            if (!SystemInfo.supportsComputeShaders)
+                return BackendType.CPU;
+            try
+            {
+                using var test = new Worker(model, BackendType.GPUCompute);
+                return BackendType.GPUCompute;
+            }
+            catch { return BackendType.CPU; }
+        }
+
+        private Texture AcquireSourceTexture()
+        {
             switch (inputMethod)
             {
                 case InputMethod.Texture:
                     return inputTexture;
                 case InputMethod.RawImage:
-                    if (inputRawImage)
-                    {
-                        if (inputRawImage.transform.localScale.y < 0) invertY = true;
-                        if (inputRawImage.transform.localScale.x < 0) invertX = true;
-                        return inputRawImage.texture;
-                    }
+                    if (inputRawImage) return inputRawImage.texture;
                     return null;
                 case InputMethod.WebCamTexture:
                     return _webCamTex;
@@ -342,8 +390,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void DispatchEvents(Tensor<float> boxes, Tensor<int> ids, Tensor<float> scores, int texW, int texH)
         {
             if (_detectedLabels.Count > 0) _detectedLabels.Clear();
+            _anyDetectedThisFrame = false;
 
-            var frame = new List<YoloDetection>(Mathf.Max(16, boxes.shape[0]));
+            _frameBuffer.Clear();
+            var frame = _frameBuffer;
             var count = boxes.shape[0];
             for (var i = 0; i < count; i++)
             {
@@ -351,11 +401,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (classId < 0 || classId >= _labels.Length) continue;
 
                 var label = _labels[classId];
-                if (!_eventLookup.TryGetValue(label, out var evt) || evt == null)
-                    continue;
+                _eventLookup.TryGetValue(label, out var evt);
+                var hasWildcard = _wildcardEvents.Count > 0;
+                var score = scores[i];
+                var passLabelFilter = evt != null && score >= Mathf.Max(0.0001f, evt.scoreFilter);
+                var passAnyWildcard = false;
+                if (hasWildcard)
+                    for (int wi = 0; wi < _wildcardEvents.Count; wi++)
+                    {
+                        if (score >= Mathf.Max(0.0001f, _wildcardEvents[wi].scoreFilter))
+                            passAnyWildcard = true; break;
+                    }
                 
-                if (scores[i] < evt.scoreFilter)
-                    continue;
+                // If neither a specific label nor a wildcard passes, skip entirely
+                if (!passLabelFilter && !passAnyWildcard) continue;
 
                 var cx = boxes[i, 0];
                 var cy = boxes[i, 1];
@@ -374,11 +433,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     catch (Exception ex) { MetaverseProgram.Logger.LogError(ex); }
                 }
 
-                frame.Add(det);
+                // Include in frame if this label is configured OR a wildcard is present
+                if (passLabelFilter || hasWildcard) frame.Add(det);
 
                 try
                 {
-                    if (_detectedLabels.Add(label))
+                    if (passLabelFilter && _detectedLabels.Add(label))
                     {
                         if (!evt.WasDetected)
                         {
@@ -386,20 +446,48 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                             evt.WasDetected = true;
                         }
                     }
-                    evt.onDetected.Invoke(det.Rect);
+                    if (passLabelFilter) evt.onDetected.Invoke(det.Rect);
+
+                    // Wildcard events apply to all labels
+                    if (hasWildcard)
+                    {
+                        for (int wi = 0; wi < _wildcardEvents.Count; wi++)
+                        {
+                            var wEvt = _wildcardEvents[wi];
+                            if (score < Mathf.Max(0.0001f, wEvt.scoreFilter)) continue;
+                            if (!wEvt.WasDetected)
+                            {
+                                wEvt.onDetectionBegan?.Invoke();
+                                wEvt.WasDetected = true;
+                            }
+                            wEvt.onDetected?.Invoke(det.Rect);
+                            _anyDetectedThisFrame = true;
+                        }
+                    }
                 }
                 catch (Exception ex) { MetaverseProgram.Logger.LogError(ex); }
             }
 
-            DetectionsFrame?.Invoke(new ReadOnlyCollection<YoloDetection>(frame), texW, texH);
+            if (_frameView == null) _frameView = new ReadOnlyCollection<YoloDetection>(_frameBuffer);
+            DetectionsFrame?.Invoke(_frameView, texW, texH);
 
             // Handle "lost" events
             for (var i = labelEvents.Count - 1; i >= 0; i--)
             {
                 var l = labelEvents[i];
-                if (!l.WasDetected || _detectedLabels.Contains(l.label)) continue;
-                l.WasDetected = false;
-                l.onDetectionLost?.Invoke();
+                if (!l.WasDetected) continue;
+                if (l.label == "*")
+                {
+                    if (_anyDetectedThisFrame) continue;
+                    l.WasDetected = false;
+                    l.onDetectionLost?.Invoke();
+                }
+                else
+                {
+                    if (_detectedLabels.Contains(l.label)) continue;
+                    l.WasDetected = false;
+                    l.onDetectionLost?.Invoke();
+                }
             }
         }
 
@@ -425,7 +513,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _lineMaterial.SetInt("_ZWrite", 0);
         }
 
-        private void RenderOverlay(Tensor<float> boxes, Tensor<int> ids, Tensor<float> scores, int texW, int texH, bool invertX, bool invertY)
+        private void RenderOverlay(Tensor<float> boxes, Tensor<int> ids, Tensor<float> scores, int texW, int texH)
         {
             EnsureLineMaterial();
             if (_lineMaterial == null) return;
@@ -462,15 +550,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (classId < 0 || classId >= _labels.Length) continue;
                 var label = _labels[classId];
 
-                // Apply either per-label filter (if configured) or global threshold
+                // Apply either per-label filter (if configured) or wildcard filter (if any)
+                bool draw = false;
                 if (_eventLookup.TryGetValue(label, out var evt) && evt != null)
                 {
-                    if (scores[i] < Mathf.Max(0.0001f, evt.scoreFilter)) continue;
+                    draw = scores[i] >= Mathf.Max(0.0001f, evt.scoreFilter);
                 }
-                else
+                else if (_wildcardEvents.Count > 0)
                 {
-                    continue;
+                    for (int wi = 0; wi < _wildcardEvents.Count; wi++)
+                    {
+                        if (scores[i] >= Mathf.Max(0.0001f, _wildcardEvents[wi].scoreFilter))
+                        { draw = true; break; }
+                    }
                 }
+                if (!draw) continue;
 
                 var cx = boxes[i, 0];
                 var cy = boxes[i, 1];
@@ -485,18 +579,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var y = yMin * scaleY;
                 var rw = w * scaleX;
                 var rh = h * scaleY;
-
-                // Apply same mirror used when blitting into the model input
-                if (invertX)
-                    x = texW - (x + rw);
-                if (invertY)
-                    y = texH - (y + rh);
-
-                // Apply user-controlled overlay inversions (do not touch source texture)
-                if (overlayInvertX)
-                    x = texW - (x + rw);
-                if (overlayInvertY)
-                    y = texH - (y + rh);
 
                 // Ensure the untextured colored material is bound before drawing the box.
                 // DrawText() below binds the font's textured material, so we must rebind per detection.

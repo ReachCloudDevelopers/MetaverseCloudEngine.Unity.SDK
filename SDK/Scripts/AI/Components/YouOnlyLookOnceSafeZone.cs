@@ -13,7 +13,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
     /// Also renders gizmos for frame bounds and the safe zone.
     /// </summary>
     [HideMonoScript]
-    [RequireComponent(typeof(YouOnlyLookOnce))]
     public sealed class YouOnlyLookOnceSafeZone : TriInspectorMonoBehaviour
     {
         [Header("Source")]
@@ -25,8 +24,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Normalized [0..1] rect in source texture space (origin bottom-left).")]
         public Rect zoneNorm = new(0.25f, 0.0f, 0.5f, 0.4f);
 
-        [Header("Mode & Threshold")]
-        public Mode mode = Mode.ZoneSum;
+        [Header("Threshold")]
         [Range(0, 1)] public float threshold = 0.45f;
 
         [Header("Classes to care about")]
@@ -37,9 +35,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             "car"
         };
 
-        [Header("Navigation output")]
-        public NavTransform navTransform = NavTransform.SignOneMinusAbs;
-
         [Header("Events")]
         public UnityEvent<bool> onStop = new();
         public UnityEvent<float> onAvoid = new();
@@ -47,11 +42,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Header("Avoidance Outputs (read-only)")]
         [Range(-1, 1f)]
-        [ReadOnly] public float avoidanceValue;
-        [ReadOnly] public bool avoidanceStop;
+        [ReadOnly] public float avoidanceDirection;
+        [ReadOnly] public bool stop;
 
-        public enum Mode { Object, Zone, IoU, ZoneSum }
-        public enum NavTransform { None, SignOneMinusAbs }
+        // Single evaluation mode: ZoneSum
 
         private bool _lastStop;
         private float _lastMetric;
@@ -78,11 +72,21 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public bool drawZoneMidline = true;
 
         [Space]
-        public Color frameOutlineColor = new Color(1f, 1f, 1f, 0.4f);
-        public Color zoneOutlineColor = new Color(1f, 0.55f, 0f, 0.95f);
-        public Color zoneFillOk = new Color(0f, 1f, 0f, 0.15f);
-        public Color zoneFillStop = new Color(1f, 0f, 0f, 0.18f);
-        public Color midlineColor = new Color(1f, 1f, 1f, 0.25f);
+        public Color frameOutlineColor = new(1f, 1f, 1f, 0.4f);
+        public Color zoneOutlineColor = new(1f, 0.55f, 0f, 0.95f);
+        public Color zoneFillOk = new(0f, 1f, 0f, 0.15f);
+        public Color zoneFillStop = new(1f, 0f, 0f, 0.18f);
+        public Color midlineColor = new(1f, 1f, 1f, 0.25f);
+
+        [Header("Gizmos: Obstacles & Steering")]
+        [Tooltip("Draw filled boxes where detections overlap the zone (obstacle visualization).")]
+        public bool drawDetections = true;
+        public Color detectionFillColor = new(1f, 0.1f, 0.1f, 0.35f);
+        public Color detectionOutlineColor = new(1f, 0.2f, 0.2f, 0.9f);
+
+        [Tooltip("Draw a line indicating desired steering direction and strength.")]
+        public bool drawSteer = true;
+        public Color steerColor = new(0.1f, 0.8f, 1f, 0.9f);
 
         private void OnEnable()
         {
@@ -124,39 +128,22 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 Mathf.Max(0f, zoneNorm.width) * _frameW,
                 Mathf.Max(0f, zoneNorm.height) * _frameH);
 
-            var navRaw = ComputeNavRaw(zonePx, _buffer);
-            var nav = ApplyNavTransform(navRaw);
-            avoidanceValue = nav;
-            onAvoid?.Invoke(nav);
+            var avoidance = ComputeAvoidance(zonePx, _buffer);
+            avoidanceDirection = avoidance;
+            onAvoid?.Invoke(avoidance);
 
-            bool stop;
-            float metric;
-
-            switch (mode)
-            {
-                case Mode.ZoneSum:
-                    metric = ComputeZoneSum(zonePx, _buffer);
-                    stop = metric >= threshold;
-                    break;
-                case Mode.Object:
-                case Mode.Zone:
-                case Mode.IoU:
-                    metric = ComputeMaxRatio(zonePx, _buffer, mode);
-                    stop = metric >= threshold;
-                    break;
-                default:
-                    metric = 0f; stop = false; break;
-            }
+            float metric = ComputeZoneSum(zonePx, _buffer);
+            bool stop = metric >= threshold;
 
             if (stop != _lastStop || !Mathf.Approximately(metric, _lastMetric))
             {
                 _lastStop = stop;
                 _lastMetric = metric;
-                avoidanceStop = stop;
+                this.stop = stop;
                 onStop?.Invoke(stop);
             }
 
-            onDebugText?.Invoke($"mode={mode} thr={threshold:F2} total={metric:F3} nav={nav:F2}");
+            onDebugText?.Invoke($"thr={threshold:F2} total={metric:F3} nav={avoidanceDirection:F2}");
         }
 
         private static float Area(Rect r) => Mathf.Max(0f, r.width) * Mathf.Max(0f, r.height);
@@ -167,22 +154,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var x2 = Mathf.Min(a.xMax, b.xMax);
             var y2 = Mathf.Min(a.yMax, b.yMax);
             return Mathf.Max(0f, x2 - x1) * Mathf.Max(0f, y2 - y1);
-        }
-
-        private static float ComputeRatio(Rect obj, Rect zone, Mode m)
-        {
-            var inter = IntersectArea(obj, zone);
-            if (inter <= 0f) return 0f;
-            var a = Area(obj);
-            var z = Area(zone);
-            float denom = m switch
-            {
-                Mode.Object => a,
-                Mode.Zone => z,
-                Mode.IoU => a + z - inter,
-                _ => 1f
-            };
-            return denom <= 0f ? 0f : inter / denom;
         }
 
         private static float ComputeZoneSum(Rect zone, List<YoloDetection> dets)
@@ -197,28 +168,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return Mathf.Min(1f, sum);
         }
 
-        private static float ComputeMaxRatio(Rect zone, List<YoloDetection> dets, Mode m)
-        {
-            var maxR = 0f;
-            if (dets == null || dets.Count == 0) return 0f;
-            for (var i = 0; i < dets.Count; i++)
-            {
-                var r = ComputeRatio(dets[i].Rect, zone, m);
-                if (r > maxR) maxR = r;
-            }
-            return maxR;
-        }
-
         /// <summary>
-        /// Raw left/right guidance based on mass split of overlaps.
-        /// Positive means steer RIGHT (more mass on left); negative means steer LEFT.
-        /// Range ~[-1,1].
+        /// Raw left/right guidance weighted by proximity to zone center.
+        /// Positive means steer RIGHT (more weighted mass on left); negative means steer LEFT.
+        /// Magnitude is higher for overlaps near the center and smaller near edges. Range [-1,1].
         /// </summary>
-        private static float ComputeNavRaw(Rect zone, List<YoloDetection> dets)
+        private static float ComputeAvoidance(Rect zone, List<YoloDetection> dets)
         {
             if (dets == null || dets.Count == 0) return 0f;
+            if (zone.width <= 0f || zone.height <= 0f) return 0f;
             var mid = zone.center.x;
-            float leftA = 0f, rightA = 0f;
+            var halfW = zone.width * 0.5f;
+            if (halfW <= 0f) return 0f;
+
+            float leftWeighted = 0f, rightWeighted = 0f;
             for (var i = 0; i < dets.Count; i++)
             {
                 var r = dets[i].Rect;
@@ -227,26 +190,33 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var x2 = Mathf.Min(r.xMax, zone.xMax);
                 var y2 = Mathf.Min(r.yMax, zone.yMax);
                 if (x2 <= x1 || y2 <= y1) continue;
-                var h = y2 - y1;
-                var leftW = Mathf.Max(0f, Mathf.Min(x2, mid) - x1);
-                var rightW = Mathf.Max(0f, x2 - Mathf.Max(x1, mid));
-                leftA += leftW * h;
-                rightA += rightW * h;
-            }
-            var denominator = leftA + rightA;
-            if (denominator <= 0f) return 0f;
-            var raw = Mathf.Clamp((leftA - rightA) / denominator, -1f, 1f); // + => steer right
-            return raw;
-        }
 
-        private float ApplyNavTransform(float raw)
-        {
-            return navTransform switch
-            {
-                NavTransform.None => raw,
-                NavTransform.SignOneMinusAbs => Mathf.Sign(raw) * (1f - Mathf.Abs(raw)),
-                _ => raw
-            };
+                var h = y2 - y1;
+
+                // Left segment (up to mid)
+                var lx1 = x1;
+                var lx2 = Mathf.Min(x2, mid);
+                if (lx2 > lx1)
+                {
+                    var lcx = 0.5f * (lx1 + lx2);
+                    var lWeight = Mathf.Clamp01(1f - Mathf.Abs(mid - lcx) / halfW);
+                    leftWeighted += (lx2 - lx1) * h * lWeight;
+                }
+
+                // Right segment (from mid)
+                var rx1 = Mathf.Max(x1, mid);
+                var rx2 = x2;
+                if (rx2 > rx1)
+                {
+                    var rcx = 0.5f * (rx1 + rx2);
+                    var rWeight = Mathf.Clamp01(1f - Mathf.Abs(mid - rcx) / halfW);
+                    rightWeighted += (rx2 - rx1) * h * rWeight;
+                }
+            }
+
+            var denom = leftWeighted + rightWeighted;
+            if (denom <= 0f) return 0f;
+            return Mathf.Clamp((leftWeighted - rightWeighted) / denom, -1f, 1f); // + => steer right
         }
 
         // ─────────────────────────────────────────────────────────────────────────────
@@ -291,6 +261,57 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var y0 = ToWorld(new Vector2(cx, zone01.yMin), gizmoScale, gizmoScale, gizmoZ);
                 var y1 = ToWorld(new Vector2(cx, zone01.yMax), gizmoScale, gizmoScale, gizmoZ);
                 Gizmos.DrawLine(y0, y1);
+            }
+
+            // Draw detections overlapping the zone (obstacle visualization)
+            if (drawDetections && _buffer != null && _buffer.Count > 0 && fw > 0 && fh > 0)
+            {
+                // Build zone in pixel space for intersection, then convert to [0..1]
+                var zonePx = new Rect(
+                    Mathf.Clamp01(zoneNorm.x) * fw,
+                    Mathf.Clamp01(zoneNorm.y) * fh,
+                    Mathf.Clamp01(Mathf.Max(0f, zoneNorm.width)) * fw,
+                    Mathf.Clamp01(Mathf.Max(0f, zoneNorm.height)) * fh
+                );
+
+                for (var i = 0; i < _buffer.Count; i++)
+                {
+                    var r = _buffer[i].Rect;
+                    // Compute intersection of detection with zone
+                    var x1 = Mathf.Max(r.xMin, zonePx.xMin);
+                    var y1 = Mathf.Max(r.yMin, zonePx.yMin);
+                    var x2 = Mathf.Min(r.xMax, zonePx.xMax);
+                    var y2 = Mathf.Min(r.yMax, zonePx.yMax);
+                    if (x2 <= x1 || y2 <= y1) continue;
+
+                    var inter01 = new Rect(x1 / fw, y1 / fh, (x2 - x1) / fw, (y2 - y1) / fh);
+
+                    // Fill
+                    Gizmos.color = detectionFillColor;
+                    DrawRectFill(inter01, gizmoScale, gizmoScale, gizmoZ);
+                    // Outline
+                    Gizmos.color = detectionOutlineColor;
+                    DrawRectOutline(inter01, gizmoScale, gizmoScale, gizmoZ);
+                }
+            }
+
+            // Draw steering intent (line from zone center towards desired side with length ~ |avoidanceValue|)
+            if (drawSteer)
+            {
+                var center01 = zone01.center;
+                var halfW01 = zone01.width * 0.5f;
+                var magnitude = Mathf.Clamp01(Mathf.Abs(avoidanceDirection));
+                var dir = Mathf.Sign(avoidanceDirection);
+
+                // End point along X to left/right based on sign
+                var endX = center01.x + dir * halfW01 * magnitude;
+                var start = ToWorld(new Vector2(center01.x, center01.y), gizmoScale, gizmoScale, gizmoZ);
+                var end = ToWorld(new Vector2(endX, center01.y), gizmoScale, gizmoScale, gizmoZ);
+
+                Gizmos.color = steerColor;
+                Gizmos.DrawLine(start, end);
+                // Draw a small marker at the end
+                Gizmos.DrawSphere(end, 0.01f * gizmoScale);
             }
 
             // Optionally: you could also render text via Handles.Label, but that requires UnityEditor.
