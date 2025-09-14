@@ -1163,7 +1163,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                         if (EditorUtility.DisplayCancelableProgressBar(
                                 $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
-                                "Uploading at 100 Mbps (simulated)...",
+                                "Uploading assets...",
                                 (float)progress))
                         {
                             uploadCancellation.Cancel();

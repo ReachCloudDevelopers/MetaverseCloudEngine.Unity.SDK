@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.198.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.2\n- Enhance upload progress simulation in AssetEditor with 100 Mbps estimation\n\nUpdated on September 14, 2025",
+  "version": "2.198.3",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.3\n- Update progress bar message during asset upload\n\nUpdated on September 14, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
