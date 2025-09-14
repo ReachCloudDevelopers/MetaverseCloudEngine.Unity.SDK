@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Stopwatch = System.Diagnostics.Stopwatch;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.ApiClient.Controllers;
 using MetaverseCloudEngine.ApiClient.Options;
@@ -1142,19 +1143,43 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 try
                 {
-                    var uploadSize = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length) / 1024f / 1024f;
+                    // Simulate 100 Mbps upload progress based on total file size
+                    var totalBytes = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length);
+                    var uploadSizeMB = totalBytes / 1024f / 1024f;
+
+                    // 100 Mbps ~= 12.5 MB/s (MiB/s). Using 12.5 * 1024 * 1024 bytes/s
+                    const double simulatedBytesPerSecond = 12.5 * 1024 * 1024;
+                    var estimatedSeconds = totalBytes <= 0 ? 0 : totalBytes / simulatedBytesPerSecond;
+
+                    var sw = Stopwatch.StartNew();
                     while (!result.IsCompleted)
                     {
+                        double progress = 0;
+                        if (totalBytes > 0 && estimatedSeconds > 0)
+                        {
+                            var elapsed = sw.Elapsed.TotalSeconds;
+                            progress = Math.Min(elapsed / estimatedSeconds, 0.99); // cap until completion
+                        }
+
                         if (EditorUtility.DisplayCancelableProgressBar(
-                                $"Uploading \"{assetUpsertForm.Name}\" ({uploadSize:N2} MB)",
-                                "Uploading. Please wait...",
-                                result.IsCompleted ? 1f : 0.5f))
+                                $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
+                                "Uploading at 100 Mbps (simulated)...",
+                                (float)progress))
                         {
                             uploadCancellation.Cancel();
                             break;
                         }
 
                         Thread.Sleep(100);
+                    }
+
+                    // Ensure UI shows completion if task finished
+                    if (result.IsCompleted)
+                    {
+                        EditorUtility.DisplayProgressBar(
+                            $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
+                            "Finalizing...",
+                            1f);
                     }
                 }
                 finally

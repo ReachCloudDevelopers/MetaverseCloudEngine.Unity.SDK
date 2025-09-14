@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.1
-- Fixed rendered detections being inverted
+## 2.198.2
+- Enhance upload progress simulation in AssetEditor with 100 Mbps estimation
 
 Updated on September 14, 2025
