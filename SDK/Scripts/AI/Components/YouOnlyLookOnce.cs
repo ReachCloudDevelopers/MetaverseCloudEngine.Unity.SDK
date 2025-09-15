@@ -534,7 +534,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             if (Application.platform == RuntimePlatform.WebGLPlayer)
                 return false;
-            if (!SystemInfo.supportsComputeShaders || !ComputeInfo.supportsCompute)
+            if (!SystemInfo.supportsComputeShaders)
                 return false;
             if (minimumGpuMemoryMB <= 0)
                 return true;

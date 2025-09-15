@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.5
-- Add GPU memory check and improve inference error handling in YOLO component
+## 2.198.6
+- Removed bad reference to internal property.
 
 Updated on September 15, 2025
