@@ -1143,12 +1143,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 try
                 {
-                    // Simulate 100 Mbps upload progress based on total file size
                     var totalBytes = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length);
                     var uploadSizeMB = totalBytes / 1024f / 1024f;
 
-                    // 100 Mbps ~= 12.5 MB/s (MiB/s). Using 12.5 * 1024 * 1024 bytes/s
-                    const double simulatedBytesPerSecond = 12.5 * 1024 * 1024;
+                    const double simulatedBytesPerSecond = 6.25 * 1024 * 1024;
                     var estimatedSeconds = totalBytes <= 0 ? 0 : totalBytes / simulatedBytesPerSecond;
 
                     var sw = Stopwatch.StartNew();

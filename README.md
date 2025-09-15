@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.3
-- Update progress bar message during asset upload
+## 2.198.4
+- Adjust simulated upload speed to 6.25 MB/s for more accurate progress estimation
 
-Updated on September 14, 2025
+Updated on September 15, 2025
