@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.198.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.4\n- Adjust simulated upload speed to 6.25 MB/s for more accurate progress estimation\n\nUpdated on September 15, 2025",
+  "version": "2.198.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.5\n- Add GPU memory check and improve inference error handling in YOLO component\n\nUpdated on September 15, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

@@ -97,6 +97,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public List<LabelEventPair> labelEvents = new();
 
 
+        [Header("Backend Settings")]
+        [Tooltip("Minimum GPU memory (MB) required before running inference on the GPU. Set to 0 to disable the check.")]
+        [Min(0)] public int minimumGpuMemoryMB = 1024;
+
+
         [Header("Overlay Output")]
         [Tooltip("Overlay RenderTexture with 2D boxes + labels over transparent background.")]
         public UnityEvent<RenderTexture> onOverlayUpdated = new();
@@ -158,6 +163,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private static Material _lineMaterial;
         private readonly List<YoloDetection> _frameBuffer = new(64);
         private ReadOnlyCollection<YoloDetection> _frameView;
+        private Model _model;
+        private bool _gpuWarmupTried;
 
         private void Awake()
         {
@@ -188,8 +195,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnDestroy()
         {
-            _worker?.Dispose();
-            _centersToCorners?.Dispose();
+            DisposeWorker();
             if (_webCamTex)
             {
                 _webCamTex.Stop();
@@ -215,35 +221,88 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var source = AcquireSourceTexture();
             if (!source || (_webCamTex && !_webCamTex.isPlaying)) return;
 
-            if (!_scratchRT)
+            var attemptedFallback = false;
+            while (true)
+            {
+                if (TryRunInference(source, out var failureStage, out var failureMessage))
+                    break;
+
+                var reason = string.IsNullOrEmpty(failureStage) ? failureMessage : $"{failureStage}: {failureMessage}";
+                if (attemptedFallback || !TryFallbackToCpu(reason))
+                {
+                    if (!string.IsNullOrEmpty(failureStage) || !string.IsNullOrEmpty(failureMessage))
+                        MetaverseProgram.Logger.LogWarning($"YOLO inference aborted on {_backendSelected}: {reason}");
+                    return;
+                }
+
+                attemptedFallback = true;
+            }
+        }
+
+        private bool TryRunInference(Texture source, out string failureStage, out string failureMessage)
+        {
+            failureStage = null;
+            failureMessage = null;
+
+            if (_scratchRT == null)
                 _scratchRT = new RenderTexture(ModelInputWidth, ModelInputHeight, 0);
 
             Graphics.Blit(source, _scratchRT);
 
             using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
-            TextureConverter.ToTensor(_scratchRT, input);
+            try { TextureConverter.ToTensor(_scratchRT, input); }
+            catch (Exception ex)
+            {
+                failureStage = "texture upload";
+                failureMessage = ex.Message;
+                return false;
+            }
+
             try { _worker.Schedule(input); }
             catch (Exception ex)
             {
-                MetaverseProgram.Logger.LogWarning($"YOLO schedule failed on {_backendSelected}: {ex.Message}");
-                return;
+                failureStage = "schedule";
+                failureMessage = ex.Message;
+                return false;
             }
 
-            // Determine if we need to consume outputs this frame
             bool needOverlay = overlayEnabled && (onOverlayUpdated != null);
             bool needEvents = _eventLookup.Count > 0 || _wildcardEvents.Count > 0 || DetectionsFrame != null;
-            if (!needOverlay && !needEvents) return;
+            if (!needOverlay && !needEvents)
+                return true;
 
-            using var boxes  = (_worker.PeekOutput("output_0") as Tensor<float>)?.ReadbackAndClone();
-            using var ids    = (_worker.PeekOutput("output_1") as Tensor<int>)?.ReadbackAndClone();
-            using var scores = (_worker.PeekOutput("output_2") as Tensor<float>)?.ReadbackAndClone();
+            Tensor<float> boxesTmp = null;
+            Tensor<int> idsTmp = null;
+            Tensor<float> scoresTmp = null;
+            try
+            {
+                boxesTmp  = (_worker.PeekOutput("output_0") as Tensor<float>)?.ReadbackAndClone();
+                idsTmp    = (_worker.PeekOutput("output_1") as Tensor<int>)?.ReadbackAndClone();
+                scoresTmp = (_worker.PeekOutput("output_2") as Tensor<float>)?.ReadbackAndClone();
+            }
+            catch (Exception ex)
+            {
+                boxesTmp?.Dispose();
+                idsTmp?.Dispose();
+                scoresTmp?.Dispose();
+                failureStage = "output readback";
+                failureMessage = ex.Message;
+                return false;
+            }
 
-            if (boxes == null || ids == null || scores == null) return;
+            using var boxes = boxesTmp;
+            using var ids = idsTmp;
+            using var scores = scoresTmp;
+
+            if (boxes == null || ids == null || scores == null)
+                return true;
 
             if (needEvents)
                 DispatchEvents(boxes, ids, scores, source.width, source.height);
             if (needOverlay)
                 RenderOverlay(boxes, ids, scores, source.width, source.height);
+
+            return true;
         }
 
         private void FetchResources()
@@ -309,15 +368,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
 
+            _model = model;
+            _gpuWarmupTried = false;
+
             // Re-evaluate backend with a real capability check
-            try { backend = ChooseBackend(model); } catch { backend = BackendType.CPU; }
-            _backendSelected = backend;
-            try { BuildWorker(model, backend); }
-            catch (Exception ex)
+            try { backend = ChooseBackend(model); }
+            catch { backend = BackendType.CPU; }
+
+            if (!TryBuildAndAssignWorker(model, backend))
             {
-                MetaverseProgram.Logger.LogWarning($"Failed to build YOLO worker with {backend}: {ex.Message}. Falling back to CPU.");
-                BuildWorker(model, BackendType.CPU);
-                _backendSelected = BackendType.CPU;
+                MetaverseProgram.Logger.LogError("Failed to initialize YOLO worker.");
+                return;
             }
 
             if (inputMethod != InputMethod.WebCamTexture) return;
@@ -325,8 +386,32 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _webCamTex.Play();
         }
 
+        private bool TryBuildAndAssignWorker(Model model, BackendType requested)
+        {
+            if (requested == BackendType.GPUCompute && TryBuildWorker(model, requested))
+            {
+                _backendSelected = requested;
+                return true;
+            }
+
+            if (requested == BackendType.GPUCompute)
+            {
+                MetaverseProgram.Logger.LogWarning($"YOLO GPU backend unavailable. Falling back to CPU.");
+            }
+
+            if (TryBuildWorker(model, BackendType.CPU))
+            {
+                _backendSelected = BackendType.CPU;
+                return true;
+            }
+
+            return false;
+        }
+
         private void BuildWorker(Model model, BackendType backend)
         {
+            DisposeWorker();
+
             _centersToCorners = new Tensor<float>(new TensorShape(4, 4),
                 new[] {
                     1, 0, 1, 0,
@@ -357,18 +442,114 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _worker = new Worker(graph.Compile(outBoxes, outIds, outScores), backend);
         }
 
+        private bool TryBuildWorker(Model model, BackendType backend)
+        {
+            try
+            {
+                BuildWorker(model, backend);
+                if (backend == BackendType.GPUCompute)
+                {
+                    if (!TryWarmupWorker())
+                    {
+                        DisposeWorker();
+                        return false;
+                    }
+                    _gpuWarmupTried = true;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogWarning($"Failed to build YOLO worker with {backend}: {ex.Message}");
+                DisposeWorker();
+                return false;
+            }
+        }
+
+        private bool TryWarmupWorker()
+        {
+            if (_worker == null) return false;
+            try
+            {
+                using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
+                _worker.Schedule(input);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogWarning($"YOLO GPU warmup failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        private void DisposeWorker()
+        {
+            if (_worker != null)
+            {
+                _worker.Dispose();
+                _worker = null;
+            }
+            if (_centersToCorners != null)
+            {
+                _centersToCorners.Dispose();
+                _centersToCorners = null;
+            }
+        }
+
+        private bool TryFallbackToCpu(string reason)
+        {
+            if (_backendSelected == BackendType.CPU || _model == null)
+                return false;
+
+            MetaverseProgram.Logger.LogWarning($"YOLO switching to CPU backend: {reason}");
+            if (!TryBuildWorker(_model, BackendType.CPU))
+            {
+                MetaverseProgram.Logger.LogError("YOLO CPU fallback failed to initialize.");
+                return false;
+            }
+
+            _backendSelected = BackendType.CPU;
+            return true;
+        }
+
         private BackendType ChooseBackend(Model model)
         {
             if (Application.platform == RuntimePlatform.WebGLPlayer)
                 return BackendType.CPU;
             if (!SystemInfo.supportsComputeShaders)
                 return BackendType.CPU;
+            if (!SupportsGpuForInference())
+                return BackendType.CPU;
             try
             {
                 using var test = new Worker(model, BackendType.GPUCompute);
+                using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
+                test.Schedule(input);
                 return BackendType.GPUCompute;
             }
             catch { return BackendType.CPU; }
+        }
+
+        private bool SupportsGpuForInference()
+        {
+            if (Application.platform == RuntimePlatform.WebGLPlayer)
+                return false;
+            if (!SystemInfo.supportsComputeShaders || !ComputeInfo.supportsCompute)
+                return false;
+            if (minimumGpuMemoryMB <= 0)
+                return true;
+
+            var memoryMb = SystemInfo.graphicsMemorySize;
+            if (memoryMb <= 0)
+                return true; // Unknown memory, allow attempt.
+
+            if (memoryMb < minimumGpuMemoryMB)
+            {
+                MetaverseProgram.Logger.LogWarning($"Detected only {memoryMb}MB of graphics memory. Minimum required for YOLO GPU inference is {minimumGpuMemoryMB}MB.");
+                return false;
+            }
+
+            return true;
         }
 
         private Texture AcquireSourceTexture()
@@ -410,7 +591,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     for (int wi = 0; wi < _wildcardEvents.Count; wi++)
                     {
                         if (score >= Mathf.Max(0.0001f, _wildcardEvents[wi].scoreFilter))
-                            passAnyWildcard = true; break;
+                        {
+                            passAnyWildcard = true;
+                            break;
+                        }
                     }
                 
                 // If neither a specific label nor a wildcard passes, skip entirely
