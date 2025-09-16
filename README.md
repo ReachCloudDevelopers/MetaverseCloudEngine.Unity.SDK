@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.8
-- Adjust upload simulation speed and progress bar behavior in AssetEditor
+## 2.198.9
+- Fixed issues with enableRandomWrite flag not being support for the R8 texture format.
 
 Updated on September 16, 2025

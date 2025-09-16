@@ -114,7 +114,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
                 {
                     filterMode = FilterMode.Point,
-                    enableRandomWrite = (_backendSelected == BackendType.GPUCompute)
+                    enableRandomWrite = _backendSelected == BackendType.GPUCompute
                 };
                 _maskRT.Create();
             }
@@ -122,7 +122,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Ensure scratch RT exists
             if (_scratchRT == null)
             {
-                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0)
                 { filterMode = FilterMode.Bilinear };
             }
 
@@ -271,7 +271,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_scratchRT == null)
             {
-                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0)
                 { filterMode = FilterMode.Bilinear };
             }
 
@@ -281,7 +281,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
                 {
                     filterMode = FilterMode.Point,
-                    enableRandomWrite = (_backendSelected == BackendType.GPUCompute)
+                    enableRandomWrite = _backendSelected == BackendType.GPUCompute
                 };
                 _maskRT.Create();
             }
@@ -294,8 +294,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private RenderTextureFormat SelectMaskFormat()
         {
-            if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.R8))
-                return RenderTextureFormat.R8;
             if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RHalf))
                 return RenderTextureFormat.RHalf;
             return RenderTextureFormat.ARGB32;
