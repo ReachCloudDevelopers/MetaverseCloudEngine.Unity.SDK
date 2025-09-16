@@ -101,6 +101,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Tooltip("Minimum GPU memory (MB) required before running inference on the GPU. Set to 0 to disable the check.")]
         [Min(0)] public int minimumGpuMemoryMB = 1024;
 
+        [Tooltip("Override how the inference backend is selected. Auto attempts GPU with fallback to CPU.")]
+        public InferenceBackendPreference backendPreference = InferenceBackendPreference.Auto;
+
 
         [Header("Overlay Output")]
         [Tooltip("Overlay RenderTexture with 2D boxes + labels over transparent background.")]
@@ -353,7 +356,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             _labels = classesText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            var backend = Application.platform == RuntimePlatform.WebGLPlayer ? BackendType.CPU : BackendType.GPUCompute;
+            var backend = BackendType.CPU;
             Model model = null;
             if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".onnx") || x.EndsWith(".sentis"), out var modelPath) && !string.IsNullOrEmpty(modelPath))
                 model = ModelLoader.Load(modelPath);
@@ -371,9 +374,23 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _model = model;
             _gpuWarmupTried = false;
 
-            // Re-evaluate backend with a real capability check
-            try { backend = ChooseBackend(model); }
-            catch { backend = BackendType.CPU; }
+            backend = InferenceUtils.ChooseBestBackend(
+                model,
+                minimumGpuMemoryMB,
+                () => new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth)),
+                out var backendReason,
+                backendPreference,
+                msg => MetaverseProgram.Logger.Log(msg),
+                msg => MetaverseProgram.Logger.LogWarning(msg));
+
+            MetaverseProgram.Logger.Log($"YOLO selected backend: {backend}.");
+            if (backend == BackendType.CPU && !string.IsNullOrEmpty(backendReason))
+            {
+                if (backendPreference == InferenceBackendPreference.CPU)
+                    MetaverseProgram.Logger.Log($"YOLO backend preference set to CPU: {backendReason}");
+                else
+                    MetaverseProgram.Logger.LogWarning($"YOLO GPU backend unavailable: {backendReason}");
+            }
 
             if (!TryBuildAndAssignWorker(model, backend))
             {
@@ -509,46 +526,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             _backendSelected = BackendType.CPU;
-            return true;
-        }
-
-        private BackendType ChooseBackend(Model model)
-        {
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-                return BackendType.CPU;
-            if (!SystemInfo.supportsComputeShaders)
-                return BackendType.CPU;
-            if (!SupportsGpuForInference())
-                return BackendType.CPU;
-            try
-            {
-                using var test = new Worker(model, BackendType.GPUCompute);
-                using var input = new Tensor<float>(new TensorShape(1, 3, ModelInputHeight, ModelInputWidth));
-                test.Schedule(input);
-                return BackendType.GPUCompute;
-            }
-            catch { return BackendType.CPU; }
-        }
-
-        private bool SupportsGpuForInference()
-        {
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-                return false;
-            if (!SystemInfo.supportsComputeShaders)
-                return false;
-            if (minimumGpuMemoryMB <= 0)
-                return true;
-
-            var memoryMb = SystemInfo.graphicsMemorySize;
-            if (memoryMb <= 0)
-                return true; // Unknown memory, allow attempt.
-
-            if (memoryMb < minimumGpuMemoryMB)
-            {
-                MetaverseProgram.Logger.LogWarning($"Detected only {memoryMb}MB of graphics memory. Minimum required for YOLO GPU inference is {minimumGpuMemoryMB}MB.");
-                return false;
-            }
-
             return true;
         }
 

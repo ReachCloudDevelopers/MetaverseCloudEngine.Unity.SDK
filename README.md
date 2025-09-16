@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.6
-- Removed bad reference to internal property.
+## 2.198.7
+- Add inference backend preference and utility methods for backend selection
 
 Updated on September 15, 2025

@@ -4,6 +4,7 @@ using Unity.InferenceEngine;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using MetaverseCloudEngine.Unity.AI;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -42,6 +43,10 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [ShowIf(nameof(inputMethod), InputMethod.WebCamTexture)]
         [Tooltip("Requested webcam height in pixels (WebCamTexture mode).")]
         public int webCamHeight = 480;
+
+        [Header("Backend Settings")]
+        [Tooltip("Override how the inference backend is selected. Auto attempts GPU with fallback to CPU.")]
+        public InferenceBackendPreference backendPreference = InferenceBackendPreference.Auto;
 
         [Header("Output")]
         public int outputWidth  = 512;
@@ -132,7 +137,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             try { _worker.Schedule(input); }
             catch (Exception ex)
             {
-                Debug.LogWarning($"SegFormer schedule failed on {_backendSelected}: {ex.Message}");
+                MetaverseProgram.Logger.LogWarning($"SegFormer schedule failed on {_backendSelected}: {ex.Message}");
                 return;
             }
 
@@ -148,7 +153,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"RenderToTexture failed: {ex.Message}");
+                    MetaverseProgram.Logger.LogWarning($"RenderToTexture failed: {ex.Message}");
                 }
             }
         }
@@ -234,7 +239,23 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 return;
             }
 
-            var backend = ChooseBackend(model);
+            var backend = InferenceUtils.ChooseBestBackend(
+                model,
+                0,
+                () => new Tensor<float>(new TensorShape(1, 3, InputHW, InputHW)),
+                out var backendReason,
+                backendPreference,
+                msg => MetaverseProgram.Logger.Log(msg),
+                msg => MetaverseProgram.Logger.LogWarning(msg));
+
+            MetaverseProgram.Logger.Log($"SegFormer selected backend: {backend}.");
+            if (backend == BackendType.CPU && !string.IsNullOrEmpty(backendReason))
+            {
+                if (backendPreference == InferenceBackendPreference.CPU)
+                    MetaverseProgram.Logger.Log($"SegFormer backend preference set to CPU: {backendReason}");
+                else
+                    MetaverseProgram.Logger.LogWarning($"SegFormer GPU backend unavailable: {backendReason}");
+            }
             _backendSelected = backend;
 
             try
@@ -243,7 +264,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"Failed to create Worker with {backend}: {ex.Message}. Falling back to CPU.");
+                MetaverseProgram.Logger.LogWarning($"Failed to create Worker with {backend}: {ex.Message}. Falling back to CPU.");
                 _backendSelected = BackendType.CPU;
                 _worker = new Worker(model, BackendType.CPU);
             }
@@ -268,26 +289,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (inputMethod == InputMethod.WebCamTexture)
             {
                 TryStartWebcam();
-            }
-        }
-
-        private BackendType ChooseBackend(Model model)
-        {
-            if (Application.platform == RuntimePlatform.WebGLPlayer)
-                return BackendType.CPU;
-
-            if (!SystemInfo.supportsComputeShaders)
-                return BackendType.CPU;
-
-            // Attempt to instantiate a temporary GPU worker to validate support
-            try
-            {
-                using var temp = new Worker(model, BackendType.GPUCompute);
-                return BackendType.GPUCompute;
-            }
-            catch
-            {
-                return BackendType.CPU;
             }
         }
 
@@ -321,7 +322,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
                 if (string.IsNullOrEmpty(devName))
                 {
-                    Debug.LogWarning("No webcam devices found.");
+                    MetaverseProgram.Logger.LogWarning("No webcam devices found.");
                     return false;
                 }
 
@@ -335,7 +336,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"Failed to start webcam: {e.Message}");
+                MetaverseProgram.Logger.LogWarning($"Failed to start webcam: {e.Message}");
                 return false;
             }
         }
