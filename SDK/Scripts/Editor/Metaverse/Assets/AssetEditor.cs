@@ -1146,7 +1146,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     var totalBytes = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length);
                     var uploadSizeMB = totalBytes / 1024f / 1024f;
 
-                    const double simulatedBytesPerSecond = 6.25 * 1024 * 1024;
+                    const double simulatedBytesPerSecond = 2.00 * 1024 * 1024;
                     var estimatedSeconds = totalBytes <= 0 ? 0 : totalBytes / simulatedBytesPerSecond;
 
                     var sw = Stopwatch.StartNew();
@@ -1156,12 +1156,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                         if (totalBytes > 0 && estimatedSeconds > 0)
                         {
                             var elapsed = sw.Elapsed.TotalSeconds;
-                            progress = Math.Min(elapsed / estimatedSeconds, 0.99); // cap until completion
+                            progress = Math.Min(elapsed / estimatedSeconds, 1); // cap until completion
                         }
 
                         if (EditorUtility.DisplayCancelableProgressBar(
                                 $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
-                                "Uploading assets...",
+                                progress < 1 ? "Uploading assets..." : "Verifying upload...",
                                 (float)progress))
                         {
                             uploadCancellation.Cancel();
@@ -1178,6 +1178,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
                             "Finalizing...",
                             1f);
+                        Thread.Sleep(1000);
                     }
                 }
                 finally

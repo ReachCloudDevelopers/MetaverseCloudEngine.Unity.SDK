@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.7
-- Add inference backend preference and utility methods for backend selection
+## 2.198.8
+- Adjust upload simulation speed and progress bar behavior in AssetEditor
 
-Updated on September 15, 2025
+Updated on September 16, 2025
