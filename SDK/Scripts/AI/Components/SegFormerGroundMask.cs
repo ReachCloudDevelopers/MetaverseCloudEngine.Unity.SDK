@@ -111,11 +111,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
             {
                 if (_maskRT) Destroy(_maskRT);
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
-                {
-                    filterMode = FilterMode.Point,
-                };
-                _maskRT.Create();
+                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight);
             }
 
             // Ensure scratch RT exists
@@ -276,11 +272,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_maskRT == null)
             {
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
-                {
-                    filterMode = FilterMode.Point,
-                };
-                _maskRT.Create();
+                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight);
             }
 
             if (inputMethod == InputMethod.WebCamTexture)
@@ -341,6 +333,49 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 }
             }
             catch { /* ignore */ }
+        }
+
+        private RenderTexture CreateMaskRenderTexture(int width, int height)
+        {
+            var desiredFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R8_UNorm;
+            var format = SystemInfo.IsFormatSupported(desiredFormat, UnityEngine.Experimental.Rendering.FormatUsage.Render)
+                ? desiredFormat
+                : SystemInfo.GetCompatibleFormat(desiredFormat, UnityEngine.Experimental.Rendering.FormatUsage.Render);
+
+            if (format == UnityEngine.Experimental.Rendering.GraphicsFormat.None)
+            {
+                // fallback to 8-bit RGBA if single-channel random write is unavailable
+                var fallback = UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm;
+                format = SystemInfo.IsFormatSupported(fallback, UnityEngine.Experimental.Rendering.FormatUsage.Render)
+                    ? fallback
+                    : SystemInfo.GetCompatibleFormat(fallback, UnityEngine.Experimental.Rendering.FormatUsage.Render);
+            }
+
+            var descriptor = new RenderTextureDescriptor(width, height)
+            {
+                graphicsFormat = format,
+                depthBufferBits = 0,
+                msaaSamples = 1,
+                sRGB = false,
+                enableRandomWrite = true,
+            };
+
+            var rt = new RenderTexture(descriptor)
+            {
+                filterMode = FilterMode.Point,
+            };
+
+            try
+            {
+                rt.Create();
+            }
+            catch
+            {
+                Destroy(rt);
+                throw;
+            }
+
+            return rt;
         }
     }
 }
