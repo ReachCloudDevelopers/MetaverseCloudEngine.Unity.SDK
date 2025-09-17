@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.10
-- Removed incompatible texture formats.
+## 2.198.11
+- Added flag to enable/disable outputting mask
 
 Updated on September 16, 2025

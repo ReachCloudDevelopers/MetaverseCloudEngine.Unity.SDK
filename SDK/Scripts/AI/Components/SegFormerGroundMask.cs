@@ -46,10 +46,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Header("Backend Settings")]
         [Tooltip("Override how the inference backend is selected. Auto attempts GPU with fallback to CPU.")]
-        public InferenceBackendPreference backendPreference = InferenceBackendPreference.Auto;
+        public InferenceBackendPreference backendPreference = InferenceBackendPreference.CPU;
 
         [Header("Output")]
-        public int outputWidth  = 512;
+        public bool outputMask = true;
+        public int outputWidth = 512;
         public int outputHeight = 512;
         public UnityEvent<RenderTexture> onMaskUpdated = new();
 
@@ -110,10 +111,9 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
             {
                 if (_maskRT) Destroy(_maskRT);
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0)
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
                 {
                     filterMode = FilterMode.Point,
-                    enableRandomWrite = _backendSelected == BackendType.GPUCompute
                 };
                 _maskRT.Create();
             }
@@ -121,7 +121,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             // Ensure scratch RT exists
             if (_scratchRT == null)
             {
-                _scratchRT = new RenderTexture(InputHW, InputHW, 0)
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
                 { filterMode = FilterMode.Bilinear };
             }
 
@@ -141,8 +141,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             // Get output tensor and render directly to RT (no Readback)
-            var mask = _worker.PeekOutput("ground_mask") as Tensor<float>;
-            if (mask != null && _maskRT != null)
+            if (!outputMask) return;
+            if (_worker.PeekOutput("ground_mask") is Tensor<float> mask && _maskRT != null)
             {
                 try
                 {
@@ -270,16 +270,15 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_scratchRT == null)
             {
-                _scratchRT = new RenderTexture(InputHW, InputHW, 0)
+                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
                 { filterMode = FilterMode.Bilinear };
             }
 
             if (_maskRT == null)
             {
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0)
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, RenderTextureFormat.R8)
                 {
                     filterMode = FilterMode.Point,
-                    enableRandomWrite = _backendSelected == BackendType.GPUCompute
                 };
                 _maskRT.Create();
             }
