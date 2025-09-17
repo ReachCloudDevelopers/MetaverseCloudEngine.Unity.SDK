@@ -337,45 +337,47 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private RenderTexture CreateMaskRenderTexture(int width, int height)
         {
-            var desiredFormat = UnityEngine.Experimental.Rendering.GraphicsFormat.R8_UNorm;
-            var format = SystemInfo.IsFormatSupported(desiredFormat, UnityEngine.Experimental.Rendering.FormatUsage.Render)
-                ? desiredFormat
-                : SystemInfo.GetCompatibleFormat(desiredFormat, UnityEngine.Experimental.Rendering.FormatUsage.Render);
-
-            if (format == UnityEngine.Experimental.Rendering.GraphicsFormat.None)
+            // Prefer single-channel formats to minimize bandwidth, but fall back if UAV writes are unsupported
+            var candidates = new[]
             {
-                // fallback to 8-bit RGBA if single-channel random write is unavailable
-                var fallback = UnityEngine.Experimental.Rendering.GraphicsFormat.R8G8B8A8_UNorm;
-                format = SystemInfo.IsFormatSupported(fallback, UnityEngine.Experimental.Rendering.FormatUsage.Render)
-                    ? fallback
-                    : SystemInfo.GetCompatibleFormat(fallback, UnityEngine.Experimental.Rendering.FormatUsage.Render);
-            }
-
-            var descriptor = new RenderTextureDescriptor(width, height)
-            {
-                graphicsFormat = format,
-                depthBufferBits = 0,
-                msaaSamples = 1,
-                sRGB = false,
-                enableRandomWrite = true,
+                RenderTextureFormat.R8,
+                RenderTextureFormat.RFloat,
+                RenderTextureFormat.ARGB32,
             };
 
-            var rt = new RenderTexture(descriptor)
+            foreach (var format in candidates)
             {
-                filterMode = FilterMode.Point,
-            };
+                if (!SystemInfo.SupportsRenderTextureFormat(format))
+                    continue;
 
-            try
-            {
-                rt.Create();
-            }
-            catch
-            {
+#if UNITY_2021_2_OR_NEWER
+                if (!SystemInfo.SupportsRandomWriteOnRenderTextureFormat(format))
+                    continue;
+#endif
+
+                var rt = new RenderTexture(width, height, 0, format)
+                {
+                    filterMode = FilterMode.Point,
+                    enableRandomWrite = true,
+                };
+
+                try
+                {
+                    rt.Create();
+                }
+                catch
+                {
+                    Destroy(rt);
+                    continue;
+                }
+
+                if (rt.IsCreated())
+                    return rt;
+
                 Destroy(rt);
-                throw;
             }
 
-            return rt;
+            throw new InvalidOperationException("Failed to create SegFormer mask RenderTexture with UAV support.");
         }
     }
 }

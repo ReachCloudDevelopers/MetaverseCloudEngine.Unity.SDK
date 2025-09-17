@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.12
-- Refactor mask render texture creation for improved format handling and error management
+## 2.198.13
+- Refactor CreateMaskRenderTexture to prefer single-channel formats and improve error handling
 
 Updated on September 16, 2025
