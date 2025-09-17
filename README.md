@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.9
-- Fixed issues with enableRandomWrite flag not being support for the R8 texture format.
+## 2.198.10
+- Removed incompatible texture formats.
 
 Updated on September 16, 2025

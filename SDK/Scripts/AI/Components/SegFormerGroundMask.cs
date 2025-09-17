@@ -110,8 +110,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
             {
                 if (_maskRT) Destroy(_maskRT);
-                var fmt = SelectMaskFormat();
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0)
                 {
                     filterMode = FilterMode.Point,
                     enableRandomWrite = _backendSelected == BackendType.GPUCompute
@@ -277,8 +276,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_maskRT == null)
             {
-                var fmt = SelectMaskFormat();
-                _maskRT = new RenderTexture(outputWidth, outputHeight, 0, fmt)
+                _maskRT = new RenderTexture(outputWidth, outputHeight, 0)
                 {
                     filterMode = FilterMode.Point,
                     enableRandomWrite = _backendSelected == BackendType.GPUCompute
@@ -290,13 +288,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 TryStartWebcam();
             }
-        }
-
-        private RenderTextureFormat SelectMaskFormat()
-        {
-            if (SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RHalf))
-                return RenderTextureFormat.RHalf;
-            return RenderTextureFormat.ARGB32;
         }
 
         // ─────────────────────────────────────────────────────────────────────────────

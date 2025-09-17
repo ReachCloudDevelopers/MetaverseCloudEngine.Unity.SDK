@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.198.9",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.9\n- Fixed issues with enableRandomWrite flag not being support for the R8 texture format.\n\nUpdated on September 16, 2025",
+  "version": "2.198.10",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.10\n- Removed incompatible texture formats.\n\nUpdated on September 16, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
