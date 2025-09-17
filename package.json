@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.198.13",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.13\n- Refactor CreateMaskRenderTexture to prefer single-channel formats and improve error handling\n\nUpdated on September 16, 2025",
+  "version": "2.198.14",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.198.14\n- Enhance mask render texture creation to support RGBA formats based on backend selection\n\nUpdated on September 17, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

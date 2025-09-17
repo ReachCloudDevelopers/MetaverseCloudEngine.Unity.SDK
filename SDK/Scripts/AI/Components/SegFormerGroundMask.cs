@@ -108,10 +108,11 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var src = AcquireSourceTexture();
             if (!src || (_webCamTex && !_webCamTex.isPlaying)) return;
 
-            if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight)
+            var preferRgbaMask = NeedsRgbaMask();
+            if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight || (preferRgbaMask && IsSingleChannel(_maskRT)))
             {
                 if (_maskRT) Destroy(_maskRT);
-                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight);
+                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight, preferRgbaMask);
             }
 
             // Ensure scratch RT exists
@@ -272,7 +273,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             if (_maskRT == null)
             {
-                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight);
+                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight, NeedsRgbaMask());
             }
 
             if (inputMethod == InputMethod.WebCamTexture)
@@ -335,15 +336,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             catch { /* ignore */ }
         }
 
-        private RenderTexture CreateMaskRenderTexture(int width, int height)
+        private RenderTexture CreateMaskRenderTexture(int width, int height, bool preferRgba)
         {
-            // Prefer single-channel formats to minimize bandwidth, but fall back if UAV writes are unsupported
-            var candidates = new[]
-            {
-                RenderTextureFormat.R8,
-                RenderTextureFormat.RFloat,
-                RenderTextureFormat.ARGB32,
-            };
+            var requireRandomWrite = preferRgba && SystemInfo.supportsComputeShaders;
+
+            // Prefer single-channel formats to minimize bandwidth when possible. Some mobile GPUs require RGBA UAV formats for compute writes.
+            var candidates = preferRgba
+                ? new[] { RenderTextureFormat.ARGB32, RenderTextureFormat.ARGBHalf, RenderTextureFormat.ARGBFloat, RenderTextureFormat.R8 }
+                : new[] { RenderTextureFormat.R8, RenderTextureFormat.RFloat, RenderTextureFormat.ARGB32 };
 
             foreach (var format in candidates)
             {
@@ -351,14 +351,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     continue;
 
 #if UNITY_2021_2_OR_NEWER
-                if (!SystemInfo.SupportsRandomWriteOnRenderTextureFormat(format))
+                if (requireRandomWrite && !SystemInfo.SupportsRandomWriteOnRenderTextureFormat(format))
                     continue;
 #endif
 
                 var rt = new RenderTexture(width, height, 0, format)
                 {
                     filterMode = FilterMode.Point,
-                    enableRandomWrite = true,
+                    enableRandomWrite = requireRandomWrite,
                 };
 
                 try
@@ -378,6 +378,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
 
             throw new InvalidOperationException("Failed to create SegFormer mask RenderTexture with UAV support.");
+        }
+
+        private static bool IsSingleChannel(RenderTexture rt)
+        {
+            return rt.format == RenderTextureFormat.R8 || rt.format == RenderTextureFormat.RFloat;
+        }
+
+        private bool NeedsRgbaMask()
+        {
+            return _backendSelected == BackendType.GPUCompute;
         }
     }
 }
