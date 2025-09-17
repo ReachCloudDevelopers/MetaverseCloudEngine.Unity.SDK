@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.14
-- Enhance mask render texture creation to support RGBA formats based on backend selection
+## 2.198.15
+- Add UnityEvent for script initialization and improve readiness checks
 
 Updated on September 17, 2025

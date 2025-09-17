@@ -34,6 +34,7 @@ using TriInspectorMVCE;
 
 #if MV_UNITY_AI_INFERENCE
 using Unity.InferenceEngine;
+using UnityEngine.Events;
 #endif
 
 // ReSharper disable RedundantUnsafeContext
@@ -209,6 +210,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         [SerializeField] private GlobalTypeImports globalTypeImports = GlobalTypeImports.None;
         [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
         [SerializeField] private Variables variables;
+        [SerializeField] private UnityEvent onInitialize = new();
 
         private bool _ready;
         private Engine _engine;
@@ -229,6 +231,11 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Gets the variable declarations for the JavaScript file.
         /// </summary>
         public VariableDeclarations Vars => variables ? variables.declarations : null;
+
+        /// <summary>
+        /// Invoked when the script has been initialized.
+        /// </summary>
+        public UnityEvent OnInitialize => onInitialize;
 
         protected override unsafe void OnDestroy()
         {
@@ -305,16 +312,16 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             else
                                 MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
                                 {
-                                    if (this) CallAwake();
+                                    if (this && gameObject.activeInHierarchy) CallAwake();
                                 });
 
-                            if (this && isActiveAndEnabled)
+                            if (this && isActiveAndEnabled && _ready)
                                 CallOnEnabled();
                             else
                             {
-                                MetaverseDispatcher.WaitUntil(() => !this || isActiveAndEnabled, () =>
+                                MetaverseDispatcher.WaitUntil(() => !this || (isActiveAndEnabled && _ready), () =>
                                 {
-                                    if (this) CallOnEnabled();
+                                    if (this && isActiveAndEnabled && _ready) CallOnEnabled();
                                 });
                             }
                             return;
@@ -322,6 +329,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             unsafe void CallOnEnabled()
                             {
                                 if (!this) return;
+                                if (!_ready) return;
                                 JsValue onEnableMethod = null;
                                 if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
                                     _ = _engine.Invoke(onEnableMethod);
@@ -334,21 +342,31 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                             {
                                 if (!this) return;
                                 _ready = true;
-
-                                JsValue awakeMethod = null;
-                                if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
-                                    _ = _engine.Invoke(awakeMethod);
-
-                                while (_initializationMethodQueue.TryDequeue(out var a))
+                                try
                                 {
-                                    try
+                                    JsValue awakeMethod = null;
+                                    if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
+                                        _ = _engine.Invoke(awakeMethod);
+
+                                    while (_initializationMethodQueue.TryDequeue(out var a))
                                     {
-                                        a?.Invoke();
+                                        try
+                                        {
+                                            a?.Invoke();
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            OnFailed(e.GetBaseException());
+                                        }
                                     }
-                                    catch (Exception e)
-                                    {
-                                        OnFailed(e.GetBaseException());
-                                    }
+
+                                    try { onInitialize?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError(e); }
+                                }
+                                catch (Exception e)
+                                {
+                                    _ready = false;
+                                    OnFailed(e.GetBaseException());
+                                    return;
                                 }
                             }
                         }, e =>
@@ -625,7 +643,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready)
             {
                 console.log(
-                    $"Script '{javascriptFile?.name ?? ""}' has not fully initialized yet. Call to '{fn}' ignored.");
+                    $"Script '{(javascriptFile ? javascriptFile.name : null ?? "<unknown>")}' has not fully initialized yet. Call to '{fn}' ignored.");
                 return;
             }
 
