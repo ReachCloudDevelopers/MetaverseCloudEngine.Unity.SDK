@@ -13,6 +13,7 @@ using MetaverseCloudEngine.Unity.Networking.Enumerations;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 using Unity.VisualScripting;
 using Unity.Collections;
 #if MV_UNITY_AI_NAV
@@ -34,7 +35,6 @@ using TriInspectorMVCE;
 
 #if MV_UNITY_AI_INFERENCE
 using Unity.InferenceEngine;
-using UnityEngine.Events;
 #endif
 
 // ReSharper disable RedundantUnsafeContext

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.15
-- Add UnityEvent for script initialization and improve readiness checks
+## 2.198.16
+- Move using directive for UnityEngine.Events in MetaverseScript.cs
 
-Updated on September 17, 2025
+Updated on September 19, 2025
