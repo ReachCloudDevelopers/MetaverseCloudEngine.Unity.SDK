@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.16
-- Move using directive for UnityEngine.Events in MetaverseScript.cs
+## 2.198.17
+- Enhance SegFormerSafeZone with temporal filtering and hysteresis for danger scoring
 
-Updated on September 19, 2025
+Updated on September 20, 2025

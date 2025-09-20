@@ -39,8 +39,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         [Range(0, 1)] public float groundThreshold = 0.5f;
         [Tooltip("Exponent for vertical weighting (1 = linear, >1 = stronger emphasis near bottom).")]
         [Range(0.5f, 8f)] public float weightPower = 2.0f;
-        [Tooltip("Stop when danger score >= threshold.")]
-        [Range(0, 1)] public float stopThreshold = 0.35f;
+
+        [Header("Temporal filter & hysteresis")]
+        [Range(0f, 1f)] public float dangerEmaAlpha = 0.25f; // 0=no smoothing, 1=no memory
+        [Range(0f, 1f)] public float stopOn = 0.55f;
+        [Range(0f, 1f)] public float releaseAt = 0.35f;
+        [Range(0f, 1f)] public float speedFloor = 0.25f;
 
         [Header("Events")]
         public UnityEvent<bool> onStop = new();
@@ -49,12 +53,16 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         [Header("Outputs (read-only)")]
         [TriInspectorMVCE.ReadOnly] public float dangerScore;
+        [TriInspectorMVCE.ReadOnly] public float filteredDanger;
+        [TriInspectorMVCE.ReadOnly] public float speedScale = 1f;
         [TriInspectorMVCE.ReadOnly] public bool stop;
 
         // Internal state
         private bool _readbackPending;
         private int _texW = 1, _texH = 1;
         private bool _lastStop;
+        private bool _stopLatched;
+        private bool _filteredInitialized;
 
         [Header("Obstacle Mapping")]
         [Tooltip("Create NavMeshObstacle proxies from runway samples.")]
@@ -79,11 +87,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         public float obstacleHeight = 0.5f;
         [Tooltip("Use Box shape (recommended). If false, uses Capsule.")]
         public bool obstacleAsBox = true;
+        [Tooltip("Minimum consecutive frames required before enabling an obstacle.")]
+        [Min(1)] public int framesOn = 3;
+        [Tooltip("Frames to wait before disabling an obstacle once the hole disappears.")]
+        [Min(1)] public int framesOff = 6;
 
         private readonly System.Collections.Generic.List<NavMeshObstacle> _obstacles = new();
         private float[] _sampleHoleWidth;   // 0..1 width ratio inside row
         private float[] _sampleHoleOffset;  // -1..1 lateral offset from midline
         private bool[] _sampleHasHole;
+        private int[] _seen;
+        private int[] _missing;
 
         // Gizmos
         [Header("Gizmos")]
@@ -227,18 +241,69 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             danger = Mathf.Clamp01(danger);
 
             dangerScore = danger;
-            onDanger?.Invoke(danger);
 
-            var doStop = danger >= stopThreshold;
-            stop = doStop;
-
-            if (doStop != _lastStop)
+            var alpha = Mathf.Clamp01(dangerEmaAlpha);
+            if (!_filteredInitialized || alpha <= 0f)
             {
-                _lastStop = doStop;
-                onStop?.Invoke(doStop);
+                filteredDanger = danger;
+                _filteredInitialized = true;
+            }
+            else
+            {
+                filteredDanger = Mathf.Lerp(filteredDanger, danger, alpha);
             }
 
-            onDebugText?.Invoke($"runway danger={danger:F3} thr={stopThreshold:F2}");
+            filteredDanger = Mathf.Clamp01(filteredDanger);
+            onDanger?.Invoke(filteredDanger);
+
+            var stopOnClamped = Mathf.Clamp01(stopOn);
+            var releaseAtClamped = Mathf.Clamp01(releaseAt);
+            if (releaseAtClamped > stopOnClamped)
+            {
+                releaseAtClamped = stopOnClamped;
+            }
+
+            if (_stopLatched)
+            {
+                if (filteredDanger <= releaseAtClamped)
+                {
+                    _stopLatched = false;
+                }
+            }
+            else if (filteredDanger >= stopOnClamped)
+            {
+                _stopLatched = true;
+            }
+
+            stop = _stopLatched;
+
+            if (stop != _lastStop)
+            {
+                _lastStop = stop;
+                onStop?.Invoke(stop);
+            }
+
+            if (stop)
+            {
+                speedScale = 0f;
+            }
+            else
+            {
+                var floor = Mathf.Clamp01(speedFloor);
+                float t;
+                if (Mathf.Approximately(stopOnClamped, releaseAtClamped))
+                {
+                    t = filteredDanger >= stopOnClamped ? 1f : 0f;
+                }
+                else
+                {
+                    t = Mathf.Clamp01(Mathf.InverseLerp(releaseAtClamped, stopOnClamped, filteredDanger));
+                }
+
+                speedScale = Mathf.Lerp(1f, floor, t);
+            }
+
+            onDebugText?.Invoke($"runway danger(raw)={danger:F3} ema={filteredDanger:F3} stop={stop} scale={speedScale:F2}");
 
             UpdateObstaclesFromSamples();
         }
@@ -253,14 +318,37 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             EnsureObstaclePool();
 
+            var framesOnClamped = Mathf.Max(1, framesOn);
+            var framesOffClamped = Mathf.Max(1, framesOff);
+
             for (int i = 0; i < samples; i++)
             {
                 var has = _sampleHasHole[i] && _sampleHoleWidth[i] >= minHoleWidthRatio;
                 var obs = _obstacles[i];
-                if (!has)
+                if (!obs) continue;
+
+                if (has)
                 {
-                    if (obs) obs.gameObject.SetActive(false);
+                    _seen[i] = Mathf.Min(_seen[i] + 1, framesOnClamped);
+                    _missing[i] = 0;
+                }
+                else
+                {
+                    _missing[i] = Mathf.Min(_missing[i] + 1, framesOffClamped);
+                }
+
+                var wasActive = obs.gameObject.activeSelf;
+                var shouldBeActive = (_seen[i] >= framesOnClamped) || (wasActive && _missing[i] < framesOffClamped);
+
+                if (!shouldBeActive)
+                {
+                    if (wasActive) obs.gameObject.SetActive(false);
                     continue;
+                }
+
+                if (has && _seen[i] == framesOnClamped)
+                {
+                    _missing[i] = 0;
                 }
 
                 var t = samples == 1 ? 0f : i / (float)(samples - 1);
@@ -273,7 +361,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 var world = transform.TransformPoint(local);
                 obs.transform.position = world;
                 obs.transform.rotation = transform.rotation; // align with forward
-                obs.gameObject.SetActive(true);
+                if (!obs.gameObject.activeSelf) obs.gameObject.SetActive(true);
 
                 if (obstacleAsBox)
                 {
@@ -312,6 +400,12 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             for (int i = needed; i < _obstacles.Count; i++)
             {
                 if (_obstacles[i]) _obstacles[i].gameObject.SetActive(false);
+            }
+
+            if (_seen == null || _seen.Length != needed)
+            {
+                _seen = new int[needed];
+                _missing = new int[needed];
             }
         }
 
