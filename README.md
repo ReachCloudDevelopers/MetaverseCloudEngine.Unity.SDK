@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.18
-- Removed external services editor and data sources editor from MetaSpaceEditor.cs
+## 2.198.19
+- Refactor AssetEditor: Comment out unused CloudDataSourceListEditor and update BeginBuild method for token validation
 
 Updated on September 26, 2025

@@ -47,7 +47,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         private SerializedProperty _publishProperty;
         
         private AssetContributorEditor<TAssetDto> _contributorEditor;
-        private CloudDataSourceListEditor _dataSourceListEditor;
+        //private CloudDataSourceListEditor _dataSourceListEditor;
 
         private static int _selectPlatformOption = (int)Platform.StandaloneWindows64;
         private static Dictionary<Platform, BundlePlatformOptions> _currentPlatformOptions;
@@ -84,7 +84,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             _refreshIconContent ??= EditorGUIUtility.IconContent("TreeEditor.Refresh");
             _detachIconContent ??= EditorGUIUtility.IconContent("UnLinked");
             _contributorEditor ??= new AssetContributorEditor<TAssetDto>(Target, Controller, Controller);
-            _dataSourceListEditor ??= new CloudDataSourceListEditor(CloudDataSourceHost.Asset);
+            //_dataSourceListEditor ??= new CloudDataSourceListEditor(CloudDataSourceHost.Asset);
 
             if (serializedObject.targetObject)
             {
@@ -195,8 +195,8 @@ namespace MetaverseCloudEngine.Unity.Editors
         protected virtual void DrawListEditors()
         {
             _contributorEditor?.Draw();
-            _dataSourceListEditor.HostId = Target.ID;
-            _dataSourceListEditor?.Draw();
+            //_dataSourceListEditor.HostId = Target.ID;
+            //_dataSourceListEditor?.Draw();
         }
 
         private void DrawHeaderGUI()
@@ -283,7 +283,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     _requestingThumbnail = false;
                     
                     _contributorEditor = null;
-                    _dataSourceListEditor = null;
+                    //_dataSourceListEditor = null;
                 }
 
                 GUIUtility.ExitGUI();
@@ -981,13 +981,23 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private void BeginBuild(
+        private void BeginBuildAndUpload(
             object mainAsset,
             TAsset asset,
             TAssetUpsertForm assetUpsertForm,
             IUpsertAssets<TAssetDto, TAssetUpsertForm> upsertController,
             Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null)
         {
+            var validation = Task.Run(async () => 
+                await MetaverseProgram.ApiClient.Account.ValidateTokenAsync(), 
+                uploadCancellation.Token).Result;
+            if (!validation.Succeeded)
+            {
+                OnUnauthorizedUpload(() => BeginBuildAndUpload(mainAsset, asset, assetUpsertForm, upsertController, onBuildSuccess));
+                return;
+            }
+
+
             TryDisableGPUInstancingOnWebGLIfUserWantsTo(mainAsset, asset);
 
             switch (mainAsset)
