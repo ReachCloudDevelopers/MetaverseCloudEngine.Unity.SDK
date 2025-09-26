@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.19
-- Refactor AssetEditor: Comment out unused CloudDataSourceListEditor and update BeginBuild method for token validation
+## 2.198.20
+- Fixed compilation errors
 
 Updated on September 26, 2025

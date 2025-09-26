@@ -47,7 +47,6 @@ namespace MetaverseCloudEngine.Unity.Editors
         private SerializedProperty _publishProperty;
         
         private AssetContributorEditor<TAssetDto> _contributorEditor;
-        //private CloudDataSourceListEditor _dataSourceListEditor;
 
         private static int _selectPlatformOption = (int)Platform.StandaloneWindows64;
         private static Dictionary<Platform, BundlePlatformOptions> _currentPlatformOptions;
@@ -84,7 +83,6 @@ namespace MetaverseCloudEngine.Unity.Editors
             _refreshIconContent ??= EditorGUIUtility.IconContent("TreeEditor.Refresh");
             _detachIconContent ??= EditorGUIUtility.IconContent("UnLinked");
             _contributorEditor ??= new AssetContributorEditor<TAssetDto>(Target, Controller, Controller);
-            //_dataSourceListEditor ??= new CloudDataSourceListEditor(CloudDataSourceHost.Asset);
 
             if (serializedObject.targetObject)
             {
@@ -866,7 +864,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 _currentPlatformOptions = originalPlatformOptions;
                 
-                BeginBuild(mainAsset, asset, form, Controller, (dto, _) =>
+                BeginBuildAndUpload(mainAsset, asset, form, Controller, (dto, _) =>
                 {
                     updatedAssetDto = dto;
                 });
@@ -989,8 +987,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null)
         {
             var validation = Task.Run(async () => 
-                await MetaverseProgram.ApiClient.Account.ValidateTokenAsync(), 
-                uploadCancellation.Token).Result;
+                await MetaverseProgram.ApiClient.Account.ValidateTokenAsync()).Result;
             if (!validation.Succeeded)
             {
                 OnUnauthorizedUpload(() => BeginBuildAndUpload(mainAsset, asset, assetUpsertForm, upsertController, onBuildSuccess));

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.198.19",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\\n# Changelog\\n\\n## 2.198.18\\n- Removed external services editor and data sources editor from MetaSpaceEditor.cs\\n\\nUpdated on September 26, 2025\\n# Changelog\\n\\n## 2.198.19\\n- Refactor AssetEditor: Comment out unused CloudDataSourceListEditor and update BeginBuild method for token validation\\n\\nUpdated on September 26, 2025",
+  "version": "2.198.20",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\\n# Changelog\\n\\n## 2.198.18\\n- Removed external services editor and data sources editor from MetaSpaceEditor.cs\\n\\nUpdated on September 26, 2025\\n# Changelog\\n\\n## 2.198.19\\n- Refactor AssetEditor: Comment out unused CloudDataSourceListEditor and update BeginBuild method for token validation\\n\\nUpdated on September 26, 2025\\n# Changelog\\n\\n## 2.198.20\\n- Fixed compilation errors\\n\\nUpdated on September 26, 2025",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
