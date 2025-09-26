@@ -13,7 +13,7 @@ namespace MetaverseCloudEngine.Unity.Editors
     [CustomEditor(typeof(MetaSpace))]
     public class MetaSpaceEditor : AssetEditor<MetaSpace, MetaSpaceMetadata, MetaSpaceDto, MetaSpaceQueryParams, MetaSpaceUpsertForm, MetaSpacePickerEditor>
     {
-        private MetaSpaceExternalServicesListEditor _metaSpaceListEditor;
+        //private MetaSpaceExternalServicesListEditor _metaSpaceListEditor;
 
         protected override object GetMainAsset(MetaSpace asset) => asset ? asset.gameObject.scene : null;
         public override AssetController<MetaSpaceDto, MetaSpaceQueryParams, MetaSpaceUpsertForm> Controller => MetaverseProgram.ApiClient.MetaSpaces;
@@ -156,8 +156,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (Target.ID == null)
                 return;
             
-            _metaSpaceListEditor ??= new MetaSpaceExternalServicesListEditor(Target);
-            _metaSpaceListEditor.Draw();
+            //_metaSpaceListEditor ??= new MetaSpaceExternalServicesListEditor(Target);
+            //_metaSpaceListEditor.Draw();
         }
     }
 }

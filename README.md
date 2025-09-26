@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.17
-- Enhance SegFormerSafeZone with temporal filtering and hysteresis for danger scoring
+## 2.198.18
+- Removed external services editor and data sources editor from MetaSpaceEditor.cs
 
-Updated on September 20, 2025
+Updated on September 26, 2025
