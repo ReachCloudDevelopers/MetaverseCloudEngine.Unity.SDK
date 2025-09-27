@@ -1,5 +1,5 @@
 # MetaverseCloudEngine Unity SDK
-Powered by Reach Cloud Ⓒ 2024
+Powered by Reach Cloud Ⓒ 2025
 ### The Metaverse Cloud Engine Unity SDK
 This package enables you to install the Metaverse Cloud Engine SDK and perform automatic updates within Unity Editor.
 
@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.22
-- Add JS runtime helpers: setInterval/clearInterval, eval cache, dynamic context bridge, GetComponent overloads, and perf benchmarking scripts
+## 2.198.23
+- update copyright year in README.md to 2025
 
 Updated on September 27, 2025
