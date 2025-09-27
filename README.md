@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.20
-- Fixed compilation errors
+## 2.198.21
+- feat: derive SegFormer safe zone from camera and collapsible pagers
 
-Updated on September 26, 2025
+Updated on September 27, 2025

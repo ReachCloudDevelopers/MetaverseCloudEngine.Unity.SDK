@@ -71,7 +71,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             _metaSpacesPager.BeginRequest += OnMetaSpacesEditorBeginRequest;
             _metaSpacesPager.AddButtonClicked += OnMetaSpacesEditorAddButtonClicked;
 
-            _dataSourceListEditor = new CloudDataSourceListEditor(CloudDataSourceHost.Organization);
+            _dataSourceListEditor = new CloudDataSourceListEditor(CloudDataSourceHost.Organization, collapsable: false);
         }
 
         protected override Guid GetRecordIdentifier(OrganizationDto record)

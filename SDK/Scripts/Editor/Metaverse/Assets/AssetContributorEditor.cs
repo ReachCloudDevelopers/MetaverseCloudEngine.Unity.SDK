@@ -23,7 +23,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             AssetController = assetController;
             ContributorController = contributorController;
 
-            _contributorPager = new PaginatedEditor<AssetContributorDto>("Contributors");
+            _contributorPager = new PaginatedEditor<AssetContributorDto>("Contributors", collapsable: true);
             _contributorPager.AddButtonClicked += OnContributorViewAddButtonClicked;
             _contributorPager.BeginRequest += OnContributorViewBeginRequest;
             _contributorPager.DrawRecord += OnContributorViewDrawRecord;

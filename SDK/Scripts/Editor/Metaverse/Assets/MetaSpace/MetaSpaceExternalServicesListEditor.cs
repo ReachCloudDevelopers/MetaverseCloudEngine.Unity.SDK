@@ -14,7 +14,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public MetaSpaceExternalServicesListEditor(IAssetReference assetReference)
         {
-            _paginatedEditor = new PaginatedEditor<MetaSpaceExternalServiceDto>("External Services")
+            _paginatedEditor = new PaginatedEditor<MetaSpaceExternalServiceDto>("External Services", collapsable: true)
              {
                  DisplayFilter = false,
                  DisplayPagers = false

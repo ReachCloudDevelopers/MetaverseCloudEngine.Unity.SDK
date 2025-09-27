@@ -21,18 +21,28 @@ namespace MetaverseCloudEngine.Unity.Editors
         private bool _delayedRequest;
         private int _requestedPage = 1;
         private bool _isError;
+        private readonly bool _collapsable;
+        private bool _isExpanded;
 
         private static GUIContent RefreshContent;
         private static GUIContent AddContent;
+        private static GUIStyle _collapsableHeaderStyle;
 
-        public PaginatedEditor(GUIContent title)
+        private static GUIStyle CollapsableHeaderStyle => _collapsableHeaderStyle ??= new GUIStyle(EditorStyles.foldoutHeader)
+        {
+            fontStyle = FontStyle.Bold
+        };
+
+        public PaginatedEditor(GUIContent title, bool collapsable = false)
         {
             RefreshContent ??= EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? "d_Refresh" : "Refresh");
             AddContent ??= EditorGUIUtility.IconContent(EditorGUIUtility.isProSkin ? "d_CreateAddNew" : "CreateAddNew");
             Title = title;
+            _collapsable = collapsable;
+            _isExpanded = !collapsable;
         }
 
-        public PaginatedEditor(string title) : this(new GUIContent(title))
+        public PaginatedEditor(string title, bool collapsable = false) : this(new GUIContent(title), collapsable)
         {
         }
 
@@ -57,6 +67,9 @@ namespace MetaverseCloudEngine.Unity.Editors
             MetaverseEditorUtils.Box(() =>
             {
                 DrawToolbar();
+
+                if (_collapsable && !_isExpanded)
+                    return;
 
                 if (!string.IsNullOrEmpty(RequestError))
                 {
@@ -227,7 +240,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             try
             {
                 EditorGUILayout.BeginHorizontal("toolbar");
-                EditorGUILayout.LabelField(Title, EditorStyles.boldLabel);
+                if (_collapsable)
+                    _isExpanded = GUILayout.Toggle(_isExpanded, Title, CollapsableHeaderStyle, GUILayout.ExpandWidth(true));
+                else
+                    EditorGUILayout.LabelField(Title, EditorStyles.boldLabel);
 
                 if (_requesting)
                     GUI.enabled = false;

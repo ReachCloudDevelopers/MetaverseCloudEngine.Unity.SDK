@@ -13,10 +13,10 @@ namespace MetaverseCloudEngine.Unity.Editors
         private readonly CloudDataSourceHost _host;
         private readonly PaginatedEditor<CloudDataSourceDto> _dataSourceEditor;
 
-        public CloudDataSourceListEditor(CloudDataSourceHost host)
+        public CloudDataSourceListEditor(CloudDataSourceHost host, bool collapsable = true)
         {
             _host = host;
-            _dataSourceEditor = new PaginatedEditor<CloudDataSourceDto>("Data Sources");
+            _dataSourceEditor = new PaginatedEditor<CloudDataSourceDto>("Data Sources", collapsable);
             _dataSourceEditor.AddButtonClicked += DataSourceEditorOnAddButtonClicked;
             _dataSourceEditor.BeginRequest += DataSourceEditorOnBeginRequest;
             _dataSourceEditor.DrawRecord += DataSourceEditorOnDrawRecord;
