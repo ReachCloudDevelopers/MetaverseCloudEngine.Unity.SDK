@@ -99,18 +99,24 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             if (sourceMetaPrefab != null && spawnable.SourcePrefabID != sourceMetaPrefab.ID)
             {
+#if UNITY_EDITOR
                 spawnable.SourcePrefabID = sourceMetaPrefab.ID;
+#endif
                 EditorUtility.SetDirty(spawnable.gameObject);
             }
             else
             {
+#if UNITY_EDITOR
                 spawnable.SourcePrefabID = null;
+#endif
                 EditorUtility.SetDirty(spawnable.gameObject);
             }
 
             if (spawnable.ID == null || uniqueIDs.Contains(spawnable.ID.Value))
             {
+#if UNITY_EDITOR
                 spawnable.ID = Guid.NewGuid();
+#endif
                 EditorUtility.SetDirty(spawnable.gameObject);
             }
 

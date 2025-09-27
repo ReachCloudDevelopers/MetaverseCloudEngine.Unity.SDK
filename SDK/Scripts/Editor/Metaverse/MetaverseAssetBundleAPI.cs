@@ -143,8 +143,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (buildTarget != BuildTarget.WebGL)
                         UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
 #endif
+#if UNITY_EDITOR
                     MetaPrefab.PreProcessBuild();
                     StartDisabled.PreProcessBuild();
+#endif
                     ApplyGraphicsApiForCurrentPlatform(buildTarget, platform);
                     if (buildTarget != BuildTarget.WebGL && buildTarget != BuildTarget.Android)
                         PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.Mono2x);
@@ -154,7 +156,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                     
                     try
                     {
+#if UNITY_EDITOR
                         MetaverseProgram.IsBuildingAssetBundle = true;
+#endif
                         try
                         {
                             if (lockedAssemblies)
@@ -191,7 +195,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 EditorApplication.LockReloadAssemblies();
                                 lockedAssemblies = true;
                             }
-                            
+
                             if (result < 0)
                             {
                                 MetaverseProgram.Logger.Log("<b><color=red>Build Result</color></b>: " + result);
@@ -206,7 +210,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                         }
                         finally
                         {
+#if UNITY_EDITOR
                             MetaverseProgram.IsBuildingAssetBundle = false;
+#endif
                         }
                     }
                     catch (BuildFailedException e)

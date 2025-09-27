@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿#if UNITY_EDITOR
+using System.IO;
 using System.Linq;
 using MetaverseCloudEngine.Unity.Installer;
 using UnityEditor;
@@ -20,14 +21,15 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             if (openCvCoreFile == null)
             {
                 if (ScriptingDefines.IsDefined("MV_OPENCV"))
-                    ScriptingDefines.Remove(new [] { "MV_OPENCV" });
+                    ScriptingDefines.Remove(new[] { "MV_OPENCV" });
                 return;
             }
-            
+
             if (!ScriptingDefines.IsDefined("MV_OPENCV"))
-                ScriptingDefines.Add(new [] { "MV_OPENCV" });
+                ScriptingDefines.Add(new[] { "MV_OPENCV" });
         }
 
         public void OnPreprocessBuild(BuildReport report) => PatchCode();
     }
 }
+#endif

@@ -1,5 +1,7 @@
 using Jint;
 using Jint.Native;
+using Jint.Runtime;
+using Jint.Native.Error;
 using TMPro;
 using Cinemachine;
 using Cysharp.Threading.Tasks;
@@ -28,6 +30,8 @@ using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
@@ -38,6 +42,7 @@ using Unity.InferenceEngine;
 #endif
 
 // ReSharper disable RedundantUnsafeContext
+// ReSharper disable InconsistentNaming
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
@@ -60,20 +65,201 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         public class ConsoleObject
         {
             private readonly string _prefix;
+            private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
+            private readonly Dictionary<string, Stopwatch> _timers = new(StringComparer.Ordinal);
+            private readonly Stack<string> _groupStack = new();
 
-            public ConsoleObject(string prefix) => _prefix = prefix;
+            public ConsoleObject(string prefix) => _prefix = string.IsNullOrWhiteSpace(prefix) ? "Missing Script" : prefix;
 
-            // ReSharper disable once InconsistentNaming
-            public void log(object o) => MetaverseProgram.Logger.Log($"[{_prefix}] {o}");
+            public void log(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
 
-            // ReSharper disable once InconsistentNaming
-            public void error(object o) => MetaverseProgram.Logger.LogError($"[{_prefix}] {o}");
+            public void info(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
 
-            // ReSharper disable once InconsistentNaming
-            public void warn(object o) => MetaverseProgram.Logger.LogWarning($"[{_prefix}] {o}");
+            public void debug(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
 
-            // ReSharper disable once InconsistentNaming
-            public void info(object o) => MetaverseProgram.Logger.Log($"[{_prefix}] {o}");
+            public void warn(params object[] args) => Log(MetaverseProgram.Logger.LogWarning, args);
+
+            public void error(params object[] args) => Log(MetaverseProgram.Logger.LogError, args);
+
+            public void exception(params object[] args) => Log(MetaverseProgram.Logger.LogError, args.Length > 0 ? args : new object[] { "Exception" });
+
+            public void trace(params object[] args)
+            {
+                var message = FormatArguments(args);
+                var trace = new StackTrace(1, true).ToString();
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(message) ? trace : $"{message}{Environment.NewLine}{trace}");
+            }
+
+            public void assert(params object[] args)
+            {
+                if (args == null || args.Length == 0)
+                {
+                    Log(MetaverseProgram.Logger.LogError, "Assertion failed");
+                    return;
+                }
+
+                if (ToBoolean(args[0]))
+                    return;
+
+                var rest = args.Skip(1).ToArray();
+                if (rest.Length == 0)
+                    Log(MetaverseProgram.Logger.LogError, "Assertion failed");
+                else
+                    Log(MetaverseProgram.Logger.LogError, rest);
+            }
+
+            public void clear() => Log(MetaverseProgram.Logger.Log, "Console cleared");
+
+            public void count(params object[] args)
+            {
+                var label = ExtractLabel(args);
+                var next = _counts.TryGetValue(label, out var current) ? current + 1 : 1;
+                _counts[label] = next;
+                Log(MetaverseProgram.Logger.Log, $"{label}: {next}");
+            }
+
+            public void countReset(params object[] args)
+            {
+                var label = ExtractLabel(args);
+                _counts[label] = 0;
+                Log(MetaverseProgram.Logger.Log, $"{label}: 0");
+            }
+
+            public void group(params object[] args)
+            {
+                var label = FormatArguments(args);
+                if (string.IsNullOrEmpty(label))
+                    label = "Group";
+                Log(MetaverseProgram.Logger.Log, $"▼ {label}");
+                _groupStack.Push(label);
+            }
+
+            public void groupCollapsed(params object[] args)
+            {
+                var label = FormatArguments(args);
+                if (string.IsNullOrEmpty(label))
+                    label = "Group";
+                Log(MetaverseProgram.Logger.Log, $"▷ {label}");
+                _groupStack.Push(label);
+            }
+
+            public void groupEnd()
+            {
+                if (_groupStack.Count == 0)
+                    return;
+
+                var label = _groupStack.Pop();
+                Log(MetaverseProgram.Logger.Log, $"▲ {label}");
+            }
+
+            public void time(params object[] args)
+            {
+                var label = ExtractLabel(args);
+                if (_timers.TryGetValue(label, out var stopwatch))
+                    stopwatch.Restart();
+                else
+                    _timers[label] = Stopwatch.StartNew();
+            }
+
+            public void timeLog(params object[] args)
+            {
+                var label = ExtractLabel(args);
+                if (!_timers.TryGetValue(label, out var stopwatch))
+                    return;
+
+                var rest = args?.Skip(1).ToArray() ?? Array.Empty<object>();
+                var message = $"{label}: {stopwatch.Elapsed.TotalMilliseconds:F2} ms";
+                var restMessage = FormatArguments(rest);
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(restMessage) ? message : $"{message} {restMessage}");
+            }
+
+            public void timeEnd(params object[] args)
+            {
+                var label = ExtractLabel(args);
+                if (!_timers.TryGetValue(label, out var stopwatch))
+                    return;
+
+                stopwatch.Stop();
+                _timers.Remove(label);
+
+                var rest = args?.Skip(1).ToArray() ?? Array.Empty<object>();
+                var message = $"{label}: {stopwatch.Elapsed.TotalMilliseconds:F2} ms";
+                var restMessage = FormatArguments(rest);
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(restMessage) ? message : $"{message} {restMessage}");
+            }
+
+            public void timeStamp(params object[] args)
+            {
+                var label = FormatArguments(args);
+                var message = string.IsNullOrEmpty(label) ? $"timestamp: {DateTime.UtcNow:O}" : $"{label}: {DateTime.UtcNow:O}";
+                Log(MetaverseProgram.Logger.Log, message);
+            }
+
+            public void table(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
+
+            public void dir(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
+
+            public void dirxml(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
+
+            public void profile(params object[] args)
+            {
+                var label = FormatArguments(args);
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(label) ? "Profile started" : $"Profile started: {label}");
+            }
+
+            public void profileEnd(params object[] args)
+            {
+                var label = FormatArguments(args);
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(label) ? "Profile ended" : $"Profile ended: {label}");
+            }
+
+            private static bool ToBoolean(object value) => value switch
+            {
+                null => false,
+                bool b => b,
+                JsValue jsValue => jsValue.ToObject() is bool jb && jb,
+                double d => Math.Abs(d) > double.Epsilon,
+                float f => Math.Abs(f) > float.Epsilon,
+                int i => i != 0,
+                long l => l != 0,
+                string s => !string.IsNullOrEmpty(s),
+                _ => true
+            };
+
+            private static string FormatArguments(object[] args)
+            {
+                if (args == null || args.Length == 0)
+                    return string.Empty;
+
+                return string.Join(", ", args.Select(FormatArgument));
+            }
+
+            private static string FormatArgument(object value) => value switch
+            {
+                null => "null",
+                string s => s,
+                JsValue jsValue => jsValue.ToString(),
+                _ => value.ToString()
+            };
+
+            private string ExtractLabel(object[] args) => args != null && args.Length > 0
+                ? FormatArgument(args[0])
+                : "default";
+
+            private void Log(Action<string> logger, params object[] args)
+            {
+                var content = FormatArguments(args);
+                var indent = _groupStack.Count > 0 ? new string(' ', _groupStack.Count * 2) : string.Empty;
+
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    var message = string.IsNullOrEmpty(indent) ? $"[{_prefix}]" : $"[{_prefix}] {indent}";
+                    logger(message);
+                    return;
+                }
+
+                logger($"[{_prefix}] {indent}{content}");
+            }
         }
 
 #pragma warning disable CS0618
@@ -183,8 +369,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private const string IsStateAuthorityFunction = "GetIsStateAuthority";
         private const string GetEnabledFunction = "GetEnabled";
         private const string SetEnabledFunction = "SetEnabled";
+        private const string GetComponentFunction = "GetComponent";
         private const string SetTimeoutFunction = "setTimeout";
+        private const string SetIntervalFunction = "setInterval";
         private const string ClearTimeoutFunction = "clearTimeout";
+        private const string ClearIntervalFunction = "clearInterval";
+        private const string EvalFunction = "eval";
         private const string RegisterRPCFunction = "RegisterRPC";
         private const string UnregisterRPCFunction = "UnregisterRPC";
         private const string ServerRPCFunction = "ServerRPC";
@@ -216,9 +406,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         private Engine _engine;
         private Dictionary<ScriptFunctions, JsValue> _methods;
         private ConsoleObject _console;
+        private ScriptContext _context;
         private readonly Dictionary<string, JsValue> _functionLookup = new();
         private static int _timeoutHandleIndex;
         private readonly HashSet<int> _timeoutHandles = new();
+        private readonly Dictionary<int, IntervalRegistration> _intervalHandles = new();
+        private readonly Dictionary<string, Prepared<Acornima.Ast.Script>> _evalScriptCache =
+            new(StringComparer.Ordinal);
         private readonly Queue<Action> _initializationMethodQueue = new();
 
         // ReSharper disable once InconsistentNaming
@@ -226,6 +420,180 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Retrieves the console object allowed to be accessed from JavaScript.
         /// </summary>
         private ConsoleObject console => _console ??= new ConsoleObject(javascriptFile ? javascriptFile.name : "Missing Script");
+
+        /// <summary>
+        /// Provides a helper context exposed to other scripts via GetMetaverseScript.
+        /// </summary>
+        [UsedImplicitly]
+        public ScriptContext context => _context ??= new ScriptContext(this);
+
+        private bool TryConsumeTimerHandle(int handle)
+        {
+            if (!_timeoutHandles.Remove(handle))
+                return false;
+
+            _intervalHandles.Remove(handle);
+            return true;
+        }
+
+        private void ClearTimerHandle(int handle)
+        {
+            _timeoutHandles.Remove(handle);
+            _intervalHandles.Remove(handle);
+        }
+
+        private void ScheduleInterval(int handle, IntervalRegistration registration)
+        {
+            var delay = Mathf.Max(0f, registration.IntervalSeconds);
+            MetaverseDispatcher.WaitForSeconds(delay, () =>
+            {
+                if (!this || !isActiveAndEnabled)
+                    return;
+
+                if (!_intervalHandles.TryGetValue(handle, out var active) || !ReferenceEquals(active, registration))
+                    return;
+
+                try
+                {
+                    active.Callback?.Invoke();
+                }
+                catch (Exception e)
+                {
+                    console.error(
+                        $"Error in setInterval on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                }
+
+                if (_intervalHandles.ContainsKey(handle))
+                    ScheduleInterval(handle, active);
+            });
+        }
+
+        private JsValue EvaluateDynamicScript(string source)
+        {
+            if (!this || !_ready || _engine == null)
+                return JsValue.Undefined;
+
+            if (string.IsNullOrWhiteSpace(source))
+                return JsValue.Undefined;
+
+            try
+            {
+                if (!_evalScriptCache.TryGetValue(source, out var prepared))
+                {
+                    prepared = Engine.PrepareScript(source, strict: true);
+                    _evalScriptCache[source] = prepared;
+                }
+
+                return _engine.Evaluate(in prepared);
+            }
+            catch (JavaScriptException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                console.error(
+                    $"Error in eval on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}");
+                var errorValue = _engine.GetValue("Error");
+                if (errorValue.IsObject() && errorValue.AsObject() is ErrorConstructor ctor)
+                {
+                    throw new JavaScriptException(ctor, e.GetBaseException().Message ?? "eval failed");
+                }
+
+                throw;
+            }
+        }
+
+        private sealed class IntervalRegistration
+        {
+            public IntervalRegistration(Action callback, float intervalSeconds)
+            {
+                Callback = callback;
+                IntervalSeconds = intervalSeconds;
+            }
+
+            public Action Callback { get; }
+            public float IntervalSeconds { get; }
+        }
+
+        public sealed class ScriptContext : DynamicObject
+        {
+            private readonly MetaverseScript _owner;
+
+            public ScriptContext(MetaverseScript owner)
+            {
+                _owner = owner;
+            }
+
+            public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
+            {
+                result = InvokeInternal(binder?.Name, args);
+                return true;
+            }
+
+            public override bool TryGetMember(GetMemberBinder binder, out object result)
+            {
+                if (string.IsNullOrWhiteSpace(binder?.Name) || _owner?._engine == null || !_owner._ready)
+                {
+                    result = JsValue.Undefined;
+                    return true;
+                }
+
+                var value = _owner._engine.GetValue(binder.Name);
+                result = value.ToObject();
+                return true;
+            }
+
+            public override bool TryInvoke(InvokeBinder binder, object[] args, out object result)
+            {
+                if (args is { Length: > 0 } && args[0] is string functionName)
+                {
+                    var remaining = args.Length > 1 ? args.Skip(1).ToArray() : Array.Empty<object>();
+                    result = InvokeInternal(functionName, remaining);
+                    return true;
+                }
+
+                result = JsValue.Undefined;
+                return false;
+            }
+
+            private JsValue InvokeInternal(string functionName, object[] args)
+            {
+                if (_owner == null || string.IsNullOrWhiteSpace(functionName))
+                    return JsValue.Undefined;
+
+                var normalized = NormalizeArguments(args);
+
+                try
+                {
+                    JsValue result = normalized.Length > 0
+                        ? _owner.Execute(functionName, normalized)
+                        : _owner.Execute(functionName);
+
+                    return result ?? JsValue.Undefined;
+                }
+                catch (Exception ex)
+                {
+                    _owner?.console.error(
+                        $"Error executing '{functionName}' via context on {(_owner?.javascriptFile ? _owner.javascriptFile.name : "Missing Script")}: {ex.GetBaseException()}");
+                    return JsValue.Undefined;
+                }
+            }
+
+            private static object[] NormalizeArguments(object[] args)
+            {
+                if (args == null || args.Length == 0)
+                    return Array.Empty<object>();
+
+                var normalized = new object[args.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    normalized[i] = args[i] is JsValue jsValue ? jsValue.ToObject() : args[i];
+                }
+
+                return normalized;
+            }
+        }
 
         /// <summary>
         /// Gets the variable declarations for the JavaScript file.
@@ -240,6 +608,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         protected override unsafe void OnDestroy()
         {
             _initializationMethodQueue.Clear(); // Make sure no initialization methods are triggered.
+            _timeoutHandles.Clear();
+            _intervalHandles.Clear();
+            _evalScriptCache.Clear();
 
             base.OnDestroy();
 
@@ -897,8 +1268,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 foreach (var include in includes)
                     if (include && !string.IsNullOrEmpty(include.text))
-                        _engine.Execute(await MetaverseScriptCache.Current.GetScriptAsync(include, c));
-                _engine.Execute(await MetaverseScriptCache.Current.GetScriptAsync(javascriptFile, c));
+                    {
+                        var includeScript = await MetaverseScriptCache.Current.GetScriptAsync(include, c);
+                        _engine.Execute(in includeScript);
+                    }
+
+                var mainScript = await MetaverseScriptCache.Current.GetScriptAsync(javascriptFile, c);
+                _engine.Execute(in mainScript);
 
                 var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
                 foreach (var method in methods)
@@ -1004,6 +1380,33 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
                 // MetaSpace Property
                 { MetaSpaceProperty, MetaSpace.Instance },
+
+                // Component helpers
+                {
+                    GetComponentFunction, (Func<object, Component>)(identifier =>
+                    {
+                        if (!context || !context.gameObject)
+                            return null;
+
+                        if (identifier is string typeName)
+                            return context.gameObject.GetComponent(typeName);
+
+                        if (identifier is Type type)
+                            return context.gameObject.GetComponent(type);
+
+                        if (identifier is JsValue jsValue)
+                        {
+                            if (jsValue.IsString())
+                                return context.gameObject.GetComponent(jsValue.AsString());
+
+                            var resolved = jsValue.ToObject();
+                            if (resolved is Type jsType)
+                                return context.gameObject.GetComponent(jsType);
+                        }
+
+                        return null;
+                    })
+                },
 
                 // Global Variable Functions
                 { GetGlobalFunction, (Func<string, object>)(k => MetaverseScriptCache.Current.GetStaticReference(k)) },
@@ -1114,7 +1517,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         {
                             if (!context || !context.isActiveAndEnabled)
                                 return;
-                            if (!context._timeoutHandles.Remove(h)) return;
+                            if (!context.TryConsumeTimerHandle(h)) return;
                             try
                             {
                                 a?.Invoke();
@@ -1128,7 +1531,35 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         return h;
                     })
                 },
-                { ClearTimeoutFunction, (Action<int>)(h => context._timeoutHandles.Remove(h)) },
+                {
+                    SetIntervalFunction, (Func<Action, int, int>)((a, t) =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return -1;
+
+                        var handle = ++_timeoutHandleIndex;
+                        var seconds = Mathf.Max(0f, t / 1000f);
+                        var registration = new IntervalRegistration(a, seconds);
+                        context._intervalHandles[handle] = registration;
+                        context.ScheduleInterval(handle, registration);
+                        return handle;
+                    })
+                },
+                { ClearTimeoutFunction, (Action<int>)(context.ClearTimerHandle) },
+                { ClearIntervalFunction, (Action<int>)(context.ClearTimerHandle) },
+                {
+                    EvalFunction, (Func<JsValue, JsValue>)(value =>
+                    {
+                        if (!context || !context.isActiveAndEnabled)
+                            return JsValue.Undefined;
+
+                        if (!value.IsString())
+                            return value;
+
+                        var source = value.AsString();
+                        return context.EvaluateDynamicScript(source);
+                    })
+                },
 
                 // Coroutine Function
                 { CoroutineFunction, (Action<Func<object>>)(o => context.StartCoroutine(CoroutineUpdate(o))) },

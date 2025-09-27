@@ -1,4 +1,4 @@
-﻿using Esprima.Ast;
+﻿using Acornima.Ast;
 
 using Jint;
 
@@ -19,7 +19,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
     [DisallowMultipleComponent]
     public class MetaverseScriptCache : MonoBehaviour
     {
-        private Dictionary<TextAsset, Script> _scriptModules;
+        private Dictionary<TextAsset, Prepared<Script>> _scriptModules;
         private Dictionary<string, object> _staticReferences;
         private static MetaverseScriptCache _current;
 
@@ -42,20 +42,20 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         }
 
         /// <summary>
-        /// Gets a cached Esprima script object or creates one if it's not already cached.
+        /// Gets a cached prepared script or creates one if it's not already cached.
         /// </summary>
         /// <param name="asset">The text asset that contians the source code.</param>
         /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
         /// <param name="preProcessScript">An optional preprocessing step to run on the text of the source file.</param>
-        /// <returns>The <see cref="Script"/> that was prepared by <see cref="Engine.PrepareScript(string, string?, bool)"/></returns>
-        public UniTask<Script> GetScriptAsync(TextAsset asset, CancellationToken cancellationToken, Func<string, string> preProcessScript = null)
+        /// <returns>The prepared script returned by <see cref="Engine.PrepareScript(string, string, bool, ScriptPreparationOptions)"/>.</returns>
+        public UniTask<Prepared<Script>> GetScriptAsync(TextAsset asset, CancellationToken cancellationToken, Func<string, string> preProcessScript = null)
         {
             if (!asset)
                 throw new ArgumentNullException(nameof(asset));
             return UniTask.Create(async () =>
             {
                 await UniTask.SwitchToMainThread(cancellationToken);
-                _scriptModules ??= new Dictionary<TextAsset, Script>();
+                _scriptModules ??= new Dictionary<TextAsset, Prepared<Script>>();
                 if (_scriptModules.TryGetValue(asset, out var code))
                     return code;
                 MetaverseProgram.Logger.Log($"[MetaverseScript] Initializing {asset.name}.js...");

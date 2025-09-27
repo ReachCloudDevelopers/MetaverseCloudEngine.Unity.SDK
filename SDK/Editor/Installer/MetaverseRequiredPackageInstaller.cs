@@ -1,8 +1,7 @@
-#if !CLOUD_BUILD_PLATFORM
+#if !CLOUD_BUILD_PLATFORM && UNITY_EDITOR
 using System;
 using System.Linq;
 using System.Net;
-using MetaverseCloudEngine.Unity.Installer;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.Callbacks;

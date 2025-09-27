@@ -1,18 +1,20 @@
-﻿{
-  "name": "MetaverseCloudEngine.Unity.FoPC",
-  "rootNamespace": "MetaverseCloudEngine.Unity.FixingOtherPeoplesCode",
-  "references": [
-    "GUID:36796cdf0b177bd40b75ac45f74d1378"
-  ],
-  "includePlatforms": [
-    "Editor"
-  ],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+{
+    "name": "MetaverseCloudEngine.Unity.FoPC",
+    "rootNamespace": "MetaverseCloudEngine.Unity.FixingOtherPeoplesCode",
+    "references": [
+        "GUID:36796cdf0b177bd40b75ac45f74d1378"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "UNITY_EDITOR"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

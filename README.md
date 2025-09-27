@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.21
-- feat: derive SegFormer safe zone from camera and collapsible pagers
+## 2.198.22
+- Add JS runtime helpers: setInterval/clearInterval, eval cache, dynamic context bridge, GetComponent overloads, and perf benchmarking scripts
 
 Updated on September 27, 2025
