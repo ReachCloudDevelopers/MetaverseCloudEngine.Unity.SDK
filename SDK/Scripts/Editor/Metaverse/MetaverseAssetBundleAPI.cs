@@ -120,18 +120,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                     var targetBundleId = $"{bundleId}_{platform}";
                     var validAssetNames = new List<string>();
 
-                    AssetDatabase.StartAssetEditing();
-                    try
-                    {
-                        CollectAssetNamesFromAssetBundleDependencies(dependencies, targetBundleId, validAssetNames);
-                        if (validAssetNames.Count == 0)
-                            throw new BuildFailedException("There were no valid assets to build.");
-                        ApplyPlatformOptions(platformOptions, platform, validAssetNames, group);
-                    }
-                    finally
-                    {
-                        AssetDatabase.StopAssetEditing();
-                    }
+                    CollectAssetNamesFromAssetBundleDependencies(dependencies, targetBundleId, validAssetNames);
+                    if (validAssetNames.Count == 0)
+                        throw new BuildFailedException("There were no valid assets to build.");
+                    ApplyPlatformOptions(platformOptions, platform, validAssetNames, group);
 
                     // Create sub-output directory.
                     var outputFolder = $"{Path.Combine(MetaverseBuildDirectory, targetBundleId)}_Data";
@@ -321,6 +313,11 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             foreach (var assetName in dependencies)
             {
+                if (!assetName.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (assetName.Contains("/Editor/"))
+                    continue;
+
                 var importer = AssetImporter.GetAtPath(assetName);
                 if (!importer)
                     continue;
@@ -333,7 +330,8 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 importer.SetAssetBundleNameAndVariant(targetBundleId, string.Empty);
                 validAssetNames.Add(assetName);
-                importer.SaveAndReimport();
+                if (AssetDatabase.WriteImportSettingsIfDirty(assetName))
+                    AssetDatabase.ImportAsset(assetName, ImportAssetOptions.DontDownloadFromCacheServer);
             }
         }
 

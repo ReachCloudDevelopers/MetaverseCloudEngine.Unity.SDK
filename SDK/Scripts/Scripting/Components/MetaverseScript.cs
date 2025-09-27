@@ -1972,7 +1972,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(SilverTau.RoomPlanUnity.CapturedObjectAttributes).Assembly
                 , typeof(SilverTau.Triangulation.AdvancingFront).Assembly
 #endif
-#if MV_XVISIO
+#if MV_XVISIO && UNITY_STANDALONE_WIN
                 , typeof(Xvisio.Unity.XvisioUnityWrapper).Assembly
 #endif
             };
