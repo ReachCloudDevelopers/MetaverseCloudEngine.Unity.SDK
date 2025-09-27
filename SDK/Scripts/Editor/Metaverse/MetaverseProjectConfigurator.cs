@@ -82,14 +82,14 @@ namespace MetaverseCloudEngine.Unity.Editors
                         typeof(ARCoreLoader).FullName
 #endif
                     }, 
-                    xrsdk: XRSDK.None,
+                    xrsdk: MetaverseCloudEngine.Unity.XR.XRSDK.None,
                     changeInitOnStartup: false);
 
                 MetaverseEditorUtils.ConfigureXRLoaders(BuildTargetGroup.Standalone, new[] 
                     {
                         typeof(OpenXRLoader).FullName,
                     },
-                    xrsdk: XRSDK.None,
+                    xrsdk: MetaverseCloudEngine.Unity.XR.XRSDK.None,
                     changeInitOnStartup: false);
 #endif
                 SessionState.SetBool(configureXrSessionFlag, true);

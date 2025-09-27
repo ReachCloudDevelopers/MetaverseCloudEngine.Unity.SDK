@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.25
-- Add AGENTS.md.meta file with initial configuration
+## 2.198.26
+- Fix XRSDK reference in MetaverseProjectConfigurator to use the correct namespace
 
 Updated on September 27, 2025
