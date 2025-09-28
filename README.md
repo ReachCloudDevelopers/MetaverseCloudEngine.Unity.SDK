@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.31
-- Add JavaScript-friendly overloads for GetComponent methods with error handling
+## 2.198.32
+- Refactor MinMagnitude property to include change detection logic
 
 Updated on September 28, 2025

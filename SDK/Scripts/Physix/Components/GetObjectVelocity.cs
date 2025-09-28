@@ -38,7 +38,16 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
         /// <summary>
         /// Gets or sets the minimum magnitude.
         /// </summary>
-        public float MinMagnitude { get => minMagnitude; set => minMagnitude = value; }
+        public float MinMagnitude
+        {
+            get => minMagnitude;
+            set
+            {
+                if (minMagnitude != value)
+                    _firstGet = true;
+                minMagnitude = value;
+            }
+        }
 
         private void Reset()
         {
