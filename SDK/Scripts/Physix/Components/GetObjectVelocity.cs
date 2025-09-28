@@ -25,10 +25,10 @@ namespace MetaverseCloudEngine.Unity.Physix.Components
         [Space]
         [SerializeField] private bool everyFrame = true;
         [SerializeField, Min(0)] private float minMagnitude = 0;
-        [SerializeField] private UnityEvent<Vector3> onGetVelocity;
-        [SerializeField] private UnityEvent<float> onGetVelocityMagnitude;
-        [SerializeField] private UnityEvent onAboveMin;
-        [SerializeField] private UnityEvent onBelowMin;
+        [SerializeField] private UnityEvent<Vector3> onGetVelocity = new();
+        [SerializeField] private UnityEvent<float> onGetVelocityMagnitude = new();
+        [SerializeField] private UnityEvent onAboveMin = new();
+        [SerializeField] private UnityEvent onBelowMin = new();
 
         private Vector3 _lastPosition;
         private Vector3 _transformVelocity;
