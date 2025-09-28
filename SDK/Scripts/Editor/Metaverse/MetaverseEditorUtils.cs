@@ -36,7 +36,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         };
 
         private static GUIStyle _textFieldStyle;
-        public static GUIStyle TextFieldStyle => _textFieldStyle ?? new GUIStyle(EditorStyles.textField);
+        public static GUIStyle TextFieldStyle => _textFieldStyle ??= new GUIStyle(EditorStyles.textField);
 
         private static GUIStyle _editorIconStyle;
         public static GUIStyle EditorIconStyle => _editorIconStyle ??= new GUIStyle()
@@ -51,7 +51,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public static Texture2D EditorIcon => _editorIcon
             ? _editorIcon
-            : Resources.Load<Texture2D>(MetaverseConstants.Resources.ResourcesBasePath + "EditorIcon");
+            : _editorIcon = Resources.Load<Texture2D>(MetaverseConstants.Resources.ResourcesBasePath + "EditorIcon");
 
         public static void Disabled(Action draw, bool isDisabled = true)
         {

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.27
-- Refactor asset bundle processing and improve asset validation logic
+## 2.198.28
+- Refactor GUIStyle properties and update plugin references for improved functionality
 
 Updated on September 27, 2025

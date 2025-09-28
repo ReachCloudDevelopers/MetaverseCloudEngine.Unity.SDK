@@ -54,7 +54,11 @@
         "MetaverseCloudEngine.ApiClient.dll",
         "MetaverseCloudEngine.Common.dll",
         "Newtonsoft.Json.dll",
-        "Mono.Cecil.dll"
+        "Mono.Cecil.dll",
+        "Jint.dll",
+        "Acornima.dll",
+        "Esprima.dll",
+        "System.Runtime.CompilerServices.Unsafe.dll"
     ],
     "autoReferenced": true,
     "defineConstraints": [
