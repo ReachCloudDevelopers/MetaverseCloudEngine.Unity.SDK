@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.28
-- Refactor GUIStyle properties and update plugin references for improved functionality
+## 2.198.29
+- Remove unused metadata file for MetaverseIntellisenseGenerator
 
-Updated on September 27, 2025
+Updated on September 28, 2025
