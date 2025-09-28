@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.29
-- Remove unused metadata file for MetaverseIntellisenseGenerator
+## 2.198.30
+- Add JintTypeResolver and ComponentJintExtensions for JavaScript integration
 
 Updated on September 28, 2025

@@ -618,7 +618,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnDestroy, out method) == true)
-                    _ = _engine.Invoke(method);
+                    try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnDestroy on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
             }
 
             _engine?.Dispose();
@@ -629,7 +629,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnEnable on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnDisable()
@@ -637,7 +637,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnDisable, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnDisable on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void Start()
@@ -703,10 +703,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                                 if (!_ready) return;
                                 JsValue onEnableMethod = null;
                                 if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
-                                    _ = _engine.Invoke(onEnableMethod);
+                                    try { _ = _engine.Invoke(onEnableMethod); } catch (Exception e) { console.error($"Error in OnEnable on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
                                 JsValue startMethod = null;
                                 if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
-                                    _ = _engine.Invoke(startMethod);
+                                    try { _ = _engine.Invoke(startMethod); } catch (Exception e) { console.error($"Error in Start on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
                             }
 
                             unsafe void CallAwake()
@@ -717,7 +717,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                                 {
                                     JsValue awakeMethod = null;
                                     if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
-                                        _ = _engine.Invoke(awakeMethod);
+                                        try { _ = _engine.Invoke(awakeMethod); } catch (Exception e) { console.error($"Error in Awake on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
 
                                     while (_initializationMethodQueue.TryDequeue(out var a))
                                     {
@@ -758,7 +758,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnGUI, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnGUI on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void Update()
@@ -766,7 +766,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.Update, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in Update on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void LateUpdate()
@@ -774,7 +774,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.LateUpdate, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in LateUpdate on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void FixedUpdate()
@@ -782,7 +782,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.FixedUpdate, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in FixedUpdate on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerEnter(Collider other)
@@ -790,7 +790,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter, out method) == true)
-                _ = _engine.Invoke(method, other);
+                try { _ = _engine.Invoke(method, other); } catch (Exception e) { console.error($"Error in OnTriggerEnter on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerExit(Collider other)
@@ -798,7 +798,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit, out method) == true)
-                _ = _engine.Invoke(method, other);
+                try { _ = _engine.Invoke(method, other); } catch (Exception e) { console.error($"Error in OnTriggerExit on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerStay(Collider other)
@@ -806,7 +806,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay, out method) == true)
-                _ = _engine.Invoke(method, other);
+                try { _ = _engine.Invoke(method, other); } catch (Exception e) { console.error($"Error in OnTriggerStay on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerEnter2D(Collider2D collision)
@@ -814,7 +814,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerEnter2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnTriggerEnter2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerExit2D(Collider2D collision)
@@ -822,7 +822,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerExit2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnTriggerExit2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnTriggerStay2D(Collider2D collision)
@@ -830,7 +830,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnTriggerStay2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnTriggerStay2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnAnimatorIK(int layer)
@@ -838,7 +838,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorIK, out method) == true)
-                _ = _engine.Invoke(method, layer);
+                try { _ = _engine.Invoke(method, layer); } catch (Exception e) { console.error($"Error in OnAnimatorIK on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnAnimatorMove()
@@ -846,7 +846,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnAnimatorMove, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnAnimatorMove on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionEnter(Collision collision)
@@ -854,7 +854,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionEnter on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionExit(Collision collision)
@@ -862,7 +862,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionExit on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionStay(Collision collision)
@@ -870,7 +870,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionStay on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionEnter2D(Collision2D collision)
@@ -878,7 +878,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionEnter2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionEnter2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionExit2D(Collision2D collision)
@@ -886,7 +886,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionExit2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionExit2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         private unsafe void OnCollisionStay2D(Collision2D collision)
@@ -894,7 +894,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay2D, out method) == true)
-                _ = _engine.Invoke(method, collision);
+                try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionStay2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         public override unsafe void OnNetworkReady(bool offline)
@@ -904,7 +904,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnNetworkReady, out method) == true)
-                    _ = _engine.Invoke(method, offline);
+                    try { _ = _engine.Invoke(method, offline); } catch (Exception e) { console.error($"Error in OnNetworkReady on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
             });
         }
 
@@ -915,7 +915,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.RegisterNetworkRPCs, out method) == true)
-                    _ = _engine.Invoke(method);
+                    try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in RegisterNetworkRPCs on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
             });
         }
 
@@ -925,7 +925,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.UnRegisterNetworkRPCs, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in UnRegisterNetworkRPCs on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         protected override unsafe void OnMetaSpaceBehaviourInitialize()
@@ -935,7 +935,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourInitialize, out method) == true)
-                    _ = _engine.Invoke(method);
+                    try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnMetaSpaceBehaviourInitialize on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
             });
         }
 
@@ -946,7 +946,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 JsValue method = null;
                 if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceServicesRegistered, out method) == true)
-                    _ = _engine.Invoke(method);
+                    try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnMetaSpaceServicesRegistered on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
             });
         }
 
@@ -956,7 +956,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             if (!_ready) return;
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnMetaSpaceBehaviourDestroyed, out method) == true)
-                _ = _engine.Invoke(method);
+                try { _ = _engine.Invoke(method); } catch (Exception e) { console.error($"Error in OnMetaSpaceBehaviourDestroyed on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         /// <summary>
@@ -1860,6 +1860,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         {
             return new[]
             {
+                typeof(ComponentJintExtensions),
                 typeof(Enumerable),
                 typeof(MVUtils),
                 typeof(MetaverseDispatcherExtensions),
