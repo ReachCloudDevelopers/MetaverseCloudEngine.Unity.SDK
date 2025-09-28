@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.30
-- Add JintTypeResolver and ComponentJintExtensions for JavaScript integration
+## 2.198.31
+- Add JavaScript-friendly overloads for GetComponent methods with error handling
 
 Updated on September 28, 2025
