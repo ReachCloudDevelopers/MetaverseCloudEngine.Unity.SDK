@@ -326,7 +326,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                 }
                 
                 MetaverseProgram.Logger.LogError(
-                    $"[MetaSpace] Failed to register action for MetaSpace.OnReady: {e.GetBaseException()}");
+                    $"[METASPACE] Failed to register action for MetaSpace.OnReady: {e.GetBaseException()}");
             }
         }
 
@@ -390,7 +390,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             }
             catch (Exception e)
             {
-                MetaverseProgram.Logger.LogError($"[MetaSpace] {e}");
+                MetaverseProgram.Logger.LogError($"[METASPACE] {e}");
             }
 
             yield return PreloadMetaPrefabsRoutine();
@@ -403,7 +403,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             }
             catch (Exception e) 
             { 
-                MetaverseProgram.Logger.LogError($"[MetaSpace] {e}");
+                MetaverseProgram.Logger.LogError($"[METASPACE] {e}");
             }
 
             InitializeServices();
@@ -417,10 +417,10 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         private IEnumerator PreloadMetaPrefabsRoutine()
         {
             var networking = GetService<IMetaSpaceNetworkingService>();
-            MetaverseProgram.Logger.Log("[MetaSpace] Establishing connection before preloading...");
+            MetaverseProgram.Logger.Log("[METASPACE] Establishing connection before preloading...");
             if (networking is not null)
                 yield return new WaitUntil(() => networking.IsReady);
-            MetaverseProgram.Logger.Log("[MetaSpace] Beginning to preload prefabs...");
+            MetaverseProgram.Logger.Log("[METASPACE] Beginning to preload prefabs...");
             
             var preloadedPrefabs = new List<Guid>();
             var prefabIds = ScanEntireSceneForPreLoadableMetaPrefabs(networking);
@@ -440,7 +440,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             while (loadingSpawners.Any(x => x.IsLoading))
                 yield return new WaitForSeconds(pingInterval);
 
-            MetaverseProgram.Logger.Log($"[MetaSpace] Finished pre-loading {preloadedPrefabs.Count} prefab(s).");
+            MetaverseProgram.Logger.Log($"[METASPACE] Finished pre-loading {preloadedPrefabs.Count} prefab(s).");
             yield break;
 
             void LoadPrefab(Guid pId)

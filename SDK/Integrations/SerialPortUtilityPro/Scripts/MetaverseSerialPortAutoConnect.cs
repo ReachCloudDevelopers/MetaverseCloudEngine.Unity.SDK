@@ -165,7 +165,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (_currentAutoConnect == this)
                     _currentAutoConnect = null;
                 if (debugLog)
-                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {SaveKey} Event ID: {e.ToUpperInvariant().Trim()}");
+                    MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] {SaveKey} Event ID: {e.ToUpperInvariant().Trim()}");
                 switch (e.ToUpperInvariant().Trim())
                 {
                     case "CLOSED":
@@ -214,12 +214,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             MetaverseProgram.Prefs.SetString(GetSaveKey(), deviceInfo.ToString());
                             onHasSavedDevice?.Invoke();
                             if (debugLog)
-                                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Saved device info: {deviceInfo}");
+                                MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] Saved device info: {deviceInfo}");
                         }
                         else if (debugLog)
                         {
                             MetaverseProgram.Logger.Log(
-                                $"[SPUP AutoConnect] Device opened: {deviceInfo} | SaveLastDevice: {saveLastDevice} | SaveKey: {saveKey}");
+                                $"[SPUP_AUTOCONNECT] Device opened: {deviceInfo} | SaveLastDevice: {saveLastDevice} | SaveKey: {saveKey}");
                         }
 
                         break;
@@ -236,7 +236,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private void OnDisable()
         {
             if (debugLog)
-                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->OnDisable()");
+                MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] {saveKey}->OnDisable()");
             Close();
         }
 
@@ -246,12 +246,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
         public void DisconnectAndForget()
         {
             if (debugLog)
-                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->DisconnectAndForget()");
+                MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] {saveKey}->DisconnectAndForget()");
             Close();
             if (!saveLastDevice || string.IsNullOrEmpty(saveKey)) return;
             MetaverseProgram.Prefs.DeleteKey(GetSaveKey());
             if (debugLog)
-                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Cleared saved device info for: {saveKey}");
+                MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] Cleared saved device info for: {saveKey}");
         }
 
         /// <summary>
@@ -260,7 +260,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         public void Close()
         {
             if (debugLog)
-                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->Close()");
+                MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] {saveKey}->Close()");
             if (_currentAutoConnect == this)
                 _currentAutoConnect = null;
             _opening = false;
@@ -280,7 +280,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (this && debugLog)
                         MetaverseProgram.Logger.Log(
-                            "[SPUP AutoConnect] Canceled because the component is not enabled.");
+                            "[SPUP_AUTOCONNECT] Canceled because the component is not enabled.");
                     return;
                 }
 
@@ -288,7 +288,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog && !string.IsNullOrWhiteSpace(saveKey))
                         MetaverseProgram.Logger.Log(
-                            $"[SPUP AutoConnect] {saveKey} Waiting to auto connect...");
+                            $"[SPUP_AUTOCONNECT] {saveKey} Waiting to auto connect...");
                     MetaverseDispatcher.WaitUntil(
                         () => !this || !isActiveAndEnabled || !_currentAutoConnect || _currentAutoConnect == this, () =>
                         {
@@ -306,7 +306,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 }
 
                 if (debugLog && !string.IsNullOrEmpty(saveKey))
-                    MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->AutoConnect()");
+                    MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] {saveKey}->AutoConnect()");
 
                 if (!_opening)
                 {
@@ -317,8 +317,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         {
                             MetaverseProgram.Logger.Log(
                                 !string.IsNullOrEmpty(deviceInfoString)
-                                    ? $"[SPUP AutoConnect] Trying to open the saved device: {deviceInfoString}"
-                                    : $"[SPUP AutoConnect] No saved device found for: {saveKey}");
+                                    ? $"[SPUP_AUTOCONNECT] Trying to open the saved device: {deviceInfoString}"
+                                    : $"[SPUP_AUTOCONNECT] No saved device found for: {saveKey}");
                         }
 
                         if (!string.IsNullOrEmpty(deviceInfoString) &&
@@ -327,7 +327,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         {
                             if (debugLog)
                                 MetaverseProgram.Logger.Log(
-                                    $"[SPUP AutoConnect] Found a saved device OPEN: {dev.SerialNumber}");
+                                    $"[SPUP_AUTOCONNECT] Found a saved device OPEN: {dev.SerialNumber}");
 
                             _currentAutoConnect = this;
                             _opening = true;
@@ -359,11 +359,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 {
                     if (debugLog)
                     {
-                        MetaverseProgram.Logger.Log($"[SPUP AutoConnect] Awaiting Open: {_lastConnectionAttemptTime:N2}(s)");
+                        MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] Awaiting Open: {_lastConnectionAttemptTime:N2}(s)");
                         if (Time.unscaledTime - _lastConnectionAttemptTime > MAX_CONNECTION_TIMEOUT)
                         {
                             MetaverseProgram.Logger.Log(
-                                $"[SPUP AutoConnect] Open timeout after {MAX_CONNECTION_TIMEOUT:N2}(s).");
+                                $"[SPUP_AUTOCONNECT] Open timeout after {MAX_CONNECTION_TIMEOUT:N2}(s).");
                             Close();
                         }
                     }
@@ -388,7 +388,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     pciDevices is null or { Length: 0 })
                 {
                     if (debugLog)
-                        MetaverseProgram.Logger.Log("[SPUP AutoConnect] Canceled because no devices are connected.");
+                        MetaverseProgram.Logger.Log("[SPUP_AUTOCONNECT] Canceled because no devices are connected.");
                     if (!IsInvoking(nameof(WatchConnection)))
                         Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                     return;

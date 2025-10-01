@@ -109,7 +109,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             var playerControllerPrefab = GetPlayerControllerPrefab(playerID);
             if (!playerControllerPrefab)
             {
-                _logger?.Log($"[PlayerSpawnService] Cannot spawn player '{playerID}'. " +
+                _logger?.Log($"[PLAYER_SPAWN_SERVICE] Cannot spawn player '{playerID}'. " +
                              "Either the player is not in a player " +
                              "group, or there is no player controller " +
                              "defined. This might be fine if a " +
@@ -125,7 +125,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
                     return;
                 }
 
-                _logger?.LogError("[PlayerSpawnService] You cannot spawn the player unless you are the server or the local client himself.");
+                _logger?.LogError("[PLAYER_SPAWN_SERVICE] You cannot spawn the player unless you are the server or the local client himself.");
                 return;
             }
             
@@ -167,7 +167,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
                 }
 
                 _logger?.LogError(
-                    "[PlayerSpawnService] You cannot de-spawn the player unless you are the server or the local client himself.");
+                    "[PLAYER_SPAWN_SERVICE] You cannot de-spawn the player unless you are the server or the local client himself.");
                 return false;
             }
 
@@ -180,7 +180,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             LocalPlayerSpawnPoint = null;
             SpawnedPlayerObject = null;
             LocalPlayerDeSpawned?.Invoke();
-            _logger?.Log($"[PlayerSpawnService] Player {oldPlayerObj.name} de-spawned.");
+            _logger?.Log($"[PLAYER_SPAWN_SERVICE] Player {oldPlayerObj.name} de-spawned.");
             UnityEngine.Object.Destroy(oldPlayerObj);
             MetaverseCursorAPI.UnlockCursor();
             return true;
@@ -243,7 +243,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
                 
                 if (!SpawnedPlayerObject)
                 {
-                    _logger?.LogWarning("[PlayerSpawnService] Failed to spawn player object because the spawner returned nothing.");
+                    _logger?.LogWarning("[PLAYER_SPAWN_SERVICE] Failed to spawn player object because the spawner returned nothing.");
                     return;
                 }
 
@@ -261,7 +261,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
                 else
                     OnFinished();
 
-                _logger?.Log($"[PlayerSpawnService] Spawned player object: {SpawnedPlayerObject.name}");
+                _logger?.Log($"[PLAYER_SPAWN_SERVICE] Spawned player object: {SpawnedPlayerObject.name}");
             }
 
             void OnFinished()

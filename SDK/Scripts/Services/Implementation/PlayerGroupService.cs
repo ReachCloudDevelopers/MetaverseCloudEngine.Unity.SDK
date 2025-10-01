@@ -282,7 +282,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
             PlayerLeftPlayerGroup?.Invoke(playerGroup, playerID);
 
-            _logger?.Log($"[PlayerGroupService] Player {playerID} left player group {playerGroup.identifier}.");
+            _logger?.Log($"[PLAYER_GROUP_SERVICE] Player {playerID} left player group {playerGroup.identifier}.");
         }
 
         private void SetPlayerGroupInternal(PlayerGroup playerGroup, int playerID)
@@ -301,7 +301,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
             playerList.Add(playerID);
 
-            _logger?.Log($"[PlayerGroupService] Player {playerID} joined player group {playerGroup.identifier}.");
+            _logger?.Log($"[PLAYER_GROUP_SERVICE] Player {playerID} joined player group {playerGroup.identifier}.");
 
             PlayerJoinedPlayerGroup?.Invoke(playerGroup, playerID);
         }

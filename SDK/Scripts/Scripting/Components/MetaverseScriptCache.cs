@@ -58,7 +58,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 _scriptModules ??= new Dictionary<TextAsset, Prepared<Script>>();
                 if (_scriptModules.TryGetValue(asset, out var code))
                     return code;
-                MetaverseProgram.Logger.Log($"[MetaverseScript] Initializing {asset.name}.js...");
+                MetaverseProgram.Logger.Log($"[METAVERSE_SCRIPT] Initializing {asset.name}.js...");
                 var text = asset.text;
                 if (preProcessScript != null)
                     text = preProcessScript?.Invoke(text);
