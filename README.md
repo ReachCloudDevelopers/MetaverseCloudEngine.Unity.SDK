@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.40
-- Refactor MetaverseSerialPortDeviceAPI to use Dictionary for managing opened devices
+## 2.198.41
+- Refactor logging messages in SerialPortDeviceAPI for consistency and clarity
 
 Updated on October 01, 2025

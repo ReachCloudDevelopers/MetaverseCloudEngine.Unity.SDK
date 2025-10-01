@@ -91,7 +91,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_isDisposed)
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device is disposed, please call Initialize() again.");
                 return;
             }
 
@@ -114,21 +114,21 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_isDisposed)
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device is disposed, please call Initialize() again.");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device is disposed, please call Initialize() again.");
                 return;
             }
 
             if (!_spup)
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Serial Port Utility component is not assigned.");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Serial Port Utility component is not assigned.");
                 return;
             }
 
             if (_opening.ContainsKey(_spup))
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Another device is being opened, please wait. (" + (_opening[_spup]?.DeviceString ?? "unknown") + ")");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Another device is being opened, please wait. (" + (_opening[_spup]?.DeviceString ?? "unknown") + ")");
                 return;
             }
 
@@ -139,7 +139,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             {
                 CloseSerial();
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Closing device...");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Closing device...");
                 
                 var timeout = DateTime.UtcNow.AddSeconds(15);
                 MetaverseDispatcher.WaitUntil(() => _isDisposed || !_spup || !_opening.ContainsKey(_spup) || _opening[_spup] != this || DateTime.UtcNow > timeout || (!IsAnyDeviceOpened() && !IsThisDeviceOpened()), () =>
@@ -154,13 +154,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     if (DateTime.UtcNow > timeout)
                     {
                         if (loggingEnabled)
-                            MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device close timeout");
+                            MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device close timeout");
                         OpenFailed();
                         return;
                     }
                     
                     if (loggingEnabled)
-                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device closed");
+                        MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device closed");
                     OpenInternal();
                 });
             }
@@ -169,7 +169,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 if (!_isDisposed && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                     OpenFailed();
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device close error: {e.Message}");
+                    MetaverseProgram.Logger.Log($"[SPUP_DEVICE_API] Device close error: {e.Message}");
             }
         }
 
@@ -222,7 +222,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             if (_isDisposed || !_spup || _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open cancelled");
+                    MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device open cancelled");
                 if (!_isDisposed && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                     OpenFailed();
                 return;
@@ -249,14 +249,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
             catch (Exception e)
             {
                 if (loggingEnabled)
-                    MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device open error: {e.Message}");
+                    MetaverseProgram.Logger.Log($"[SPUP_DEVICE_API] Device open error: {e.Message}");
                 OpenFailed();
                 return;
             }
 
             if (loggingEnabled)
                 MetaverseProgram.Logger.Log(
-                    $"[MetaverseSerialPortDeviceAPI] Specified device to open:-VID:{_data.Vendor},PID:{_data.Product},SER:{_data.SerialNumber},PORT:{_data.PortName}");
+                    $"[SPUP_DEVICE_API] Specified device to open:-VID:{_data.Vendor},PID:{_data.Product},SER:{_data.SerialNumber},PORT:{_data.PortName}");
 
             var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
@@ -286,7 +286,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     }
 
                     if (loggingEnabled)
-                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Opening device");
+                        MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Opening device");
 
                     OpenSerial();
                     
@@ -311,13 +311,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         if (DateTime.UtcNow > timeout)
                         {
                             if (loggingEnabled)
-                                MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
+                                MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device open timeout");
                             OpenFailed();
                             return;
                         }
                         
                         if (loggingEnabled)
-                            MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device processing finished");
+                            MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device processing finished");
                         
                         timeout = DateTime.UtcNow.AddSeconds(5);
                         MetaverseDispatcher.WaitUntil(
@@ -341,7 +341,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 if (DateTime.UtcNow > timeout)
                                 {
                                     if (loggingEnabled)
-                                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open timeout");
+                                        MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device open timeout");
                                     OpenFailed();
                                     return;
                                 }
@@ -351,7 +351,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     OnStoppedOpening?.Invoke();
                                     OnDeviceOpen?.Invoke();
                                     if (loggingEnabled)
-                                        MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device opened.");
+                                        MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device opened.");
                                     if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                                         _opening.Remove(_spup);
                                 }
@@ -359,7 +359,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 {
                                     if (loggingEnabled)
                                         MetaverseProgram.Logger.Log(
-                                            $"[MetaverseSerialPortDeviceAPI] Serial Number: {GetSerialNumber()} Expected Serial Number: {_data.SerialNumber} Opened: {IsAnyDeviceOpened()}");
+                                            $"[SPUP_DEVICE_API] Serial Number: {GetSerialNumber()} Expected Serial Number: {_data.SerialNumber} Opened: {IsAnyDeviceOpened()}");
                                     OpenFailed();
                                     CheckOpened();
                                 }

@@ -357,15 +357,17 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 }
                 else if (!_deviceAPI.IsThisDeviceOpened())
                 {
+                    var awaitingOpenTime = Time.unscaledTime - _lastConnectionAttemptTime;
+                    
                     if (debugLog)
+                        MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] Awaiting Open: {awaitingOpenTime:N2}(s)");
+
+                    if (awaitingOpenTime > MAX_CONNECTION_TIMEOUT)
                     {
-                        MetaverseProgram.Logger.Log($"[SPUP_AUTOCONNECT] Awaiting Open: {_lastConnectionAttemptTime:N2}(s)");
-                        if (Time.unscaledTime - _lastConnectionAttemptTime > MAX_CONNECTION_TIMEOUT)
-                        {
+                        if (debugLog)
                             MetaverseProgram.Logger.Log(
                                 $"[SPUP_AUTOCONNECT] Open timeout after {MAX_CONNECTION_TIMEOUT:N2}(s).");
-                            Close();
-                        }
+                        Close();
                     }
                 }
                 
