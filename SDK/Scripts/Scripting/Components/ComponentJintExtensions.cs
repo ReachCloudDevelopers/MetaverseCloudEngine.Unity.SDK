@@ -118,6 +118,86 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             return gameObject.GetComponentsInChildren(resolvedType, includeInactive);
         }
 
+        public static Component GetComponentInParent(this Component component, object typeIdentifier, bool includeInactive)
+        {
+            if (!component)
+            {
+                return null;
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var resolvedType))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return component.GetComponentInParent(resolvedType, includeInactive);
+        }
+
+        public static Component GetComponentInParent(this GameObject gameObject, object typeIdentifier)
+        {
+            return GetComponentInParent(gameObject, typeIdentifier, includeInactive: false);
+        }
+
+        public static Component GetComponentInParent(this GameObject gameObject, object typeIdentifier, bool includeInactive)
+        {
+            if (!gameObject)
+            {
+                return null;
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var resolvedType))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return gameObject.GetComponentInParent(resolvedType, includeInactive);
+        }
+
+        public static Component GetComponentInParent(this Component component, object typeIdentifier)
+        {
+            return GetComponentInParent(component, typeIdentifier, includeInactive: false);
+        }
+
+        public static Component[] GetComponentsInParent(this Component component, object typeIdentifier, bool includeInactive)
+        {
+            if (!component)
+            {
+                return Array.Empty<Component>();
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var resolvedType))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return component.GetComponentsInParent(resolvedType, includeInactive);
+        }
+
+        public static Component[] GetComponentsInParent(this Component component, object typeIdentifier)
+        {
+            return GetComponentsInParent(component, typeIdentifier, includeInactive: false);
+        }
+
+        public static Component[] GetComponentsInParent(this GameObject gameObject, object typeIdentifier, bool includeInactive)
+        {
+            if (!gameObject)
+            {
+                return Array.Empty<Component>();
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var resolvedType))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return gameObject.GetComponentsInParent(resolvedType, includeInactive);
+        }
+
+        public static Component[] GetComponentsInParent(this GameObject gameObject, object typeIdentifier)
+        {
+            return GetComponentsInParent(gameObject, typeIdentifier, includeInactive: false);
+        }
+
         public static Component AddComponent(this GameObject gameObject, object typeIdentifier)
         {
             if (!gameObject)

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.38
-- Refactor log messages to use consistent uppercase formatting for better readability
+## 2.198.39
+- Add GetComponentInParent and GetComponentsInParent methods for Component and GameObject
 
 Updated on October 01, 2025
