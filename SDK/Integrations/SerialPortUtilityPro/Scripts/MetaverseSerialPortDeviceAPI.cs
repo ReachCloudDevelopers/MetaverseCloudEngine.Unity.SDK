@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using MetaverseCloudEngine.Unity.Async;
@@ -29,7 +30,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         private MetaverseSerialPortUtilityInterop.OpenSystem _openSystem;
         private bool _isDisposed;
 
-        private static MetaverseSerialPortDeviceAPI _opening;
+        private static Dictionary<Component, MetaverseSerialPortDeviceAPI> _opening = new();
         private static FieldInfo _openMethodField;
         private static PropertyInfo _deviceNameProperty;
         private static PropertyInfo _vendorIdProperty;
@@ -117,13 +118,6 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 return;
             }
 
-            if (_opening != null)
-            {
-                if (loggingEnabled)
-                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Another device is being opened, please wait. (" + (_opening?.DeviceString ?? "unknown") + ")");
-                return;
-            }
-
             if (!_spup)
             {
                 if (loggingEnabled)
@@ -131,7 +125,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 return;
             }
 
-            _opening = this;
+            if (_opening.ContainsKey(_spup))
+            {
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Another device is being opened, please wait. (" + (_opening[_spup]?.DeviceString ?? "unknown") + ")");
+                return;
+            }
+
+            _opening[_spup] = this;
             OnStartedOpening?.Invoke();
 
             try
@@ -141,11 +142,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Closing device...");
                 
                 var timeout = DateTime.UtcNow.AddSeconds(15);
-                MetaverseDispatcher.WaitUntil(() => _isDisposed || !_spup || _opening != this || DateTime.UtcNow > timeout || (!IsAnyDeviceOpened() && !IsThisDeviceOpened()), () =>
+                MetaverseDispatcher.WaitUntil(() => _isDisposed || !_spup || !_opening.ContainsKey(_spup) || _opening[_spup] != this || DateTime.UtcNow > timeout || (!IsAnyDeviceOpened() && !IsThisDeviceOpened()), () =>
                 {
-                    if (_isDisposed || !_spup || _opening != this)
+                    if (_isDisposed || !_spup || _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
                     {
-                        if (!_isDisposed && _opening == this)
+                        if (!_isDisposed && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                             OpenFailed();
                         return;
                     }
@@ -165,7 +166,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
             catch (Exception e)
             {
-                if (!_isDisposed && _opening == this)
+                if (!_isDisposed && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                     OpenFailed();
                 if (loggingEnabled)
                     MetaverseProgram.Logger.Log($"[MetaverseSerialPortDeviceAPI] Device close error: {e.Message}");
@@ -218,11 +219,11 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OpenInternal()
         {
-            if (_isDisposed || !_spup || _opening != this)
+            if (_isDisposed || !_spup || _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
             {
                 if (loggingEnabled)
                     MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device open cancelled");
-                if (!_isDisposed && _opening == this)
+                if (!_isDisposed && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                     OpenFailed();
                 return;
             }
@@ -259,9 +260,12 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
             var timeout = DateTime.UtcNow.AddSeconds(15);
             MetaverseDispatcher.WaitUntil(
-                () => _isDisposed || !_spup || 
-                      !IsADeviceBeingOpened()
-                      || _opening != this || DateTime.UtcNow > timeout, 
+                () => _isDisposed
+                      || !_spup
+                      || !IsADeviceBeingOpened()
+                      || !_opening.TryGetValue(_spup, out var openingDevice)
+                      || openingDevice != this
+                      || DateTime.UtcNow > timeout,
                 () =>
                 {
                     if (_isDisposed)
@@ -269,7 +273,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         return;
                     }
 
-                    if (_opening != this)
+                    if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
                     {
                         OpenFailed();
                         return;
@@ -292,13 +296,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         !_spup ||
                         IsThisDeviceOpened() ||
                         IsADeviceBeingOpened() ||
-                        _opening != this ||
+                        _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this ||
                         DateTime.UtcNow > timeout, () =>
                     {
                         if (_isDisposed)
                             return;
-                        
-                        if (_opening != this)
+
+                        if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
                         {
                             OpenFailed();
                             return;
@@ -320,7 +324,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             () => _isDisposed || 
                                   !_spup ||
                                   !IsADeviceBeingOpened() || 
-                                  _opening != this ||
+                                  _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this ||
                                   DateTime.UtcNow > timeout ||
                                   IsThisDeviceOpened(),
                             () =>
@@ -328,7 +332,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 if (_isDisposed)
                                     return;
 
-                                if (_opening != this)
+                                if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
                                 {
                                     OpenFailed();
                                     return;
@@ -348,8 +352,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     OnDeviceOpen?.Invoke();
                                     if (loggingEnabled)
                                         MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Device opened.");
-                                    if (_opening == this)
-                                        _opening = null;
+                                    if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
+                                        _opening.Remove(_spup);
                                 }
                                 else
                                 {
@@ -376,10 +380,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OpenFailed()
         {
-            if (!_isDisposed && _opening == this)
+            if (!_isDisposed && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                 OnStoppedOpening?.Invoke();
-            if (_opening == this)
-                _opening = null;
+            if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
+                _opening.Remove(_spup);
         }
 
         private string GetSerialNumber()
@@ -396,9 +400,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
             _data = null;
             _openSystem = 0;
             _isDisposed = false;
-            if (_opening == this)
+            if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
             {
-                _opening = null;
+                _opening.Remove(_spup);
                 OpenFailed();
             }
             OnDeviceName.RemoveAllListeners();

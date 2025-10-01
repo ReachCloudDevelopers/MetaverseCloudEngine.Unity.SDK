@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.39
-- Add GetComponentInParent and GetComponentsInParent methods for Component and GameObject
+## 2.198.40
+- Refactor MetaverseSerialPortDeviceAPI to use Dictionary for managing opened devices
 
 Updated on October 01, 2025
