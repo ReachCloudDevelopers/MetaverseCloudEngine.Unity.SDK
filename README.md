@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.41
-- Refactor logging messages in SerialPortDeviceAPI for consistency and clarity
+## 2.198.42
+- Refactor device state checks to improve clarity and reliability in opening and closing logic
 
 Updated on October 01, 2025

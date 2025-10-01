@@ -144,9 +144,9 @@ namespace MetaverseCloudEngine.Unity.SPUP
                 var timeout = DateTime.UtcNow.AddSeconds(15);
                 MetaverseDispatcher.WaitUntil(() => _isDisposed || !_spup || !_opening.ContainsKey(_spup) || _opening[_spup] != this || DateTime.UtcNow > timeout || (!IsAnyDeviceOpened() && !IsThisDeviceOpened()), () =>
                 {
-                    if (_isDisposed || !_spup || _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
+                    if (_isDisposed || !_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
                     {
-                        if (!_isDisposed && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
+                        if (!_isDisposed && _spup && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                             OpenFailed();
                         return;
                     }
@@ -166,7 +166,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
             catch (Exception e)
             {
-                if (!_isDisposed && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
+                if (!_isDisposed && _spup && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                     OpenFailed();
                 if (loggingEnabled)
                     MetaverseProgram.Logger.Log($"[SPUP_DEVICE_API] Device close error: {e.Message}");
@@ -219,7 +219,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OpenInternal()
         {
-            if (_isDisposed || !_spup || _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
+            if (_isDisposed || !_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
             {
                 if (loggingEnabled)
                     MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device open cancelled");
@@ -273,7 +273,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         return;
                     }
 
-                    if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
+                    if (!_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
                     {
                         OpenFailed();
                         return;
@@ -296,13 +296,13 @@ namespace MetaverseCloudEngine.Unity.SPUP
                         !_spup ||
                         IsThisDeviceOpened() ||
                         IsADeviceBeingOpened() ||
-                        _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this ||
+                        (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this) ||
                         DateTime.UtcNow > timeout, () =>
                     {
                         if (_isDisposed)
                             return;
 
-                        if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
+                        if (!_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
                         {
                             OpenFailed();
                             return;
@@ -324,7 +324,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             () => _isDisposed || 
                                   !_spup ||
                                   !IsADeviceBeingOpened() || 
-                                  _opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this ||
+                                  (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this) ||
                                   DateTime.UtcNow > timeout ||
                                   IsThisDeviceOpened(),
                             () =>
@@ -332,7 +332,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                 if (_isDisposed)
                                     return;
 
-                                if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this)
+                                if (!_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
                                 {
                                     OpenFailed();
                                     return;
@@ -352,7 +352,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
                                     OnDeviceOpen?.Invoke();
                                     if (loggingEnabled)
                                         MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device opened.");
-                                    if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
+                                    if (_spup && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                                         _opening.Remove(_spup);
                                 }
                                 else
@@ -380,7 +380,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OpenFailed()
         {
-            if (!_isDisposed && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
+            if (!_isDisposed && _spup && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                 OnStoppedOpening?.Invoke();
             if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                 _opening.Remove(_spup);
@@ -396,13 +396,14 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void ResetAll()
         {
+            var spup = _spup;
             _spup = null;
             _data = null;
             _openSystem = 0;
             _isDisposed = false;
-            if (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
+            if (spup && _opening.TryGetValue(spup, out var openingDevice) && openingDevice == this)
             {
-                _opening.Remove(_spup);
+                _opening.Remove(spup);
                 OpenFailed();
             }
             OnDeviceName.RemoveAllListeners();
