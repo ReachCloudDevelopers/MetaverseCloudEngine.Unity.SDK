@@ -350,7 +350,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             _lastConnectionAttemptTime = Time.unscaledTime;
                         }
 
-                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
+                        if (!IsInvoking(nameof(WatchConnection)) && _opening)
+                            Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
                         return;
                     }
                 }

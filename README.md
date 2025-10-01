@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.36
-- Add debug logging for OnDisable and Close methods in MetaverseSerialPortAutoConnect; enhance logging in MetaverseSerialPortDeviceAPI for device opening checks
+## 2.198.37
+- Prevent multiple invocations of WatchConnection during port opening
 
 Updated on October 01, 2025
