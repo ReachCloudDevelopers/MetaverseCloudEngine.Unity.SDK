@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.33
-- Initialize UnityEvents in GetObjectVelocity for improved default behavior
+## 2.198.34
+- Add AddComponent method to GameObject for dynamic component addition
 
-Updated on September 28, 2025
+Updated on October 01, 2025

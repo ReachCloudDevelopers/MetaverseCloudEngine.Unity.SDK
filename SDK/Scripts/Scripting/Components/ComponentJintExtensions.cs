@@ -117,5 +117,25 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             return gameObject.GetComponentsInChildren(resolvedType, includeInactive);
         }
+
+        public static Component AddComponent(this GameObject gameObject, object typeIdentifier)
+        {
+            if (!gameObject)
+            {
+                return null;
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var resolvedType))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            if (!typeof(Component).IsAssignableFrom(resolvedType))
+            {
+                throw new ArgumentException($"Type '{resolvedType.FullName}' is not a Unity component type.", nameof(typeIdentifier));
+            }
+
+            return gameObject.AddComponent(resolvedType);
+        }
     }
 }
