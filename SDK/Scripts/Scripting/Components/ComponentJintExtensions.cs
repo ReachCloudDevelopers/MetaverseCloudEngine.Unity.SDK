@@ -137,5 +137,35 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             return gameObject.AddComponent(resolvedType);
         }
+
+        public static Component GetComponent(this GameObject gameObject, string typeName)
+        {
+            if (!gameObject)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return null;
+            }
+
+            return gameObject.GetComponent(typeName);
+        }
+        
+        public static Component GetComponent(this Component component, string typeName)
+        {
+            if (!component)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return null;
+            }
+
+            return component.GetComponent(typeName);
+        }
     }
 }
