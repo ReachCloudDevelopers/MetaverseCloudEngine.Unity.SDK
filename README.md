@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.35
-- Add string-based GetComponent overloads for GameObject and Component
+## 2.198.36
+- Add debug logging for OnDisable and Close methods in MetaverseSerialPortAutoConnect; enhance logging in MetaverseSerialPortDeviceAPI for device opening checks
 
 Updated on October 01, 2025

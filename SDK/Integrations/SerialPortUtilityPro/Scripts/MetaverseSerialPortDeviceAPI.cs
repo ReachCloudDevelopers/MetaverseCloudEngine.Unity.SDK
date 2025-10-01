@@ -118,10 +118,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
             }
 
             if (_opening != null)
+            {
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Another device is being opened, please wait. (" + (_opening?.DeviceString ?? "unknown") + ")");
                 return;
+            }
 
             if (!_spup)
+            {
+                if (loggingEnabled)
+                    MetaverseProgram.Logger.Log("[MetaverseSerialPortDeviceAPI] Serial Port Utility component is not assigned.");
                 return;
+            }
 
             _opening = this;
             OnStartedOpening?.Invoke();

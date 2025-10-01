@@ -235,6 +235,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OnDisable()
         {
+            if (debugLog)
+                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->OnDisable()");
             Close();
         }
 
@@ -257,6 +259,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
         /// </summary>
         public void Close()
         {
+            if (debugLog)
+                MetaverseProgram.Logger.Log($"[SPUP AutoConnect] {saveKey}->Close()");
             if (_currentAutoConnect == this)
                 _currentAutoConnect = null;
             _opening = false;
@@ -344,8 +348,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                             });
                             _deviceAPI.Open();
                             _lastConnectionAttemptTime = Time.unscaledTime;
-                            return;
                         }
+
+                        Invoke(nameof(WatchConnection), WATCH_CONNECTION_INTERVAL);
+                        return;
                     }
                 }
                 else if (!_deviceAPI.IsThisDeviceOpened())
