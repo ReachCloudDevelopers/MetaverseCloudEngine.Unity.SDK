@@ -1900,6 +1900,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 typeof(Animator).Assembly /* UnityEngine.AnimationModule */,
                 typeof(ParticleSystem).Assembly /* UnityEngine.ParticleSystemModule */,
                 typeof(UnityEvent).Assembly /* UnityEngine.CoreModule */,
+                typeof(GUIStyle).Assembly /* UnityEngine.IMGUIModule */,
 #if MV_UNITY_AI_NAV
                 typeof(UnityEngine.AI.NavMesh).Assembly /* UnityEngine.AIModule */,
                 typeof(UnityEngine.AI.NavMeshAgent).Assembly /* UnityEngine.AIModule */,
