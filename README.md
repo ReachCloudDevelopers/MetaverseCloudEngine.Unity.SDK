@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.48
-- refactor: update README and package.json for clarity and formatting
+## 2.198.49
+- Add GetComponentsInChildrenOrderedOfType methods for GameObject and Component
 
 Updated on October 02, 2025

@@ -232,7 +232,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             return gameObject.GetComponent(typeName);
         }
-        
+
         public static Component GetComponent(this Component component, string typeName)
         {
             if (!component)
@@ -246,6 +246,36 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             }
 
             return component.GetComponent(typeName);
+        }
+
+        public static object[] GetComponentsInChildrenOrderedOfType(this GameObject gameObject, object typeIdentifier)
+        {
+            if (!gameObject)
+            {
+                return Array.Empty<object>();
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var type))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return MVUtils.GetComponentsInChildrenOrderedOfType((object)gameObject, type);
+        }
+
+        public static object[] GetComponentsInChildrenOrderedOfType(this Component component, object typeIdentifier)
+        {
+            if (!component)
+            {
+                return Array.Empty<object>();
+            }
+
+            if (!JintTypeResolver.TryResolveType(typeIdentifier, out var type))
+            {
+                throw new ArgumentException($"Cannot resolve component type from value '{typeIdentifier ?? "null"}'.", nameof(typeIdentifier));
+            }
+
+            return MVUtils.GetComponentsInChildrenOrderedOfType(component, type, null);
         }
     }
 }
