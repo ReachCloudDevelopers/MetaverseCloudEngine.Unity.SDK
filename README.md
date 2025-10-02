@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.42
-- Refactor device state checks to improve clarity and reliability in opening and closing logic
+## 2.198.43
+- Fix null reference check for _spup in OnStoppedOpening logic
 
 Updated on October 01, 2025

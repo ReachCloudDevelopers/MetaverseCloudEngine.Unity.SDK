@@ -382,7 +382,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
         {
             if (!_isDisposed && _spup && _opening.TryGetValue(_spup, out var openingDevice) && openingDevice == this)
                 OnStoppedOpening?.Invoke();
-            if (_opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
+            if (_spup != null && _opening.TryGetValue(_spup, out openingDevice) && openingDevice == this)
                 _opening.Remove(_spup);
         }
 
