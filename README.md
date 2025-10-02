@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.44
-- Enhance AI Realtime Communication with server error handling and vision context support
+## 2.198.45
+- Updated package json
 
 Updated on October 02, 2025
