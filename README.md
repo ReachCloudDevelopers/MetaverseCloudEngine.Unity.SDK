@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.43
-- Fix null reference check for _spup in OnStoppedOpening logic
+## 2.198.44
+- Enhance AI Realtime Communication with server error handling and vision context support
 
-Updated on October 01, 2025
+Updated on October 02, 2025

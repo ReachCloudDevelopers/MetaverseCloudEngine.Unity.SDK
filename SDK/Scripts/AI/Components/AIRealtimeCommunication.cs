@@ -193,6 +193,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         // --- Vision ---
         [Header("Vision")]
         [SerializeField] private bool enableVision = true;
+        [Tooltip("Optional dedicated camera used when the AI requests vision context.")]
+        [SerializeField] private Camera visionCamera;
         [SerializeField] private RawImage visionRawImage;
         [SerializeField] private Texture visionTexture;
 
@@ -328,8 +330,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private bool _isShuttingDown; // Flag to prevent actions during application quit/disable
 
-        private AIAgent _visionHandler; // Dedicated AIAgent instance for handling vision requests
-
         private bool _isStarted; // True after Start() has been called
         private bool _connectCalled; // True if Connect() was called manually before Start()
 
@@ -344,6 +344,26 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _needsReconnect;
         private float _reconnectTimer;
         private const float ReconnectDelay = 2.0f;
+
+        private static readonly string[] VoiceResponseModalities = { "text", "audio" };
+        private static readonly string[] TextResponseModalities = { "text" };
+        private const string DefaultImageMessage = "Here is the latest view from the user.";
+        private string[] _lastRequestedModalities = VoiceResponseModalities;
+
+        [Header("Error Handling")]
+        [SerializeField]
+        [Min(0)]
+        [Tooltip("Number of times to retry a generic server error before disconnecting.")]
+        private int maxServerErrorRetries = 3;
+
+        [SerializeField]
+        [Min(0f)]
+        [Tooltip("Seconds to wait before retrying after a generic server error.")]
+        private float serverErrorRetryDelay = 0.75f;
+
+        private int _serverErrorRetryCount;
+        private float _serverErrorRetryTimer;
+        private bool _serverErrorRetryPending;
 
         // State management for finishing speech playback
         private bool _isWaitingToFinishSpeaking;
@@ -497,44 +517,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
 
         /// <summary>
-        /// Provides access to the internal AIAgent used for processing vision requests.
-        /// Lazily initializes the agent if needed. Returns null if shutting down or not playing.
-        /// </summary>
-        public AIAgent VisionHandler
-        {
-            get
-            {
-                if (_isShuttingDown || !Application.isPlaying || !enableVision)
-                    return null;
-
-                if (!_visionHandler)
-                {
-                    if (logs) Log("Initializing Vision Handler AIAgent...");
-                    _visionHandler = new GameObject("MVCE_Realtime_Vision_Handler").AddComponent<AIAgent>();
-                    _visionHandler.gameObject.hideFlags = HideFlags.HideInHierarchy; // Keep scene clean
-                    _visionHandler.FlushMemory(); // Start fresh
-
-                    // Hook up vision events to our internal handlers (which will enqueue main thread actions)
-                    _visionHandler.OnThinkingStarted.AddListener(HandleVisionThinkingStarted);
-                    _visionHandler.OnThinkingFinished.AddListener(HandleVisionThinkingFinished);
-                    _visionHandler.OnResponse.AddListener(HandleVisionResponse);
-                    _visionHandler.OnResponseFailed.AddListener(HandleVisionResponseFailed);
-
-                    // Configure the vision agent's prompt
-                    _visionHandler.IntelligencePreset = AiCharacterIntelligencePreset.PreferSpeed;
-                    _visionHandler.Prompt =
-                        "You are assisting another AI model allowing it to process vision requests. " +
-                        "You will receive a short prompt describing the output that is needed from the vision AI. " +
-                        "Your job is to process this request and return a response to the other AI model.";
-                    _visionHandler.SampleData = "The shirt's color is green and has a pocket on the left side.";
-                    if (logs) Log("Vision Handler AIAgent Initialized.");
-                }
-
-                return _visionHandler;
-            }
-        }
-
-        /// <summary>
         /// Indicates if the component is currently busy with communication tasks
         /// (e.g., AI speaking, mic running, processing vision, connecting, waiting for response or token).
         /// </summary>
@@ -634,6 +616,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
             // 4. Update state machines (reconnection, finishing speech)
             UpdateReconnectionState();
+            UpdateServerErrorRetry();
             UpdateSpeakingFinishedState();
 
             UpdateIdleTimer();
@@ -702,11 +685,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             Log("Component destroyed. Ensuring disconnection.");
             _isShuttingDown = true;
             DisconnectInternal(); // Attempt immediate cleanup without queueing
-            if (_visionHandler) // Clean up vision handler GameObject
-            {
-                Destroy(_visionHandler.gameObject);
-                _visionHandler = null;
-            }
         }
 
         #endregion
@@ -944,6 +922,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             _isAcquiringToken = false;
             _ephemeralToken = null;
             _activityTimer = 0;
+            ResetServerErrorRetryState();
 
 #if MV_NATIVE_WEBSOCKETS
             if (_websocket != null)
@@ -963,7 +942,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #endif
             ResetCommunicationState();
 
-            if (_visionHandler) { Log("Destroying Vision Handler GameObject."); Destroy(_visionHandler.gameObject); _visionHandler = null; }
             StopMic();
             if (outputVoiceSource)
             {
@@ -1024,6 +1002,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     InitiateConnection();
                 }
             }
+        }
+
+        private void UpdateServerErrorRetry()
+        {
+            if (!_serverErrorRetryPending || _isShuttingDown)
+                return;
+
+            _serverErrorRetryTimer -= Time.fixedDeltaTime;
+            if (_serverErrorRetryTimer > 0f)
+                return;
+
+            _serverErrorRetryPending = false;
+            Log("Retrying response after server error...");
+            TriggerResponseInternal(true, _lastRequestedModalities, resetErrorState: false);
         }
 
         /// <summary>
@@ -1424,6 +1416,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void HandleResponseCreated()
         {
             if (_isShuttingDown) return;
+            ResetServerErrorRetryState();
             Log("response.created received. AI starting response.");
             _responsesInProgress++;
             Log($"Responses in progress: {_responsesInProgress}");
@@ -1480,6 +1473,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private void HandleResponseDone(JObject responseJson)
         {
             if (_isShuttingDown) return;
+            ResetServerErrorRetryState();
             Log("response.done received. AI finished response turn.");
 
             _responsesInProgress--;
@@ -1657,10 +1651,68 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var errorMessage = responseJson["error"]?["message"]?.ToString();
             LogError($"Server Error Received! Code: {errorCode ?? "N/A"}, Message: {errorMessage ?? "N/A"}");
 
-            if (errorCode is "token_expired" or "invalid_token") { LogError("Token expired/invalid. Reconnecting."); DisconnectInternal(); StartReconnectionAttempt(); }
-            else if (errorCode == "session_not_found") { LogError("Session not found. Reconnecting."); DisconnectInternal(); StartReconnectionAttempt(); }
-            else if (errorCode == "rate_limit_exceeded") { LogWarning("Rate limit exceeded. Reconnecting with delay."); DisconnectInternal(); StartReconnectionAttempt(); }
-            else { LogError("Unhandled server error. Disconnecting."); DisconnectInternal(); if (!_needsReconnect && !_isAcquiringToken) { StartReconnectionAttempt(); } }
+            if (errorCode is "token_expired" or "invalid_token")
+            {
+                LogError("Token expired/invalid. Reconnecting.");
+                ResetServerErrorRetryState();
+                DisconnectInternal();
+                StartReconnectionAttempt();
+            }
+            else if (errorCode == "session_not_found")
+            {
+                LogError("Session not found. Reconnecting.");
+                ResetServerErrorRetryState();
+                DisconnectInternal();
+                StartReconnectionAttempt();
+            }
+            else if (errorCode == "rate_limit_exceeded")
+            {
+                LogWarning("Rate limit exceeded. Reconnecting with delay.");
+                ResetServerErrorRetryState();
+                DisconnectInternal();
+                StartReconnectionAttempt();
+            }
+            else
+            {
+                if (maxServerErrorRetries <= 0)
+                {
+                    LogError("Unhandled server error. Disconnecting (retry disabled).");
+                    ResetServerErrorRetryState();
+                    DisconnectInternal();
+                    if (!_needsReconnect && !_isAcquiringToken)
+                    {
+                        StartReconnectionAttempt();
+                    }
+                    return;
+                }
+
+                if (_serverErrorRetryCount < maxServerErrorRetries)
+                {
+                    _serverErrorRetryCount++;
+                    _serverErrorRetryTimer = Mathf.Max(0.01f, serverErrorRetryDelay);
+                    _serverErrorRetryPending = true;
+                    LogWarning($"Unhandled server error. Scheduling retry {_serverErrorRetryCount}/{maxServerErrorRetries} in {_serverErrorRetryTimer:F2}s.");
+                }
+                else
+                {
+                    LogError("Unhandled server error retry limit reached. Disconnecting.");
+                    ResetServerErrorRetryState();
+                    DisconnectInternal();
+                    try { onDisconnected?.Invoke(); }
+                    catch (Exception e) { LogError($"Error in onDisconnected handler: {e.Message}"); }
+                    if (!_needsReconnect && !_isAcquiringToken)
+                    {
+                        StartReconnectionAttempt();
+                    }
+                }
+            }
+        }
+
+        private void ResetServerErrorRetryState()
+        {
+            _serverErrorRetryCount = 0;
+            _serverErrorRetryPending = false;
+            _serverErrorRetryTimer = 0f;
         }
 
         #endregion
@@ -1716,28 +1768,61 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         /// <summary> Handles 'vision_request' function call. Runs on Main Thread. </summary>
         private void HandleVisionFunctionCall(string argumentsJson)
         {
-            if (!enableVision) { LogWarning("Vision request received, but vision is disabled. Ignoring."); ProcessVisionResponseFailed("Vision is disabled."); return; }
-            if (string.IsNullOrWhiteSpace(argumentsJson)) { LogWarning("Vision request called with empty arguments."); ProcessVisionResponseFailed("Missing arguments for vision request."); return; }
-            try {
+            if (!enableVision)
+            {
+                LogWarning("Vision request received, but vision is disabled. Ignoring.");
+                ProcessVisionResponseFailed("Vision is disabled.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(argumentsJson))
+            {
+                LogWarning("Vision request called with empty arguments.");
+                ProcessVisionResponseFailed("Missing arguments for vision request.");
+                return;
+            }
+
+            try
+            {
                 var visionArgs = JObject.Parse(argumentsJson);
                 var visionPrompt = visionArgs["vision_request"]?.ToString();
-                if (string.IsNullOrWhiteSpace(visionPrompt)) { LogWarning("Vision request missing 'vision_request' property."); ProcessVisionResponseFailed("Missing 'vision_request' parameter."); return; }
+                if (string.IsNullOrWhiteSpace(visionPrompt))
+                {
+                    LogWarning("Vision request missing 'vision_request' property.");
+                    ProcessVisionResponseFailed("Missing 'vision_request' parameter.");
+                    return;
+                }
 
                 Log($"Vision requested with prompt: \"{visionPrompt}\"");
-                _pendingVision = true; Log("Pending vision set to true. Stopping microphone."); StopMic();
-                var handler = VisionHandler;
-                if (handler != null)
+                _pendingVision = true;
+                Log("Pending vision set to true. Stopping microphone.");
+                StopMic();
+                InvokeVisionRequestedEvent();
+
+                var captureFunc = ChooseVisionCaptureStrategy(out var contextLabel);
+                var promptText = string.IsNullOrWhiteSpace(visionPrompt) ? BuildDefaultImageText(contextLabel) : visionPrompt;
+
+                SendImageWithResponse(captureFunc, promptText, VoiceResponseModalities, $"VisionRequest:{contextLabel}", success =>
                 {
-                    if (!visionRawImage && !visionTexture)
-                        handler.SubmitGameScreenshot(visionPrompt);
-                    else if (visionRawImage  && visionRawImage.texture && visionRawImage.isActiveAndEnabled)
-                        handler.SubmitTexture(visionRawImage.texture, visionPrompt);
-                    else if (visionTexture)
-                        handler.SubmitTexture(visionTexture, visionPrompt);
-                }
-                else { LogError("VisionHandler is null."); HandleVisionResponseFailedInternal("Vision system not available."); }
-            } catch (JsonException jsonEx) { LogError($"Failed to parse vision args: {jsonEx.Message}\nJSON: {argumentsJson}"); HandleVisionResponseFailedInternal("Invalid vision arguments format."); }
-            catch (Exception e) { LogError($"Error processing vision call: {e.Message}"); HandleVisionResponseFailedInternal("Internal vision error."); }
+                    if (!success)
+                    {
+                        ProcessVisionResponseFailed("Unable to capture or send image for vision request.");
+                        return;
+                    }
+
+                    CompleteVisionRequest();
+                }, bypassProcessingCheck: true);
+            }
+            catch (JsonException jsonEx)
+            {
+                LogError($"Failed to parse vision args: {jsonEx.Message}\\nJSON: {argumentsJson}");
+                ProcessVisionResponseFailed("Invalid vision arguments format.");
+            }
+            catch (Exception e)
+            {
+                LogError($"Error processing vision call: {e.Message}");
+                ProcessVisionResponseFailed("Internal vision error.");
+            }
         }
 
         /// <summary> Finds and triggers a user-defined function. Runs on Main Thread. </summary>
@@ -2020,111 +2105,92 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         #endregion
 
-        #region Vision Handling (Callbacks from VisionHandler AIAgent)
+        #region Vision Handling
 
-        /// <summary> Callback when VisionHandler starts thinking. Queues OnVisionRequested invocation. </summary>
-        private void HandleVisionThinkingStarted()
+        private void InvokeVisionRequestedEvent()
         {
-            _mainThreadActions.Enqueue(() =>
-            {
-                Log("Vision processing started.");
-                try { onVisionRequested?.Invoke(); }
-                catch (Exception e) { LogError($"Error in onVisionRequested handler: {e.Message}"); }
-            });
-        }
-
-        /// <summary> Callback when VisionHandler finishes thinking. Logs info. </summary>
-        private void HandleVisionThinkingFinished()
-        {
-            _mainThreadActions.Enqueue(() => Log("Vision processing finished by VisionHandler."));
-        }
-
-        /// <summary> Callback for successful VisionHandler response. Queues processing. </summary>
-        private void HandleVisionResponse(string visionResponse)
-        {
-            _mainThreadActions.Enqueue(() => ProcessVisionResponse(visionResponse));
-        }
-
-        /// <summary> Callback for failed VisionHandler response. Queues processing. </summary>
-        private void HandleVisionResponseFailed()
-        {
-            _mainThreadActions.Enqueue(() => ProcessVisionResponseFailed("Vision agent failed to generate a response."));
-        }
-
-        /// <summary> Processes successful vision response. Sends result back to main AI. Runs on Main Thread. </summary>
-        private void ProcessVisionResponse(string visionResponse)
-        {
-            if (_isShuttingDown || !_pendingVision)
-            {
-                if(!_pendingVision) LogWarning("Received vision response, but no request pending.");
-                return;
-            }
-            Log($"Vision response received: \"{visionResponse}\"");
-            if (string.IsNullOrWhiteSpace(visionResponse))
-            {
-                LogWarning("Vision response empty.");
-                ProcessVisionResponseFailed("Received empty response.");
-                return;
-            }
-
-#if MV_NATIVE_WEBSOCKETS
-            if (_websocket == null || _websocket.State != WebSocketState.Open)
-            {
-                LogError("WebSocket not open. Cannot send vision response.");
-                _pendingVision = false;
-                InvokeVisionFinishedEvent();
-                if (CanStartMic()) StartMic();
-                return;
-            }
-            Log("Sending vision response back to main AI...");
-            var visionMsg = new
-            {
-                type = "conversation.item.create",
-                item = new
-                {
-                    type = "message",
-                    role = "system",
-                    content = new[]
-                    {
-                        new { type = "input_text", text = $"[Vision System Response]: {visionResponse}" }
-                    }
-                }
-            };
             try
             {
-                var json = JsonConvert.SerializeObject(visionMsg);
-                _websocket.SendText(json);
-
-                // Reset idle timer on activity
-                _activityTimer = 0f;
-
-                Log("Vision response sent.");
-                TriggerResponseInternal(true); // Force trigger after sending system message
+                onVisionRequested?.Invoke();
+                Log("onVisionRequested event invoked.");
             }
             catch (Exception e)
             {
-                LogError($"Failed to send vision response: {e.Message}");
-                ProcessVisionResponseFailed("Failed to send vision result.");
-                return;
+                LogError($"Error in onVisionRequested handler: {e.Message}");
             }
-#else
-            LogError("Cannot send vision response: MV_NATIVE_WEBSOCKETS not defined.");
-            ProcessVisionResponseFailed("Cannot send vision result (missing dependency).");
-            return;
-#endif
+        }
+
+        private Func<Texture2D> ChooseVisionCaptureStrategy(out string contextLabel)
+        {
+            if (visionCamera && visionCamera.isActiveAndEnabled)
+            {
+                var cameraName = string.IsNullOrEmpty(visionCamera.name) ? "VisionCamera" : visionCamera.name;
+                contextLabel = $"Camera:{cameraName}";
+                return () =>
+                {
+                    if (!visionCamera || !visionCamera.isActiveAndEnabled)
+                    {
+                        LogWarning("Vision camera became unavailable during capture.");
+                        return null;
+                    }
+                    return CaptureCameraTexture(visionCamera);
+                };
+            }
+
+            if (visionRawImage && visionRawImage.texture && visionRawImage.isActiveAndEnabled)
+            {
+                contextLabel = $"RawImage:{visionRawImage.name}";
+                return () =>
+                {
+                    if (!visionRawImage || visionRawImage.texture == null)
+                    {
+                        LogWarning("Vision RawImage texture unavailable during capture.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(visionRawImage.texture);
+                };
+            }
+
+            if (visionTexture)
+            {
+                var texName = string.IsNullOrEmpty(visionTexture.name) ? "Texture" : visionTexture.name;
+                contextLabel = $"Texture:{texName}";
+                return () =>
+                {
+                    if (!visionTexture)
+                    {
+                        LogWarning("Vision texture unavailable during capture.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(visionTexture);
+                };
+            }
+
+            contextLabel = "Game Screenshot";
+            return CaptureGameScreenshot;
+        }
+
+        private void CompleteVisionRequest()
+        {
             _pendingVision = false;
             InvokeVisionFinishedEvent();
-            Log("Vision handling complete.");
+            if (CanStartMic()) StartMic();
         }
 
         /// <summary> Processes failed vision response. Sends error message back to main AI. Runs on Main Thread. </summary>
         private void ProcessVisionResponseFailed(string failureReason)
         {
-            if (_isShuttingDown || !_pendingVision)
+            if (_isShuttingDown)
             {
-                if(!_pendingVision) LogWarning("Received vision failure, but no request pending.");
                 return;
             }
+
+            if (!_pendingVision)
+            {
+                LogWarning("Received vision failure, but no request pending.");
+                return;
+            }
+
             LogError($"Vision processing failed: {failureReason}");
 
 #if MV_NATIVE_WEBSOCKETS
@@ -2136,7 +2202,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                 if (CanStartMic()) StartMic();
                 return;
             }
-            Log("Sending vision failure message back to main AI...");
+
+            var messageText = $"[Vision System Error]: {failureReason}";
             var failureMsg = new
             {
                 type = "conversation.item.create",
@@ -2146,20 +2213,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     role = "system",
                     content = new[]
                     {
-                        new { type = "input_text", text = "[Vision System Error]: I'm sorry, I couldn't process the visual information at this time." }
+                        new { type = "input_text", text = messageText }
                     }
                 }
             };
+
             try
             {
                 var json = JsonConvert.SerializeObject(failureMsg);
                 _websocket.SendText(json);
 
-                // Reset idle timer on activity
                 _activityTimer = 0f;
 
                 Log("Vision failure message sent.");
-                TriggerResponseInternal(true); // Force trigger after sending system message
+                TriggerResponseInternal(true, VoiceResponseModalities);
             }
             catch (Exception e)
             {
@@ -2168,9 +2235,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 #else
             LogError("Cannot send vision failure message: MV_NATIVE_WEBSOCKETS not defined.");
 #endif
-            _pendingVision = false;
-            InvokeVisionFinishedEvent();
-            Log("Vision failure handling complete.");
+
+            CompleteVisionRequest();
         }
 
         /// <summary> Checks if conditions allow starting the microphone. </summary>
@@ -2202,12 +2268,6 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             {
                 LogError($"Error in onVisionFinished handler: {e.Message}");
             }
-        }
-
-        /// <summary> Internal callback for VisionHandler failure. Queues `ProcessVisionResponseFailed`. </summary>
-        private void HandleVisionResponseFailedInternal(string reason = "Vision agent failed to generate a response.")
-        {
-            ProcessVisionResponseFailed(reason);
         }
 
         #endregion
@@ -2264,6 +2324,363 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         {
             // Required by Unity, logic is in OnAudioFilterRead
         }
+
+        #region Image Capture & Messaging
+
+        public void SendGameScreenshotWithTextResponse()
+        {
+            SendImageWithResponse(CaptureGameScreenshot, BuildDefaultImageText("Game Screenshot"), TextResponseModalities, nameof(SendGameScreenshotWithTextResponse));
+        }
+
+        public void SendGameScreenshotWithVoiceResponse()
+        {
+            SendImageWithResponse(CaptureGameScreenshot, BuildDefaultImageText("Game Screenshot"), VoiceResponseModalities, nameof(SendGameScreenshotWithVoiceResponse));
+        }
+
+        public void SendCameraRenderWithTextResponse(Camera camera)
+        {
+            if (!camera)
+            {
+                LogWarning("SendCameraRenderWithTextResponse called with null camera.");
+                return;
+            }
+
+            var cameraName = camera.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!camera)
+                    {
+                        LogWarning("SendCameraRenderWithTextResponse: Camera became unavailable before capture.");
+                        return null;
+                    }
+                    return CaptureCameraTexture(camera);
+                },
+                BuildDefaultImageText($"Camera:{cameraName}"),
+                TextResponseModalities,
+                nameof(SendCameraRenderWithTextResponse));
+        }
+
+        public void SendCameraRenderWithVoiceResponse(Camera camera)
+        {
+            if (!camera)
+            {
+                LogWarning("SendCameraRenderWithVoiceResponse called with null camera.");
+                return;
+            }
+
+            var cameraName = camera.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!camera)
+                    {
+                        LogWarning("SendCameraRenderWithVoiceResponse: Camera became unavailable before capture.");
+                        return null;
+                    }
+                    return CaptureCameraTexture(camera);
+                },
+                BuildDefaultImageText($"Camera:{cameraName}"),
+                VoiceResponseModalities,
+                nameof(SendCameraRenderWithVoiceResponse));
+        }
+
+        public void SendRawImageWithTextResponse(RawImage rawImage)
+        {
+            if (!rawImage)
+            {
+                LogWarning("SendRawImageWithTextResponse called with null RawImage.");
+                return;
+            }
+
+            var elementName = rawImage.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!rawImage || rawImage.texture == null)
+                    {
+                        LogWarning("SendRawImageWithTextResponse: RawImage texture unavailable.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(rawImage.texture);
+                },
+                BuildDefaultImageText($"RawImage:{elementName}"),
+                TextResponseModalities,
+                nameof(SendRawImageWithTextResponse));
+        }
+
+        public void SendRawImageWithVoiceResponse(RawImage rawImage)
+        {
+            if (!rawImage)
+            {
+                LogWarning("SendRawImageWithVoiceResponse called with null RawImage.");
+                return;
+            }
+
+            var elementName = rawImage.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!rawImage || rawImage.texture == null)
+                    {
+                        LogWarning("SendRawImageWithVoiceResponse: RawImage texture unavailable.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(rawImage.texture);
+                },
+                BuildDefaultImageText($"RawImage:{elementName}"),
+                VoiceResponseModalities,
+                nameof(SendRawImageWithVoiceResponse));
+        }
+
+        public void SendTextureWithTextResponse(Texture texture)
+        {
+            if (!texture)
+            {
+                LogWarning("SendTextureWithTextResponse called with null Texture.");
+                return;
+            }
+
+            var textureName = texture.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!texture)
+                    {
+                        LogWarning("SendTextureWithTextResponse: Texture became unavailable before capture.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(texture);
+                },
+                BuildDefaultImageText(string.IsNullOrEmpty(textureName) ? "Texture" : textureName),
+                TextResponseModalities,
+                nameof(SendTextureWithTextResponse));
+        }
+
+        public void SendTextureWithVoiceResponse(Texture texture)
+        {
+            if (!texture)
+            {
+                LogWarning("SendTextureWithVoiceResponse called with null Texture.");
+                return;
+            }
+
+            var textureName = texture.name;
+            SendImageWithResponse(
+                () =>
+                {
+                    if (!texture)
+                    {
+                        LogWarning("SendTextureWithVoiceResponse: Texture became unavailable before capture.");
+                        return null;
+                    }
+                    return CopyTextureToReadable(texture);
+                },
+                BuildDefaultImageText(string.IsNullOrEmpty(textureName) ? "Texture" : textureName),
+                VoiceResponseModalities,
+                nameof(SendTextureWithVoiceResponse));
+        }
+
+        private static string BuildDefaultImageText(string context)
+        {
+            return string.IsNullOrWhiteSpace(context) ? DefaultImageMessage : $"{DefaultImageMessage} ({context})";
+        }
+
+        private void SendImageWithResponse(Func<Texture2D> captureFunc, string promptText, string[] responseModalities, string contextLabel, Action<bool> onCompleted = null, bool bypassProcessingCheck = false)
+        {
+            if (captureFunc == null) { LogError($"{contextLabel}: Capture function is null."); return; }
+            if (_isShuttingDown) return;
+
+            _mainThreadActions.Enqueue(() =>
+            {
+                if (!bypassProcessingCheck)
+                {
+                    var busy = IsProcessing && !_isWaitingToFinishSpeaking;
+                    if (busy)
+                    {
+                        LogWarning($"{contextLabel}: Cannot send image while processing.");
+                        onCompleted?.Invoke(false);
+                        return;
+                    }
+                }
+
+#if MV_NATIVE_WEBSOCKETS
+                if (_websocket == null || _websocket.State != WebSocketState.Open)
+                {
+                    LogWarning($"{contextLabel}: WebSocket not open.");
+                    onCompleted?.Invoke(false);
+                    return;
+                }
+
+                Texture2D captured = null;
+                try
+                {
+                    captured = captureFunc();
+                    if (!captured)
+                    {
+                        LogWarning($"{contextLabel}: Capture returned no texture.");
+                        onCompleted?.Invoke(false);
+                        return;
+                    }
+
+                    var dataUrl = EncodeTextureToDataUrl(captured);
+                    if (string.IsNullOrEmpty(dataUrl))
+                    {
+                        LogError($"{contextLabel}: Failed to encode image to data URL.");
+                        onCompleted?.Invoke(false);
+                        return;
+                    }
+
+                    var content = new List<object>
+                    {
+                        new { type = "input_image", image_url = dataUrl }
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(promptText))
+                    {
+                        content.Add(new { type = "input_text", text = promptText });
+                    }
+
+                    var payload = new
+                    {
+                        type = "conversation.item.create",
+                        item = new
+                        {
+                            type = "message",
+                            role = "user",
+                            content = content.ToArray()
+                        }
+                    };
+
+                    var json = JsonConvert.SerializeObject(payload);
+                    _websocket.SendText(json);
+
+                    _activityTimer = 0f;
+
+                    var modalities = responseModalities ?? VoiceResponseModalities;
+                    Log($"{contextLabel}: Image sent ({captured.width}x{captured.height}). Triggering response.");
+                    TriggerResponseInternal(true, modalities);
+                    onCompleted?.Invoke(true);
+                }
+                catch (Exception e)
+                {
+                    LogError($"{contextLabel}: Failed to send image - {e.Message}");
+                    onCompleted?.Invoke(false);
+                }
+                finally
+                {
+                    if (captured)
+                    {
+                        Destroy(captured);
+                    }
+                }
+#else
+                LogWarning($"{contextLabel}: MV_NATIVE_WEBSOCKETS not defined.");
+                onCompleted?.Invoke(false);
+#endif
+            });
+        }
+
+        private Texture2D CaptureGameScreenshot()
+        {
+            return ScreenCapture.CaptureScreenshotAsTexture();
+        }
+
+        private Texture2D CaptureCameraTexture(Camera camera)
+        {
+            if (!camera) return null;
+
+            var width = Mathf.Max(1, camera.pixelWidth);
+            var height = Mathf.Max(1, camera.pixelHeight);
+            var tempRt = RenderTexture.GetTemporary(width, height, 24, RenderTextureFormat.ARGB32);
+            var previousTarget = camera.targetTexture;
+            var previousActive = RenderTexture.active;
+
+            try
+            {
+                camera.targetTexture = tempRt;
+                camera.Render();
+
+                RenderTexture.active = tempRt;
+                var readable = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                readable.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                readable.Apply();
+                return readable;
+            }
+            catch (Exception e)
+            {
+                LogError($"CaptureCameraTexture failed: {e.Message}");
+                return null;
+            }
+            finally
+            {
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                RenderTexture.ReleaseTemporary(tempRt);
+            }
+        }
+
+        private Texture2D CopyTextureToReadable(Texture texture)
+        {
+            if (!texture) return null;
+
+            var width = Mathf.Max(1, texture.width);
+            var height = Mathf.Max(1, texture.height);
+
+            RenderTexture tempRt = null;
+            var previousActive = RenderTexture.active;
+
+            try
+            {
+                if (texture is RenderTexture renderTexture)
+                {
+                    tempRt = RenderTexture.GetTemporary(renderTexture.width, renderTexture.height, 0, RenderTextureFormat.ARGB32);
+                    Graphics.Blit(renderTexture, tempRt);
+                }
+                else
+                {
+                    tempRt = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32);
+                    Graphics.Blit(texture, tempRt);
+                }
+
+                RenderTexture.active = tempRt;
+                var readable = new Texture2D(tempRt.width, tempRt.height, TextureFormat.RGBA32, false);
+                readable.ReadPixels(new Rect(0, 0, tempRt.width, tempRt.height), 0, 0);
+                readable.Apply();
+                return readable;
+            }
+            catch (Exception e)
+            {
+                LogError($"CopyTextureToReadable failed: {e.Message}");
+                return null;
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+                if (tempRt != null)
+                {
+                    RenderTexture.ReleaseTemporary(tempRt);
+                }
+            }
+        }
+
+        private static string EncodeTextureToDataUrl(Texture2D texture)
+        {
+            if (!texture) return null;
+
+            try
+            {
+                var pngBytes = texture.EncodeToPNG();
+                if (pngBytes == null || pngBytes.Length == 0) return null;
+                return $"data:image/png;base64,{Convert.ToBase64String(pngBytes)}";
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        #endregion
 
         /// <summary> Public method to disconnect. Sets shutdown flag and queues internal disconnect. </summary>
         public void Disconnect()
@@ -2391,7 +2808,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         }
 
         /// <summary> Internal method to send 'response.create' message. Runs on Main Thread. </summary>
-        private void TriggerResponseInternal(bool force)
+        private void TriggerResponseInternal(bool force, string[] modalitiesOverride = null, bool resetErrorState = true)
         {
             if (_isShuttingDown) return;
             
@@ -2418,12 +2835,20 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             Log("Triggering AI response creation...");
             StopMic(); // Ensure mic is stopped before requesting response
+
+            if (resetErrorState)
+            {
+                ResetServerErrorRetryState();
+            }
+            var modalities = modalitiesOverride ?? VoiceResponseModalities;
+            _lastRequestedModalities = modalities;
+
             var responseMsg = new
             {
                 type = "response.create",
                 response = new
                 {
-                    modalities = new[] { "text", "audio" }
+                    modalities = modalities
                 }
             };
             try
