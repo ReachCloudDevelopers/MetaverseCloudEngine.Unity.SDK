@@ -82,6 +82,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                     targetPlatforms.Remove(Platform.iOS);
                     targetPlatforms.Insert(0, Platform.iOS);
                 }
+                if (targetPlatforms.Contains(Platform.WebGL) && targetPlatforms[0] == Platform.WebGL)
+                {
+                    // Always compile webgl last.
+                    targetPlatforms.Remove(Platform.WebGL);
+                    targetPlatforms.Add(Platform.WebGL);
+                }
 
                 // Let's start processing each platform.
                 var alreadyDonePlatforms = new List<int>();

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.49
-- Add GetComponentsInChildrenOrderedOfType methods for GameObject and Component
+## 2.198.50
+- Ensure WebGL is always compiled last in the asset bundle build process
 
-Updated on October 02, 2025
+Updated on October 06, 2025
