@@ -56,17 +56,31 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 await UniTask.SwitchToMainThread(cancellationToken);
                 _scriptModules ??= new Dictionary<TextAsset, Prepared<Script>>();
+                // On WebGL, skip caching prepared scripts due to Jint bug
+                if (Application.platform == RuntimePlatform.WebGLPlayer)
+                {
+                    MetaverseProgram.Logger.Log($"[METAVERSE_SCRIPT] [WebGL] Skipping prepared script cache for {asset.name}.js");
+                    var text = asset.text;
+                    if (preProcessScript != null)
+                        text = preProcessScript?.Invoke(text);
+                    // Prepare but do not cache
+                    var script = Engine.PrepareScript(text, strict: true);
+                    await UniTask.SwitchToMainThread(cancellationToken);
+                    return script;
+                }
+                // Non-WebGL: use cache
                 if (_scriptModules.TryGetValue(asset, out var code))
                     return code;
                 MetaverseProgram.Logger.Log($"[METAVERSE_SCRIPT] Initializing {asset.name}.js...");
-                var text = asset.text;
+                var textNonWebGL = asset.text;
                 if (preProcessScript != null)
-                    text = preProcessScript?.Invoke(text);
-                if (Application.platform != RuntimePlatform.WebGLPlayer)
-                    await UniTask.SwitchToThreadPool();
-                var script = Engine.PrepareScript(text, strict: true);
+                    textNonWebGL = preProcessScript?.Invoke(textNonWebGL);
+                await UniTask.SwitchToThreadPool();
+                var scriptNonWebGL = Engine.PrepareScript(textNonWebGL, strict: true);
                 await UniTask.SwitchToMainThread(cancellationToken);
-                return _scriptModules[asset] = script;
+                // Only cache if not null
+                _scriptModules[asset] = scriptNonWebGL;
+                return scriptNonWebGL;
             });
         }
 

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.51
-- Refactor initialization logic in MetaverseScript to improve error handling and maintainability
+## 2.198.52
+- Enhance WebGL support by executing raw scripts and skipping caching for prepared scripts
 
 Updated on October 07, 2025

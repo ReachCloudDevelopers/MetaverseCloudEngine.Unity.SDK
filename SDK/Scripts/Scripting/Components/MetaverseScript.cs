@@ -1274,15 +1274,64 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             UniTask.Void(async c =>
             {
+                bool isWebGL = Application.platform == RuntimePlatform.WebGLPlayer;
                 foreach (var include in includes)
                     if (include && !string.IsNullOrEmpty(include.text))
                     {
-                        var includeScript = await MetaverseScriptCache.Current.GetScriptAsync(include, c);
-                        _engine.Execute(in includeScript);
+                        if (isWebGL)
+                        {
+                            // On WebGL, execute raw source
+                            try
+                            {
+                                _engine.Execute(include.text);
+                            }
+                            catch (Exception ex)
+                            {
+                                MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing include script (raw) '{include?.name}': {ex}");
+                                throw;
+                            }
+                        }
+                        else
+                        {
+                            var includeScript = await MetaverseScriptCache.Current.GetScriptAsync(include, c);
+                            try
+                            {
+                                _engine.Execute(in includeScript);
+                            }
+                            catch (Exception ex)
+                            {
+                                MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing include script '{include?.name}': {ex}");
+                                throw;
+                            }
+                        }
                     }
 
-                var mainScript = await MetaverseScriptCache.Current.GetScriptAsync(javascriptFile, c);
-                _engine.Execute(in mainScript);
+                if (isWebGL)
+                {
+                    // On WebGL, execute raw source
+                    try
+                    {
+                        _engine.Execute(javascriptFile.text);
+                    }
+                    catch (Exception ex)
+                    {
+                        MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing main script (raw) '{javascriptFile?.name}': {ex}");
+                        throw;
+                    }
+                }
+                else
+                {
+                    var mainScript = await MetaverseScriptCache.Current.GetScriptAsync(javascriptFile, c);
+                    try
+                    {
+                        _engine.Execute(in mainScript);
+                    }
+                    catch (Exception ex)
+                    {
+                        MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing main script '{javascriptFile?.name}': {ex}");
+                        throw;
+                    }
+                }
 
                 var methods = (ScriptFunctions[])Enum.GetValues(typeof(ScriptFunctions));
                 foreach (var method in methods)
