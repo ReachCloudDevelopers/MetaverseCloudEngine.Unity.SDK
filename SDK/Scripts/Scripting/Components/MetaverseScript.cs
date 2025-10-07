@@ -87,7 +87,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             {
                 var message = FormatArguments(args);
                 var trace = new StackTrace(1, true).ToString();
-                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(message) ? trace : $"{message}{Environment.NewLine}{trace}");
+                Log(MetaverseProgram.Logger.Log, string.IsNullOrEmpty(message) ? trace : $"{message}\n{trace}");
             }
 
             public void assert(params object[] args)
@@ -478,6 +478,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             try
             {
+                if (Application.platform == RuntimePlatform.WebGLPlayer)
+                {
+                    // Workaround Jint prepared-script issue under IL2CPP/WebGL: execute raw source instead of caching
+                    return _engine.Evaluate(source);
+                }
+
                 if (!_evalScriptCache.TryGetValue(source, out var prepared))
                 {
                     prepared = Engine.PrepareScript(source, strict: true);
