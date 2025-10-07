@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.50
-- Ensure WebGL is always compiled last in the asset bundle build process
+## 2.198.51
+- Refactor initialization logic in MetaverseScript to improve error handling and maintainability
 
-Updated on October 06, 2025
+Updated on October 07, 2025

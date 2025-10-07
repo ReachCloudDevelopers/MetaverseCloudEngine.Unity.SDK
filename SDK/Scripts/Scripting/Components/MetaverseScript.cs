@@ -678,68 +678,76 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     {
                         TryInitializeEngine(() =>
                         {
-                            if (this && gameObject.activeInHierarchy)
-                                CallAwake();
-                            else
-                                MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
-                                {
-                                    if (this && gameObject.activeInHierarchy) CallAwake();
-                                });
-
-                            if (this && isActiveAndEnabled && _ready)
-                                CallOnEnabled();
-                            else
+                            try
                             {
-                                MetaverseDispatcher.WaitUntil(() => !this || (isActiveAndEnabled && _ready), () =>
-                                {
-                                    if (this && isActiveAndEnabled && _ready) CallOnEnabled();
-                                });
-                            }
-                            return;
-
-                            unsafe void CallOnEnabled()
-                            {
-                                if (!this) return;
-                                if (!_ready) return;
-                                JsValue onEnableMethod = null;
-                                if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
-                                    try { _ = _engine.Invoke(onEnableMethod); } catch (Exception e) { console.error($"Error in OnEnable on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
-                                JsValue startMethod = null;
-                                if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
-                                    try { _ = _engine.Invoke(startMethod); } catch (Exception e) { console.error($"Error in Start on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
-                            }
-
-                            unsafe void CallAwake()
-                            {
-                                if (!this) return;
-                                _ready = true;
-                                try
-                                {
-                                    JsValue awakeMethod = null;
-                                    if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
-                                        try { _ = _engine.Invoke(awakeMethod); } catch (Exception e) { console.error($"Error in Awake on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
-
-                                    while (_initializationMethodQueue.TryDequeue(out var a))
+                                if (this && gameObject.activeInHierarchy)
+                                    CallAwake();
+                                else
+                                    MetaverseDispatcher.WaitUntil(() => !this || gameObject.activeInHierarchy, () =>
                                     {
-                                        try
-                                        {
-                                            a?.Invoke();
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            OnFailed(e.GetBaseException());
-                                        }
-                                    }
+                                        if (this && gameObject.activeInHierarchy) CallAwake();
+                                    });
 
-                                    try { onInitialize?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError(e); }
-                                }
-                                catch (Exception e)
+                                if (this && isActiveAndEnabled && _ready)
+                                    CallOnEnabled();
+                                else
                                 {
-                                    _ready = false;
-                                    OnFailed(e.GetBaseException());
-                                    return;
+                                    MetaverseDispatcher.WaitUntil(() => !this || (isActiveAndEnabled && _ready), () =>
+                                    {
+                                        if (this && isActiveAndEnabled && _ready) CallOnEnabled();
+                                    });
+                                }
+                                return;
+
+                                unsafe void CallOnEnabled()
+                                {
+                                    if (!this) return;
+                                    if (!_ready) return;
+                                    JsValue onEnableMethod = null;
+                                    if (_methods?.TryGetValue(ScriptFunctions.OnEnable, out onEnableMethod) == true)
+                                        try { _ = _engine.Invoke(onEnableMethod); } catch (Exception e) { console.error($"Error in OnEnable on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
+                                    JsValue startMethod = null;
+                                    if (enabled && _methods?.TryGetValue(ScriptFunctions.Start, out startMethod) == true)
+                                        try { _ = _engine.Invoke(startMethod); } catch (Exception e) { console.error($"Error in Start on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
+                                }
+
+                                unsafe void CallAwake()
+                                {
+                                    if (!this) return;
+                                    _ready = true;
+                                    try
+                                    {
+                                        JsValue awakeMethod = null;
+                                        if (_methods?.TryGetValue(ScriptFunctions.Awake, out awakeMethod) == true)
+                                            try { _ = _engine.Invoke(awakeMethod); } catch (Exception e) { console.error($"Error in Awake on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
+
+                                        while (_initializationMethodQueue.TryDequeue(out var a))
+                                        {
+                                            try
+                                            {
+                                                a?.Invoke();
+                                            }
+                                            catch (Exception e)
+                                            {
+                                                OnFailed(e.GetBaseException());
+                                            }
+                                        }
+
+                                        try { onInitialize?.Invoke(); } catch (Exception e) { MetaverseProgram.Logger.LogError(e); }
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        _ready = false;
+                                        OnFailed(e.GetBaseException());
+                                        return;
+                                    }
                                 }
                             }
+                            catch (Exception e)
+                            {
+                                OnFailed(e.GetBaseException());
+                            }
+                            
                         }, e =>
                         {
                             OnFailed($"Failed to initialize the engine: {e}");
