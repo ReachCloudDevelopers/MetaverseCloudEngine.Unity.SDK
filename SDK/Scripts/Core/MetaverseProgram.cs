@@ -207,6 +207,7 @@ namespace MetaverseCloudEngine.Unity
                         imageDownloader: webClient,
                         taskHandler: webClient)
                     {
+                        DeviceIdProvider = new UnityDeviceIdProvider(),
                         Account =
                         {
                             UseCookieAuthentication = Application.platform == RuntimePlatform.WebGLPlayer,

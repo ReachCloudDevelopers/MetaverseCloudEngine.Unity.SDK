@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.54
-- Enhance upload process with estimated time and upload speed persistence
+## 2.199.0
+- Add UnityDeviceIdProvider for device ID management and refactor unauthorized upload handling
 
-Updated on October 08, 2025
+Updated on October 09, 2025

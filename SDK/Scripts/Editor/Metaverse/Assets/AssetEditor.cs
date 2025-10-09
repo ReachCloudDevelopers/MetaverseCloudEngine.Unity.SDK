@@ -17,6 +17,7 @@ using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Common.Models.QueryParams;
 using MetaverseCloudEngine.Unity.Assets;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
+using MetaverseCloudEngine.Unity.Async;
 using Newtonsoft.Json;
 using TriInspectorMVCE;
 using UnityEditor;
@@ -848,14 +849,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                     {
                         if (response.StatusCode == HttpStatusCode.Unauthorized && allowUnauthorizedRetry)
                         {
-                            var validate = Task.Run(async () => await MetaverseProgram.ApiClient.Account.ValidateTokenAsync()).Result;
-                            if (validate.Succeeded)
-                            {
-                                Upload(mainAsset, asset, serObj, true, false);
-                                return;
-                            }
-
-                            OnUnauthorizedUpload(() => Upload(mainAsset, asset, serObj, true, false));
+                            HandleUnauthorizedRetry(
+                                () => Upload(mainAsset, asset, serObj, true, false),
+                                () => OnUnauthorizedUpload(() => Upload(mainAsset, asset, serObj, true, false)));
                             return;
                         }
 
@@ -1266,36 +1262,30 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     if (result.Result.StatusCode == HttpStatusCode.Unauthorized)
                     {
-                        var validation = Task.Run(async () => 
-                            await MetaverseProgram.ApiClient.Account.ValidateTokenAsync(), 
-                            uploadCancellation.Token).Result;
-                        if (validation.Succeeded)
-                        {
-                            UploadBundles(
-                                controller, 
-                                bundlePath, 
-                                buildsEnumerable, 
-                                assetUpsertForm, 
+                        var nextTry = tries + 1;
+                        HandleUnauthorizedRetry(
+                            () => UploadBundles(
+                                controller,
+                                bundlePath,
+                                buildsEnumerable,
+                                assetUpsertForm,
                                 onBuildSuccess,
-                                ++tries);
-                            return;
-                        }
-                        
-                        OnUnauthorizedUpload(() =>
-                        {
-                            EditorUtility.DisplayDialog(
-                                "Retrying Upload", 
-                                "You have successfully logged in. The upload will now be retried.", 
-                                "Ok");
-                            
-                            UploadBundles(
-                                controller, 
-                                bundlePath, 
-                                buildsEnumerable, 
-                                assetUpsertForm, 
-                                onBuildSuccess,
-                                ++tries);
-                        });
+                                nextTry),
+                            () => OnUnauthorizedUpload(() =>
+                            {
+                                EditorUtility.DisplayDialog(
+                                    "Retrying Upload",
+                                    "You have successfully logged in. The upload will now be retried.",
+                                    "Ok");
+
+                                UploadBundles(
+                                    controller,
+                                    bundlePath,
+                                    buildsEnumerable,
+                                    assetUpsertForm,
+                                    onBuildSuccess,
+                                    nextTry);
+                            }));
                         return;
                     }
 
@@ -1313,6 +1303,27 @@ namespace MetaverseCloudEngine.Unity.Editors
                 foreach (var stream in openStreams)
                     try { stream?.Dispose(); } catch { /* ignored */ }
             }
+        }
+
+        private static void HandleUnauthorizedRetry(Action onRefreshSuccess, Action onLoginRequired)
+        {
+            if (MetaverseProgram.ApiClient?.Account == null)
+            {
+                onLoginRequired?.Invoke();
+                return;
+            }
+
+            MetaverseProgram.ApiClient.Account.ValidateTokenAsync().ResponseThen(
+                _ =>
+                {
+                    EditorUtility.ClearProgressBar();
+                    MetaverseDispatcher.AtEndOfFrame(() => onRefreshSuccess?.Invoke());
+                },
+                _ =>
+                {
+                    EditorUtility.ClearProgressBar();
+                    MetaverseDispatcher.AtEndOfFrame(() => onLoginRequired?.Invoke());
+                });
         }
 
         private static void OnUnauthorizedUpload(Action loginAction = null)
