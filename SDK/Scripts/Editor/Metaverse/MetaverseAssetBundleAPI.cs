@@ -16,6 +16,7 @@ using MetaverseCloudEngine.Unity.Components;
 using Unity.EditorCoroutines.Editor;
 using UnityEditor.Build.Player;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
@@ -354,6 +355,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 var textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
                 if (textureImporter)
                 {
+                    var hasAlphaChannel = TextureHasAlpha(textureImporter, path);
                     var changed = false;
                     var currentSettings = textureImporter.GetPlatformTextureSettings(group.ToString());
                     var overriden = options.overrideDefaults &&
@@ -404,20 +406,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                             var crunchedFormat =
                                 group switch
                                 {
-                                    BuildTargetGroup.Android or BuildTargetGroup.iOS => textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
-                                        TextureImporterAlphaSource.FromGrayScale
-                                            ? TextureImporterFormat.ETC2_RGBA8Crunched
-                                            : TextureImporterFormat.ETC_RGB4Crunched,
+                                    BuildTargetGroup.Android or BuildTargetGroup.iOS => hasAlphaChannel
+                                        ? TextureImporterFormat.ETC2_RGBA8Crunched
+                                        : TextureImporterFormat.ETC_RGB4Crunched,
                                     BuildTargetGroup.WebGL => TextureImporterFormat.ETC2_RGBA8Crunched,
                                     _ => TextureImporterFormat.DXT5Crunched
                                 };
                             var nonCrunchedFormat =
                                 group switch
                                 {
-                                    _ => textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
-                                        TextureImporterAlphaSource.FromGrayScale
-                                            ? TextureImporterFormat.RGBA32
-                                            : TextureImporterFormat.RGB24,
+                                    _ => hasAlphaChannel
+                                        ? TextureImporterFormat.RGBA32
+                                        : TextureImporterFormat.RGB24,
                                 };
 
                             var format = useCrunchedCompression ? crunchedFormat : nonCrunchedFormat;
@@ -431,17 +431,14 @@ namespace MetaverseCloudEngine.Unity.Editors
                         {
                             var crunchedFormat =
                                 group is BuildTargetGroup.Android or BuildTargetGroup.iOS
-                                    ? textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
-                                    TextureImporterAlphaSource.FromGrayScale
+                                    ? hasAlphaChannel
                                         ? TextureImporterFormat.ETC2_RGBA8Crunched
                                         : TextureImporterFormat.ETC2_RGB4
-                                    : textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
-                                    TextureImporterAlphaSource.FromGrayScale
+                                    : hasAlphaChannel
                                         ? TextureImporterFormat.DXT5Crunched
                                         : TextureImporterFormat.DXT1Crunched;
                             var nonCrunchedFormat =
-                                textureImporter.DoesSourceTextureHaveAlpha() || textureImporter.alphaSource ==
-                                TextureImporterAlphaSource.FromGrayScale
+                                hasAlphaChannel
                                     ? TextureImporterFormat.RGBA32
                                     : TextureImporterFormat.RGB24;
 
@@ -470,6 +467,51 @@ namespace MetaverseCloudEngine.Unity.Editors
                 modelImporter.meshCompression = options.meshCompression;
                 modelImporter.SaveAndReimport();
             }
+        }
+
+        private static bool TextureHasAlpha(TextureImporter importer, string assetPath)
+        {
+            if (importer == null)
+                return false;
+
+            if (importer.alphaSource is TextureImporterAlphaSource.FromGrayScale or
+                TextureImporterAlphaSource.FromInput)
+            {
+                return true;
+            }
+
+            if (importer.alphaIsTransparency)
+                return true;
+
+            var texture = AssetDatabase.LoadAssetAtPath<Texture>(assetPath);
+            if (!texture)
+                return false;
+
+            try
+            {
+                if (texture.graphicsFormat != GraphicsFormat.None)
+                    return GraphicsFormatUtility.HasAlphaChannel(texture.graphicsFormat);
+            }
+            catch
+            {
+                // Some texture types may not expose graphics format; fall through.
+            }
+
+            if (texture is Texture2D texture2D)
+            {
+                try
+                {
+                    var graphicsFormat =
+                        GraphicsFormatUtility.GetGraphicsFormat(texture2D.format, importer.sRGBTexture);
+                    return GraphicsFormatUtility.HasAlphaChannel(graphicsFormat);
+                }
+                catch
+                {
+                    // ignore invalid conversion attempts
+                }
+            }
+
+            return false;
         }
 
         public static void BuildPrefab(

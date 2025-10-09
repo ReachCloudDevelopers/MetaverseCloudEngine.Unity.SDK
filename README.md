@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.199.3
-- Fix null reference handling for BlockchainAssets and BlockchainCategories in AssetEditor
+## 2.199.4
+- Enhance texture import settings by adding alpha channel detection and refactoring related logic
 
 Updated on October 09, 2025
