@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.198.53
-- Fix logging format and add WebGL compatibility for Jint script evaluation
+## 2.198.54
+- Enhance upload process with estimated time and upload speed persistence
 
-Updated on October 07, 2025
+Updated on October 08, 2025

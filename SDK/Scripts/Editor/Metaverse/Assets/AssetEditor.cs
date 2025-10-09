@@ -61,6 +61,9 @@ namespace MetaverseCloudEngine.Unity.Editors
         private AssetDto _reviewVersionDto;
         private bool _requestedReviewVersionDto;
 
+        private const string UploadSpeedPrefKey = "MetaverseCloudEngine_Unity_LastUploadSpeedBytesPerSecond";
+        private const double DefaultSimulatedBytesPerSecond = 2.0 * 1024 * 1024;
+
         public TAsset Target { get; private set; }
         
         public static bool AskToTurnOffGPUInstancing {
@@ -1138,6 +1141,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                 };
             });
 
+            var totalBytes = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length);
+            double uploadDurationSeconds = 0;
+
             try
             {
                 var uploadCancellation = new CancellationTokenSource();
@@ -1150,25 +1156,40 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 try
                 {
-                    var totalBytes = buildsEnumerable.Sum(x => new FileInfo(x.OutputPath).Length);
                     var uploadSizeMB = totalBytes / 1024f / 1024f;
-
-                    const double simulatedBytesPerSecond = 2.00 * 1024 * 1024;
-                    var estimatedSeconds = totalBytes <= 0 ? 0 : totalBytes / simulatedBytesPerSecond;
+                    var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
+                    var savedUploadSpeed = hasSavedUploadSpeed ? Math.Max(EditorPrefs.GetFloat(UploadSpeedPrefKey), 0f) : 0f;
+                    var bytesPerSecondForEstimate = hasSavedUploadSpeed && savedUploadSpeed > 0f
+                        ? (double)savedUploadSpeed
+                        : DefaultSimulatedBytesPerSecond;
+                    var estimatedSeconds = totalBytes <= 0 || bytesPerSecondForEstimate <= 0
+                        ? 0
+                        : totalBytes / bytesPerSecondForEstimate;
 
                     var sw = Stopwatch.StartNew();
                     while (!result.IsCompleted)
                     {
                         double progress = 0;
+                        double? etaSecondsRemaining = null;
                         if (totalBytes > 0 && estimatedSeconds > 0)
                         {
                             var elapsed = sw.Elapsed.TotalSeconds;
                             progress = Math.Min(elapsed / estimatedSeconds, 1); // cap until completion
+                            if (hasSavedUploadSpeed)
+                            {
+                                etaSecondsRemaining = Math.Max(estimatedSeconds - elapsed, 0);
+                            }
                         }
+
+                        var progressMessage = progress < 1
+                            ? hasSavedUploadSpeed && estimatedSeconds > 0
+                                ? $"Uploading assets... ETA {FormatEta(etaSecondsRemaining)}"
+                                : "Uploading assets..."
+                            : "Verifying upload...";
 
                         if (EditorUtility.DisplayCancelableProgressBar(
                                 $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
-                                progress < 1 ? "Uploading assets..." : "Verifying upload...",
+                                progressMessage,
                                 (float)progress))
                         {
                             uploadCancellation.Cancel();
@@ -1177,6 +1198,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                         Thread.Sleep(100);
                     }
+
+                    sw.Stop();
+                    uploadDurationSeconds = sw.Elapsed.TotalSeconds;
 
                     // Ensure UI shows completion if task finished
                     if (result.IsCompleted)
@@ -1208,6 +1232,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                             platformsString);
                     EditorUtility.DisplayDialog("Upload Successful",
                         $"\"{assetUpsertForm.Name}\" was uploaded successfully!" + platformsString, "Ok");
+
+                    TryPersistUploadSpeed(totalBytes, uploadDurationSeconds);
 
                     if (assetUpsertForm.Listings != dto.Listings)
                     {
@@ -1308,6 +1334,39 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog("Upload Failed", $"{error.ToPrettyErrorString()}", "Ok");
             MetaverseProgram.Logger.Log(error.ToString());
+        }
+
+        private static string FormatEta(double? secondsRemaining)
+        {
+            if (secondsRemaining is not double remaining || double.IsNaN(remaining) || double.IsInfinity(remaining))
+                return "--:--";
+
+            remaining = Math.Max(remaining, 0);
+            var timeSpan = TimeSpan.FromSeconds(remaining);
+
+            if (timeSpan.TotalHours >= 1)
+                return $"{(int)timeSpan.TotalHours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
+
+            return $"{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";
+        }
+
+        private static void TryPersistUploadSpeed(long totalBytes, double uploadDurationSeconds)
+        {
+            if (totalBytes <= 0)
+                return;
+
+            if (uploadDurationSeconds <= 0)
+                return;
+
+            var bytesPerSecond = totalBytes / uploadDurationSeconds;
+            if (double.IsNaN(bytesPerSecond) || double.IsInfinity(bytesPerSecond) || bytesPerSecond <= 0)
+                return;
+
+            var clampedBytesPerSecond = (float)Math.Min(bytesPerSecond, float.MaxValue);
+            if (clampedBytesPerSecond <= 0)
+                return;
+
+            EditorPrefs.SetFloat(UploadSpeedPrefKey, clampedBytesPerSecond);
         }
 
         protected void ApplyMetaData(SerializedObject obj, TAssetDto dto)
