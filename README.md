@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.199.1
-- Refactor device ID storage handling for Unity Editor compatibility
+## 2.199.2
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
 Updated on October 09, 2025
