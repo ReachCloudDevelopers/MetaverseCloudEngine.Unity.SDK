@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.199.0
-- Add UnityDeviceIdProvider for device ID management and refactor unauthorized upload handling
+## 2.199.1
+- Refactor device ID storage handling for Unity Editor compatibility
 
 Updated on October 09, 2025

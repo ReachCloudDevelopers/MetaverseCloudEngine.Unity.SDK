@@ -20,7 +20,11 @@ namespace MetaverseCloudEngine.Unity
                 if (!string.IsNullOrEmpty(_cachedDeviceId))
                     return _cachedDeviceId;
 
+#if UNITY_EDITOR
+                var stored = UnityEditor.EditorPrefs.GetString(PlayerPrefsKey, null);
+#else
                 var stored = PlayerPrefs.GetString(PlayerPrefsKey, null);
+#endif
                 if (!string.IsNullOrWhiteSpace(stored))
                 {
                     _cachedDeviceId = stored;
@@ -43,8 +47,12 @@ namespace MetaverseCloudEngine.Unity
                 if (string.IsNullOrWhiteSpace(value))
                 {
                     _cachedDeviceId = null;
+#if UNITY_EDITOR
+                    UnityEditor.EditorPrefs.DeleteKey(PlayerPrefsKey);
+#else
                     PlayerPrefs.DeleteKey(PlayerPrefsKey);
                     PlayerPrefs.Save();
+#endif
                     return;
                 }
 
@@ -58,11 +66,18 @@ namespace MetaverseCloudEngine.Unity
             if (string.IsNullOrWhiteSpace(deviceId))
                 return;
 
+#if UNITY_EDITOR
+            if (UnityEditor.EditorPrefs.GetString(PlayerPrefsKey, null) == deviceId)
+                return;
+
+            UnityEditor.EditorPrefs.SetString(PlayerPrefsKey, deviceId);
+#else
             if (PlayerPrefs.GetString(PlayerPrefsKey, null) == deviceId)
                 return;
 
             PlayerPrefs.SetString(PlayerPrefsKey, deviceId);
             PlayerPrefs.Save();
+#endif
         }
 
         private static string GenerateSeed()
