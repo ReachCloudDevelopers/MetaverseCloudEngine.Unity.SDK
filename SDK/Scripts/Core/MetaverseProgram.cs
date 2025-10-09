@@ -214,6 +214,8 @@ namespace MetaverseCloudEngine.Unity
                         }
                     };
 
+                    ApiClient.LogMessage += message => Logger.Log(message);
+
                     DetectAssetVersion();
 
                     RuntimeServices = new MetaverseRuntimeServices(ApiClient, Prefs);
