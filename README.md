@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.199.2
-- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
+## 2.199.3
+- Fix null reference handling for BlockchainAssets and BlockchainCategories in AssetEditor
 
 Updated on October 09, 2025

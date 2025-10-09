@@ -118,8 +118,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 Description = asset.MetaData.Description,
                 Listings = asset.MetaData.Listings,
                 Private = asset.MetaData.Private,
-                BlockchainAssets = asset.MetaData.BlockchainReferences?.Assets.Select(x => new BlockchainReferenceAssetModel { Asset = x.asset, Type = x.type }).ToArray(),
-                BlockchainCategories = asset.MetaData.BlockchainReferences?.Categories.Select(x => new BlockchainReferenceCategoryModel { Category = x.category, Type = x.type }).ToArray(),
+                BlockchainAssets = asset.MetaData.BlockchainReferences?.Assets?.Select(x => new BlockchainReferenceAssetModel { Asset = x.asset, Type = x.type }).ToArray(),
+                BlockchainCategories = asset.MetaData.BlockchainReferences?.Categories?.Select(x => new BlockchainReferenceCategoryModel { Category = x.category, Type = x.type }).ToArray(),
                 Publish = CanPublish() ? asset.Publish : null, 
             };
         }
