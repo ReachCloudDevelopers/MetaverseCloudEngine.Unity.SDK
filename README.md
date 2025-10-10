@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.0
-- Add logging for API messages and update dependencies
+## 2.200.1
+- Add exponential backoff for retrying login initialization on server errors
 
 Updated on October 09, 2025

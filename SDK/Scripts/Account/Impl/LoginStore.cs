@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.ApiClient.Controllers;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
@@ -117,6 +118,19 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 {
                     if (!response.Succeeded)
                     {
+                        // Infinite retry for 500 Internal Server Error
+                        if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
+                        {
+                            _initializationRetries++;
+                            var delaySeconds = Math.Min(30, 2 * _initializationRetries); // Exponential backoff, max 30s
+                            Debug.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
+                            
+                            await UniTask.Delay(delaySeconds * 1000);
+                            await InitializeAsync();
+                            return;
+                        }
+                        
+                        // For other errors, retry up to 5 times
                         Debug.LogWarning("LoginStore Initialization failed: " + response.StatusCode);
                         _initializationRetries++;
                         if (_initializationRetries < 5)
