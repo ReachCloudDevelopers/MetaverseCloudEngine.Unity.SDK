@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.4
-- Fix initialization retry logic to use Application.isEditor instead of Application.isPlaying
+## 2.200.5
+- Refactor logging in LoginStore to use MetaverseProgram.Logger for consistency
 
 Updated on October 10, 2025

@@ -9,6 +9,7 @@ using MetaverseCloudEngine.Unity.Encryption;
 using MetaverseCloudEngine.Unity.Services.Abstract;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using System.Diagnostics;
 
 namespace MetaverseCloudEngine.Unity.Account.Poco
 {
@@ -124,7 +125,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         // Infinite retry for 500 Internal Server Error
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
-                            Debug.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
+                            MetaverseProgram.Logger.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
                             if (Application.isEditor)
                                 await Task.Delay(delaySeconds * 1000);
                             else
@@ -134,7 +135,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         }
                         
                         // For other errors, retry up to 5 times
-                        Debug.LogWarning("LoginStore Initialization failed: " + response.StatusCode);
+                        MetaverseProgram.Logger.LogWarning("LoginStore Initialization failed: " + response.StatusCode);
                         if (_initializationRetries < 5)
                         {
                             if (Application.isEditor)
@@ -156,7 +157,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var errorMessage = await response.GetErrorAsync();
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    Debug.LogWarning("Failed to initialize login store. Invalid access token: " + errorMessage);
+                    MetaverseProgram.Logger.LogWarning("Failed to initialize login store. Invalid access token: " + errorMessage);
                 }
 
                 AccessToken = null;
@@ -204,6 +205,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 
                 AccessToken = ApiClient.Account.AccessToken;
                 RefreshToken = ApiClient.Account.RefreshToken;
+                MetaverseProgram.Logger.Log("LoginStore: OnLoggedIn - Tokens updated");
             });
         }
 
@@ -228,6 +230,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
                 AccessToken = null;
                 RefreshToken = null;
+                MetaverseProgram.Logger.Log("LoginStore: OnLoggedOut - Tokens cleared");
             });
         }
 
