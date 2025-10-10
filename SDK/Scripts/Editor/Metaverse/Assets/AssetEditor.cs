@@ -51,15 +51,15 @@ namespace MetaverseCloudEngine.Unity.Editors
             AssetBuildPlatform.WebGL,
         };
 
-        private static readonly Dictionary<AssetBuildPlatform, string> PlatformIconResourcePaths = new()
+        private static readonly Dictionary<AssetBuildPlatform, (string dark, string light)> PlatformIconResourcePaths = new()
         {
-            { AssetBuildPlatform.StandaloneWindows64, "PlatformIcons/windows" },
-            { AssetBuildPlatform.StandaloneOSX, "PlatformIcons/apple" },
-            { AssetBuildPlatform.StandaloneLinux64, "PlatformIcons/linux" },
-            { AssetBuildPlatform.Android, "PlatformIcons/android" },
-            { AssetBuildPlatform.AndroidVR, "PlatformIcons/vr" },
-            { AssetBuildPlatform.iOS, "PlatformIcons/apple" },
-            { AssetBuildPlatform.WebGL, "PlatformIcons/globe" },
+            { AssetBuildPlatform.StandaloneWindows64, ("PlatformIcons/windows", "PlatformIcons/windows_light") },
+            { AssetBuildPlatform.StandaloneOSX, ("PlatformIcons/apple", "PlatformIcons/apple_light") },
+            { AssetBuildPlatform.StandaloneLinux64, ("PlatformIcons/linux", "PlatformIcons/linux_light") },
+            { AssetBuildPlatform.Android, ("PlatformIcons/android", "PlatformIcons/android_light") },
+            { AssetBuildPlatform.AndroidVR, ("PlatformIcons/vr", "PlatformIcons/vr_light") },
+            { AssetBuildPlatform.iOS, ("PlatformIcons/apple", "PlatformIcons/apple_light") },
+            { AssetBuildPlatform.WebGL, ("PlatformIcons/globe", "PlatformIcons/globe_light") },
         };
 
         private static readonly Dictionary<AssetBuildPlatform, Texture2D> PlatformIconCache = new();
@@ -881,9 +881,15 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 EditorGUILayout.PrefixLabel("Quick Presets");
 
+                var buttonStyle = new GUIStyle(EditorStyles.miniButton)
+                {
+                    fixedHeight = 20f,
+                    padding = new RectOffset(6, 6, 2, 2)
+                };
+
                 foreach (var preset in PlatformPresets)
                 {
-                    if (!GUILayout.Button(new GUIContent(preset.Name, preset.Tooltip), GUILayout.Width(100f)))
+                    if (!GUILayout.Button(new GUIContent(preset.Name, preset.Tooltip), buttonStyle, GUILayout.Width(68f)))
                         continue;
 
                     options.overrideDefaults = true;
@@ -958,12 +964,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (PlatformIconCache.TryGetValue(platform, out var icon))
                 return icon;
 
-            if (!PlatformIconResourcePaths.TryGetValue(platform, out var resourcePath))
+            if (!PlatformIconResourcePaths.TryGetValue(platform, out var paths))
             {
                 PlatformIconCache[platform] = null;
                 return null;
             }
 
+            var resourcePath = EditorGUIUtility.isProSkin ? paths.dark : paths.light;
             icon = Resources.Load<Texture2D>(resourcePath);
             PlatformIconCache[platform] = icon;
             return icon;
@@ -976,11 +983,11 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             _platformTabStyle = new GUIStyle(EditorStyles.toolbarButton)
             {
-                fixedHeight = 36f,
-                fixedWidth = 48f,
+                fixedHeight = 32f,
+                fixedWidth = 32f,
                 alignment = TextAnchor.MiddleCenter,
-                imagePosition = ImagePosition.ImageAbove,
-                padding = new RectOffset(6, 6, 6, 4)
+                imagePosition = ImagePosition.ImageOnly,
+                padding = new RectOffset(4, 4, 4, 4)
             };
 
             return _platformTabStyle;

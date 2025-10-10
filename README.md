@@ -12,13 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.13
-- Add platform icons and enhance AssetEditor for platform-specific settings
-- 
-- - Added new platform icons for Windows, Linux, macOS, Android, iOS, WebGL, and VR.
-- - Updated AssetEditor to include platform tab navigation for easier access to platform-specific options.
-- - Implemented caching for platform icons to improve performance.
-- - Introduced quick presets for texture settings, allowing users to select optimized configurations for different platforms.
-- - Enhanced the UI to support toggling and adjusting various platform-specific settings, including texture resolution and compression options.
+## 2.200.14
+- Add light mode platform icons and update resource paths in AssetEditor
 
 Updated on October 10, 2025
