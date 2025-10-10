@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.10
-- Add DeviceId to GenerateSystemUserTokenAuth0Form
+## 2.200.11
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
 Updated on October 10, 2025
