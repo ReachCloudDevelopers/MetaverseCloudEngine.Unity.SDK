@@ -119,23 +119,30 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 {
                     if (!response.Succeeded)
                     {
+                        _initializationRetries++;
+                        var delaySeconds = Math.Min(30, 2 * _initializationRetries); // Exponential backoff, max 30s
                         // Infinite retry for 500 Internal Server Error
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
-                            _initializationRetries++;
-                            var delaySeconds = Math.Min(30, 2 * _initializationRetries); // Exponential backoff, max 30s
                             Debug.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
-                            
-                            await UniTask.Delay(delaySeconds * 1000);
+                            if (!Application.isPlaying)
+                                await Task.Delay(delaySeconds * 1000);
+                            else
+                                await UniTask.Delay(delaySeconds * 1000);
                             await InitializeAsync();
                             return;
                         }
                         
                         // For other errors, retry up to 5 times
                         Debug.LogWarning("LoginStore Initialization failed: " + response.StatusCode);
-                        _initializationRetries++;
                         if (_initializationRetries < 5)
+                        {
+                            if (!Application.isPlaying)
+                                await Task.Delay(delaySeconds * 1000);
+                            else
+                                await UniTask.Delay(delaySeconds * 1000);
                             await InitializeAsync();
+                        }
                     }
 
                     if (!ApiClient.Account.UseCookieAuthentication)
