@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.15
-- refactor: update platform preset names and improve button styling in AssetEditor
+## 2.200.16
+- Refactor platform icon references and update UI layout for iOS support
 
 Updated on October 10, 2025

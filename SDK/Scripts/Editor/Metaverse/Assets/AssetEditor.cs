@@ -58,7 +58,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             { AssetBuildPlatform.StandaloneLinux64, ("PlatformIcons/linux", "PlatformIcons/linux_light") },
             { AssetBuildPlatform.Android, ("PlatformIcons/android", "PlatformIcons/android_light") },
             { AssetBuildPlatform.AndroidVR, ("PlatformIcons/vr", "PlatformIcons/vr_light") },
-            { AssetBuildPlatform.iOS, ("PlatformIcons/apple", "PlatformIcons/apple_light") },
+            { AssetBuildPlatform.iOS, ("PlatformIcons/ios", "PlatformIcons/ios_light") },
             { AssetBuildPlatform.WebGL, ("PlatformIcons/globe", "PlatformIcons/globe_light") },
         };
 
@@ -860,10 +860,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 _selectPlatformOption = (int)selected;
             }
 
-            using (new EditorGUILayout.HorizontalScope())
+            using (new EditorGUILayout.HorizontalScope(GUILayout.Height(32)))
             {
                 EditorGUILayout.PrefixLabel("Target Platform");
-                var newIndex = GUILayout.Toolbar(index, contents, GetPlatformTabStyle(), GUI.ToolbarButtonSize.Fixed);
+                var newIndex = GUILayout.Toolbar(index, contents, GetPlatformTabStyle(), GUI.ToolbarButtonSize.Fixed, GUILayout.Height(32));
                 if (newIndex != index && newIndex >= 0 && newIndex < PlatformTabOrder.Length)
                 {
                     selected = PlatformTabOrder[newIndex];
@@ -994,9 +994,12 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 fixedHeight = 32f,
                 fixedWidth = 32f,
+                stretchHeight = false,
+                stretchWidth = false,
                 alignment = TextAnchor.MiddleCenter,
                 imagePosition = ImagePosition.ImageOnly,
-                padding = new RectOffset(4, 4, 4, 4)
+                padding = new RectOffset(4, 4, 4, 4),
+                margin = new RectOffset(0, 0, 0, 0)
             };
 
             return _platformTabStyle;
