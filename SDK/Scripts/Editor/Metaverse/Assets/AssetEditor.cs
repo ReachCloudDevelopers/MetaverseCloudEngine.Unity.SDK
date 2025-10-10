@@ -803,7 +803,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             catch { _currentPlatformOptions = new Dictionary<Platform, BundlePlatformOptions>(); }
         }
 
-        private void Upload(object mainAsset, TAsset asset, SerializedObject serObj, bool metadataOnly, bool allowUnauthorizedRetry = true)
+        private void Upload(object mainAsset, TAsset asset, SerializedObject serObj, bool metadataOnly)
         {
             AssetBundle.UnloadAllAssetBundles(true);
 
@@ -847,14 +847,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     }
                     else
                     {
-                        if (response.StatusCode == HttpStatusCode.Unauthorized && allowUnauthorizedRetry)
-                        {
-                            HandleUnauthorizedRetry(
-                                () => Upload(mainAsset, asset, serObj, true, false),
-                                () => OnUnauthorizedUpload(() => Upload(mainAsset, asset, serObj, true, false)));
-                            return;
-                        }
-
                         UploadFailure(Task.Run(async () => await response.GetErrorAsync()).Result);
                     }
 
@@ -985,15 +977,6 @@ namespace MetaverseCloudEngine.Unity.Editors
             IUpsertAssets<TAssetDto, TAssetUpsertForm> upsertController,
             Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null)
         {
-            var validation = Task.Run(async () => 
-                await MetaverseProgram.ApiClient.Account.ValidateTokenAsync()).Result;
-            if (!validation.Succeeded)
-            {
-                OnUnauthorizedUpload(() => BeginBuildAndUpload(mainAsset, asset, assetUpsertForm, upsertController, onBuildSuccess));
-                return;
-            }
-
-
             TryDisableGPUInstancingOnWebGLIfUserWantsTo(mainAsset, asset);
 
             switch (mainAsset)
@@ -1260,35 +1243,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (uploadCancellation.IsCancellationRequested)
                         return;
 
-                    if (result.Result.StatusCode == HttpStatusCode.Unauthorized)
-                    {
-                        var nextTry = tries + 1;
-                        HandleUnauthorizedRetry(
-                            () => UploadBundles(
-                                controller,
-                                bundlePath,
-                                buildsEnumerable,
-                                assetUpsertForm,
-                                onBuildSuccess,
-                                nextTry),
-                            () => OnUnauthorizedUpload(() =>
-                            {
-                                EditorUtility.DisplayDialog(
-                                    "Retrying Upload",
-                                    "You have successfully logged in. The upload will now be retried.",
-                                    "Ok");
-
-                                UploadBundles(
-                                    controller,
-                                    bundlePath,
-                                    buildsEnumerable,
-                                    assetUpsertForm,
-                                    onBuildSuccess,
-                                    nextTry);
-                            }));
-                        return;
-                    }
-
                     var prettyErrorString = Task
                         .Run(async () => 
                             await result.Result.GetErrorAsync(), 
@@ -1303,41 +1257,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                 foreach (var stream in openStreams)
                     try { stream?.Dispose(); } catch { /* ignored */ }
             }
-        }
-
-        private static void HandleUnauthorizedRetry(Action onRefreshSuccess, Action onLoginRequired)
-        {
-            if (MetaverseProgram.ApiClient?.Account == null)
-            {
-                onLoginRequired?.Invoke();
-                return;
-            }
-
-            MetaverseProgram.ApiClient.Account.ValidateTokenAsync().ResponseThen(
-                _ =>
-                {
-                    EditorUtility.ClearProgressBar();
-                    MetaverseDispatcher.AtEndOfFrame(() => onRefreshSuccess?.Invoke());
-                },
-                _ =>
-                {
-                    EditorUtility.ClearProgressBar();
-                    MetaverseDispatcher.AtEndOfFrame(() => onLoginRequired?.Invoke());
-                });
-        }
-
-        private static void OnUnauthorizedUpload(Action loginAction = null)
-        {
-            EditorUtility.ClearProgressBar();
-            Task.Run(async () => await MetaverseProgram.ApiClient.Account
-                .LogOutAsync()).Wait();
-            if (!EditorUtility.DisplayDialog(
-                "Upload Failed", 
-                "Your session has expired or you are not authorized to modify the asset. " +
-                "Please log in to an authorized account to continue uploading.", 
-                "Log In", "Cancel Upload"))
-                return;
-            MetaverseAccountWindow.Open(loginAction);
         }
 
         private static void UploadFailure(object error)

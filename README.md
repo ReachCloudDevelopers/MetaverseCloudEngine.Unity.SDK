@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.5
-- Refactor logging in LoginStore to use MetaverseProgram.Logger for consistency
+## 2.200.6
+- Refactor upload methods to remove unauthorized retry logic and improve error handling
 
 Updated on October 10, 2025
