@@ -7,6 +7,7 @@ using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Account.Abstract;
 using MetaverseCloudEngine.Unity.Encryption;
 using MetaverseCloudEngine.Unity.Services.Abstract;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Account.Poco

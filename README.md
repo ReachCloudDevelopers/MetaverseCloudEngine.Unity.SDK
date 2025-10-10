@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.1
-- Add exponential backoff for retrying login initialization on server errors
+## 2.200.2
+- Add missing Cysharp.Threading.Tasks namespace import in LoginStore
 
-Updated on October 09, 2025
+Updated on October 10, 2025
