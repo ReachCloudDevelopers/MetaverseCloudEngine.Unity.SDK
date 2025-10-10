@@ -40,6 +40,59 @@ namespace MetaverseCloudEngine.Unity.Editors
         private GUIContent _refreshIconContent;
         private GUIContent _detachIconContent;
         private static bool _foldoutPlatformOptions;
+        private static readonly AssetBuildPlatform[] PlatformTabOrder =
+        {
+            AssetBuildPlatform.StandaloneWindows64,
+            AssetBuildPlatform.StandaloneOSX,
+            AssetBuildPlatform.StandaloneLinux64,
+            AssetBuildPlatform.Android,
+            AssetBuildPlatform.AndroidVR,
+            AssetBuildPlatform.iOS,
+            AssetBuildPlatform.WebGL,
+        };
+
+        private static readonly Dictionary<AssetBuildPlatform, string> PlatformIconResourcePaths = new()
+        {
+            { AssetBuildPlatform.StandaloneWindows64, "PlatformIcons/windows" },
+            { AssetBuildPlatform.StandaloneOSX, "PlatformIcons/apple" },
+            { AssetBuildPlatform.StandaloneLinux64, "PlatformIcons/linux" },
+            { AssetBuildPlatform.Android, "PlatformIcons/android" },
+            { AssetBuildPlatform.AndroidVR, "PlatformIcons/vr" },
+            { AssetBuildPlatform.iOS, "PlatformIcons/apple" },
+            { AssetBuildPlatform.WebGL, "PlatformIcons/globe" },
+        };
+
+        private static readonly Dictionary<AssetBuildPlatform, Texture2D> PlatformIconCache = new();
+        private static GUIContent[] _platformTabContents;
+        private static GUIStyle _platformTabStyle;
+
+        private readonly struct PlatformPreset
+        {
+            internal PlatformPreset(string name, string tooltip, BundleMaxTextureResolution resolution, bool compressTextures, int textureQuality, ModelImporterMeshCompression meshCompression)
+            {
+                Name = name;
+                Tooltip = tooltip;
+                MaxTextureResolution = resolution;
+                CompressTextures = compressTextures;
+                TextureQuality = textureQuality;
+                MeshCompression = meshCompression;
+            }
+
+            internal string Name { get; }
+            internal string Tooltip { get; }
+            internal BundleMaxTextureResolution MaxTextureResolution { get; }
+            internal bool CompressTextures { get; }
+            internal int TextureQuality { get; }
+            internal ModelImporterMeshCompression MeshCompression { get; }
+        }
+
+        private static readonly PlatformPreset[] PlatformPresets =
+        {
+            new PlatformPreset("Low", "Optimized for quick iteration: 512px textures, high mesh compression.", BundleMaxTextureResolution._512, true, 25, ModelImporterMeshCompression.High),
+            new PlatformPreset("Medium", "Balanced settings: 1024px textures, medium mesh compression.", BundleMaxTextureResolution._1024, true, 50, ModelImporterMeshCompression.Medium),
+            new PlatformPreset("High", "High quality: 2048px textures, light mesh compression.", BundleMaxTextureResolution._2048, true, 75, ModelImporterMeshCompression.Low),
+            new PlatformPreset("Very High", "Maximum fidelity: 4096px textures, no mesh compression.", BundleMaxTextureResolution._4096, false, 100, ModelImporterMeshCompression.Off),
+        };
 
         private SerializedProperty _idProperty;
         private SerializedProperty _blockchainTypeProperty;
@@ -764,31 +817,178 @@ namespace MetaverseCloudEngine.Unity.Editors
                 
                 EditorGUILayout.HelpBox("You can use these options to perform project-wide optimizations for the asset bundle build process. These options will be used when building the asset bundle(s) for the selected platforms.", MessageType.Info);
 
-                _selectPlatformOption = (int)(AssetBuildPlatform)EditorGUILayout.EnumPopup("Platform", (AssetBuildPlatform)_selectPlatformOption);
+                var selectedPlatform = DrawPlatformTabs();
+                var platformKey = (Platform)(int)selectedPlatform;
+                var options = _currentPlatformOptions!.TryGetValue(platformKey, out var opt) ? opt : _currentPlatformOptions[platformKey] = new BundlePlatformOptions();
 
-                var platform = (Platform)_selectPlatformOption;
-                var options = _currentPlatformOptions!.TryGetValue(platform, out var opt) ? opt : _currentPlatformOptions[platform] = new BundlePlatformOptions();
+                var changed = false;
 
-                EditorGUI.BeginChangeCheck();
-
-                options.overrideDefaults = EditorGUILayout.Toggle("Override Defaults", options.overrideDefaults);
-
-                if (!options.overrideDefaults)
-                    GUI.enabled = false;
-
-                options.maxTextureResolution = (BundleMaxTextureResolution)EditorGUILayout.EnumPopup("Max Texture Size", options.maxTextureResolution);
-                options.compressTextures = EditorGUILayout.Toggle("Compress Textures", options.compressTextures);
-                options.compressorQuality = EditorGUILayout.IntSlider("Texture Quality", options.compressorQuality, 0, 100);
-                options.meshCompression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup("Mesh Compression", options.meshCompression);
-
-                GUI.enabled = true;
-
-                if (EditorGUI.EndChangeCheck())
+                var overrideDefaults = EditorGUILayout.Toggle("Override Defaults", options.overrideDefaults);
+                if (overrideDefaults != options.overrideDefaults)
                 {
-                    _currentPlatformOptions[platform] = options;
+                    options.overrideDefaults = overrideDefaults;
+                    changed = true;
+                }
+
+                if (DrawPlatformPresets(ref options))
+                    changed = true;
+
+                using (new EditorGUI.DisabledScope(!options.overrideDefaults))
+                {
+                    if (DrawPlatformOptionFields(ref options))
+                        changed = true;
+                }
+
+                if (changed)
+                {
+                    _currentPlatformOptions[platformKey] = options;
                     SavePlatformOptions(Guid.TryParse(_idProperty.stringValue, out var id) ? id : null);
                 }
             }
+        }
+
+        private static AssetBuildPlatform DrawPlatformTabs()
+        {
+            var selected = (AssetBuildPlatform)_selectPlatformOption;
+            var contents = GetPlatformTabContents();
+            var index = Array.IndexOf(PlatformTabOrder, selected);
+            if (index < 0)
+            {
+                index = 0;
+                selected = PlatformTabOrder[0];
+                _selectPlatformOption = (int)selected;
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel("Target Platform");
+                var newIndex = GUILayout.Toolbar(index, contents, GetPlatformTabStyle(), GUI.ToolbarButtonSize.Fixed);
+                if (newIndex != index && newIndex >= 0 && newIndex < PlatformTabOrder.Length)
+                {
+                    selected = PlatformTabOrder[newIndex];
+                    _selectPlatformOption = (int)selected;
+                }
+            }
+
+            return selected;
+        }
+
+        private static bool DrawPlatformPresets(ref BundlePlatformOptions options)
+        {
+            var changed = false;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.PrefixLabel("Quick Presets");
+
+                foreach (var preset in PlatformPresets)
+                {
+                    if (!GUILayout.Button(new GUIContent(preset.Name, preset.Tooltip), GUILayout.Width(100f)))
+                        continue;
+
+                    options.overrideDefaults = true;
+                    options.maxTextureResolution = preset.MaxTextureResolution;
+                    options.compressTextures = preset.CompressTextures;
+                    options.compressorQuality = preset.TextureQuality;
+                    options.meshCompression = preset.MeshCompression;
+                    GUI.FocusControl(null);
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+        private static bool DrawPlatformOptionFields(ref BundlePlatformOptions options)
+        {
+            var changed = false;
+
+            var maxTexture = (BundleMaxTextureResolution)EditorGUILayout.EnumPopup("Max Texture Size", options.maxTextureResolution);
+            if (maxTexture != options.maxTextureResolution)
+            {
+                options.maxTextureResolution = maxTexture;
+                changed = true;
+            }
+
+            var compressTextures = EditorGUILayout.Toggle("Compress Textures", options.compressTextures);
+            if (compressTextures != options.compressTextures)
+            {
+                options.compressTextures = compressTextures;
+                changed = true;
+            }
+
+            var textureQuality = EditorGUILayout.IntSlider("Texture Quality", options.compressorQuality, 0, 100);
+            if (textureQuality != options.compressorQuality)
+            {
+                options.compressorQuality = textureQuality;
+                changed = true;
+            }
+
+            var meshCompression = (ModelImporterMeshCompression)EditorGUILayout.EnumPopup("Mesh Compression", options.meshCompression);
+            if (meshCompression != options.meshCompression)
+            {
+                options.meshCompression = meshCompression;
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static GUIContent[] GetPlatformTabContents()
+        {
+            if (_platformTabContents != null)
+                return _platformTabContents;
+
+            _platformTabContents = new GUIContent[PlatformTabOrder.Length];
+            for (var i = 0; i < PlatformTabOrder.Length; i++)
+            {
+                var platform = PlatformTabOrder[i];
+                var icon = LoadPlatformIcon(platform);
+                var tooltip = GetPlatformDisplayName(platform);
+                _platformTabContents[i] = icon != null
+                    ? new GUIContent(icon, tooltip)
+                    : new GUIContent(tooltip);
+            }
+
+            return _platformTabContents;
+        }
+
+        private static Texture2D LoadPlatformIcon(AssetBuildPlatform platform)
+        {
+            if (PlatformIconCache.TryGetValue(platform, out var icon))
+                return icon;
+
+            if (!PlatformIconResourcePaths.TryGetValue(platform, out var resourcePath))
+            {
+                PlatformIconCache[platform] = null;
+                return null;
+            }
+
+            icon = Resources.Load<Texture2D>(resourcePath);
+            PlatformIconCache[platform] = icon;
+            return icon;
+        }
+
+        private static GUIStyle GetPlatformTabStyle()
+        {
+            if (_platformTabStyle != null)
+                return _platformTabStyle;
+
+            _platformTabStyle = new GUIStyle(EditorStyles.toolbarButton)
+            {
+                fixedHeight = 36f,
+                fixedWidth = 48f,
+                alignment = TextAnchor.MiddleCenter,
+                imagePosition = ImagePosition.ImageAbove,
+                padding = new RectOffset(6, 6, 6, 4)
+            };
+
+            return _platformTabStyle;
+        }
+
+        private static string GetPlatformDisplayName(AssetBuildPlatform platform)
+        {
+            return ObjectNames.NicifyVariableName(platform.ToString());
         }
 
         private static void SavePlatformOptions(Guid? newId)

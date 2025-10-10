@@ -1,0 +1,1 @@
+Platform icon assets downloaded from the Font Awesome project (https://fontawesome.com) via the community mirror at https://github.com/encharm/Font-Awesome-SVG-PNG (CC BY 4.0). Icons are redistributed here for editor tooling convenience. Please retain attribution if redistributed.
