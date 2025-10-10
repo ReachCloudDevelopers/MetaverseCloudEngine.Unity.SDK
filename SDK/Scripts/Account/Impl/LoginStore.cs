@@ -112,6 +112,8 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             if (ApiClient.Account.UseCookieAuthentication || !string.IsNullOrEmpty(AccessToken))
             {
+                await WaitForNetworkConnectivityAsync();
+
                 var response = 
                     !ApiClient.Account.UseCookieAuthentication ?
                         await ApiClient.Account.ValidateTokenAsync(AccessToken, RefreshToken) :
@@ -283,6 +285,26 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             MetaverseProgram.Logger.LogWarning($"LoginStore has retried {_initializationRetries} times. Continuing to retry in background...");
             await InitializeAsync();
 #endif
+        }
+
+        private async Task WaitForNetworkConnectivityAsync()
+        {
+            if (Application.internetReachability != NetworkReachability.NotReachable)
+                return;
+
+            var stopwatch = Stopwatch.StartNew();
+            MetaverseProgram.Logger.LogWarning("LoginStore: Waiting for network connectivity before initializing session.");
+
+            while (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                if (Application.isEditor)
+                    await Task.Delay(2000);
+                else
+                    await UniTask.Delay(2000);
+            }
+
+            stopwatch.Stop();
+            MetaverseProgram.Logger.Log($"LoginStore: Network connectivity restored after {stopwatch.Elapsed.TotalSeconds:F1}s; continuing initialization.");
         }
     }
 }

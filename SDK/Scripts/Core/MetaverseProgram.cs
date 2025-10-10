@@ -174,7 +174,6 @@ namespace MetaverseCloudEngine.Unity
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AppQuitDetector()
         {
-            
             Application.wantsToQuit += () => IsQuitting = true;
             Application.quitting += () => IsQuitting = true;
         }
@@ -214,7 +213,7 @@ namespace MetaverseCloudEngine.Unity
                         }
                     };
 
-                    ApiClient.LogMessage += message => Logger.Log(message);
+                    ApiClient.LogMessage += message => Logger.Log($"[API_CLIENT] {message}");
 
                     DetectAssetVersion();
 
