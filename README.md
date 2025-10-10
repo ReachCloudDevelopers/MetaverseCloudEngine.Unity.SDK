@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.11
-- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
+## 2.200.12
+- Warm up device ID on main thread for thread-safe EditorPrefs access
 
 Updated on October 10, 2025

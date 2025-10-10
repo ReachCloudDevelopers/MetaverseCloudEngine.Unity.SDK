@@ -213,6 +213,15 @@ namespace MetaverseCloudEngine.Unity
                         }
                     };
 
+                    try
+                    {
+                        _ = ApiClient.Account.DeviceId; // Prime device id on the main thread to keep EditorPrefs access thread-safe later.
+                    }
+                    catch (Exception deviceIdWarmupError)
+                    {
+                        Logger?.LogWarning(deviceIdWarmupError);
+                    }
+
                     ApiClient.LogMessage += message => Logger.Log($"[API_CLIENT] {message}");
 
                     DetectAssetVersion();
