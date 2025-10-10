@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.14
-- Add light mode platform icons and update resource paths in AssetEditor
+## 2.200.15
+- refactor: update platform preset names and improve button styling in AssetEditor
 
 Updated on October 10, 2025

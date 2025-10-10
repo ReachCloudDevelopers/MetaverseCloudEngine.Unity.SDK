@@ -65,6 +65,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         private static readonly Dictionary<AssetBuildPlatform, Texture2D> PlatformIconCache = new();
         private static GUIContent[] _platformTabContents;
         private static GUIStyle _platformTabStyle;
+        private static bool _lastProSkinState;
 
         private readonly struct PlatformPreset
         {
@@ -91,7 +92,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             new PlatformPreset("Low", "Optimized for quick iteration: 512px textures, high mesh compression.", BundleMaxTextureResolution._512, true, 25, ModelImporterMeshCompression.High),
             new PlatformPreset("Medium", "Balanced settings: 1024px textures, medium mesh compression.", BundleMaxTextureResolution._1024, true, 50, ModelImporterMeshCompression.Medium),
             new PlatformPreset("High", "High quality: 2048px textures, light mesh compression.", BundleMaxTextureResolution._2048, true, 75, ModelImporterMeshCompression.Low),
-            new PlatformPreset("Very High", "Maximum fidelity: 4096px textures, no mesh compression.", BundleMaxTextureResolution._4096, false, 100, ModelImporterMeshCompression.Off),
+            new PlatformPreset("Max", "Maximum fidelity: 4096px textures, no mesh compression.", BundleMaxTextureResolution._4096, false, 100, ModelImporterMeshCompression.Off),
         };
 
         private SerializedProperty _idProperty;
@@ -884,12 +885,13 @@ namespace MetaverseCloudEngine.Unity.Editors
                 var buttonStyle = new GUIStyle(EditorStyles.miniButton)
                 {
                     fixedHeight = 20f,
-                    padding = new RectOffset(6, 6, 2, 2)
+                    padding = new RectOffset(4, 4, 2, 2),
+                    stretchWidth = true
                 };
 
                 foreach (var preset in PlatformPresets)
                 {
-                    if (!GUILayout.Button(new GUIContent(preset.Name, preset.Tooltip), buttonStyle, GUILayout.Width(68f)))
+                    if (!GUILayout.Button(new GUIContent(preset.Name, preset.Tooltip), buttonStyle))
                         continue;
 
                     options.overrideDefaults = true;
@@ -942,6 +944,13 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static GUIContent[] GetPlatformTabContents()
         {
+            if (EditorGUIUtility.isProSkin != _lastProSkinState)
+            {
+                _platformTabContents = null;
+                PlatformIconCache.Clear();
+                _lastProSkinState = EditorGUIUtility.isProSkin;
+            }
+
             if (_platformTabContents != null)
                 return _platformTabContents;
 
@@ -970,7 +979,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 return null;
             }
 
-            var resourcePath = EditorGUIUtility.isProSkin ? paths.dark : paths.light;
+            var resourcePath = EditorGUIUtility.isProSkin ? paths.light : paths.dark;
             icon = Resources.Load<Texture2D>(resourcePath);
             PlatformIconCache[platform] = icon;
             return icon;
