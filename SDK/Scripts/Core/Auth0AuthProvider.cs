@@ -90,6 +90,7 @@ namespace MetaverseCloudEngine.Unity
                     new GenerateSystemUserTokenAuth0Form
                     {
                         RequestToken = startResponse.RequestToken,
+                        DeviceId = MetaverseProgram.ApiClient?.Account?.DeviceId,
                     },
                     cancellationToken: _cancellationToken.Token);
 
