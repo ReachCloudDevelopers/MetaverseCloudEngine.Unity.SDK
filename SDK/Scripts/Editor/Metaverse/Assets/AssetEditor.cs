@@ -863,11 +863,18 @@ namespace MetaverseCloudEngine.Unity.Editors
             using (new EditorGUILayout.HorizontalScope(GUILayout.Height(32)))
             {
                 EditorGUILayout.PrefixLabel("Target Platform");
-                var newIndex = GUILayout.Toolbar(index, contents, GetPlatformTabStyle(), GUI.ToolbarButtonSize.Fixed, GUILayout.Height(32));
-                if (newIndex != index && newIndex >= 0 && newIndex < PlatformTabOrder.Length)
+                
+                var buttonStyle = GetPlatformTabStyle();
+                for (var i = 0; i < contents.Length; i++)
                 {
-                    selected = PlatformTabOrder[newIndex];
-                    _selectPlatformOption = (int)selected;
+                    var isSelected = i == index;
+                    var style = isSelected ? new GUIStyle(buttonStyle) { normal = buttonStyle.onNormal } : buttonStyle;
+                    
+                    if (GUILayout.Button(contents[i], style, GUILayout.Width(32), GUILayout.Height(32)))
+                    {
+                        selected = PlatformTabOrder[i];
+                        _selectPlatformOption = (int)selected;
+                    }
                 }
             }
 
@@ -990,7 +997,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (_platformTabStyle != null)
                 return _platformTabStyle;
 
-            _platformTabStyle = new GUIStyle(EditorStyles.toolbarButton)
+            _platformTabStyle = new GUIStyle(GUI.skin.button)
             {
                 fixedHeight = 32f,
                 fixedWidth = 32f,
@@ -998,8 +1005,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 stretchWidth = false,
                 alignment = TextAnchor.MiddleCenter,
                 imagePosition = ImagePosition.ImageOnly,
-                padding = new RectOffset(4, 4, 4, 4),
-                margin = new RectOffset(0, 0, 0, 0)
+                padding = new RectOffset(5, 5, 5, 5),
+                margin = new RectOffset(1, 1, 0, 0)
             };
 
             return _platformTabStyle;
