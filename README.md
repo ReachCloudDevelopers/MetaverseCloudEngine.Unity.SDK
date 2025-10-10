@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.3
-- Implement exponential backoff for initialization retries in LoginStore
+## 2.200.4
+- Fix initialization retry logic to use Application.isEditor instead of Application.isPlaying
 
 Updated on October 10, 2025

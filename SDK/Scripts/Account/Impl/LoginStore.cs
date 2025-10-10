@@ -125,7 +125,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
                             Debug.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
-                            if (!Application.isPlaying)
+                            if (Application.isEditor)
                                 await Task.Delay(delaySeconds * 1000);
                             else
                                 await UniTask.Delay(delaySeconds * 1000);
@@ -137,7 +137,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         Debug.LogWarning("LoginStore Initialization failed: " + response.StatusCode);
                         if (_initializationRetries < 5)
                         {
-                            if (!Application.isPlaying)
+                            if (Application.isEditor)
                                 await Task.Delay(delaySeconds * 1000);
                             else
                                 await UniTask.Delay(delaySeconds * 1000);
