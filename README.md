@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.6
-- Refactor upload methods to remove unauthorized retry logic and improve error handling
+## 2.200.7
+- Add user notification for LoginStore connection issues after multiple retries
 
 Updated on October 10, 2025

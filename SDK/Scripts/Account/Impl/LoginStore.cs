@@ -24,6 +24,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private string _plainTextAccessToken;
         private string _plainTextRefreshToken;
         private int _initializationRetries;
+        private bool _hasShownRetryDialog;
 
         /// <summary>
         /// Creates a new instance of <see cref="LoginStore"/>.
@@ -126,6 +127,15 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
                             MetaverseProgram.Logger.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
+                            
+                            // After 10 attempts, notify the user and offer to restart Unity
+                            if (_initializationRetries >= 10 && !_hasShownRetryDialog)
+                            {
+                                _hasShownRetryDialog = true;
+                                await ShowRestartDialogAsync(response.StatusCode.ToString());
+                                return;
+                            }
+                            
                             if (Application.isEditor)
                                 await Task.Delay(delaySeconds * 1000);
                             else
@@ -237,5 +247,42 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private string GetObfuscatedRefreshTokenKey() => _aes.EncryptString(nameof(RefreshToken));
 
         private string GetObfuscatedAccessTokenKey() => _aes.EncryptString(nameof(AccessToken));
+
+        private async Task ShowRestartDialogAsync(string statusCode)
+        {
+#if UNITY_EDITOR
+            await UniTask.SwitchToMainThread();
+            
+            var message = $"The Login Store has been unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
+                         "This is usually caused by:\n" +
+                         "• Network connectivity issues\n" +
+                         "• Server maintenance\n" +
+                         "• DNS resolution problems\n\n" +
+                         "Would you like to restart Unity? This may help resolve the issue.";
+            
+            var restart = UnityEditor.EditorUtility.DisplayDialog(
+                "Login Store Connection Issues",
+                message,
+                "Restart Unity",
+                "Keep Retrying");
+            
+            if (restart)
+            {
+                MetaverseProgram.Logger.Log("User requested Unity restart due to LoginStore connection issues.");
+                UnityEditor.EditorApplication.OpenProject(Application.dataPath.Replace("/Assets", ""));
+            }
+            else
+            {
+                // Reset the flag so they can be prompted again after another 10 attempts
+                _hasShownRetryDialog = false;
+                MetaverseProgram.Logger.Log("User chose to keep retrying LoginStore initialization.");
+                await InitializeAsync();
+            }
+#else
+            // In builds, just log and continue retrying silently
+            MetaverseProgram.Logger.LogWarning($"LoginStore has retried {_initializationRetries} times. Continuing to retry in background...");
+            await InitializeAsync();
+#endif
+        }
     }
 }
