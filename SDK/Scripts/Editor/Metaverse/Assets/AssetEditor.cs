@@ -57,7 +57,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             { AssetBuildPlatform.StandaloneOSX, ("PlatformIcons/apple", "PlatformIcons/apple_light") },
             { AssetBuildPlatform.StandaloneLinux64, ("PlatformIcons/linux", "PlatformIcons/linux_light") },
             { AssetBuildPlatform.Android, ("PlatformIcons/android", "PlatformIcons/android_light") },
-            { AssetBuildPlatform.AndroidVR, ("PlatformIcons/vr", "PlatformIcons/vr_light") },
+            { AssetBuildPlatform.AndroidVR, ("PlatformIcons/meta", "PlatformIcons/meta_light") },
             { AssetBuildPlatform.iOS, ("PlatformIcons/ios", "PlatformIcons/ios_light") },
             { AssetBuildPlatform.WebGL, ("PlatformIcons/globe", "PlatformIcons/globe_light") },
         };
@@ -979,16 +979,6 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             if (PlatformIconCache.TryGetValue(platform, out var icon))
                 return icon;
-
-            if (platform == AssetBuildPlatform.AndroidVR)
-            {
-                icon = MetaverseEditorUtils.EditorIcon;
-                if (icon)
-                {
-                    PlatformIconCache[platform] = icon;
-                    return icon;
-                }
-            }
 
             if (!PlatformIconResourcePaths.TryGetValue(platform, out var paths))
             {
