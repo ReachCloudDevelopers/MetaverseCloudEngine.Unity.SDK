@@ -31,15 +31,13 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         /// </summary>
         /// <param name="prefs">The configuration provider to use for storage.</param>
         /// <param name="apiClient">The API client to log in/out from and to get login data from.</param>
-        public LoginStore(IPrefs prefs, MetaverseClient apiClient)
+        public LoginStore(MetaverseClient apiClient, IPrefs prefs)
         {
-            Prefs = prefs;
-
             ApiClient = apiClient;
+            Prefs = prefs;
             ApiClient.Account.LoggedIn += OnLoggedIn;
             ApiClient.Account.LoggedOut += OnLoggedOut;
-
-            _aes = new AES();
+            ApiClient.Account.TokensUpdated += OnTokensUpdated;
         }
 
         /// <summary>
@@ -243,6 +241,34 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 AccessToken = null;
                 RefreshToken = null;
                 MetaverseProgram.Logger.Log("LoginStore: OnLoggedOut - Tokens cleared");
+            });
+        }
+
+        private void OnTokensUpdated(UserTokenDto token)
+        {
+            if (ApiClient.Account.UseCookieAuthentication)
+                return;
+
+            if (token?.AccessToken == _plainTextAccessToken &&
+                token?.RefreshToken == _plainTextRefreshToken)
+                return;
+
+            var accessToken = token?.AccessToken;
+            var refreshToken = token?.RefreshToken;
+
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (ApiClient.Account.AccessToken != accessToken ||
+                    ApiClient.Account.RefreshToken != refreshToken)
+                {
+                    // The access token and/or refresh token
+                    // have changed since the update event was fired.
+                    return;
+                }
+
+                AccessToken = ApiClient.Account.AccessToken;
+                RefreshToken = ApiClient.Account.RefreshToken;
+                MetaverseProgram.Logger.Log("LoginStore: OnTokensUpdated - Tokens persisted");
             });
         }
 
