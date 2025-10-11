@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.24
-- Refactor session suffix retrieval in PrefsSessionUtility for consistency in UnityPlayerPrefs
+## 2.200.25
+- Add PrefsSessionUtility.cs.meta file with initial configuration
 
 Updated on October 11, 2025
