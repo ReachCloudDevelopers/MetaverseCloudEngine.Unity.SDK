@@ -197,27 +197,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            if (_plainTextAccessToken == ApiClient.Account.AccessToken &&
-                _plainTextRefreshToken == ApiClient.Account.RefreshToken)
-                return;
-
-            var accessToken = ApiClient.Account.AccessToken;
-            var refreshToken = ApiClient.Account.RefreshToken;
-
-            MetaverseDispatcher.AtEndOfFrame(() =>
-            {
-                if (ApiClient.Account.AccessToken != accessToken ||
-                    ApiClient.Account.RefreshToken != refreshToken)
-                {
-                    // The access token and/or refresh token
-                    // have changed since the login event was fired.
-                    return;
-                }
-                
-                AccessToken = ApiClient.Account.AccessToken;
-                RefreshToken = ApiClient.Account.RefreshToken;
-                MetaverseProgram.Logger.Log("LoginStore: OnLoggedIn - Tokens updated");
-            });
+            PersistTokens(ApiClient.Account.AccessToken, ApiClient.Account.RefreshToken, "OnLoggedIn");
         }
 
         private void OnLoggedOut(SystemUserDto user, AccountController.LogOutKind kind)
@@ -225,24 +205,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            if (string.IsNullOrEmpty(_plainTextAccessToken) &&
-                string.IsNullOrEmpty(_plainTextRefreshToken))
-                return;
-
-            MetaverseDispatcher.AtEndOfFrame(() =>
-            {
-                if (ApiClient.Account.AccessToken != null ||
-                    ApiClient.Account.RefreshToken != null)
-                {
-                    // The access token and/or refresh token
-                    // have changed since the login event was fired.
-                    return;
-                }
-
-                AccessToken = null;
-                RefreshToken = null;
-                MetaverseProgram.Logger.Log("LoginStore: OnLoggedOut - Tokens cleared");
-            });
+            ClearPersistedTokens($"OnLoggedOut ({kind})");
         }
 
         private void OnTokensUpdated(UserTokenDto token)
@@ -250,26 +213,53 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            if (token?.AccessToken == _plainTextAccessToken &&
-                token?.RefreshToken == _plainTextRefreshToken)
-                return;
+            // Prefer values supplied by the event, but fall back to the client's current tokens
+            var accessToken = string.IsNullOrEmpty(token?.AccessToken)
+                ? ApiClient.Account.AccessToken
+                : token.AccessToken;
+            var refreshToken = string.IsNullOrEmpty(token?.RefreshToken)
+                ? ApiClient.Account.RefreshToken
+                : token.RefreshToken;
 
-            var accessToken = token?.AccessToken;
-            var refreshToken = token?.RefreshToken;
+            PersistTokens(accessToken, refreshToken, "OnTokensUpdated");
+        }
+
+        private void PersistTokens(string accessToken, string refreshToken, string source)
+        {
+            if (string.IsNullOrEmpty(accessToken) && string.IsNullOrEmpty(refreshToken))
+                return;
 
             MetaverseDispatcher.AtEndOfFrame(() =>
             {
-                if (ApiClient.Account.AccessToken != accessToken ||
-                    ApiClient.Account.RefreshToken != refreshToken)
+                var changed = false;
+
+                if (!string.IsNullOrEmpty(accessToken) && _plainTextAccessToken != accessToken)
                 {
-                    // The access token and/or refresh token
-                    // have changed since the update event was fired.
-                    return;
+                    AccessToken = accessToken;
+                    changed = true;
                 }
 
-                AccessToken = ApiClient.Account.AccessToken;
-                RefreshToken = ApiClient.Account.RefreshToken;
-                MetaverseProgram.Logger.Log("LoginStore: OnTokensUpdated - Tokens persisted");
+                if (!string.IsNullOrEmpty(refreshToken) && _plainTextRefreshToken != refreshToken)
+                {
+                    RefreshToken = refreshToken;
+                    changed = true;
+                }
+
+                if (changed)
+                    MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens persisted");
+            });
+        }
+
+        private void ClearPersistedTokens(string source)
+        {
+            MetaverseDispatcher.AtEndOfFrame(() =>
+            {
+                if (string.IsNullOrEmpty(_plainTextAccessToken) && string.IsNullOrEmpty(_plainTextRefreshToken))
+                    return;
+
+                AccessToken = null;
+                RefreshToken = null;
+                MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens cleared");
             });
         }
 
