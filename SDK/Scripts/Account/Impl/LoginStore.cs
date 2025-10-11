@@ -245,39 +245,62 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (string.IsNullOrEmpty(accessToken) && string.IsNullOrEmpty(refreshToken))
                 return;
 
-            MetaverseDispatcher.AtEndOfFrame(() =>
+            var changed = false;
+
+            if (!string.IsNullOrEmpty(accessToken) && _plainTextAccessToken != accessToken)
             {
-                var changed = false;
+                AccessToken = accessToken;
+                changed = true;
+            }
 
-                if (!string.IsNullOrEmpty(accessToken) && _plainTextAccessToken != accessToken)
-                {
-                    AccessToken = accessToken;
-                    changed = true;
-                }
+            if (!string.IsNullOrEmpty(refreshToken) && _plainTextRefreshToken != refreshToken)
+            {
+                RefreshToken = refreshToken;
+                changed = true;
+            }
 
-                if (!string.IsNullOrEmpty(refreshToken) && _plainTextRefreshToken != refreshToken)
-                {
-                    RefreshToken = refreshToken;
-                    changed = true;
-                }
-
-                if (changed)
-                    MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens persisted");
-            });
+            if (changed)
+            {
+                MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens persisted (immediate)");
+                FlushPrefs();
+            }
         }
 
         private void ClearPersistedTokens(string source)
         {
-            MetaverseDispatcher.AtEndOfFrame(() =>
-            {
-                if (string.IsNullOrEmpty(_plainTextAccessToken) && string.IsNullOrEmpty(_plainTextRefreshToken))
-                    return;
+            if (string.IsNullOrEmpty(_plainTextAccessToken) && string.IsNullOrEmpty(_plainTextRefreshToken))
+                return;
 
-                AccessToken = null;
-                RefreshToken = null;
-                MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens cleared");
-            });
+            AccessToken = null;
+            RefreshToken = null;
+            MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens cleared (immediate)");
+            FlushPrefs();
         }
+
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        private static void FlushPrefs()
+        {
+#if UNITY_EDITOR
+            // EditorPrefs flushes immediately; PlayerPrefs not used here, but be defensive if path changes.
+            PlayerPrefs.Save();
+#else
+            PlayerPrefs.Save();
+#endif
+        }
+
+#if UNITY_EDITOR
+        [UnityEditor.InitializeOnLoadMethod]
+        private static void RegisterAssemblyReloadHandler()
+        {
+            UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
+        }
+
+        private static void OnBeforeAssemblyReload()
+        {
+            // Ensure any last-moment PlayerPrefs writes are flushed.
+            PlayerPrefs.Save();
+        }
+#endif
 
         private string GetObfuscatedRefreshTokenKey() => _aes.EncryptString(nameof(RefreshToken));
 

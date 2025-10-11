@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.34
-- Update package version to 2.200.33 and enhance session suffix persistence using EditorPrefs
+## 2.200.35
+- Refactor token handling in LoginStore for immediate persistence and cleanup
 
 Updated on October 11, 2025
