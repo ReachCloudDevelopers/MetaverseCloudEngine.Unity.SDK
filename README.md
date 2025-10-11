@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.36
-- Enhance LoginStore initialization and token management with improved logging and error handling. Implement a robust preference flushing mechanism to ensure data integrity during assembly reloads.
+## 2.200.37
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries to latest versions
 
 Updated on October 11, 2025
