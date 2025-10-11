@@ -676,7 +676,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (GetMainAsset(Target) != null && _supportedPlatformsProperty != null)
             {
                 var targetPlatform = (AssetBuildPlatform)EditorGUILayout.EnumFlagsField(
-                    "Target Platforms", 
+                    "Target Platforms",
                     (AssetBuildPlatform)_supportedPlatformsProperty.intValue);
 
                 if ((int)Target.SupportedBuildPlatforms != (int)targetPlatform)
@@ -868,12 +868,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                 for (var i = 0; i < contents.Length; i++)
                 {
                     var isSelected = i == index;
-                    var style = isSelected ? new GUIStyle(buttonStyle) { normal = buttonStyle.onNormal } : buttonStyle;
-                    
-                    if (GUILayout.Button(contents[i], style, GUILayout.Width(32), GUILayout.Height(32)))
+                    var pressed = GUILayout.Toggle(isSelected, contents[i], buttonStyle, GUILayout.Width(32), GUILayout.Height(32));
+                    if (!isSelected && pressed)
                     {
                         selected = PlatformTabOrder[i];
                         _selectPlatformOption = (int)selected;
+                        GUI.FocusControl(null);
                     }
                 }
             }
@@ -997,7 +997,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (_platformTabStyle != null)
                 return _platformTabStyle;
 
-            _platformTabStyle = new GUIStyle(GUI.skin.button)
+            _platformTabStyle = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedHeight = 32f,
                 fixedWidth = 32f,
@@ -1008,6 +1008,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                 padding = new RectOffset(5, 5, 5, 5),
                 margin = new RectOffset(1, 1, 0, 0)
             };
+
+            if (_platformTabStyle.onNormal.background == null && _platformTabStyle.active.background != null)
+                _platformTabStyle.onNormal.background = _platformTabStyle.active.background;
+
+            if (_platformTabStyle.onHover.background == null && _platformTabStyle.hover.background != null)
+                _platformTabStyle.onHover.background = _platformTabStyle.hover.background;
+
+            if (_platformTabStyle.onActive.background == null && _platformTabStyle.active.background != null)
+                _platformTabStyle.onActive.background = _platformTabStyle.active.background;
+
+            if (_platformTabStyle.onFocused.background == null && _platformTabStyle.focused.background != null)
+                _platformTabStyle.onFocused.background = _platformTabStyle.focused.background;
 
             return _platformTabStyle;
         }
