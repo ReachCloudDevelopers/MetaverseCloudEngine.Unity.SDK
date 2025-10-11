@@ -160,12 +160,14 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
         private static string GetConfigPath()
         {
-            return 
-                $"{Application.persistentDataPath}/{MetaverseKioskModeAPI.Config}_prefs"
+            var basePrefix = MetaverseKioskModeAPI.Config ?? string.Empty;
+            var path = $"{Application.persistentDataPath}/{basePrefix}_prefs";
+
 #if UNITY_EDITOR
-                + "_editor_editmode"
+            path += "_editor_editmode" + PrefsSessionUtility.GetSessionSuffix();
 #endif
-                ;
+
+            return path;
         }
     }
 }

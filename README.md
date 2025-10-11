@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.22
-- Sync access and refresh tokens with the API client to ensure up-to-date authentication data
+## 2.200.23
+- Refactor EncryptedPrefs and UnityPlayerPrefs to improve config path handling and session suffix retrieval
 
-Updated on October 10, 2025
+Updated on October 11, 2025

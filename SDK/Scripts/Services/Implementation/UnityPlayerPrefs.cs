@@ -5,7 +5,14 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 {
     public class UnityPlayerPrefs : IPrefs
     {
-        private static string Prefix => MetaverseKioskModeAPI.Config;
+        private static string Prefix
+        {
+            get
+            {
+                var basePrefix = MetaverseKioskModeAPI.Config ?? string.Empty;
+                return basePrefix + PrefsSessionUtility.GetSessionSuffix();
+            }
+        }
 
         public void DeleteKey(string key)
         {
