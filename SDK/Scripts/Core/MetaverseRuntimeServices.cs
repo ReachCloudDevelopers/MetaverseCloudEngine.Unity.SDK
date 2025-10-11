@@ -27,7 +27,7 @@ namespace MetaverseCloudEngine.Unity
 
         public async Task InitializeAsync()
         {
-            LoginStore = new LoginStore(_prefs, _client);
+            LoginStore = new LoginStore(_client, _prefs);
             await LoginStore.InitializeAsync();
 
             Task internalInitTask = null;
