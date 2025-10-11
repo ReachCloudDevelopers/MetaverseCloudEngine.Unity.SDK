@@ -980,6 +980,16 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (PlatformIconCache.TryGetValue(platform, out var icon))
                 return icon;
 
+            if (platform == AssetBuildPlatform.AndroidVR)
+            {
+                icon = MetaverseEditorUtils.EditorIcon;
+                if (icon)
+                {
+                    PlatformIconCache[platform] = icon;
+                    return icon;
+                }
+            }
+
             if (!PlatformIconResourcePaths.TryGetValue(platform, out var paths))
             {
                 PlatformIconCache[platform] = null;

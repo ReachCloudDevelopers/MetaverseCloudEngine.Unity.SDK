@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.26
-- Refactor AssetEditor UI: Improve platform selection toggle and update button styles
+## 2.200.27
+- Add AndroidVR platform icon handling in AssetEditor
 
 Updated on October 11, 2025
