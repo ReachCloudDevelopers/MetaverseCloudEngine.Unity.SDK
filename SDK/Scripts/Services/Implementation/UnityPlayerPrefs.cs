@@ -10,7 +10,11 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             get
             {
                 var basePrefix = MetaverseKioskModeAPI.Config ?? string.Empty;
+#if UNITY_EDITOR
                 return basePrefix + PrefsSessionUtility.GetSessionSuffix();
+#else
+                return basePrefix;
+#endif
             }
         }
 

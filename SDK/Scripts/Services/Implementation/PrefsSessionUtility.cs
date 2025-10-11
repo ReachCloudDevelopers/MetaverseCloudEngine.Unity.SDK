@@ -1,4 +1,7 @@
 using System;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace MetaverseCloudEngine.Unity.Services.Implementation
 {
@@ -9,11 +12,11 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
         internal static string GetSessionSuffix()
         {
-            var suffix = UnityEditor.SessionState.GetString(SessionKey, string.Empty);
+            var suffix = SessionState.GetString(SessionKey, string.Empty);
             if (string.IsNullOrEmpty(suffix))
             {
                 suffix = "_" + Guid.NewGuid().ToString("N");
-                UnityEditor.SessionState.SetString(SessionKey, suffix);
+                SessionState.SetString(SessionKey, suffix);
             }
 
             return suffix;
