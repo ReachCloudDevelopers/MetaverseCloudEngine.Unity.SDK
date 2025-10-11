@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.27
-- Add AndroidVR platform icon handling in AssetEditor
+## 2.200.28
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
 Updated on October 11, 2025
