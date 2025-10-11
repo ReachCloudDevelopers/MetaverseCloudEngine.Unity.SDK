@@ -980,6 +980,17 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (PlatformIconCache.TryGetValue(platform, out var icon))
                 return icon;
 
+            // Use Unity's built-in icon for iOS
+            if (platform == AssetBuildPlatform.iOS)
+            {
+                icon = EditorGUIUtility.FindTexture("BuildSettings.iPhone");
+                if (icon)
+                {
+                    PlatformIconCache[platform] = icon;
+                    return icon;
+                }
+            }
+
             if (!PlatformIconResourcePaths.TryGetValue(platform, out var paths))
             {
                 PlatformIconCache[platform] = null;

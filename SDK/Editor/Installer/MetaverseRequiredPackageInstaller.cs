@@ -75,11 +75,13 @@ namespace MetaverseCloudEngine.Unity.Installer
                 {
                     if (TryBuildPackageUpdateInfo(package, latestCommitHash, out var updateInfo))
                     {
+                        Debug.Log($"Successfully built package update info. Changelog length: {updateInfo?.FullChangelog?.Length ?? 0}");
                         if (!MetaverseSdkUpdateWindow.ShowModal(updateInfo))
                             return;
                     }
                     else
                     {
+                        Debug.LogWarning("Failed to build package update info, using fallback dialog.");
                         const string fallbackMessage = "A newer Metaverse Cloud Engine SDK build is available. Install it now to ensure all required packages stay in sync?";
                         if (!EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", fallbackMessage, "Install Update", "Skip"))
                             return;
@@ -134,12 +136,15 @@ namespace MetaverseCloudEngine.Unity.Installer
             {
                 using var httpClient = CreateGitHubWebClient();
                 var packageJsonUrl = $"{GitHubRawBase}/{commitHash}/{PackageJsonRelativePath}";
+                Debug.Log($"Fetching package.json from: {packageJsonUrl}");
                 var json = httpClient.DownloadString(packageJsonUrl);
                 var jObject = JObject.Parse(json);
 
                 var version = jObject["version"]?.Value<string>() ?? commitHash;
                 var description = jObject["description"]?.Value<string>() ?? string.Empty;
+                Debug.Log($"Retrieved description length: {description.Length}");
                 var normalizedChangelog = NormalizeChangelog(description);
+                Debug.Log($"Normalized changelog length: {normalizedChangelog.Length}");
 
                 info = new MetaverseSdkUpdateInfo
                 {
@@ -150,11 +155,12 @@ namespace MetaverseCloudEngine.Unity.Installer
                     LatestEntry = ExtractLatestChangelog(normalizedChangelog, version)
                 };
 
+                Debug.Log($"Latest entry length: {info.LatestEntry?.Length ?? 0}");
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"Metaverse Cloud Engine: unable to load update metadata. {ex.Message}");
+                Debug.LogError($"Metaverse Cloud Engine: unable to load update metadata. {ex.GetType().Name}: {ex.Message}\nStack: {ex.StackTrace}");
                 info = null;
                 return false;
             }

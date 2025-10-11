@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.29
-- Update platform icons for AndroidVR and add new meta images
+## 2.200.34
+- Update package version to 2.200.33 and enhance session suffix persistence using EditorPrefs
 
 Updated on October 11, 2025
