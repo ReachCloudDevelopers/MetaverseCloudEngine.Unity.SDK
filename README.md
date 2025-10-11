@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.19
-- Fix parameter order in LoginStore initialization
+## 2.200.20
+- Initialize AES instance in LoginStore constructor
 
 Updated on October 10, 2025

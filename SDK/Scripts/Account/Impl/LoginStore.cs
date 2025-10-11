@@ -35,6 +35,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             ApiClient = apiClient;
             Prefs = prefs;
+            _aes = new AES();
             ApiClient.Account.LoggedIn += OnLoggedIn;
             ApiClient.Account.LoggedOut += OnLoggedOut;
             ApiClient.Account.TokensUpdated += OnTokensUpdated;
