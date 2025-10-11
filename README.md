@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.21
-- Refactor token management in LoginStore to improve clarity and efficiency
+## 2.200.22
+- Sync access and refresh tokens with the API client to ensure up-to-date authentication data
 
 Updated on October 10, 2025

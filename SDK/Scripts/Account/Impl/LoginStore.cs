@@ -48,6 +48,14 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             get
             {
+                var runtimeToken = ApiClient?.Account?.AccessToken;
+                if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextAccessToken)
+                {
+                    // Persist the freshest runtime token so subsequent accesses remain in sync.
+                    AccessToken = runtimeToken;
+                    return _plainTextAccessToken;
+                }
+
                 InitializeAccessToken();
                 return _plainTextAccessToken;
             }
@@ -72,6 +80,14 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             get
             {
+                var runtimeToken = ApiClient?.Account?.RefreshToken;
+                if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextRefreshToken)
+                {
+                    // Persist the freshest runtime token so subsequent accesses remain in sync.
+                    RefreshToken = runtimeToken;
+                    return _plainTextRefreshToken;
+                }
+
                 InitializeRefreshToken();
                 return _plainTextRefreshToken;
             }
