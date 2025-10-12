@@ -123,6 +123,13 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             responseMessage.Content = new StringContent("Please log in to perform this action.");
                             await responseMessage.Content.LoadIntoBufferAsync();
                         }
+                        else if ((int)responseMessage.StatusCode == 0)
+                        {
+                            // HTTP status 0 indicates network connectivity issues
+                            MetaverseProgram.Logger.LogWarning($"HTTP status 0 detected (network connectivity issue) for {request.RequestUri}. This will be handled by the retry mechanism.");
+                            responseMessage.Content = new StringContent("Network connectivity issue detected.");
+                            await responseMessage.Content.LoadIntoBufferAsync();
+                        }
 
                         return responseMessage;
                     }

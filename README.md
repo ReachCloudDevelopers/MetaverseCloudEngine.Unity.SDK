@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.38
-- Enhance UploadBundles method in AssetEditor to support authentication error retries. Update method signature to async for improved handling of upload operations.
+## 2.200.39
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.ApiClient.pdb binaries; enhance MetaverseWebClient to handle network connectivity issues with appropriate logging.
 
 Updated on October 12, 2025
