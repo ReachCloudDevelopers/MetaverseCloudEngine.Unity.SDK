@@ -1338,7 +1338,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorUtility.ClearProgressBar();
         }
 
-        private void UploadBundles(
+        private async void UploadBundles(
             IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
             string bundlePath,
             IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
@@ -1497,6 +1497,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                             await result.Result.GetErrorAsync(), 
                             uploadCancellation.Token).Result
                         .ToPrettyErrorString();
+                    
+                    // Check if this is an authentication error and we can retry
+                    var isAuthError = prettyErrorString.Contains("Unauthorized") || prettyErrorString.Contains("401");
+                    if (isAuthError && tries < 2) // Allow one more retry for auth errors
+                    {
+                        MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
+                        
+                        // Wait a moment for any ongoing token refresh to complete
+                        await Task.Delay(2000);
+                        
+                        // Retry the upload
+                        UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
+                        return;
+                    }
                     
                     UploadFailure(prettyErrorString);
                 }
