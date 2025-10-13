@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.40
-- Enhance authentication error handling in AssetEditor by ensuring session validity before retrying uploads. Added logging for token refresh completion and adjusted delay for token propagation.
+## 2.200.41
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.ApiClient.pdb binaries to latest versions
 
-Updated on October 12, 2025
+Updated on October 13, 2025
