@@ -1503,10 +1503,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (isAuthError && tries < 2) // Allow one more retry for auth errors
                     {
                         MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
-                        
-                        // Wait a moment for any ongoing token refresh to complete
-                        await Task.Delay(2000);
-                        
+
+                        // Wait for any ongoing token refresh to complete by ensuring session validity
+                        var ensureSessionTask = MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync();
+                        if (ensureSessionTask != null)
+                        {
+                            await ensureSessionTask;
+                            MetaverseProgram.Logger.Log($"Token refresh completed. New tokens: AccessToken={MetaverseProgram.ApiClient.Account.AccessToken != null}, RefreshToken={MetaverseProgram.ApiClient.Account.RefreshToken != null}");
+                        }
+
+                        // Wait a moment for token propagation
+                        await Task.Delay(500);
+
                         // Retry the upload
                         UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
                         return;
