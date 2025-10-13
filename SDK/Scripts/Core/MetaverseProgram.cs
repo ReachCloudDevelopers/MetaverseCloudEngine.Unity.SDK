@@ -29,7 +29,8 @@ namespace MetaverseCloudEngine.Unity
 
         static MetaverseProgram()
         {
-            Prefs = new EncryptedPrefs();
+            // Don't initialize EncryptedPrefs here as it accesses Application.persistentDataPath
+            // which can only be called from the main thread. Initialize it in InitializeAsync instead.
             Logger = new UnityDebugLogger();
         }
 

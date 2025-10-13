@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.41
-- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.ApiClient.pdb binaries to latest versions
+## 2.200.42
+- Refactor initialization of EncryptedPrefs in MetaverseProgram to avoid main thread access issues. Update comments for clarity on async initialization.
 
 Updated on October 13, 2025
