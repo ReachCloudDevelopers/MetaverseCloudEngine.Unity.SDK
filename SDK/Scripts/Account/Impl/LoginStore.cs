@@ -48,23 +48,10 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             get
             {
-                var runtimeToken = ApiClient?.Account?.AccessToken;
-                if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextAccessToken)
-                {
-                    // Update our stored token to match the runtime token
-                    _plainTextAccessToken = runtimeToken;
-                    // Persist the freshest runtime token so subsequent accesses remain in sync.
-                    if (!string.IsNullOrEmpty(_plainTextAccessToken))
-                        Prefs.SetString(GetObfuscatedAccessTokenKey(), _aes.EncryptString(_plainTextAccessToken));
-                    else
-                        Prefs.DeleteKey(GetObfuscatedAccessTokenKey());
-                    return _plainTextAccessToken;
-                }
-
                 InitializeAccessToken();
                 return _plainTextAccessToken;
             }
-            set
+            private set
             {
                 if (_plainTextAccessToken == value)
                     return;
@@ -85,27 +72,10 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             get
             {
-                var runtimeToken = ApiClient?.Account?.RefreshToken;
-                if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextRefreshToken)
-                {
-                    // Update our stored token to match the runtime token
-                    _plainTextRefreshToken = runtimeToken;
-                    // Persist the freshest runtime token so subsequent accesses remain in sync.
-                    if (!string.IsNullOrEmpty(_plainTextRefreshToken))
-                    {
-                        Prefs.SetString(GetObfuscatedRefreshTokenKey(), _aes.EncryptString(_plainTextRefreshToken));
-                    }
-                    else
-                    {
-                        Prefs.DeleteKey(GetObfuscatedRefreshTokenKey());
-                    }
-                    return _plainTextRefreshToken;
-                }
-
                 InitializeRefreshToken();
                 return _plainTextRefreshToken;
             }
-            set
+            private set
             {
                 if (_plainTextRefreshToken == value)
                     return;
@@ -194,14 +164,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         MetaverseProgram.Logger.Log($"LoginStore: Token validation successful. Status: {response.StatusCode}");
                     }
 
-                    if (!ApiClient.Account.UseCookieAuthentication)
-                    {
-                        MetaverseProgram.Logger.Log($"LoginStore: Syncing local tokens with API client after successful validation");
-                        // The property getters will automatically sync and persist the tokens
-                        var accessToken = AccessToken;
-                        var refreshToken = RefreshToken;
-                        MetaverseProgram.Logger.Log($"LoginStore: Synced tokens - AccessToken present: {!string.IsNullOrEmpty(accessToken)}, RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
-                    }
                     return;
                 }
 
