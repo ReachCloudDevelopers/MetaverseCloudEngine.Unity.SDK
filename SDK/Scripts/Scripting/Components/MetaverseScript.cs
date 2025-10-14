@@ -1998,6 +1998,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_XR_LEGACY_INPUT_HELPERS
                 , typeof(UnityEngine.SpatialTracking.TrackedPoseDriver).Assembly /* UnityEngine.SpatialTracking.dll */
 #endif
+#if MV_XR_HANDS
+                , typeof(UnityEngine.XR.Hands.XRHand).Assembly /* Unity.XR.Hands */
+#endif
 #if MV_PTC_VUFORIA && !UNITY_WEBGL && !UNITY_STANDALONE_LINUX
                 , typeof(Vuforia.VuforiaApplication).Assembly
                 , typeof(Vuforia.VuforiaConfiguration).Assembly

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.200.42
-- Refactor initialization of EncryptedPrefs in MetaverseProgram to avoid main thread access issues. Update comments for clarity on async initialization.
+## 2.201.0
+- Add support for XR Hands in MetaverseScript assembly references
 
-Updated on October 13, 2025
+Updated on October 14, 2025
