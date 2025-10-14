@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.0
-- Add support for XR Hands in MetaverseScript assembly references
+## 2.201.1
+- Enhance LoginStore token management by synchronizing stored tokens with runtime values, improving logging for token updates, and adjusting backoff strategy for initialization retries.
 
 Updated on October 14, 2025

@@ -51,23 +51,28 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var runtimeToken = ApiClient?.Account?.AccessToken;
                 if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextAccessToken)
                 {
+                    // Update our stored token to match the runtime token
+                    _plainTextAccessToken = runtimeToken;
                     // Persist the freshest runtime token so subsequent accesses remain in sync.
-                    AccessToken = runtimeToken;
+                    if (!string.IsNullOrEmpty(_plainTextAccessToken))
+                        Prefs.SetString(GetObfuscatedAccessTokenKey(), _aes.EncryptString(_plainTextAccessToken));
+                    else
+                        Prefs.DeleteKey(GetObfuscatedAccessTokenKey());
                     return _plainTextAccessToken;
                 }
 
                 InitializeAccessToken();
                 return _plainTextAccessToken;
             }
-            private set
+            set
             {
-                if (_plainTextAccessToken == value) 
+                if (_plainTextAccessToken == value)
                     return;
-                
+
                 _plainTextAccessToken = value;
-                
+
                 if (!string.IsNullOrEmpty(_plainTextAccessToken))
-                    Prefs.SetString(GetObfuscatedAccessTokenKey(), _aes.EncryptString(_plainTextAccessToken));   
+                    Prefs.SetString(GetObfuscatedAccessTokenKey(), _aes.EncryptString(_plainTextAccessToken));
                 else
                     Prefs.DeleteKey(GetObfuscatedAccessTokenKey());
             }
@@ -83,19 +88,9 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var runtimeToken = ApiClient?.Account?.RefreshToken;
                 if (!string.IsNullOrEmpty(runtimeToken) && runtimeToken != _plainTextRefreshToken)
                 {
+                    // Update our stored token to match the runtime token
+                    _plainTextRefreshToken = runtimeToken;
                     // Persist the freshest runtime token so subsequent accesses remain in sync.
-                    RefreshToken = runtimeToken;
-                    return _plainTextRefreshToken;
-                }
-
-                InitializeRefreshToken();
-                return _plainTextRefreshToken;
-            }
-            private set
-            {
-                if (_plainTextRefreshToken != value)
-                {
-                    _plainTextRefreshToken = value;
                     if (!string.IsNullOrEmpty(_plainTextRefreshToken))
                     {
                         Prefs.SetString(GetObfuscatedRefreshTokenKey(), _aes.EncryptString(_plainTextRefreshToken));
@@ -104,6 +99,25 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                     {
                         Prefs.DeleteKey(GetObfuscatedRefreshTokenKey());
                     }
+                    return _plainTextRefreshToken;
+                }
+
+                InitializeRefreshToken();
+                return _plainTextRefreshToken;
+            }
+            set
+            {
+                if (_plainTextRefreshToken == value)
+                    return;
+
+                _plainTextRefreshToken = value;
+                if (!string.IsNullOrEmpty(_plainTextRefreshToken))
+                {
+                    Prefs.SetString(GetObfuscatedRefreshTokenKey(), _aes.EncryptString(_plainTextRefreshToken));
+                }
+                else
+                {
+                    Prefs.DeleteKey(GetObfuscatedRefreshTokenKey());
                 }
             }
         }
@@ -142,7 +156,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                     if (!response.Succeeded)
                     {
                         _initializationRetries++;
-                        var delaySeconds = Math.Min(30, 2 * _initializationRetries); // Exponential backoff, max 30s
+                        var delaySeconds = Math.Min(5, 1 * _initializationRetries); // Fast backoff, max 5s
                         // Infinite retry for 500 Internal Server Error
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
@@ -182,9 +196,11 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
                     if (!ApiClient.Account.UseCookieAuthentication)
                     {
-                        MetaverseProgram.Logger.Log($"LoginStore: Updating local tokens from API response");
-                        AccessToken = ApiClient.Account.AccessToken;
-                        RefreshToken = ApiClient.Account.RefreshToken;
+                        MetaverseProgram.Logger.Log($"LoginStore: Syncing local tokens with API client after successful validation");
+                        // The property getters will automatically sync and persist the tokens
+                        var accessToken = AccessToken;
+                        var refreshToken = RefreshToken;
+                        MetaverseProgram.Logger.Log($"LoginStore: Synced tokens - AccessToken present: {!string.IsNullOrEmpty(accessToken)}, RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
                     }
                     return;
                 }
@@ -239,15 +255,11 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            // Prefer values supplied by the event, but fall back to the client's current tokens
-            var accessToken = string.IsNullOrEmpty(token?.AccessToken)
-                ? ApiClient.Account.AccessToken
-                : token.AccessToken;
-            var refreshToken = string.IsNullOrEmpty(token?.RefreshToken)
-                ? ApiClient.Account.RefreshToken
-                : token.RefreshToken;
+            // Get the current tokens from the API client (these should be the updated ones)
+            var accessToken = ApiClient.Account.AccessToken;
+            var refreshToken = ApiClient.Account.RefreshToken;
 
-            MetaverseProgram.Logger.Log($"LoginStore: Tokens updated. AccessToken present: {!string.IsNullOrEmpty(accessToken)}, RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
+            MetaverseProgram.Logger.Log($"LoginStore: Tokens updated via event. AccessToken present: {!string.IsNullOrEmpty(accessToken)}, RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
             PersistTokens(accessToken, refreshToken, "OnTokensUpdated");
         }
 
