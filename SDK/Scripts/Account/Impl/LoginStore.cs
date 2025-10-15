@@ -427,5 +427,17 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             stopwatch.Stop();
             MetaverseProgram.Logger.Log($"LoginStore: Network connectivity restored after {stopwatch.Elapsed.TotalSeconds:F1}s; continuing initialization.");
         }
+
+        private async Task DelayAsync(int milliseconds)
+        {
+            if (Application.isPlaying)
+            {
+                await UniTask.Delay(milliseconds);
+            }
+            else
+            {
+                await Task.Delay(milliseconds);
+            }
+        }
     }
 }

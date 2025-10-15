@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.3
-- Refactor LoginStore error handling and retry logic to improve robustness. Reduce maximum retries for server errors to 3 and adjust backoff strategy for initialization delays. Update logging for clarity on retry attempts and outcomes. Enhance EncryptedPrefs initialization to cache config path on static construction, ensuring efficient path access.
+## 2.201.4
+- Add DelayAsync method to LoginStore for improved async handling of delays based on application state. This allows for more flexible delay management during initialization processes.
 
 Updated on October 15, 2025
