@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.6
-- Refactor LoginStore initialization logic to remove editor fast-fail checks, improving clarity in logging during token validation. Adjusted logging to streamline initialization messages and maintain focus on authentication status.
+## 2.201.7
+- Refactor LoginStore token validation logic to reduce retry attempts for faster feedback. Streamline logging for 403 Forbidden responses and improve error handling during initialization. Adjusted network connectivity checks in editor mode for clarity and efficiency.
 
 Updated on October 15, 2025

@@ -166,17 +166,15 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (ApiClient.Account.UseCookieAuthentication || !string.IsNullOrEmpty(AccessToken))
             {
 #if UNITY_EDITOR
-                {
-                    await WaitForNetworkConnectivityAsync();  // Skip network wait in editor
-                }
+                await WaitForNetworkConnectivityAsync();  // Skip network wait in editor
 #endif
 
                 MetaverseProgram.Logger.Log($"LoginStore: Validating tokens with server...");
                 var response =
                     !ApiClient.Account.UseCookieAuthentication ?
-                        await ApiClient.Account.ValidateTokenAsync(AccessToken, RefreshToken) :
+                        await ApiClient.Account.ValidateTokenAsync(AccessToken, RefreshToken, refreshTokenRetries: 2) :  // Reduced retries globally for faster feedback
                         await ApiClient.Account.ValidateTokenAsync();
-                
+
                 if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
                 {
                     if (!response.Succeeded)
@@ -187,29 +185,21 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
 #if UNITY_EDITOR
-                            {
-                                MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
-                                return;
-                            }
-#endif
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
-                        }
-
-#if UNITY_EDITOR
-                        {
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: Editor fast-fail - validation failed on first attempt. Status: {response.StatusCode}. Server: {serverReason}. Proceeding as unauthenticated.");
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
                             return;
-                        }
+#else
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
 #endif
+                        }
 
                         _initializationRetries++;
                         var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Short backoff
-                        
+
                         // For 500+ errors: Retry up to 3 times
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
                             MetaverseProgram.Logger.LogWarning($"LoginStore: 5xx error (Attempt #{_initializationRetries}/{maxRetries}). Server: {serverReason}. Retrying in {delaySeconds}s...");
-                            
+
                             if (_initializationRetries >= maxRetries)
                             {
                                 MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached for server error. Server: {serverReason}. Proceeding as unauthenticated.");
@@ -275,7 +265,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (!string.IsNullOrEmpty(encrypted))
                 _plainTextRefreshToken = _aes.DecryptString(encrypted);
         }
-        
+
         private async void OnLoggedIn(SystemUserDto user, AccountController.LogInKind kind)
         {
             if (ApiClient.Account.UseCookieAuthentication)
