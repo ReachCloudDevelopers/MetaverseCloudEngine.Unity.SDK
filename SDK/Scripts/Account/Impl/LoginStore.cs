@@ -160,16 +160,16 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         public async Task InitializeAsync()
         {
             const int maxRetries = 3;
-            const bool isEditorFastFail = Application.isEditor;  // No retries in editor for speed
 
-            MetaverseProgram.Logger.Log($"LoginStore: Beginning initialization. UseCookieAuth: {ApiClient.Account.UseCookieAuthentication}, HasAccessToken: {!string.IsNullOrEmpty(AccessToken)}, EditorFastFail: {isEditorFastFail}");
+            MetaverseProgram.Logger.Log($"LoginStore: Beginning initialization. UseCookieAuth: {ApiClient.Account.UseCookieAuthentication}, HasAccessToken: {!string.IsNullOrEmpty(AccessToken)}");
 
             if (ApiClient.Account.UseCookieAuthentication || !string.IsNullOrEmpty(AccessToken))
             {
-                if (!isEditorFastFail)
+#if UNITY_EDITOR
                 {
                     await WaitForNetworkConnectivityAsync();  // Skip network wait in editor
                 }
+#endif
 
                 MetaverseProgram.Logger.Log($"LoginStore: Validating tokens with server...");
                 var response =
@@ -186,19 +186,21 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
-                            if (isEditorFastFail)
+#if UNITY_EDITOR
                             {
                                 MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
                                 return;
                             }
+#endif
                             MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
                         }
 
-                        if (isEditorFastFail)
+#if UNITY_EDITOR
                         {
                             MetaverseProgram.Logger.LogWarning($"LoginStore: Editor fast-fail - validation failed on first attempt. Status: {response.StatusCode}. Server: {serverReason}. Proceeding as unauthenticated.");
                             return;
                         }
+#endif
 
                         _initializationRetries++;
                         var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Short backoff

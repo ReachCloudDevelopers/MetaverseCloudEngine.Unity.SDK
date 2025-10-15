@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.5
-- Enhance LoginStore error handling by adding BuildServerReasonMessage method to parse and format server error responses. Adjust retry logic to include detailed logging for 403 Forbidden and other error statuses, improving clarity on initialization failures. Skip network connectivity checks in editor mode for faster initialization.
+## 2.201.6
+- Refactor LoginStore initialization logic to remove editor fast-fail checks, improving clarity in logging during token validation. Adjusted logging to streamline initialization messages and maintain focus on authentication status.
 
 Updated on October 15, 2025
