@@ -126,37 +126,55 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                     if (!response.Succeeded)
                     {
                         _initializationRetries++;
-                        var delaySeconds = Math.Min(5, 1 * _initializationRetries); // Fast backoff, max 5s
-                        // Infinite retry for 500 Internal Server Error
+                        var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Shorter backoff: 0.5s base, max 2s
+                        
+                        // For 500+ errors: Retry up to 3 times total (capped even in builds); in editor, only once
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
-                            MetaverseProgram.Logger.LogWarning($"LoginStore Initialization failed with {response.StatusCode}. Retrying in {delaySeconds}s... (Attempt #{_initializationRetries})");
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: 500+ error (Attempt #{_initializationRetries}/3). Retrying in {delaySeconds}s...");
+                            
+                            if (_initializationRetries >= 3)
+                            {
+                                MetaverseProgram.Logger.LogError("LoginStore: Max retries (3) reached for server error. Proceeding as unauthenticated.");
+                                return;
+                            }
 
-                            // After 10 attempts, notify the user and offer to restart Unity
-                            if (_initializationRetries >= 10 && !_hasShownRetryDialog)
+                            if (Application.isEditor && _initializationRetries >= 2)
+                            {
+                                MetaverseProgram.Logger.LogWarning("LoginStore: Editor mode - skipping further 500 retries. Check your server.");
+                                return;
+                            }
+
+                            // After 3 attempts, show dialog (reduced from 10)
+                            if (_initializationRetries >= 3 && !_hasShownRetryDialog)
                             {
                                 _hasShownRetryDialog = true;
                                 await ShowRestartDialogAsync(response.StatusCode.ToString());
                                 return;
                             }
 
-                            if (Application.isEditor)
-                                await Task.Delay(delaySeconds * 1000);
-                            else
-                                await UniTask.Delay(delaySeconds * 1000);
+                            await DelayAsync((int)(delaySeconds * 1000));
                             await InitializeAsync();
                             return;
                         }
 
-                        // For other errors, retry up to 5 times
-                        MetaverseProgram.Logger.LogWarning($"LoginStore Initialization failed: {response.StatusCode} (Attempt #{_initializationRetries})");
-                        if (_initializationRetries < 5)
+                        // For other errors: Up to 3 retries total (reduced from 5)
+                        MetaverseProgram.Logger.LogWarning($"LoginStore: Non-500 error (Attempt #{_initializationRetries}/3): {response.StatusCode}");
+                        if (_initializationRetries < 3)
                         {
-                            if (Application.isEditor)
-                                await Task.Delay(delaySeconds * 1000);
-                            else
-                                await UniTask.Delay(delaySeconds * 1000);
+                            // In editor, only retry once
+                            if (Application.isEditor && _initializationRetries >= 2)
+                            {
+                                MetaverseProgram.Logger.LogWarning("LoginStore: Editor mode - no further retries. Proceeding as unauthenticated.");
+                                return;
+                            }
+
+                            await DelayAsync((int)(delaySeconds * 1000));
                             await InitializeAsync();
+                        }
+                        else
+                        {
+                            MetaverseProgram.Logger.LogError("LoginStore: Max retries (3) reached. Proceeding as unauthenticated.");
                         }
                     }
                     else
@@ -170,7 +188,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var errorMessage = await response.GetErrorAsync();
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    MetaverseProgram.Logger.LogWarning("Failed to initialize login store. Invalid access token: " + errorMessage);
+                    MetaverseProgram.Logger.LogWarning("LoginStore: Failed to initialize - invalid token: " + errorMessage);
                 }
 
                 AccessToken = null;
@@ -194,28 +212,43 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 _plainTextRefreshToken = _aes.DecryptString(encrypted);
         }
         
-        private void OnLoggedIn(SystemUserDto user, AccountController.LogInKind kind)
+        private async void OnLoggedIn(SystemUserDto user, AccountController.LogInKind kind)
         {
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
+
+            if (Application.isPlaying)
+            {
+                await UniTask.SwitchToMainThread();
+            }
 
             MetaverseProgram.Logger.Log($"LoginStore: User logged in via {kind}. Persisting tokens...");
             PersistTokens(ApiClient.Account.AccessToken, ApiClient.Account.RefreshToken, "OnLoggedIn");
         }
 
-        private void OnLoggedOut(SystemUserDto user, AccountController.LogOutKind kind)
+        private async void OnLoggedOut(SystemUserDto user, AccountController.LogOutKind kind)
         {
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
+
+            if (Application.isPlaying)
+            {
+                await UniTask.SwitchToMainThread();
+            }
 
             MetaverseProgram.Logger.Log($"LoginStore: User logged out via {kind}. Clearing persisted tokens...");
             ClearPersistedTokens($"OnLoggedOut ({kind})");
         }
 
-        private void OnTokensUpdated(UserTokenDto token)
+        private async void OnTokensUpdated(UserTokenDto token)
         {
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
+
+            if (Application.isPlaying)
+            {
+                await UniTask.SwitchToMainThread();
+            }
 
             // Get the current tokens from the API client (these should be the updated ones)
             var accessToken = ApiClient.Account.AccessToken;
@@ -341,7 +374,10 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private async Task ShowRestartDialogAsync(string statusCode)
         {
 #if UNITY_EDITOR
-            await UniTask.SwitchToMainThread();
+            if (Application.isPlaying)
+            {
+                await UniTask.SwitchToMainThread();
+            }
             
             var message = $"The Login Store has been unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
                          "This is usually caused by:\n" +
@@ -385,10 +421,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
             while (Application.internetReachability == NetworkReachability.NotReachable)
             {
-                if (Application.isEditor)
-                    await Task.Delay(2000);
-                else
-                    await UniTask.Delay(2000);
+                await DelayAsync(2000);
             }
 
             stopwatch.Stop();

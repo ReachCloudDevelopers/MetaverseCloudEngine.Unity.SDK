@@ -12,6 +12,14 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
         private Dictionary<string, object> _config;
         private readonly IEncryptor _encryptor = new AES();
 
+        static EncryptedPrefs()
+        {
+            PrimePathCache();
+        }
+
+        private static string _cachedConfigPath;
+        private static bool _pathCached = false;
+
         public void DeleteKey(string key)
         {
             Load();
@@ -160,6 +168,13 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
         private static string GetConfigPath()
         {
+            if (_pathCached)
+                return _cachedConfigPath;
+
+#if UNITY_EDITOR
+            UnityEngine.Debug.LogWarning("EncryptedPrefs: Uncached path access in editor - this should not happen post-prime. Check init order.");
+#endif
+
             var basePrefix = MetaverseKioskModeAPI.Config ?? string.Empty;
             var path = $"{Application.persistentDataPath}/{basePrefix}_prefs";
 
@@ -167,7 +182,18 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             path += "_editor_editmode" + PrefsSessionUtility.GetSessionSuffix();
 #endif
 
+            _cachedConfigPath = path;
+            _pathCached = true;
+
             return path;
+        }
+
+        internal static void PrimePathCache()
+        {
+            if (!_pathCached)
+            {
+                _ = GetConfigPath();
+            }
         }
     }
 }

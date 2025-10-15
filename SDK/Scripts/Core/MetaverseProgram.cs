@@ -197,6 +197,9 @@ namespace MetaverseCloudEngine.Unity
 
                 Prefs ??= new EncryptedPrefs();
                 
+                // Static ctor now primes on class load, so no explicit call needed here
+                // EncryptedPrefs.PrimePathCache();
+                
                 try
                 {
                     var webClient = MetaverseWebClient.CreateNew();
