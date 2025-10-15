@@ -10,6 +10,7 @@ using MetaverseCloudEngine.Unity.Services.Abstract;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using System.Diagnostics;
+using Newtonsoft.Json.Linq;
 
 namespace MetaverseCloudEngine.Unity.Account.Poco
 {
@@ -107,13 +108,68 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         /// </summary>
         public bool IsLoggedIn => ApiClient.Account.CurrentUser != null;
 
+        private static string BuildServerReasonMessage(string rawError)
+        {
+            if (string.IsNullOrWhiteSpace(rawError))
+                return "No details";
+            try
+            {
+                var token = JToken.Parse(rawError);
+                // Try common fields often returned by APIs
+                var reason = (string)(token.SelectToken("reason") ?? token.SelectToken("message") ?? token.SelectToken("error") ?? token.SelectToken("detail"));
+                var refreshedAtStr = (string)(token.SelectToken("refreshedAt") ?? token.SelectToken("refreshTime") ?? token.SelectToken("refreshed_at"));
+                var serverTimeStr = (string)(token.SelectToken("serverTimeUtc") ?? token.SelectToken("serverTime") ?? token.SelectToken("timeUtc") ?? token.SelectToken("timestamp"));
+                var requestId = (string)(token.SelectToken("requestId") ?? token.SelectToken("traceId") ?? token.SelectToken("correlationId"));
+
+                string FormatDate(string s)
+                {
+                    if (string.IsNullOrWhiteSpace(s)) return null;
+                    if (DateTime.TryParse(s, null, System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+                        return dt.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+                    return s;
+                }
+
+                var refreshedAt = FormatDate(refreshedAtStr);
+                var serverTime = FormatDate(serverTimeStr);
+
+                var parts = new System.Collections.Generic.List<string>();
+                if (!string.IsNullOrWhiteSpace(reason)) parts.Add($"Reason: {reason}");
+                if (!string.IsNullOrWhiteSpace(refreshedAt)) parts.Add($"TokenRefreshedAt: {refreshedAt}");
+                if (!string.IsNullOrWhiteSpace(serverTime)) parts.Add($"ServerTime: {serverTime}");
+                if (!string.IsNullOrWhiteSpace(requestId)) parts.Add($"RequestId: {requestId}");
+
+                // If we couldn't find structured fields, fall back to raw string
+                if (parts.Count == 0)
+                {
+                    // If this is a string token, use it directly
+                    if (token.Type == JTokenType.String)
+                        return token.Value<string>();
+                    // Otherwise return compact JSON
+                    return token.ToString(Newtonsoft.Json.Formatting.None);
+                }
+
+                return string.Join(" | ", parts);
+            }
+            catch
+            {
+                // Not JSON - return raw text
+                return rawError.Trim();
+            }
+        }
+
         public async Task InitializeAsync()
         {
-            MetaverseProgram.Logger.Log($"LoginStore: Beginning initialization. UseCookieAuth: {ApiClient.Account.UseCookieAuthentication}, HasAccessToken: {!string.IsNullOrEmpty(AccessToken)}");
+            const int maxRetries = 3;
+            const bool isEditorFastFail = Application.isEditor;  // No retries in editor for speed
+
+            MetaverseProgram.Logger.Log($"LoginStore: Beginning initialization. UseCookieAuth: {ApiClient.Account.UseCookieAuthentication}, HasAccessToken: {!string.IsNullOrEmpty(AccessToken)}, EditorFastFail: {isEditorFastFail}");
 
             if (ApiClient.Account.UseCookieAuthentication || !string.IsNullOrEmpty(AccessToken))
             {
-                await WaitForNetworkConnectivityAsync();
+                if (!isEditorFastFail)
+                {
+                    await WaitForNetworkConnectivityAsync();  // Skip network wait in editor
+                }
 
                 MetaverseProgram.Logger.Log($"LoginStore: Validating tokens with server...");
                 var response =
@@ -125,28 +181,41 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 {
                     if (!response.Succeeded)
                     {
+                        var errorDetails = await response.GetErrorAsync();
+                        var serverReason = BuildServerReasonMessage(errorDetails);
+
+                        if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        {
+                            if (isEditorFastFail)
+                            {
+                                MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
+                                return;
+                            }
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
+                        }
+
+                        if (isEditorFastFail)
+                        {
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: Editor fast-fail - validation failed on first attempt. Status: {response.StatusCode}. Server: {serverReason}. Proceeding as unauthenticated.");
+                            return;
+                        }
+
                         _initializationRetries++;
-                        var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Shorter backoff: 0.5s base, max 2s
+                        var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Short backoff
                         
-                        // For 500+ errors: Retry up to 3 times total (capped even in builds); in editor, only once
+                        // For 500+ errors: Retry up to 3 times
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: 500+ error (Attempt #{_initializationRetries}/3). Retrying in {delaySeconds}s...");
+                            MetaverseProgram.Logger.LogWarning($"LoginStore: 5xx error (Attempt #{_initializationRetries}/{maxRetries}). Server: {serverReason}. Retrying in {delaySeconds}s...");
                             
-                            if (_initializationRetries >= 3)
+                            if (_initializationRetries >= maxRetries)
                             {
-                                MetaverseProgram.Logger.LogError("LoginStore: Max retries (3) reached for server error. Proceeding as unauthenticated.");
+                                MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached for server error. Server: {serverReason}. Proceeding as unauthenticated.");
                                 return;
                             }
 
-                            if (Application.isEditor && _initializationRetries >= 2)
-                            {
-                                MetaverseProgram.Logger.LogWarning("LoginStore: Editor mode - skipping further 500 retries. Check your server.");
-                                return;
-                            }
-
-                            // After 3 attempts, show dialog (reduced from 10)
-                            if (_initializationRetries >= 3 && !_hasShownRetryDialog)
+                            // After maxRetries, show dialog
+                            if (_initializationRetries >= maxRetries && !_hasShownRetryDialog)
                             {
                                 _hasShownRetryDialog = true;
                                 await ShowRestartDialogAsync(response.StatusCode.ToString());
@@ -158,23 +227,16 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                             return;
                         }
 
-                        // For other errors: Up to 3 retries total (reduced from 5)
-                        MetaverseProgram.Logger.LogWarning($"LoginStore: Non-500 error (Attempt #{_initializationRetries}/3): {response.StatusCode}");
-                        if (_initializationRetries < 3)
+                        // For other errors: Up to 3 retries
+                        MetaverseProgram.Logger.LogWarning($"LoginStore: Non-5xx error (Attempt #{_initializationRetries}/{maxRetries}). Status: {response.StatusCode}. Server: {serverReason}");
+                        if (_initializationRetries < maxRetries)
                         {
-                            // In editor, only retry once
-                            if (Application.isEditor && _initializationRetries >= 2)
-                            {
-                                MetaverseProgram.Logger.LogWarning("LoginStore: Editor mode - no further retries. Proceeding as unauthenticated.");
-                                return;
-                            }
-
                             await DelayAsync((int)(delaySeconds * 1000));
                             await InitializeAsync();
                         }
                         else
                         {
-                            MetaverseProgram.Logger.LogError("LoginStore: Max retries (3) reached. Proceeding as unauthenticated.");
+                            MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached. Server: {serverReason}. Proceeding as unauthenticated.");
                         }
                     }
                     else
@@ -188,7 +250,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var errorMessage = await response.GetErrorAsync();
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    MetaverseProgram.Logger.LogWarning("LoginStore: Failed to initialize - invalid token: " + errorMessage);
+                    MetaverseProgram.Logger.LogWarning("LoginStore: Failed to initialize - invalid token: " + BuildServerReasonMessage(errorMessage));
                 }
 
                 AccessToken = null;
@@ -234,6 +296,18 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (Application.isPlaying)
             {
                 await UniTask.SwitchToMainThread();
+            }
+
+            if (kind == AccountController.LogOutKind.InvalidAccessToken)
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    UnityEditor.EditorUtility.DisplayDialog("Session Expired", "Your session has expired. Please sign in again.", "OK");
+                else
+                    MetaverseProgram.Logger.LogWarning("LoginStore: Your session has expired. Please sign in again.");
+#else
+                MetaverseProgram.Logger.LogWarning("LoginStore: Your session has expired. Please sign in again.");
+#endif
             }
 
             MetaverseProgram.Logger.Log($"LoginStore: User logged out via {kind}. Clearing persisted tokens...");
@@ -413,6 +487,12 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
         private async Task WaitForNetworkConnectivityAsync()
         {
+            if (Application.isEditor)
+            {
+                MetaverseProgram.Logger.Log("LoginStore: Editor mode - skipping network wait for speed.");
+                return;
+            }
+
             if (Application.internetReachability != NetworkReachability.NotReachable)
                 return;
 

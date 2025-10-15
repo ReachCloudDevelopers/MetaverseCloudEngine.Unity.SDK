@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.4
-- Add DelayAsync method to LoginStore for improved async handling of delays based on application state. This allows for more flexible delay management during initialization processes.
+## 2.201.5
+- Enhance LoginStore error handling by adding BuildServerReasonMessage method to parse and format server error responses. Adjust retry logic to include detailed logging for 403 Forbidden and other error statuses, improving clarity on initialization failures. Skip network connectivity checks in editor mode for faster initialization.
 
 Updated on October 15, 2025
