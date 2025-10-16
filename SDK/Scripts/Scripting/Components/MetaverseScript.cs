@@ -397,6 +397,17 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
+
+#if UNITY_EDITOR
+        [ContextMenu("Edit JavaScript...")]
+        private void EditJavaScript()
+        {
+            if (javascriptFile != null)
+            {
+                UnityEditor.AssetDatabase.OpenAsset(javascriptFile);
+            }
+        }
+#endif
         [SerializeField] private GlobalTypeImports globalTypeImports = GlobalTypeImports.None;
         [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
         [SerializeField] private Variables variables;

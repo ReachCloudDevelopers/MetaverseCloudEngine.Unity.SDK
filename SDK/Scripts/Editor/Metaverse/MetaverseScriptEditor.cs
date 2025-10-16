@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEngine;
 using Unity.VisualScripting;
 using MetaverseCloudEngine.Unity.Scripting.Components;
+using UnityEditorInternal;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
@@ -23,13 +24,127 @@ namespace MetaverseCloudEngine.Unity.Editors
         private bool _isBuildingVariables;
         private static readonly ConcurrentDictionary<string, Type> CachedTypeData = new();
 
+        private HashSet<string> _usedVariables = new();
+        private bool _isScanningVariables;
+        private TextAsset _lastScannedFile;
+        
+        public bool IsCollapsed {
+            get => EditorPrefs.GetBool(GetPrefsKey(), false);
+            set => EditorPrefs.SetBool(GetPrefsKey(), value);
+        }
+
+        private string GetPrefsKey() 
+        {
+            var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
+            var jsAsset = javascriptFileProp.objectReferenceValue as TextAsset;
+            return "MVCE_MetaverseScriptEditor_Collapsed_" + (jsAsset ? jsAsset.GetInstanceID() : 0);
+        }
+
+        protected override void OnHeaderGUI()
+        {
+        }
+
+        protected override bool ShouldHideOpenButton()
+        {
+            return true;
+        }
+
         public override void OnInspectorGUI()
         {
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
 
-            MetaverseEditorUtils.Header(javascriptFileProp.objectReferenceValue != null
-                ? javascriptFileProp.objectReferenceValue.name
-                : "(No Script)", false);
+            // Fake header showing the assigned JS file name (or (No Script))
+            var jsAsset = javascriptFileProp.objectReferenceValue as TextAsset;
+            var displayTitle = jsAsset ? jsAsset.name : "(No Script)";
+            float fakeHeaderHeight = EditorStyles.toolbar.fixedHeight > 0 ? EditorStyles.toolbar.fixedHeight : 20f;
+            var viewWidth = EditorGUIUtility.currentViewWidth;
+            var fakeHeaderRect = new Rect(0, -20f, viewWidth, fakeHeaderHeight);
+
+            // Draw header background
+            GUI.Button(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
+
+            // Areas inside header: foldout and enabled toggle (do not intercept), title elsewhere
+            var foldRect = new Rect(fakeHeaderRect.x + 18f, fakeHeaderRect.y + 2f, 16f, fakeHeaderRect.height - 4f);
+            var iconRect = new Rect(foldRect.x + 2f, fakeHeaderRect.y, fakeHeaderRect.height - 2f, fakeHeaderRect.height - 2f);
+            GUI.Label(iconRect, EditorGUIUtility.GetIconForObject(target));
+            var toggleRect = new Rect(foldRect.xMax + 6f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
+            var titleRect = new Rect(toggleRect.xMax + 3f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
+
+            // Persisted collapse state per script
+            var prefsKey = GetPrefsKey();
+            bool collapsed = EditorPrefs.GetBool(prefsKey, false);
+            bool expanded = !collapsed;
+            bool newExpanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
+            if (newExpanded != expanded)
+            {
+                collapsed = !newExpanded;
+                EditorPrefs.SetBool(prefsKey, collapsed);
+            }
+
+            // Enabled toggle (uses serialized m_Enabled)
+            var enabledProp = serializedObject.FindProperty("m_Enabled");
+            if (enabledProp != null)
+            {
+                bool newEnabled = EditorGUI.Toggle(toggleRect, enabledProp.boolValue);
+                if (newEnabled != enabledProp.boolValue)
+                {
+                    enabledProp.boolValue = newEnabled;
+                    serializedObject.ApplyModifiedProperties();
+                }
+            }
+
+            // Title label
+            GUI.Label(titleRect, displayTitle, EditorStyles.boldLabel);
+
+            // Add three icons on the right side
+            var iconSize = titleRect.height;
+            var iconSpacing = 2f;
+            var rightMargin = 7f;
+            var totalIconWidth = (iconSize * 3) + (iconSpacing * 2);
+            var startX = fakeHeaderRect.xMax - totalIconWidth - rightMargin;
+            
+            // Question mark icon (help)
+            var helpIconRect = new Rect(startX, fakeHeaderRect.y, iconSize, iconSize);
+            GUI.Label(helpIconRect, EditorGUIUtility.IconContent("_Help").image);
+            
+            // Preset/context icon
+            var presetIconRect = new Rect(startX + iconSize + iconSpacing, fakeHeaderRect.y, iconSize, iconSize);
+            GUI.Label(presetIconRect, EditorGUIUtility.IconContent("Preset.Context").image);
+            
+            // Menu icon
+            var menuIconRect = new Rect(startX + (iconSize + iconSpacing) * 2, fakeHeaderRect.y, iconSize, iconSize);
+            GUI.Label(menuIconRect, EditorGUIUtility.IconContent("_Menu").image);
+
+            // If collapsed, do not draw the rest of the inspector
+            if (collapsed)
+            {
+                GUILayout.Space(1);
+            }
+
+            // If collapsed, do not draw the rest of the inspector
+            if (collapsed)
+            {
+                return;
+            }
+
+            // Always show the Javascript File field at the very top (read-only)
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.ObjectField(new GUIContent("Script"),
+                javascriptFileProp.objectReferenceValue,
+                typeof(TextAsset), false);
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.Space(4);
+
+            // Draw selected fields first (above the Script field)
+            var globalTypeImportsProp = serializedObject.FindProperty("globalTypeImports");
+            var includesProp = serializedObject.FindProperty("includes");
+            EditorGUI.BeginChangeCheck();
+            if (globalTypeImportsProp != null)
+                EditorGUILayout.PropertyField(globalTypeImportsProp);
+            if (includesProp != null)
+                EditorGUILayout.PropertyField(includesProp, new GUIContent("include '...'"), true);
+            if (EditorGUI.EndChangeCheck())
+                serializedObject.ApplyModifiedProperties();
 
             if (!javascriptFileProp.objectReferenceValue)
             {
@@ -64,8 +179,7 @@ function Start() {
 // This function is called every frame.
 function Update() {
 
-}
-");
+}");
                         AssetDatabase.ImportAsset(path);
                         javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(path);
                         javascriptFileProp.serializedObject.ApplyModifiedProperties();
@@ -91,43 +205,31 @@ function Update() {
 
                 return;
             }
-            else
-            {
-                if (GUILayout.Button("Open Script"))
-                {
-                    AssetDatabase.OpenAsset(javascriptFileProp.objectReferenceValue);
-                }
-
-                if (GUILayout.Button("Replace Script"))
-                {
-                    var path = EditorUtility.OpenFilePanel("Select Script", Application.dataPath, "js");
-                    if (!string.IsNullOrEmpty(path))
-                    {
-                        var assetPath = path.Replace(Application.dataPath, "Assets");
-                        javascriptFileProp.objectReferenceValue = AssetDatabase.LoadAssetAtPath<TextAsset>(assetPath);
-                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
-                        GUIUtility.ExitGUI();
-                    }
-                }
-
-                if (GUILayout.Button("Delete Script"))
-                {
-                    if (EditorUtility.DisplayDialog("Delete Script", "Are you sure you want to delete the script?",
-                            "Yes", "No"))
-                    {
-                        AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(javascriptFileProp.objectReferenceValue));
-                        javascriptFileProp.objectReferenceValue = null;
-                        javascriptFileProp.serializedObject.ApplyModifiedProperties();
-                        GUIUtility.ExitGUI();
-                    }
-                }
-            }
 
             var variablesProp =
                 serializedObject
                     .FindProperty("variables"); // This property references a visual scripting variables component.
 
-            base.OnInspectorGUI();
+            // Scan JavaScript file for GetVar and Vars.Get calls (only if file changed)
+            if (javascriptFileProp.objectReferenceValue && javascriptFileProp.objectReferenceValue is TextAsset jsFile)
+            {
+                if (_lastScannedFile != jsFile)
+                {
+                    _lastScannedFile = jsFile;
+                    ScanJavaScriptForVariableUsage(jsFile.text);
+                }
+            }
+            else
+            {
+                _lastScannedFile = null;
+                _usedVariables.Clear();
+            }
+
+            // Draw all remaining properties except javascriptFile and m_Enabled (we have our own toggle)
+            EditorGUI.BeginChangeCheck();
+            Editor.DrawPropertiesExcluding(serializedObject, "m_Script", "javascriptFile", "m_Enabled", "globalTypeImports", "includes");
+            if (EditorGUI.EndChangeCheck())
+                serializedObject.ApplyModifiedProperties();
 
             if (variablesProp.objectReferenceValue &&
                 variablesProp.objectReferenceValue is Variables v &&
@@ -139,15 +241,26 @@ function Update() {
             }
             else if (!variablesProp.objectReferenceValue && javascriptFileProp.objectReferenceValue)
             {
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar); 
                 EditorGUILayout.LabelField(
                     new GUIContent("Variables", EditorGUIUtility.IconContent("d_UnityEditor.ConsoleWindow").image),
                     EditorStyles.boldLabel);
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.HelpBox(
-                    "This script does not have any variables. You can add variables to this script by creating a new Variables component.",
-                    MessageType.Info);
+                // Check if script uses variables but no variables component is assigned
+                if (_usedVariables.Count > 0)
+                {
+                    EditorGUILayout.HelpBox(
+                        $"Warning: This script uses {_usedVariables.Count} variable(s) (GetVar/Vars.Get calls) but no Variables component is assigned. Variables: {string.Join(", ", _usedVariables)}",
+                        MessageType.Warning);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox(
+                        "This script does not have any variables. You can add variables to this script by creating a new Variables component.",
+                        MessageType.Info);
+                }
+                
                 if (GUILayout.Button("Create New Variables Component"))
                 {
                     var popup = new GenericMenu();
@@ -157,20 +270,44 @@ function Update() {
                 }
             }
 
-            if (!variablesProp.objectReferenceValue) 
+            if (!variablesProp.objectReferenceValue)
                 return;
 
-            if (_isBuildingVariables)
+            if (_isBuildingVariables || _isScanningVariables)
             {
                 EditorGUILayout.HelpBox("Loading variables...", MessageType.Info);
                 return;
             }
-            
+
             var defaultVariables = GetScriptDefaultVariablesAsync();
             var variables = variablesProp.objectReferenceValue as Variables;
-            if (!variables) 
+            if (!variables)
                 return;
-            
+
+            // Check for missing variables used in GetVar/Vars.Get calls
+            var missingUsedVariables = _usedVariables
+                .Where(varName => !variables.declarations.IsDefined(varName))
+                .ToArray();
+
+            if (missingUsedVariables.Length > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"The following variables are used in GetVar/Vars.Get calls but are missing from the Variables component: {string.Join(", ", missingUsedVariables)}",
+                    MessageType.Warning);
+
+                if (GUILayout.Button($"Add all ({missingUsedVariables.Length}) missing variables"))
+                {
+                    foreach (var varName in missingUsedVariables)
+                    {
+                        // Add as string type by default, user can change the type later
+                        variables.declarations.Set(varName, "");
+                        var declaration = variables.declarations.GetDeclaration(varName);
+                        declaration.typeHandle = new SerializableType(typeof(string).AssemblyQualifiedName);
+                    }
+                    variablesProp.serializedObject.ApplyModifiedProperties();
+                }
+            }
+
             var varsToBeAdded = defaultVariables
                 .Where(variable => !variables.declarations.IsDefined(variable.Key)).ToArray();
             if (varsToBeAdded.Length > 0)
@@ -359,7 +496,7 @@ function Update() {
 
                 _scriptDefaultVariables = result;
             });
-            
+
             return _scriptDefaultVariables;
         }
 
@@ -372,6 +509,139 @@ function Update() {
                 .FirstOrDefault(t => t.Namespace + "." + t.Name == type);
             CachedTypeData[type] = t;
             return t;
+        }
+
+        private void ScanJavaScriptForVariableUsage(string scriptText)
+        {
+            if (_isScanningVariables)
+                return;
+
+            _isScanningVariables = true;
+            _usedVariables.Clear();
+
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    // Pattern to match GetVar("variableName") calls
+                    var getVarPattern = @"GetVar\s*\(\s*[""']([^""']+)[""']\s*\)";
+                    var getVarMatches = Regex.Matches(scriptText, getVarPattern, RegexOptions.IgnoreCase);
+                    foreach (Match match in getVarMatches)
+                    {
+                        var variableName = match.Groups[1].Value;
+                        if (!string.IsNullOrEmpty(variableName))
+                        {
+                            _usedVariables.Add(variableName);
+                        }
+                    }
+
+                    // Pattern to match Vars.Get("variableName") calls
+                    var varsGetPattern = @"Vars\.Get\s*\(\s*[""']([^""']+)[""']\s*\)";
+                    var varsGetMatches = Regex.Matches(scriptText, varsGetPattern, RegexOptions.IgnoreCase);
+                    foreach (Match match in varsGetMatches)
+                    {
+                        var variableName = match.Groups[1].Value;
+                        if (!string.IsNullOrEmpty(variableName))
+                        {
+                            _usedVariables.Add(variableName);
+                        }
+                    }
+
+                    // Pattern to match Vars.Get(variableName) calls (without quotes)
+                    var varsGetUnquotedPattern = @"Vars\.Get\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)";
+                    var varsGetUnquotedMatches = Regex.Matches(scriptText, varsGetUnquotedPattern, RegexOptions.IgnoreCase);
+                    foreach (Match match in varsGetUnquotedMatches)
+                    {
+                        var variableName = match.Groups[1].Value;
+                        if (!string.IsNullOrEmpty(variableName))
+                        {
+                            _usedVariables.Add(variableName);
+                        }
+                    }
+
+                    // Pattern to match GetVar(variableName) calls (without quotes)
+                    var getVarUnquotedPattern = @"GetVar\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)";
+                    var getVarUnquotedMatches = Regex.Matches(scriptText, getVarUnquotedPattern, RegexOptions.IgnoreCase);
+                    foreach (Match match in getVarUnquotedMatches)
+                    {
+                        var variableName = match.Groups[1].Value;
+                        if (!string.IsNullOrEmpty(variableName))
+                        {
+                            _usedVariables.Add(variableName);
+                        }
+                    }
+                }
+                finally
+                {
+                    _isScanningVariables = false;
+                }
+            });
+        }
+
+        private static GUIContent Icon(string[] iconNames, string fallbackText, string tooltip)
+        {
+            if (iconNames != null)
+            {
+                foreach (var n in iconNames)
+                {
+                    var c = EditorGUIUtility.IconContent(n);
+                    if (c != null && c.image)
+                        return new GUIContent(c.image, tooltip);
+                }
+            }
+            return new GUIContent(fallbackText, tooltip);
+        }
+
+        private void RemoveMetaverseScriptWithOptionalVariables()
+        {
+            var comp = target as MetaverseScript;
+            if (!comp) return;
+
+            // Resolve assigned Variables component (if any)
+            var variablesPropForRemoval = serializedObject.FindProperty("variables");
+            var assignedVariables = variablesPropForRemoval != null
+                ? variablesPropForRemoval.objectReferenceValue as Variables
+                : null;
+
+            // Ask the user what to remove
+            int action = 1; // 0 = remove both, 1 = remove only Metaverse Script, 2 = cancel
+            if (assignedVariables)
+            {
+                var varsGoName = assignedVariables.gameObject ? assignedVariables.gameObject.name : "GameObject";
+                var message = $"Also remove the assigned Variables component on '{varsGoName}'?";
+                action = EditorUtility.DisplayDialogComplex(
+                    "Remove Metaverse Script",
+                    message,
+                    "Remove Both",
+                    "Just Metaverse Script",
+                    "Cancel");
+            }
+            else
+            {
+                var confirm = EditorUtility.DisplayDialog(
+                    "Remove Metaverse Script",
+                    "Remove the Metaverse Script component from this GameObject?",
+                    "Remove",
+                    "Cancel");
+                if (!confirm)
+                    action = 2; // cancel
+                else
+                    action = 1; // remove only script
+            }
+
+            if (action == 2)
+                return;
+
+            Undo.IncrementCurrentGroup();
+            Undo.SetCurrentGroupName("Remove Metaverse Script Component");
+            int group = Undo.GetCurrentGroup();
+
+            if (action == 0 && assignedVariables)
+                Undo.DestroyObjectImmediate(assignedVariables);
+
+            Undo.DestroyObjectImmediate(comp);
+            Undo.CollapseUndoOperations(group);
+            GUIUtility.ExitGUI();
         }
     }
 }

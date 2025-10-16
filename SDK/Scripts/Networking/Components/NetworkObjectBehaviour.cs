@@ -18,11 +18,11 @@ namespace MetaverseCloudEngine.Unity.Networking.Components
     [DefaultExecutionOrder(ExecutionOrder.Finalize)]
     public abstract class NetworkObjectBehaviour : MetaSpaceBehaviour
     {
+        [Tooltip("Will automatically assign the network object field if it's null.")]
+        [SerializeField] private bool autoAssignNetworkObject = true;
         [HideIf(nameof(autoAssignNetworkObject))]
         [Tooltip("The network object that this behaviour is attached to.")]
         [SerializeField] private NetworkObject networkObject;
-        [Tooltip("Will automatically assign the network object field if it's null.")]
-        [SerializeField] private bool autoAssignNetworkObject = true;
 
         private bool _foundNetworkObject;
         private IMetaSpaceNetworkingService _networking;

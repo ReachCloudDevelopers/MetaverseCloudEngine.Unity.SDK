@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEngine.Events;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
+using MetaverseCloudEngine.Unity.Scripting.Components;
 
 [CustomPropertyDrawer(typeof(UnityEventBase), true)]
 public class UnityEventCompactDrawer : PropertyDrawer
@@ -66,6 +67,14 @@ public class UnityEventCompactDrawer : PropertyDrawer
     State currentState;
     Dictionary<string, State> m_States = new Dictionary<string, State>();
 
+    private static string GetTargetDisplayName(Object target)
+    {
+        if (target is MetaverseScript ms)
+        {
+            return ms.javascriptFile ? ms.javascriptFile.name : "(No Script)";
+        }
+        return target ? target.GetType().Name : "UnknownComponent";
+    }
     
     private State GetState(SerializedProperty prop)
     {
@@ -291,7 +300,6 @@ public class UnityEventCompactDrawer : PropertyDrawer
         
         var mode = element.FindPropertyRelative(kModePath);
         var modeEnum = GetMode(mode);
-
         var spacing = VerticalSpacing + kExtraSpacing;
 
         if (modeEnum == PersistentListenerMode.Object || (modeEnum != PersistentListenerMode.Void && modeEnum != PersistentListenerMode.EventDefined))
@@ -495,16 +503,14 @@ public class UnityEventCompactDrawer : PropertyDrawer
                     }
                     else if (!UnityEventDrawer.IsPersistantListenerValid(m_DummyEvent, methodName.stringValue, listenerTarget.objectReferenceValue, GetMode(mode), desiredType))
                     {
-                        var instanceString = "UnknownComponent";
                         var instance = listenerTarget.objectReferenceValue;
-                        if (instance != null)
-                            instanceString = instance.GetType().Name;
-
+                        var instanceString = GetTargetDisplayName(instance);
                         buttonLabel.Append(string.Format("<Missing {0}.{1}>", instanceString, methodName.stringValue));
                     }
                     else
                     {
-                        buttonLabel.Append(listenerTarget.objectReferenceValue.GetType().Name);
+                        var instance = listenerTarget.objectReferenceValue;
+                        buttonLabel.Append(GetTargetDisplayName(instance));
 
                         if (!string.IsNullOrEmpty(methodName.stringValue))
                         {
@@ -523,6 +529,22 @@ public class UnityEventCompactDrawer : PropertyDrawer
                 if (GUI.Button(functionRect, buttonContent, EditorStyles.popup))
                 {
                     var popup = BuildPopupList.Invoke(null, new object[] { listenerTarget.objectReferenceValue, m_DummyEvent, pListener }) as GenericMenu;
+                    
+                    // Handle different target types
+                    var target = listenerTarget.objectReferenceValue;
+                    if (target is MetaverseScript ms)
+                    {
+                        RenameType<MetaverseScript>(popup, ms, msComp => msComp.javascriptFile ? msComp.javascriptFile.name : "(No Script)");
+                    }
+                    else if (target is GameObject go)
+                    {
+                        RenameType<MetaverseScript>(popup, go.GetComponent<MetaverseScript>(), msComp => msComp ? (msComp.javascriptFile ? msComp.javascriptFile.name : "(No Script)") : null);
+                    }
+                    else if (target is Component comp)
+                    {
+                        RenameType<MetaverseScript>(popup, comp.GetComponent<MetaverseScript>(), msComp => msComp ? (msComp.javascriptFile ? msComp.javascriptFile.name : "(No Script)") : null);
+                    }
+                    
                     popup.DropDown(functionRect);
                 }
             }
@@ -631,6 +653,99 @@ public class UnityEventCompactDrawer : PropertyDrawer
     protected virtual void OnReorderEvent(ReorderableList list)
     {
         m_LastSelectedIndex = list.index;
+    }
+
+    private static void RenameType<T>(GenericMenu menu, T from, Func<T, string> nameProvider) where T : Component
+    {
+        if (menu == null || nameProvider == null) 
+        {
+            return;
+        }
+        
+        if (from == null)
+        {
+            return;
+        }
+
+        var menuType = typeof(GenericMenu);
+        var itemsField = menuType.GetField("m_MenuItems", BindingFlags.NonPublic | BindingFlags.Instance);
+        var items = itemsField?.GetValue(menu) as System.Collections.IList;
+        if (items == null) 
+        {
+            return;
+        }
+
+        // Get the target GameObject and all components of type T
+        var targetGameObject = from.gameObject;
+        var componentsOfType = targetGameObject.GetComponents<T>();
+
+        foreach (var it in items)
+        {
+            var itemType = it.GetType();
+            
+            var contentField = itemType.GetField("content", BindingFlags.Public | BindingFlags.Instance);
+            if (contentField == null)
+            {
+                continue;
+            }
+            
+            var content = contentField.GetValue(it) as GUIContent;
+            if (content == null || string.IsNullOrEmpty(content.text))
+            {
+                continue;
+            }
+            
+            // Parse the index from the menu text
+            // Index 0: "SomeType/..." (no parentheses)
+            // Index 1+: "SomeType (1)/..." (with parentheses)
+            var typeName = typeof(T).Name;
+            int index = -1;
+            
+            if (content.text.StartsWith(typeName + "/"))
+            {
+                // Index 0 - no parentheses
+                index = 0;
+            }
+            else
+            {
+                // Index 1+ - has parentheses
+                var match = System.Text.RegularExpressions.Regex.Match(content.text, $@"^{typeName}\s*\((\d+)\)");
+                if (match.Success)
+                {
+                    if (int.TryParse(match.Groups[1].Value, out int parsedIndex))
+                    {
+                        index = parsedIndex;
+                    }
+                }
+            }
+            
+            if (index >= 0)
+            {
+                // Match the index to the component array
+                if (index < componentsOfType.Length)
+                {
+                    var targetComponent = componentsOfType[index];
+                    var newName = nameProvider(targetComponent);
+                    
+                    if (string.IsNullOrEmpty(newName))
+                    {
+                        continue;
+                    }
+                    
+                    // Replace the type name with the provided name
+                    if (index == 0)
+                    {
+                        // Index 0: "SomeType/..." -> "NewName/..."
+                        content.text = content.text.Replace(typeName + "/", newName + "/");
+                    }
+                    else
+                    {
+                        // Index 1+: "SomeType (1)/..." -> "NewName (1)/..."
+                        content.text = content.text.Replace(typeName + " (" + index + ")", newName + " (" + index + ")");
+                    }
+                }
+            }
+        }
     }
 }
 #endif

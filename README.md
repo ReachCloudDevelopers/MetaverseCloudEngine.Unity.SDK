@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.201.7
-- Refactor LoginStore token validation logic to reduce retry attempts for faster feedback. Streamline logging for 403 Forbidden responses and improve error handling during initialization. Adjusted network connectivity checks in editor mode for clarity and efficiency.
+## 2.202.0
+- Enhance UnityEventCompactDrawer and MetaverseScriptEditor with improved handling of MetaverseScript components. Added methods for better display of target names and integrated variable scanning for JavaScript files in MetaverseScriptEditor. Updated UI elements for clarity and usability in the inspector. Refactored code for improved maintainability and performance.
 
-Updated on October 15, 2025
+Updated on October 16, 2025
