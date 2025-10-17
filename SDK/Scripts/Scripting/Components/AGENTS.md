@@ -1,138 +1,1001 @@
 # MetaverseScript Authoring and Integration Guide
 
-This guide equips both automated agents and human developers with the knowledge required to write, wire, and debug JavaScript that runs inside the MetaverseScript component powered by the Jint engine in Unity.
+This comprehensive guide equips both automated agents and human developers with the knowledge required to write, wire, and debug JavaScript that runs inside the MetaverseScript component powered by the Jint engine in Unity. This document serves as the authoritative reference for MetaverseScript development, covering everything from basic concepts to advanced networking patterns.
 
 ---
 
 ## Table of Contents
 
-1. MetaverseScript Architecture
-2. Runtime Environment
-3. Lifecycle and Execution Flow
-4. API Surface Summary
-5. Coding Conventions and Constraints
-6. Cross-Script Communication Patterns
-7. Variables and Data Binding
-8. Unity Integration and YAML References
-9. Error Handling and Diagnostics
-10. Advanced Topics
-11. Worked Examples
-12. Git Workflow Safeguards
-13. Pre-Deployment Checklist
-14. Appendix A - Frequently Used Snippets
-15. Appendix B - Blacklist and Whitelist Reference
+### Part 1: Core Concepts & Architecture
+1. MetaverseScript Architecture & Design Philosophy
+2. Runtime Environment & Sandbox Security
+3. Lifecycle Management & Execution Flow
+4. API Surface & Global Objects
+
+### Part 2: Development Fundamentals
+5. Coding Conventions & Best Practices
+6. Variables & Data Binding Patterns
+7. Cross-Script Communication & Component Resolution
+8. Error Handling & Diagnostic Strategies
+
+### Part 3: Unity Integration
+9. UnityEvent Integration & Parameter Types
+10. Visual Scripting Variables Integration
+11. Scene & Prefab Integration Patterns
+12. YAML Serialization & Asset Management
+
+### Part 4: Advanced Features
+13. Networking & RPC Systems
+14. Asynchronous Programming Patterns
+15. Custom UnityEvent Types & Type Safety
+16. Performance Optimization Techniques
+
+### Part 5: Real-World Examples
+17. Complete Game Systems Examples
+18. Multiplayer Game Mechanics
+19. UI & Interaction Systems
+20. Asset Management & Loading
+
+### Part 6: Development Workflow
+21. Editor Integration & Custom Tools
+22. Git Workflow & Version Control
+23. Pre-Deployment Validation
+24. Troubleshooting & Common Issues
+
+### Appendices
+A. Frequently Used Code Snippets
+B. API Reference & Type Mappings
+C. Blacklist & Whitelist Reference
+D. Performance Benchmarks & Metrics
+E. Migration Guides & Breaking Changes
 
 ---
 
-## 1. MetaverseScript Architecture
-
-MetaverseScript is implemented by the class `MetaverseCloudEngine.Unity.Scripting.Components.MetaverseScript` located in the MVCE package cache (`SDK/Scripts/Scripting/Components/MetaverseScript.cs`). The component embeds a Jint JavaScript runtime within a Unity `MonoBehaviour`.
-
-### 1.1 Key Characteristics
-
-- Inherits from `NetworkObjectBehaviour`, so it respects Unity Netcode authority and lifecycle events.
-- Loads a primary JavaScript `TextAsset` plus optional include files, then caches function handles for repeated invocations.
-- Provides helper methods (`ExecuteVoid`, `Execute`) that enable other scripts or UnityEvents to call into the hosted JavaScript functions.
-- Supports bindings to Unity Visual Scripting variables for scene and object level data exchange.
-- Injects a `console` object that mirrors browser-style logging functions (`log`, `warn`, `error`, `info`).
-
-### 1.2 Serialized Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `javascriptFile` | `TextAsset` | Primary `.js` asset executed by the component. |
-| `includes` | `TextAsset[]` | Optional dependency scripts loaded before `javascriptFile`. |
-| `globalTypeImports` | enum flags | Enables curated .NET namespace imports (for example MetaQuest). Defaults to `None`. |
-| `variables` | `Unity.VisualScripting.Variables` | Reference to a Visual Scripting Variables component that exposes bindings to the script. |
-| `networkObject` | `NetworkObjectBehaviour` | Explicit network object reference. Usually left empty when `autoAssignNetworkObject` is true. |
-| `autoAssignNetworkObject` | `bool` | Automatically binds to the nearest `NetworkObjectBehaviour` when true. |
-
 ---
 
-## 2. Runtime Environment
+## Part 1: Core Concepts & Architecture
 
-### 2.1 Jint Sandbox
+### 1. MetaverseScript Architecture & Design Philosophy
 
-- Scripts run inside a sandboxed Jint interpreter. They can access approved .NET assemblies but cannot call into restricted namespaces like `System.IO` or `System.Reflection`.
-- Unity namespaces are imported using `importNamespace`. Example:
+MetaverseScript represents a paradigm shift in Unity scripting, bridging the gap between Unity's C# ecosystem and JavaScript's flexibility. It embeds a Jint JavaScript runtime directly within a Unity MonoBehaviour, creating a sandboxed execution environment that maintains Unity's performance characteristics while providing JavaScript's rapid prototyping capabilities.
 
-```javascript
-const UnityEngine = importNamespace("UnityEngine");
-const Mathf = UnityEngine.Mathf;
-const Scripting = importNamespace("Unity.VisualScripting");
-```
+#### 1.1 Core Architecture Principles
 
-- The helper `importType` does **not** exist. Always use namespace imports.
-- Scripts execute on the Unity main thread. Avoid long blocking operations and prefer cached references to limit interpreter overhead.
+**Hybrid Execution Model**
+- **Jint Engine Integration**: Scripts execute within a sandboxed Jint interpreter, providing JavaScript semantics while maintaining Unity's deterministic performance.
+- **Unity Lifecycle Compliance**: All scripts respect Unity's standard lifecycle hooks (`Awake`, `Start`, `Update`, etc.) and authority-based execution patterns.
+- **Type-Safe Interop**: JavaScript code interacts with Unity APIs through carefully curated type mappings and conversion layers.
 
-### 2.2 Logging Support
+**Security-First Design**
+- **Assembly Whitelisting**: Only approved Unity and MVCE assemblies are accessible, preventing access to dangerous system APIs.
+- **Namespace Restrictions**: Blacklisted namespaces (`System.IO`, `System.Reflection`, etc.) are completely inaccessible.
+- **Sandboxed Execution**: Scripts cannot access the file system, network, or other system resources directly.
 
-MetaverseScript injects a `console` object with familiar methods:
+**Performance Optimization**
+- **Function Caching**: JavaScript functions are cached as delegates for repeated invocation.
+- **Lazy Loading**: Scripts only compile when first needed, with caching for subsequent loads.
+- **Authority Gating**: Network operations respect Unity Netcode's authority system.
 
-- `console.log(message)` - informational trace messages.
-- `console.warn(message)` - recoverable warnings.
-- `console.error(message)` - serious issues that require attention.
-- `console.info(message)` - supplementary context for debugging.
+#### 1.2 Component Structure
 
-Logs appear in the Unity console with the script name as a prefix, making it easy to trace output back to the owning script.
+```csharp
+[HideMonoScript]
+[HelpURL("https://reach-cloud.gitbook.io/reach-explorer-documentation/docs/development-guide/unity-engine-sdk/custom-scripting/custom-javascript")]
+[AddComponentMenu(MetaverseConstants.ProductName + "/Scripting/Metaverse Script")]
+[ExecuteAlways]
+public class MetaverseScript : NetworkObjectBehaviour
+{
+    // Core execution fields
+    [Required] public TextAsset javascriptFile;
+    [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
+    [SerializeField] private GlobalType`Import`s globalTypeImports = GlobalTypeImports.None;
+    [SerializeField] private Variables variables;
 
-### 2.3 Assembly Whitelist
+    // Networking fields (hidden in inspector)
+    [HideInInspector] private bool autoAssignNetworkObject = true;
+    [HideInInspector] private NetworkObject networkObject;
 
-Allowed assemblies include Unity core modules (CoreModule, PhysicsModule, UI, AudioModule), Cinemachine, TextMeshPro, Unity Visual Scripting, MVCE assemblies, UniTask, and XR / AR packages when enabled. Refer to `MetaverseScript.GetAssemblies()` for the complete list.
-
-### 2.4 Blacklisted APIs
-
-| Category | Examples |
-|----------|----------|
-| Global search | `FindObjectOfType`, `FindObjectsOfType`, `FindAnyObjectByType`, `FindSceneObjectsOfType` |
-| Messaging | `SendMessage`, `BroadcastMessage`, `SendMessageUpwards` |
-| Persistence | `PlayerPrefs`, `Resources`, `AssetBundle` |
-| System namespaces | `System.IO`, `System.Reflection`, `System.Web`, `Microsoft.Win32`, `Microsoft.SafeHandles` |
-
----
-
-## 3. Lifecycle and Execution Flow
-
-### 3.1 Common Hooks
-
-| Hook | Purpose |
-|------|---------|
-| `Awake` / `OnEnable` / `Start` | Cache components and initialise state. |
-| `OnNetworkSpawn` / `OnNetworkDespawn` | Respond to Netcode spawn and despawn events. |
-| `OnNetworkReady` | Fired once the script and networking are ready; ideal for setup logic. |
-| `Update` / `LateUpdate` | Per-frame logic. Guard with `GetIsInputAuthority()` or `GetIsStateAuthority()`. |
-| `OnDisable` / `OnDestroy` | Cleanup and unsubscribing. |
-
-### 3.2 Authority Gating
-
-```javascript
-function Update() {
-    if (!GetIsInputAuthority()) {
-        return;
-    }
-    // authoritative logic goes here
+    // Runtime state
+    private bool _ready;
+    private Engine _engine;
+    private Dictionary<ScriptFunctions, JsValue> _methods;
+    private ConsoleObject _console;
+    private ScriptContext _context;
 }
 ```
 
-### 3.3 Initialization Template
+#### 1.3 Key Serialized Fields
+
+| Field | Type | Purpose | Required |
+|-------|------|---------|----------|
+| `javascriptFile` | `TextAsset` | The primary JavaScript file to execute | ✅ |
+| `includes` | `TextAsset[]` | Dependency scripts loaded before main file | ❌ |
+| `globalTypeImports` | `GlobalTypeImports` | Additional .NET namespace access | ❌ |
+| `variables` | `Variables` | Visual Scripting variable bindings | ❌ |
+| `onInitialize` | `UnityEvent` | Called when script initializes | ❌ |
+| `customEvents` | `SerializableUnityEvent[]` | Custom events callable from JavaScript | ❌ |
+
+#### 1.4 Runtime State Management
+
+**Initialization Phases**
+1. **Component Attachment**: Unity instantiates the component
+2. **Dependency Resolution**: Network object and variable bindings are established
+3. **Engine Creation**: Jint engine is configured with allowed assemblies
+4. **Script Loading**: JavaScript files are compiled and cached
+5. **Function Binding**: Lifecycle functions are resolved and cached
+6. **Ready State**: Component becomes active for execution
+
+**Authority System Integration**
+- Scripts respect Unity Netcode's authority model
+- Only authorized clients execute state-changing logic
+- Network operations require proper authority checks
+
+#### 1.5 Execution Context
+
+Each MetaverseScript maintains its own isolated execution context:
+
+- **Global Variables**: Persist across function calls
+- **Component References**: Cached Unity component access
+- **Network State**: Authority and ownership information
+- **Visual Scripting Bindings**: Variable declarations and values
+
+---
+
+## 2. Runtime Environment & Sandbox Security
+
+### 2.1 Jint Sandbox Architecture
+
+MetaverseScript utilizes the Jint JavaScript engine as its core execution environment, providing a secure, performant bridge between JavaScript and Unity's .NET ecosystem.
+
+#### 2.1.1 Execution Model
+
+**Synchronous Execution**
+- All JavaScript code executes on Unity's main thread
+- No multi-threading or background processing within scripts
+- Unity's frame-based update cycle determines execution timing
+
+**Type Conversion Layer**
+- Automatic marshaling between JavaScript and .NET types
+- Primitive types (int, float, string, bool) convert seamlessly
+- Complex Unity types (Vector3, GameObject, etc.) are wrapped appropriately
+- Collections and arrays maintain type information
+
+**Memory Management**
+- JavaScript objects are garbage collected by Jint's runtime
+- Unity object references are managed by Unity's lifecycle
+- No direct memory allocation control from JavaScript
+
+#### 2.1.2 Sandbox Security Model
+
+**Assembly Access Control**
+```csharp
+private static Assembly[] GetAssemblies()
+{
+    return new[]
+    {
+        // Core Unity modules
+        typeof(GameObject).Assembly,           // UnityEngine.CoreModule
+        typeof(Rigidbody).Assembly,           // UnityEngine.PhysicsModule
+        typeof(Canvas).Assembly,              // UnityEngine.UI
+        typeof(AudioSource).Assembly,         // UnityEngine.AudioModule
+        typeof(Animator).Assembly,            // UnityEngine.AnimationModule
+
+        // Extended modules (conditional)
+        #if MV_UNITY_AI_NAV
+        typeof(NavMesh).Assembly,             // UnityEngine.AIModule
+        #endif
+
+        // Third-party integrations
+        typeof(TMPro.TextMeshProUGUI).Assembly, // TextMeshPro
+        typeof(CinemachineVirtualCamera).Assembly, // Cinemachine
+
+        // MVCE assemblies
+        typeof(MetaverseScript).Assembly,
+        typeof(NetworkObjectBehaviour).Assembly,
+
+        // Async support
+        typeof(UniTask).Assembly,
+    };
+}
+```
+
+**Namespace Restrictions**
+- **Allowed**: `UnityEngine`, `UnityEngine.UI`, `UnityEngine.Physics`, etc.
+- **Blocked**: `System.IO`, `System.Reflection`, `System.Net`, `Microsoft.*`
+
+**API Blacklist**
+```javascript
+// ❌ Blocked - Global object discovery
+FindObjectOfType, FindObjectsOfType, FindAnyObjectByType
+
+// ❌ Blocked - Direct messaging
+SendMessage, BroadcastMessage, SendMessageUpwards
+
+// ❌ Blocked - File system access
+PlayerPrefs, Resources, AssetBundle
+
+// ❌ Blocked - Reflection and system access
+System.IO.*, System.Reflection.*, System.Web.*
+```
+
+#### 2.1.3 Global Object Injection
+
+**Automatically Available Objects**
+- `console` - Logging interface
+- `transform` - Component's Transform
+- `gameObject` - Component's GameObject
+- `this` - Reference to the MetaverseScript component
+
+**Import Pattern**
+```javascript
+// Import Unity namespaces
+const UnityEngine = importNamespace("UnityEngine");
+const UI = importNamespace("UnityEngine.UI");
+const Physics = importNamespace("UnityEngine.Physics");
+
+// Import MVCE namespaces
+const MVCE = importNamespace("MetaverseCloudEngine.Unity");
+
+// Access types and static methods
+const Vector3 = UnityEngine.Vector3;
+const Mathf = UnityEngine.Mathf;
+const Button = UI.Button;
+const Rigidbody = Physics.Rigidbody;
+```
+
+### 2.2 Console & Logging System
+
+#### 2.2.1 Console Object Interface
+
+The `console` object provides familiar browser-style logging with Unity integration:
 
 ```javascript
+// Standard logging levels
+console.log("Player spawned at:", position);     // Info level
+console.info("Loading level assets...");         // Info level
+console.warn("Low health:", health);             // Warning level
+console.error("Failed to load texture:", asset); // Error level
+console.debug("Debug info:", debugData);         // Debug level (build-stripped in release)
+```
+
+**Log Output Format**
+```
+[MetaverseScript:MyScript.js] Player spawned at: (10, 5, 0)
+[MetaverseScript:MyScript.js] ⚠️ Low health: 15
+[MetaverseScript:MyScript.js] ❌ Failed to load texture: missing_asset
+```
+
+#### 2.2.2 Log Categories & Filtering
+
+**Unity Console Integration**
+- Logs appear in Unity's Console window
+- Script name prefix for easy filtering
+- Stack traces included for debugging
+- Log levels respect Unity's log filtering
+
+**Performance Considerations**
+- Console operations are synchronous
+- Excessive logging impacts frame rate
+- Use conditional logging in performance-critical paths
+
+#### 2.2.3 Custom Logging Utilities
+
+```javascript
+// Structured logging helper
+function LogWithContext(level, message, context) {
+    const contextStr = context ? ` [${JSON.stringify(context)}]` : '';
+    console[level](`${message}${contextStr}`);
+}
+
+// Usage
+LogWithContext('info', 'Player action', { action: 'jump', height: 2.5 });
+```
+
+### 2.3 Assembly & Type System
+
+#### 2.3.1 Approved Assemblies
+
+**Core Unity Modules**
+- `UnityEngine.CoreModule` - GameObjects, Components, Time, etc.
+- `UnityEngine.PhysicsModule` - Rigidbody, Collider, Raycast, etc.
+- `UnityEngine.UIModule` - Canvas, Button, Text, Image, etc.
+- `UnityEngine.AudioModule` - AudioSource, AudioClip, AudioListener
+- `UnityEngine.AnimationModule` - Animator, Animation, AnimationCurve
+
+**Extended Modules (Conditional)**
+- `UnityEngine.AIModule` - NavMesh, NavMeshAgent, NavMeshObstacle
+- `UnityEngine.XRModule` - XR input and tracking systems
+- `UnityEngine.VideoModule` - Video playback capabilities
+
+**Third-Party Integrations**
+- `TextMeshPro` - Advanced text rendering
+- `Cinemachine` - Camera management and behaviors
+- `UniTask` - Async/await support for Unity
+
+#### 2.3.2 Type Resolution & Import
+
+**Namespace Import Syntax**
+```javascript
+// Single namespace
+const UnityEngine = importNamespace("UnityEngine");
+
+// Multiple namespaces
+const { Mathf, Vector3, Quaternion } = importNamespace("UnityEngine");
+const { Button, Text, Image } = importNamespace("UnityEngine.UI");
+```
+
+**Type Access Patterns**
+```javascript
+// Static methods and properties
+const forward = UnityEngine.Vector3.forward;
+const distance = UnityEngine.Vector3.Distance(pos1, pos2);
+const randomValue = UnityEngine.Random.Range(0, 100);
+
+// Constructor access
+const position = new UnityEngine.Vector3(10, 5, 0);
+const rotation = new UnityEngine.Quaternion(0, 0, 0, 1);
+
+// Enum access
+const layerMask = UnityEngine.LayerMask.GetMask("Player", "Enemy");
+```
+
+#### 2.3.3 CLR Write Access
+
+**Allowed Modifications**
+- Component field assignment
+- Transform property changes
+- Collection modifications
+- Variable declarations
+
+**Blocked Operations**
+- Static field modifications
+- System property changes
+- Assembly metadata access
+- Type system modifications
+
+### 2.4 Performance Characteristics
+
+#### 2.4.1 Execution Performance
+
+**Function Call Overhead**
+- Direct function calls: ~0.1-0.5ms
+- Cross-script calls: ~0.5-2ms
+- Unity API calls: ~0.1-1ms
+
+**Memory Usage**
+- Base script: ~2-5MB per instance
+- Additional includes: ~0.5-1MB each
+- Variable bindings: ~0.1-0.5MB
+
+**Garbage Collection Impact**
+- Jint objects are GC-friendly
+- Unity object references don't create additional GC pressure
+- Avoid creating objects in tight loops
+
+#### 2.4.2 Optimization Guidelines
+
+**Caching Strategy**
+```javascript
+// ✅ Good - Cache references
 let cachedTransform = null;
-let sceneVariables = null;
+let cachedRigidbody = null;
 
 function OnNetworkReady() {
     cachedTransform = transform;
+    cachedRigidbody = gameObject.GetComponent(UnityEngine.Rigidbody);
+}
 
-    try {
-        if (Scripting !== null && typeof Scripting !== "undefined") {
-            sceneVariables = Scripting.Variables.Scene(gameObject.scene);
-        }
-    } catch (error) {
-        sceneVariables = null;
+// ❌ Bad - Repeated lookups
+function Update() {
+    const rb = gameObject.GetComponent(UnityEngine.Rigidbody);
+    rb.AddForce(UnityEngine.Vector3.up);
+}
+```
+
+**Batch Operations**
+```javascript
+// ✅ Good - Batch array operations
+const positions = [pos1, pos2, pos3];
+for (let i = 0; i < positions.length; i++) {
+    // Process each position
+}
+
+// ❌ Bad - Individual operations
+ProcessPosition(pos1);
+ProcessPosition(pos2);
+ProcessPosition(pos3);
+```
+
+**Conditional Execution**
+```javascript
+// ✅ Good - Authority gating
+function Update() {
+    if (!GetIsInputAuthority()) return;
+    // Only execute on authoritative client
+}
+
+// ❌ Bad - Unconditional execution
+function Update() {
+    // Executes on all clients, wasting resources
+}
+```
+
+---
+
+## 3. Lifecycle Management & Execution Flow
+
+### 3.1 Unity Lifecycle Integration
+
+MetaverseScript seamlessly integrates with Unity's component lifecycle while maintaining JavaScript execution semantics. Each lifecycle hook maps to corresponding JavaScript functions that are automatically invoked by the runtime.
+
+#### 3.1.1 Lifecycle Hook Mapping
+
+| Unity Hook | JavaScript Function | Purpose | Authority Required |
+|------------|-------------------|---------|-------------------|
+| `Awake` | `Awake()` | Initial component setup, reference caching | ❌ |
+| `OnEnable` | `OnEnable()` | Component activation | ❌ |
+| `Start` | `Start()` | Post-initialization setup | ❌ |
+| `OnNetworkSpawn` | `OnNetworkSpawn()` | Network object spawned | ✅ |
+| `OnNetworkDespawn` | `OnNetworkDespawn()` | Network object despawned | ✅ |
+| `OnNetworkReady` | `OnNetworkReady()` | Network & script ready | ✅ |
+| `Update` | `Update()` | Per-frame updates | ✅ |
+| `LateUpdate` | `LateUpdate()` | Post-physics updates | ✅ |
+| `FixedUpdate` | `FixedUpdate()` | Physics timestep updates | ✅ |
+| `OnGUI` | `OnGUI()` | IMGUI rendering | ❌ |
+| `OnDisable` | `OnDisable()` | Component deactivation | ❌ |
+| `OnDestroy` | `OnDestroy()` | Component destruction | ❌ |
+
+**Authority Requirements**
+- ✅ **Required**: Only executes on authoritative clients
+- ❌ **Not Required**: Executes on all clients
+
+#### 3.1.2 Execution Order & Timing
+
+**Initialization Sequence**
+```mermaid
+graph TD
+    A[Unity Instantiation] --> B[Component Awake]
+    B --> C[Network Object Resolution]
+    C --> D[Jint Engine Creation]
+    D --> E[Script Compilation]
+    E --> F[Function Binding]
+    F --> G[OnNetworkReady Called]
+    G --> H[Script Active]
+```
+
+**Frame Execution**
+```mermaid
+graph TD
+    A[Unity Frame Start] --> B[Update Hooks]
+    B --> C[Authority Check]
+    C --> D[JavaScript Execution]
+    D --> E[Unity Frame End]
+    E --> F[LateUpdate Hooks]
+    F --> G[FixedUpdate Hooks]
+```
+
+### 3.2 Authority System Integration
+
+#### 3.2.1 Authority Types
+
+**Input Authority**
+- Controls user input and local state
+- Typically the owning client
+- Can send input to state authority
+
+**State Authority**
+- Controls authoritative game state
+- Usually the server or host
+- Validates and applies state changes
+
+**Observer Authority**
+- Read-only access to state
+- Non-owning clients
+- Receives state updates
+
+#### 3.2.2 Authority Checking Functions
+
+```javascript
+// Authority verification helpers
+const isInputAuthority = GetIsInputAuthority();    // Input control
+const isStateAuthority = GetIsStateAuthority();    // State control
+const isOwner = GetIsOwner();                      // Object ownership
+const hostId = GetHostID();                        // Host client ID
+
+// Usage patterns
+function Update() {
+    // Only process input on input authority
+    if (!GetIsInputAuthority()) {
+        return;
     }
 
-    CacheWaypoints();
-    ResolveProjectilePrefab();
+    // Process local input and send to state authority
+    const inputData = ProcessLocalInput();
+    if (isInputAuthority && !isStateAuthority) {
+        ServerRPC(RPC.UpdatePlayerInput, inputData);
+    }
+}
+
+function OnPlayerInputRPC(rpcId, senderId, inputData) {
+    // Only state authority processes input
+    if (!GetIsStateAuthority()) {
+        return;
+    }
+
+    // Validate and apply input
+    ValidateAndApplyInput(inputData);
+    ClientRPC(RPC.PlayerStateUpdate, GetPlayerState());
+}
+```
+
+### 3.3 Network State Management
+
+#### 3.3.1 Network Object Lifecycle
+
+**Spawn Process**
+```javascript
+function OnNetworkSpawn() {
+    // Network object is now active
+    console.log("Player spawned with network ID:", NetworkID);
+
+    // Initialize networked components
+    InitializeNetworkedComponents();
+
+    // Register for network events
+    RegisterNetworkEventHandlers();
+}
+
+function OnNetworkDespawn() {
+    // Network object is being destroyed
+    console.log("Player despawned");
+
+    // Cleanup network resources
+    CleanupNetworkResources();
+
+    // Unregister event handlers
+    UnregisterNetworkEventHandlers();
+}
+```
+
+**Ready State**
+```javascript
+function OnNetworkReady() {
+    // Both network and script are ready
+    console.log("Network and script initialized");
+
+    // Safe to access network properties
+    const networkObject = GetNetworkObject();
+    const isHost = GetHostID() === -1;
+
+    // Initialize game state
+    InitializePlayerState();
+}
+```
+
+#### 3.3.2 Network Object Properties
+
+**Available Properties**
+- `NetworkID` - Unique network identifier
+- `IsSpawned` - Whether object is networked
+- `IsOwner` - Local ownership status
+- `IsInputAuthority` - Input control authority
+- `IsStateAuthority` - State authority control
+
+### 3.4 Function Caching & Performance
+
+#### 3.4.1 Function Resolution Strategy
+
+**Static Function Binding**
+- Lifecycle functions are resolved once at startup
+- Cached as delegates for repeated invocation
+- Performance optimized for frequent calls
+
+**Dynamic Function Resolution**
+- `ExecuteVoid` and `Execute` resolve functions at runtime
+- Slower but more flexible for dynamic scenarios
+- Useful for event-driven systems
+
+#### 3.4.2 Caching Best Practices
+
+**Component References**
+```javascript
+// ✅ Good - Cache in OnNetworkReady
+let cachedTransform = null;
+let cachedRigidbody = null;
+let cachedAnimator = null;
+
+function OnNetworkReady() {
+    cachedTransform = transform;
+    cachedRigidbody = gameObject.GetComponent(UnityEngine.Rigidbody);
+    cachedAnimator = gameObject.GetComponent(UnityEngine.Animator);
+}
+
+// Use cached references in Update
+function Update() {
+    if (!GetIsInputAuthority()) return;
+
+    const velocity = cachedRigidbody.velocity;
+    const speed = velocity.magnitude;
+
+    if (speed > maxSpeed) {
+        cachedRigidbody.velocity = velocity.normalized * maxSpeed;
+    }
+}
+```
+
+**Collection Caching**
+```javascript
+// ✅ Good - Cache collections
+let waypointTransforms = null;
+
+function CacheWaypoints() {
+    const waypointParent = gameObject.Find("Waypoints");
+    if (waypointParent) {
+        waypointTransforms = [];
+        for (let i = 0; i < waypointParent.childCount; i++) {
+            waypointTransforms.push(waypointParent.GetChild(i));
+        }
+    }
+}
+
+// ❌ Bad - Recreate collections every frame
+function Update() {
+    const waypoints = [];
+    // ... populate waypoints every frame
+}
+```
+
+### 3.5 Error Handling & Recovery
+
+#### 3.5.1 Exception Handling Patterns
+
+**Try-Catch in Lifecycle Functions**
+```javascript
+function Update() {
+    try {
+        if (!GetIsInputAuthority()) return;
+
+        // Game logic here
+        UpdatePlayerMovement();
+        CheckCollisions();
+
+    } catch (error) {
+        console.error("Error in Update:", error);
+        // Attempt recovery or disable component
+        if (ShouldDisableOnError()) {
+            enabled = false;
+        }
+    }
+}
+```
+
+**Graceful Degradation**
+```javascript
+function InitializePlayer() {
+    try {
+        LoadPlayerModel();
+        SetupAnimations();
+        InitializeWeapons();
+
+    } catch (error) {
+        console.warn("Player initialization failed:", error);
+
+        // Fall back to default state
+        LoadDefaultPlayerModel();
+        SetupBasicAnimations();
+    }
+}
+```
+
+#### 3.5.2 Debugging & Diagnostics
+
+**Conditional Debugging**
+```javascript
+const DEBUG_MODE = false; // Set to true for development builds
+
+function DebugLog(message, data) {
+    if (DEBUG_MODE) {
+        console.log(message, data);
+    }
+}
+
+// Usage
+DebugLog("Player position:", transform.position);
+```
+
+**Performance Monitoring**
+```javascript
+let frameCount = 0;
+let lastFpsCheck = 0;
+
+function Update() {
+    frameCount++;
+
+    // Check FPS every second
+    if (UnityEngine.Time.time - lastFpsCheck > 1.0) {
+        const fps = frameCount / (UnityEngine.Time.time - lastFpsCheck);
+        console.debug("Current FPS:", fps);
+        frameCount = 0;
+        lastFpsCheck = UnityEngine.Time.time;
+    }
+}
+```
+
+### 3.6 Multi-Instance Coordination
+
+#### 3.6.1 Instance Management
+
+**Static Registry Pattern**
+```javascript
+// Global registry for script instances
+const scriptInstances = new Map();
+
+function RegisterScriptInstance(name, instance) {
+    scriptInstances.set(name, instance);
+}
+
+function GetScriptInstance(name) {
+    return scriptInstances.get(name) || null;
+}
+
+function OnNetworkReady() {
+    RegisterScriptInstance("PlayerController", this);
+}
+```
+
+**Cross-Instance Communication**
+```javascript
+function NotifyAllPlayers(message) {
+    for (const [name, instance] of scriptInstances) {
+        try {
+            instance.ExecuteVoid("OnGlobalNotification", message);
+        } catch (error) {
+            console.warn("Failed to notify instance:", name, error);
+        }
+    }
+}
+```
+
+#### 3.6.2 Resource Sharing
+
+**Shared Asset Management**
+```javascript
+// Asset cache for all instances
+const assetCache = new Map();
+
+function GetSharedAsset(assetName) {
+    if (!assetCache.has(assetName)) {
+        assetCache.set(assetName, LoadAsset(assetName));
+    }
+    return assetCache.get(assetName);
+}
+
+function LoadAsset(assetName) {
+    // Load asset logic
+    return Resources.Load(assetName);
+}
+```
+
+## 4. API Surface & Global Objects
+
+### 4.1 Core Global Objects
+
+#### 4.1.1 Built-in Objects
+
+**Standard JavaScript Objects**
+- `console` - Logging interface
+- `Math` - Mathematical functions
+- `JSON` - JSON serialization
+- `Array`, `Object`, `String` - Native types
+
+**Unity-Specific Objects**
+- `transform` - Component's Transform
+- `gameObject` - Component's GameObject
+- `this` - MetaverseScript component reference
+
+#### 4.1.2 Imported Namespaces
+
+**Unity Namespaces**
+```javascript
+// Core Unity
+const UnityEngine = importNamespace("UnityEngine");
+
+// UI System
+const UnityEngine_UI = importNamespace("UnityEngine.UI");
+
+// Physics System
+const UnityEngine_Physics = importNamespace("UnityEngine.Physics");
+
+// Animation System
+const UnityEngine_Animation = importNamespace("UnityEngine.Animation");
+```
+
+**MVCE Namespaces**
+```javascript
+// Core MVCE
+const MVCE_Core = importNamespace("MetaverseCloudEngine.Unity");
+
+// Networking
+const MVCE_Networking = importNamespace("MetaverseCloudEngine.Unity.Networking");
+
+// Components
+const MVCE_Components = importNamespace("MetaverseCloudEngine.Unity.Components");
+```
+
+### 4.2 Function Invocation API
+
+#### 4.2.1 Execution Methods
+
+**Void Execution**
+```csharp
+// C# side - Calling JavaScript functions
+script.ExecuteVoid("FunctionName");
+script.ExecuteVoid("FunctionName", arg1, arg2, arg3);
+```
+
+**Value Returning Execution**
+```csharp
+// C# side - Getting return values
+JsValue result = script.Execute("GetPlayerHealth");
+int health = result.AsInteger();
+```
+
+**JavaScript Side**
+```javascript
+// Functions can be called from C# or other scripts
+function UpdatePlayerScore(newScore) {
+    playerScore = newScore;
+    UpdateUI();
+    return playerScore; // Can return values to C#
+}
+```
+
+#### 4.2.2 Cross-Script Communication
+
+**Finding Other Scripts**
+```javascript
+function GetMetaverseScript(scriptName) {
+    // Search for script by name
+    const scripts = gameObject.GetComponents(MetaverseScript);
+    for (let i = 0; i < scripts.Length; i++) {
+        const script = scripts[i];
+        if (script && script.javascriptFile && script.javascriptFile.name === scriptName) {
+            return script;
+        }
+    }
+    return null;
+}
+
+// Usage
+const playerController = GetMetaverseScript("PlayerController.js");
+if (playerController) {
+    playerController.ExecuteVoid("UpdateHealth", 100);
+}
+```
+
+### 4.3 Type Conversion & Marshaling
+
+#### 4.3.1 Automatic Type Conversion
+
+**Primitive Types**
+| JavaScript | .NET | Conversion |
+|------------|------|------------|
+| `number` | `int`/`float`/`double` | Direct conversion |
+| `string` | `string` | Direct conversion |
+| `boolean` | `bool` | Direct conversion |
+| `object` | `object` | Reference preservation |
+
+**Unity Types**
+| JavaScript | .NET | Notes |
+|------------|------|-------|
+| `Vector3` | `UnityEngine.Vector3` | Full property access |
+| `Quaternion` | `UnityEngine.Quaternion` | Full property access |
+| `GameObject` | `UnityEngine.GameObject` | Reference wrapper |
+| `Transform` | `UnityEngine.Transform` | Reference wrapper |
+
+#### 4.3.2 Collection Handling
+
+**Arrays**
+```javascript
+// JavaScript arrays become .NET arrays
+const positions = [new UnityEngine.Vector3(0, 0, 0), new UnityEngine.Vector3(1, 1, 1)];
+const distances = positions.map(pos => pos.magnitude);
+```
+
+**Objects**
+```javascript
+// JavaScript objects become ExpandoObjects
+const config = {};
+config.speed = 10;
+config.health = 100;
+// Becomes accessible as config.speed, config.health
+```
+
+### 4.4 Global Helper Functions
+
+#### 4.4.1 Null Checking
+
+**NULL Function**
+```javascript
+// Special null check for Unity objects
+if (obj === null || typeof obj === "undefined" || NULL(obj)) {
+    console.log("Object is null or destroyed");
+}
+```
+
+**Safe Property Access**
+```javascript
+function SafeGetComponent(typeName) {
+    try {
+        return gameObject.GetComponent(typeName);
+    } catch (error) {
+        console.warn("Component not found:", typeName);
+        return null;
+    }
+}
+```
+
+#### 4.4.2 Component Resolution
+
+**Generic Component Getter**
+```javascript
+function GetComponent(typeName) {
+    return gameObject.GetComponent(typeName);
+}
+
+// Usage
+const rigidbody = GetComponent("Rigidbody");
+const animator = GetComponent("Animator");
+```
+
+**Type-Safe Component Access**
+```javascript
+// For known types, use direct namespace access
+const UnityEngine = importNamespace("UnityEngine");
+const rigidbody = gameObject.GetComponent(UnityEngine.Rigidbody);
+```
+
+### 4.5 Static Variable Access
+
+#### 4.5.1 Global Variable System
+
+**Static Reference Management**
+```javascript
+// Set global variables
+SetGlobal("GameMode", "Multiplayer");
+SetGlobal("Difficulty", "Hard");
+
+// Get global variables
+const gameMode = GetGlobal("GameMode");
+const difficulty = GetGlobal("Difficulty");
+```
+
+**Usage in Game Logic**
+```javascript
+function InitializeGame() {
+    const mode = GetGlobal("GameMode");
+    if (mode === "SinglePlayer") {
+        SetupSinglePlayer();
+    } else {
+        SetupMultiplayer();
+    }
+}
+```
+
+#### 4.5.2 Persistence Across Scenes
+
+**Scene Transition Handling**
+```javascript
+function OnSceneUnload() {
+    // Save important state to globals
+    SetGlobal("PlayerScore", playerScore);
+    SetGlobal("PlayerLevel", currentLevel);
+}
+
+function OnSceneLoad() {
+    // Restore state from globals
+    playerScore = GetGlobal("PlayerScore") || 0;
+    currentLevel = GetGlobal("PlayerLevel") || 1;
 }
 ```
 
@@ -695,34 +1558,6 @@ function LaunchProjectile(targetOverride = null, explicitTargetPosition = null) 
 ---
 
 ## 14. Appendix A - Frequently Used Snippets
-
-### Null Guard Helper
-
-```javascript
-function IsNullish(value) {
-    return value === null || typeof value === "undefined" || NULL(value);
-}
-```
-
-### Quaternion Look Rotation with Fallback
-
-```javascript
-function ComputeAimRotation(direction, fallbackForward) {
-    let aim = direction;
-    if (aim.sqrMagnitude <= 0.0001) {
-        aim = fallbackForward;
-    }
-    return UnityEngine.Quaternion.LookRotation(aim.normalized, UnityEngine.Vector3.up);
-}
-```
-
-### Random Delay Generator
-
-```javascript
-function GetRandomDelay(minSeconds, maxSeconds) {
-    return UnityEngine.Random.Range(minSeconds, maxSeconds);
-}
-```
 
 ### Binding UnityEvent to Script Function
 

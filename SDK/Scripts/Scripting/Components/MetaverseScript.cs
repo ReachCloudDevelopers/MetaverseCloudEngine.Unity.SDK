@@ -46,6 +46,83 @@ using Unity.InferenceEngine;
 
 namespace MetaverseCloudEngine.Unity.Scripting.Components
 {
+    public enum UnityEventType
+    {
+        Void,
+        Int,
+        Float,
+        String,
+        Bool,
+        Object,
+        Vector2,
+        Vector3,
+        Vector4,
+        Quaternion,
+        GameObject,
+        Transform,
+        Collider,
+        Texture,
+        Texture2D,
+        Sprite
+    }
+
+    [System.Serializable]
+    public class SerializableUnityEvent
+    {
+        [Tooltip("The name used to invoke this event from JavaScript")]
+        public string eventName;
+        
+        [Tooltip("The type of event parameters")]
+        public UnityEventType eventType = UnityEventType.Void;
+        
+        [Tooltip("The UnityEvent to invoke")]
+        public UnityEvent unityEvent = new();
+        
+        [Tooltip("The UnityEvent with int parameter")]
+        public UnityEvent<int> unityEventInt = new();
+        
+        [Tooltip("The UnityEvent with float parameter")]
+        public UnityEvent<float> unityEventFloat = new();
+        
+        [Tooltip("The UnityEvent with string parameter")]
+        public UnityEvent<string> unityEventString = new();
+        
+        [Tooltip("The UnityEvent with bool parameter")]
+        public UnityEvent<bool> unityEventBool = new();
+        
+        [Tooltip("The UnityEvent with object parameter")]
+        public UnityEvent<UnityEngine.Object> unityEventObject = new();
+        
+        [Tooltip("The UnityEvent with Vector2 parameter")]
+        public UnityEvent<Vector2> unityEventVector2 = new();
+        
+        [Tooltip("The UnityEvent with Vector3 parameter")]
+        public UnityEvent<Vector3> unityEventVector3 = new();
+        
+        [Tooltip("The UnityEvent with Vector4 parameter")]
+        public UnityEvent<Vector4> unityEventVector4 = new();
+        
+        [Tooltip("The UnityEvent with Quaternion parameter")]
+        public UnityEvent<Quaternion> unityEventQuaternion = new();
+        
+        [Tooltip("The UnityEvent with GameObject parameter")]
+        public UnityEvent<GameObject> unityEventGameObject = new();
+        
+        [Tooltip("The UnityEvent with Transform parameter")]
+        public UnityEvent<Transform> unityEventTransform = new();
+        
+        [Tooltip("The UnityEvent with Collider parameter")]
+        public UnityEvent<Collider> unityEventCollider = new();
+        
+        [Tooltip("The UnityEvent with Texture parameter")]
+        public UnityEvent<Texture> unityEventTexture = new();
+        
+        [Tooltip("The UnityEvent with Texture2D parameter")]
+        public UnityEvent<Texture2D> unityEventTexture2D = new();
+        
+        [Tooltip("The UnityEvent with Sprite parameter")]
+        public UnityEvent<Sprite> unityEventSprite = new();
+    }
     /// <summary>
     /// A component that's used to execute JavaScript with Unity-style functions.
     /// By default, Unity only supports C# scripts, but this component allows you to write scripts in javascript
@@ -411,8 +488,12 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         [SerializeField] private GlobalTypeImports globalTypeImports = GlobalTypeImports.None;
         [SerializeField] private TextAsset[] includes = Array.Empty<TextAsset>();
         [SerializeField] private Variables variables;
-        [SerializeField] private UnityEvent onInitialize = new();
+        [Tooltip("Custom UnityEvents that can be invoked from JavaScript using InvokeEvent(eventName)")]
+        [SerializeField] private List<SerializableUnityEvent> events = new();
 
+        [Space(10)]
+        [SerializeField] private UnityEvent onInitialize = new();
+        
         private bool _ready;
         private Engine _engine;
         private Dictionary<ScriptFunctions, JsValue> _methods;
@@ -621,6 +702,406 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// Invoked when the script has been initialized.
         /// </summary>
         public UnityEvent OnInitialize => onInitialize;
+
+        /// <summary>
+        /// Invokes a custom UnityEvent by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName)
+                {
+                    switch (customEvent.eventType)
+                    {
+                        case UnityEventType.Void:
+                            customEvent.unityEvent?.Invoke();
+                            return true;
+                        default:
+                            console.warn($"Event '{eventName}' requires a parameter of type {customEvent.eventType}");
+                            return false;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with an int parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The int value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, int value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Int)
+                {
+                    customEvent.unityEventInt?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a float parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The float value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, float value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Float)
+                {
+                    customEvent.unityEventFloat?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a string parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The string value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, string value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.String)
+                {
+                    customEvent.unityEventString?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a bool parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The bool value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, bool value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Bool)
+                {
+                    customEvent.unityEventBool?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with an Object parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Object value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, UnityEngine.Object value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Object)
+                {
+                    customEvent.unityEventObject?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Vector2 parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Vector2 value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Vector2 value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Vector2)
+                {
+                    customEvent.unityEventVector2?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Vector3 parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Vector3 value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Vector3 value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Vector3)
+                {
+                    customEvent.unityEventVector3?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Vector4 parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Vector4 value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Vector4 value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Vector4)
+                {
+                    customEvent.unityEventVector4?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Quaternion parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Quaternion value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Quaternion value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Quaternion)
+                {
+                    customEvent.unityEventQuaternion?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a GameObject parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The GameObject value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, GameObject value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.GameObject)
+                {
+                    customEvent.unityEventGameObject?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Transform parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Transform value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Transform value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Transform)
+                {
+                    customEvent.unityEventTransform?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Collider parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Collider value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Collider value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Collider)
+                {
+                    customEvent.unityEventCollider?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Texture parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Texture value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Texture value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Texture)
+                {
+                    customEvent.unityEventTexture?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Texture2D parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Texture2D value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Texture2D value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Texture2D)
+                {
+                    customEvent.unityEventTexture2D?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a custom UnityEvent with a Sprite parameter by name from JavaScript.
+        /// </summary>
+        /// <param name="eventName">The name of the event to invoke</param>
+        /// <param name="value">The Sprite value to pass to the event</param>
+        /// <returns>True if the event was found and invoked, false otherwise</returns>
+        [UsedImplicitly]
+        public bool InvokeEvent(string eventName, Sprite value)
+        {
+            if (string.IsNullOrEmpty(eventName))
+                return false;
+
+            foreach (var customEvent in events)
+            {
+                if (customEvent.eventName == eventName && customEvent.eventType == UnityEventType.Sprite)
+                {
+                    customEvent.unityEventSprite?.Invoke(value);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Gets all available custom event names.
+        /// </summary>
+        /// <returns>Array of event names</returns>
+        [UsedImplicitly]
+        public string[] GetEventNames()
+        {
+            return events.Where(e => !string.IsNullOrEmpty(e.eventName)).Select(e => e.eventName).ToArray();
+        }
 
         protected override unsafe void OnDestroy()
         {
@@ -1451,6 +1932,10 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 { nameof(TrySetVar), (Func<string, object, bool>)context.TrySetVar },
                 { nameof(DefineVar), (Func<string, object, Func<object>>)context.DefineVar },
                 { nameof(DefineTypedVar), (Func<string, string, object, Func<object>>)context.DefineTypedVar },
+                
+                // Custom UnityEvent Functions
+                { nameof(InvokeEvent), (Func<string, bool>)context.InvokeEvent },
+                { nameof(GetEventNames), (Func<string[]>)context.GetEventNames },
 
                 // MetaSpace Property
                 { MetaSpaceProperty, MetaSpace.Instance },

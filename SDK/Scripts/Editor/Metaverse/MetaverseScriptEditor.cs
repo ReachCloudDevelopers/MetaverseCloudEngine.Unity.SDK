@@ -64,10 +64,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             GUI.Button(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
 
             // Areas inside header: foldout and enabled toggle (do not intercept), title elsewhere
-            var foldRect = new Rect(fakeHeaderRect.x + 18f, fakeHeaderRect.y + 2f, 16f, fakeHeaderRect.height - 4f);
-            var iconRect = new Rect(foldRect.x + 2f, fakeHeaderRect.y, fakeHeaderRect.height - 2f, fakeHeaderRect.height - 2f);
+            var foldRect = new Rect(fakeHeaderRect.x + 16f, fakeHeaderRect.y + 2f, 16f, fakeHeaderRect.height - 4f);
+            var iconRect = new Rect(foldRect.x + 2f, fakeHeaderRect.y, fakeHeaderRect.height - 4f, fakeHeaderRect.height - 2f);
             GUI.Label(iconRect, EditorGUIUtility.GetIconForObject(target));
-            var toggleRect = new Rect(foldRect.xMax + 6f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
+            var toggleRect = new Rect(foldRect.xMax + 8f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
             var titleRect = new Rect(toggleRect.xMax + 3f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
 
             // Persisted collapse state per script
@@ -142,7 +142,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             if (globalTypeImportsProp != null)
                 EditorGUILayout.PropertyField(globalTypeImportsProp);
             if (includesProp != null)
-                EditorGUILayout.PropertyField(includesProp, new GUIContent("include '...'"), true);
+                EditorGUILayout.PropertyField(includesProp, new GUIContent("Imports"), true);
             if (EditorGUI.EndChangeCheck())
                 serializedObject.ApplyModifiedProperties();
 
