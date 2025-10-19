@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.1
-- Enhance MetaverseScript with custom UnityEvent support, allowing JavaScript to invoke events with various parameter types. Introduced SerializableUnityEvent class for event management and updated MetaverseScript to handle event invocations. Improved documentation for clarity on event usage.
+## 2.202.2
+- Refactor code structure for improved readability and maintainability
 
-Updated on October 17, 2025
+Updated on October 18, 2025
