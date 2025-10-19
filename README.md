@@ -12,7 +12,10 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.2
-- Refactor code structure for improved readability and maintainability
+## 2.202.3
+- Add metadata files for Jint.dll and Jint.pdb
+- 
+- - Created Jint.dll.backup.meta with GUID and default importer settings.
+- - Created Jint.pdb.meta with GUID and default importer settings.
 
-Updated on October 18, 2025
+Updated on October 19, 2025

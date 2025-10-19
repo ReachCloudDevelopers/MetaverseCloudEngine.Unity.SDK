@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if !UNITY_WEBGL
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -144,3 +145,4 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         }
     }
 }
+#endif

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if !UNITY_WEBGL
+using UnityEngine;
 
 namespace MetaverseCloudEngine.Unity.Vehicles
 {
@@ -53,3 +54,4 @@ namespace MetaverseCloudEngine.Unity.Vehicles
         }
     }
 }
+#endif
