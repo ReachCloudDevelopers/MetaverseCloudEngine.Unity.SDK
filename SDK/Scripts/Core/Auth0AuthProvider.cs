@@ -159,7 +159,7 @@ namespace MetaverseCloudEngine.Unity
 				Application.OpenURL(url);
 			}
             return "ok";
-#else
+#elif !UNITY_WEBGL
             if (Application.isPlaying && SupportsInAppUI)
             {
                 await CreateEmbeddedLogInWindowAsync(url, _cancellationToken);
@@ -167,10 +167,13 @@ namespace MetaverseCloudEngine.Unity
             else
                 Application.OpenURL(url);
             return "ok";
+#else
+            Application.OpenURL(url);
+            return "ok";
 #endif
         }
 
-#if MV_VUPLEX_DEFINED
+#if MV_VUPLEX_DEFINED && !UNITY_WEBGL
         private static async Task CreateEmbeddedLogInWindowAsync(string url, CancellationTokenSource cancellationToken = null)
         {
             var canvas = new GameObject("WebViewCanvas");
