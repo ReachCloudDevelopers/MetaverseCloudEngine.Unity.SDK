@@ -175,25 +175,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         await ApiClient.Account.ValidateTokenAsync(AccessToken, RefreshToken, refreshTokenRetries: 2) :  // Reduced retries globally for faster feedback
                         await ApiClient.Account.ValidateTokenAsync();
 
-                // Check if 403 is actually a token expiration issue (should be 401 but server returns 403)
-                bool is403TokenExpired = false;
-                if (response.StatusCode == System.Net.HttpStatusCode.Forbidden && !response.Succeeded)
-                {
-                    var errorDetails = await response.GetErrorAsync();
-                    var serverReason = BuildServerReasonMessage(errorDetails);
-
-                    if (serverReason.IndexOf("TOKEN_EXPIRED", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        serverReason.IndexOf("token_expired", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        serverReason.IndexOf("Access token has expired", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        serverReason.IndexOf("token has expired", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        // This is a token expiration, not a true forbidden error - treat as 401
-                        MetaverseProgram.Logger.LogWarning($"LoginStore: 403 with TOKEN_EXPIRED detected. Server: {serverReason}. Treating as 401 to clear expired tokens.");
-                        is403TokenExpired = true;
-                    }
-                }
-
-                if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized && !is403TokenExpired)
+                if (response.StatusCode != System.Net.HttpStatusCode.Unauthorized)
                 {
                     if (!response.Succeeded)
                     {
