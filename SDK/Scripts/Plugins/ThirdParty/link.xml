@@ -1,0 +1,9 @@
+<linker>
+  <!-- Preserve Acornima resources for IL2CPP/WebGL -->
+  <assembly fullname="Acornima" preserve="all">
+    <type fullname="Acornima.Properties.SyntaxErrorMessages" preserve="all" />
+  </assembly>
+
+  <!-- Preserve Jint -->
+  <assembly fullname="Jint" preserve="all" />
+</linker>

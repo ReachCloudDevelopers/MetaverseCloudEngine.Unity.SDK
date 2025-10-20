@@ -12,7 +12,11 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.6
-- Refactor token validation logic in LoginStore to simplify handling of token expiration scenarios
+## 2.202.7
+- Add link.xml for IL2CPP/WebGL Acornima resource preservation
+- 
+- - Attempt to preserve Acornima.Properties.SyntaxErrorMessages resources
+- - Preserve Jint assembly for IL2CPP builds
+- - Note: Embedded resources may still fail on WebGL, but Jint handles gracefully
 
 Updated on October 20, 2025
