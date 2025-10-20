@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.8
-- Update Acornima.dll to the latest version
+## 2.202.9
+- Update MetaverseCloudEngine.Unity assembly definition and add Acornima.dll
 
 Updated on October 20, 2025
