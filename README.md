@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.4
-- Refactor Auth0AuthProvider for better WebGL compatibility and remove unused Acornima.dll backup
+## 2.202.5
+- Handle token expiration detection for 403 responses in LoginStore
 
-Updated on October 19, 2025
+Updated on October 20, 2025
