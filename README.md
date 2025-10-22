@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.9
-- Update MetaverseCloudEngine.Unity assembly definition and add Acornima.dll
+## 2.202.10
+- Initialize UnityEvents in MetaSpacePortal for onStartedLoading and onLoadingFailed
 
-Updated on October 20, 2025
+Updated on October 22, 2025

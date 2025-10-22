@@ -44,8 +44,8 @@ namespace MetaverseCloudEngine.Unity.Components
         [SerializeField] private BlockchainType blockchainType = BlockchainType.Cardano;
 
         [Header("Events")]
-        public UnityEvent onStartedLoading;
-        public UnityEvent<string> onLoadingFailed;
+        public UnityEvent onStartedLoading = new();
+        public UnityEvent<string> onLoadingFailed = new();
         
         public bool IsJoining { get; private set; }
         
