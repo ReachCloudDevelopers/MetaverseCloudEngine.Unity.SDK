@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.10
-- Initialize UnityEvents in MetaSpacePortal for onStartedLoading and onLoadingFailed
+## 2.202.11
+- Update MetaverseCloudEngine.ApiClient.dll to the latest version
 
-Updated on October 22, 2025
+Updated on October 23, 2025
