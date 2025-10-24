@@ -30,6 +30,8 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         private bool _simulateSelecting;
         private DraggableGameObject _lastSelectedGameObject;
         private Vector3 _selectionOffset;
+        private Vector3 _initialPlanePoint;
+        private Vector3 _initialPlaneNormal;
 
         public Camera RaycastCamera { get => raycastCamera; set => raycastCamera = value; }
 
@@ -104,8 +106,6 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         private Vector3 CalculateDragPosition(Ray ray, DraggableGameObject draggable)
         {
             var dragPlane = draggable.DragPlane;
-            Vector3 planeNormal;
-            Vector3 planePoint = draggable.transform.position;
 
             switch (dragPlane)
             {
@@ -115,49 +115,19 @@ namespace MetaverseCloudEngine.Unity.UI.Components
                     return point - _selectionOffset;
 
                 case DragPlane.WorldUp:
-                    planeNormal = Vector3.up;
-                    break;
-
                 case DragPlane.WorldForward:
-                    planeNormal = Vector3.forward;
-                    break;
-
                 case DragPlane.WorldRight:
-                    planeNormal = Vector3.right;
-                    break;
-
                 case DragPlane.LocalUp:
-                    // Local up relative to parent
-                    planeNormal = draggable.transform.parent 
-                        ? draggable.transform.parent.up 
-                        : Vector3.up;
-                    break;
-
                 case DragPlane.LocalForward:
-                    // Local forward relative to parent
-                    planeNormal = draggable.transform.parent 
-                        ? draggable.transform.parent.forward 
-                        : Vector3.forward;
-                    break;
-
                 case DragPlane.LocalRight:
-                    // Local right relative to parent
-                    planeNormal = draggable.transform.parent 
-                        ? draggable.transform.parent.right 
-                        : Vector3.right;
+                    // Use the stored initial plane point and normal
+                    var plane = new Plane(_initialPlaneNormal, _initialPlanePoint);
+                    if (plane.Raycast(ray, out var enter))
+                    {
+                        var intersectionPoint = ray.GetPoint(enter);
+                        return intersectionPoint - _selectionOffset;
+                    }
                     break;
-
-                default:
-                    planeNormal = raycastCamera.transform.forward;
-                    break;
-            }
-
-            // Calculate intersection with plane
-            var plane = new Plane(planeNormal, planePoint);
-            if (plane.Raycast(ray, out var enter))
-            {
-                var intersectionPoint = ray.GetPoint(enter);
-                return intersectionPoint - _selectionOffset;
             }
 
             // Fallback to camera plane if raycast fails
@@ -179,9 +149,50 @@ namespace MetaverseCloudEngine.Unity.UI.Components
                 _initialDistance = hitInfo.distance;
                 _selectionOffset = hitInfo.point - draggable.transform.position;
                 _lastSelectedGameObject = draggable;
+                
+                // Store initial plane point and normal based on drag plane type
+                _initialPlanePoint = draggable.transform.position;
+                _initialPlaneNormal = GetPlaneNormal(draggable);
+                
                 _lastSelectedGameObject.SelectedBy(this);
                 _hadSelection = true;
                 onSelected?.Invoke(draggable.gameObject);
+            }
+        }
+
+        private Vector3 GetPlaneNormal(DraggableGameObject draggable)
+        {
+            switch (draggable.DragPlane)
+            {
+                case DragPlane.Camera:
+                    return raycastCamera.transform.forward;
+                
+                case DragPlane.WorldUp:
+                    return Vector3.up;
+                
+                case DragPlane.WorldForward:
+                    return Vector3.forward;
+                
+                case DragPlane.WorldRight:
+                    return Vector3.right;
+                
+                case DragPlane.LocalUp:
+                    return draggable.transform.parent 
+                        ? draggable.transform.parent.up 
+                        : Vector3.up;
+                
+                case DragPlane.LocalForward:
+                    return draggable.transform.parent 
+                        ? draggable.transform.parent.forward 
+                        : Vector3.forward;
+                
+                case DragPlane.LocalRight:
+                    return draggable.transform.parent 
+                        ? draggable.transform.parent.right 
+                        : Vector3.right;
+                
+                default:
+                    return raycastCamera.transform.forward;
             }
         }
 

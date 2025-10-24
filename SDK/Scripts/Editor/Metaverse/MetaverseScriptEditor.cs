@@ -241,10 +241,18 @@ function Update() {
             }
             else if (!variablesProp.objectReferenceValue && javascriptFileProp.objectReferenceValue)
             {
-                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar); 
+                EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+                
+                // Use a GUIStyle that handles text overflow better in comparison views
+                var labelStyle = new GUIStyle(EditorStyles.boldLabel)
+                {
+                    clipping = TextClipping.Clip,
+                    wordWrap = false
+                };
+                
                 EditorGUILayout.LabelField(
                     new GUIContent("Variables", EditorGUIUtility.IconContent("d_UnityEditor.ConsoleWindow").image),
-                    EditorStyles.boldLabel);
+                    labelStyle);
                 EditorGUILayout.EndHorizontal();
 
                 // Check if script uses variables but no variables component is assigned
@@ -361,9 +369,17 @@ function Update() {
         private void RenderVariablesEditor(SerializedProperty variablesProp)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            
+            // Use a GUIStyle that handles text overflow better in comparison views
+            var labelStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                clipping = TextClipping.Clip,
+                wordWrap = false
+            };
+            
             EditorGUILayout.LabelField(
                 new GUIContent("Variables", EditorGUIUtility.IconContent("d_UnityEditor.ConsoleWindow").image),
-                EditorStyles.boldLabel);
+                labelStyle);
             EditorGUILayout.EndHorizontal();
 
             // Make it so that when we start dragging the variables header, it beings a drag operation

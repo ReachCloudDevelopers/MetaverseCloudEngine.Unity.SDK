@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.16
-- Refactor DragGameObject to sync layer mask with camera on reset and validation
+## 2.202.17
+- Enhance drag functionality by storing initial plane point and normal; improve label styling for better text overflow handling in editor
 
 Updated on October 24, 2025
