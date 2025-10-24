@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.15
-- Add initialization state management to LoginStore for token handling
+## 2.202.16
+- Refactor DragGameObject to sync layer mask with camera on reset and validation
 
 Updated on October 24, 2025

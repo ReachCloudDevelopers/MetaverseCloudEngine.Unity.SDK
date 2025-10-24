@@ -36,6 +36,20 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         private void Reset()
         {
             raycastCamera = GetComponentInParent<Camera>(true);
+            SyncLayerMaskWithCamera();
+        }
+
+        private void OnValidate()
+        {
+            SyncLayerMaskWithCamera();
+        }
+
+        private void SyncLayerMaskWithCamera()
+        {
+            if (raycastCamera != null)
+            {
+                layerMask = raycastCamera.cullingMask;
+            }
         }
 
         private void Update()
