@@ -2539,6 +2539,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if MV_XVISIO && UNITY_STANDALONE_WIN
                 , typeof(Xvisio.Unity.XvisioUnityWrapper).Assembly
 #endif
+#if VUPLEX_STANDALONE
+                , typeof(Vuplex.WebView.CanvasWebViewPrefab).Assembly
+#endif
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())
