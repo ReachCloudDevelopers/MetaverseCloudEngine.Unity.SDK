@@ -147,12 +147,16 @@ namespace MetaverseCloudEngine.Unity.UI.Components
             if (draggable && draggable.isActiveAndEnabled)
             {
                 _initialDistance = hitInfo.distance;
-                _selectionOffset = hitInfo.point - draggable.transform.position;
                 _lastSelectedGameObject = draggable;
                 
                 // Store initial plane point and normal based on drag plane type
                 _initialPlanePoint = draggable.transform.position;
                 _initialPlaneNormal = GetPlaneNormal(draggable);
+                
+                // Calculate selection offset and project it onto the plane
+                // This ensures the object maintains its distance from the plane
+                var rawOffset = hitInfo.point - draggable.transform.position;
+                _selectionOffset = Vector3.ProjectOnPlane(rawOffset, _initialPlaneNormal);
                 
                 _lastSelectedGameObject.SelectedBy(this);
                 _hadSelection = true;

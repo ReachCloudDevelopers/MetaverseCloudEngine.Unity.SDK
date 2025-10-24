@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.17
-- Enhance drag functionality by storing initial plane point and normal; improve label styling for better text overflow handling in editor
+## 2.202.18
+- Refactor selection offset calculation to maintain distance from drag plane
 
 Updated on October 24, 2025
