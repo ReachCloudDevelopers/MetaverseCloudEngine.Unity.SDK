@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.18
-- Refactor selection offset calculation to maintain distance from drag plane
+## 2.202.19
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
 Updated on October 24, 2025
