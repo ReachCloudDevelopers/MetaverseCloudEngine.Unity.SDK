@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.14
-- Refactor drag position calculation and enhance drag plane options for draggable objects
+## 2.202.15
+- Add initialization state management to LoginStore for token handling
 
 Updated on October 24, 2025

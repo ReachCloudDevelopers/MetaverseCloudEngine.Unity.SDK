@@ -26,6 +26,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private string _plainTextRefreshToken;
         private int _initializationRetries;
         private bool _hasShownRetryDialog;
+        private bool _isInitialized;
 
         /// <summary>
         /// Creates a new instance of <see cref="LoginStore"/>.
@@ -186,6 +187,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         {
 #if UNITY_EDITOR
                             MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
+                            _isInitialized = true;
                             return;
 #else
                             MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
@@ -203,6 +205,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                             if (_initializationRetries >= maxRetries)
                             {
                                 MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached for server error. Server: {serverReason}. Proceeding as unauthenticated.");
+                                _isInitialized = true;
                                 return;
                             }
 
@@ -211,6 +214,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                             {
                                 _hasShownRetryDialog = true;
                                 await ShowRestartDialogAsync(response.StatusCode.ToString());
+                                _isInitialized = true;
                                 return;
                             }
 
@@ -236,6 +240,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         MetaverseProgram.Logger.Log($"LoginStore: Token validation successful. Status: {response.StatusCode}");
                     }
 
+                    _isInitialized = true;
                     return;
                 }
 
@@ -248,6 +253,8 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 AccessToken = null;
                 RefreshToken = null;
             }
+
+            _isInitialized = true;
         }
 
         private void InitializeAccessToken()
@@ -288,6 +295,14 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (Application.isPlaying)
             {
                 await UniTask.SwitchToMainThread();
+            }
+
+            // Don't clear tokens if initialization hasn't completed yet
+            // This prevents tokens from being cleared during editor domain reload
+            if (!_isInitialized)
+            {
+                MetaverseProgram.Logger.Log($"LoginStore: Logout event during initialization (user: {(user != null ? "present" : "null")}), preserving tokens.");
+                return;
             }
 
             if (kind == AccountController.LogOutKind.InvalidAccessToken)
