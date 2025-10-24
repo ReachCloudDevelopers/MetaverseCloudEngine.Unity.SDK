@@ -82,10 +82,73 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
             if (GetRay(out var ray))
             {
-                var point = ray.GetPoint(_initialDistance);
-                var targetPos = point - _selectionOffset;
+                var targetPos = CalculateDragPosition(ray, _lastSelectedGameObject);
                 _lastSelectedGameObject.transform.position = targetPos;
             }
+        }
+
+        private Vector3 CalculateDragPosition(Ray ray, DraggableGameObject draggable)
+        {
+            var dragPlane = draggable.DragPlane;
+            Vector3 planeNormal;
+            Vector3 planePoint = draggable.transform.position;
+
+            switch (dragPlane)
+            {
+                case DragPlane.Camera:
+                    // Use camera facing plane
+                    var point = ray.GetPoint(_initialDistance);
+                    return point - _selectionOffset;
+
+                case DragPlane.WorldUp:
+                    planeNormal = Vector3.up;
+                    break;
+
+                case DragPlane.WorldForward:
+                    planeNormal = Vector3.forward;
+                    break;
+
+                case DragPlane.WorldRight:
+                    planeNormal = Vector3.right;
+                    break;
+
+                case DragPlane.LocalUp:
+                    // Local up relative to parent
+                    planeNormal = draggable.transform.parent 
+                        ? draggable.transform.parent.up 
+                        : Vector3.up;
+                    break;
+
+                case DragPlane.LocalForward:
+                    // Local forward relative to parent
+                    planeNormal = draggable.transform.parent 
+                        ? draggable.transform.parent.forward 
+                        : Vector3.forward;
+                    break;
+
+                case DragPlane.LocalRight:
+                    // Local right relative to parent
+                    planeNormal = draggable.transform.parent 
+                        ? draggable.transform.parent.right 
+                        : Vector3.right;
+                    break;
+
+                default:
+                    planeNormal = raycastCamera.transform.forward;
+                    break;
+            }
+
+            // Calculate intersection with plane
+            var plane = new Plane(planeNormal, planePoint);
+            if (plane.Raycast(ray, out var enter))
+            {
+                var intersectionPoint = ray.GetPoint(enter);
+                return intersectionPoint - _selectionOffset;
+            }
+
+            // Fallback to camera plane if raycast fails
+            var fallbackPoint = ray.GetPoint(_initialDistance);
+            return fallbackPoint - _selectionOffset;
         }
 
         private void FindGameObjectToSelect()

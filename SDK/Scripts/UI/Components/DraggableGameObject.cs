@@ -7,13 +7,27 @@ using UnityEngine.Events;
 
 namespace MetaverseCloudEngine.Unity.UI.Components
 {
+    public enum DragPlane
+    {
+        Camera,
+        WorldUp,
+        WorldForward,
+        WorldRight,
+        LocalUp,
+        LocalForward,
+        LocalRight
+    }
+
     [HideMonoScript]
     public class DraggableGameObject : TriInspectorMonoBehaviour
     {
+        [SerializeField] private DragPlane dragPlane = DragPlane.Camera;
         [SerializeField] private UnityEvent onSelected;
         [SerializeField] private UnityEvent onDeselected;
 
         private List<DragGameObject> _draggers;
+
+        public DragPlane DragPlane => dragPlane;
 
         private void Start() { /* for enabled/disabled toggle */ }
 

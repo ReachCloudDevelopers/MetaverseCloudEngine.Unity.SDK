@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.13
-- Update MetaverseCloudEngine.Common.dll to the latest version
+## 2.202.14
+- Refactor drag position calculation and enhance drag plane options for draggable objects
 
-Updated on October 23, 2025
+Updated on October 24, 2025
