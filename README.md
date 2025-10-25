@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.20
-- Add assembly reference for Vuplex WebView in MetaverseScript
+## 2.202.21
+- Enable Editor plugin for MetaverseCloudEngine.ApiClient and MetaverseCloudEngine.Common
 
 Updated on October 24, 2025
