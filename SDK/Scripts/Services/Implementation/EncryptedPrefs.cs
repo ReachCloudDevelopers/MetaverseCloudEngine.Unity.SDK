@@ -179,7 +179,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             var path = $"{Application.persistentDataPath}/{basePrefix}_prefs";
 
 #if UNITY_EDITOR
-            path += "_editor_editmode" + PrefsSessionUtility.GetSessionSuffix();
+            path += "_editor_editmode";
 #endif
 
             _cachedConfigPath = path;

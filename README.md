@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.22
-- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
+## 2.202.23
+- Refactor EncryptedPrefs and UnityPlayerPrefs to remove session suffix logic for persistent credentials across edit/play modes
 
 Updated on October 25, 2025
