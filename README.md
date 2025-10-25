@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.21
-- Enable Editor plugin for MetaverseCloudEngine.ApiClient and MetaverseCloudEngine.Common
+## 2.202.22
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
-Updated on October 24, 2025
+Updated on October 25, 2025
