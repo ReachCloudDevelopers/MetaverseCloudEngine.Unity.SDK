@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.24
+## 2.202.25
 - Update MetaverseCloudEngine.ApiClient.dll to latest version
 
 Updated on October 25, 2025
