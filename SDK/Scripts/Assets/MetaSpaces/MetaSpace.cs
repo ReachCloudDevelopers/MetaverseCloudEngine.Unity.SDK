@@ -441,7 +441,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             MetaverseProgram.Logger.Log($"[METASPACE] Finished pre-loading {preloadedPrefabs.Count} prefab(s).");
             yield break;
 
-            void LoadPrefab(Guid pId)
+            void LoadPrefab(Guid pId, int retries = 3)
             {
                 MetaPrefabLoadingAPI.LoadPrefab(pId, gameObject.scene, prefab =>
                 {
@@ -466,7 +466,16 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                     foreach (var subPrefabId in subPrefabIds)
                         LoadPrefab(subPrefabId);
 
-                }, failed: _ => preloadedPrefabs.Add(pId));
+                }, failed: _ =>
+                {
+                    if (retries <= 0)
+                    {
+                        preloadedPrefabs.Add(pId);
+                        return;
+                    }
+
+                    LoadPrefab(pId, retries - 1);
+                });
             }
         }
 

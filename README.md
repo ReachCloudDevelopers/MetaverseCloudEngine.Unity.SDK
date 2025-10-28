@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.27
-- Refactor MetaSpace prefab loading logic for improved clarity and retry attempts
+## 2.202.28
+- Enhance prefab loading with retry mechanism on failure
 
 Updated on October 28, 2025
