@@ -209,9 +209,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             if (!Application.isPlaying) return;
 #if PLAYMAKER
             if (PlayMakerGUI.Instance)
-            {
                 PlayMakerGUI.Instance.controlMouseCursor = false;
-            }
 #endif
             Instance = this;
             AwakeInternal();
@@ -492,15 +490,18 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                     loadOnStartPrefabs.RemoveAll(x => x.spawnAuthority == MetaPrefabToLoadOnStart.SpawnMode.MasterClient);
             }
 
-            var loadOnStartSpawners = 
+            var loadOnStartSpawners =
                 loadOnStartPrefabs.Where(x => Guid.TryParse(x.prefab, out _) && !x.disabled).Select(loadOnStartPrefab =>
-                        MetaPrefabSpawner.CreateSpawner(
-                            Guid.Parse(loadOnStartPrefab.prefab), 
-                            position: Vector3.zero,
-                            rotation: Quaternion.identity,
-                            requireStateAuthority: loadOnStartPrefab.spawnAuthority == MetaPrefabToLoadOnStart.SpawnMode.MasterClient,
-                            loadOnStart: loadOnStartPrefab.spawnAuthority != MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly))
-                    .ToList();
+                {
+                    var spawner = MetaPrefabSpawner.CreateSpawner(
+                        Guid.Parse(loadOnStartPrefab.prefab),
+                        position: Vector3.zero,
+                        rotation: Quaternion.identity,
+                        requireStateAuthority: loadOnStartPrefab.spawnAuthority == MetaPrefabToLoadOnStart.SpawnMode.MasterClient,
+                        loadOnStart: loadOnStartPrefab.spawnAuthority != MetaPrefabToLoadOnStart.SpawnMode.PreloadOnly);
+                    spawner.retryAttempts = 999;
+                    return spawner;
+                }).ToList();
             
             _preAllocatedPrefabIds.AddRange(loadOnStartSpawners.Select(x => x.ID!.Value));
 

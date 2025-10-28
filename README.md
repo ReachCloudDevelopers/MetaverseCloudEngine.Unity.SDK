@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.26
-- Add .hintrc configuration file extending development settings
+## 2.202.27
+- Refactor MetaSpace prefab loading logic for improved clarity and retry attempts
 
-Updated on October 27, 2025
+Updated on October 28, 2025
