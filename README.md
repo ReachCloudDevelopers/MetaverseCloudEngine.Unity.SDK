@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.28
-- Enhance prefab loading with retry mechanism on failure
+## 2.202.29
+- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
 
 Updated on October 28, 2025
