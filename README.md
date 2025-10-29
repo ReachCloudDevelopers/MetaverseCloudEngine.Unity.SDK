@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.31
-- Update MetaverseScriptEditor to ensure serializedObject is up to date and improve collapse state management per component instance
+## 2.202.32
+- Add editorCollapsed property to MetaverseScript for persistent collapse state in MetaverseScriptEditor
 
 Updated on October 29, 2025

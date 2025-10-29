@@ -29,15 +29,20 @@ namespace MetaverseCloudEngine.Unity.Editors
         private TextAsset _lastScannedFile;
         
         public bool IsCollapsed {
-            get => EditorPrefs.GetBool(GetPrefsKey(), false);
-            set => EditorPrefs.SetBool(GetPrefsKey(), value);
-        }
-
-        private string GetPrefsKey() 
-        {
-            // Use the component's instance ID to ensure each MetaverseScript has its own collapse state
-            // This prevents multiple scripts from sharing the same collapse state
-            return "MVCE_MetaverseScriptEditor_Collapsed_" + target.GetInstanceID();
+            get {
+                var script = target as MetaverseScript;
+                if (script == null) return false;
+                var collapsedProp = serializedObject.FindProperty("editorCollapsed");
+                return collapsedProp?.boolValue ?? false;
+            }
+            set {
+                var collapsedProp = serializedObject.FindProperty("editorCollapsed");
+                if (collapsedProp != null)
+                {
+                    collapsedProp.boolValue = value;
+                    serializedObject.ApplyModifiedProperties();
+                }
+            }
         }
 
         protected override void OnHeaderGUI()
@@ -73,17 +78,19 @@ namespace MetaverseCloudEngine.Unity.Editors
             var toggleRect = new Rect(foldRect.xMax + 8f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
             var titleRect = new Rect(toggleRect.xMax + 3f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
 
-            // Persisted collapse state per script - use the target component's instance ID
-            // This ensures each MetaverseScript component has its own independent collapse state
-            var targetScript = target as MetaverseScript;
-            var prefsKey = "MVCE_MetaverseScriptEditor_Collapsed_" + targetScript.GetInstanceID();
-            bool collapsed = EditorPrefs.GetBool(prefsKey, false);
+            // Persisted collapse state per script stored in the component itself
+            var collapsedProp = serializedObject.FindProperty("editorCollapsed");
+            bool collapsed = collapsedProp?.boolValue ?? false;
             bool expanded = !collapsed;
             bool newExpanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
             if (newExpanded != expanded)
             {
                 collapsed = !newExpanded;
-                EditorPrefs.SetBool(prefsKey, collapsed);
+                if (collapsedProp != null)
+                {
+                    collapsedProp.boolValue = collapsed;
+                    serializedObject.ApplyModifiedProperties();
+                }
                 Repaint();
             }
 
