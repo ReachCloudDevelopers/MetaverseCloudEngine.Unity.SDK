@@ -475,9 +475,6 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
         
-        [HideInInspector]
-        [SerializeField] private bool editorCollapsed;
-
 #if UNITY_EDITOR
         [ContextMenu("Edit JavaScript...")]
         private void EditJavaScript()

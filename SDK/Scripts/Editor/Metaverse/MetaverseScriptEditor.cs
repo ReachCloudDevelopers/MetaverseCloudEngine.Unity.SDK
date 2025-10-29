@@ -27,23 +27,6 @@ namespace MetaverseCloudEngine.Unity.Editors
         private HashSet<string> _usedVariables = new();
         private bool _isScanningVariables;
         private TextAsset _lastScannedFile;
-        
-        public bool IsCollapsed {
-            get {
-                var script = target as MetaverseScript;
-                if (script == null) return false;
-                var collapsedProp = serializedObject.FindProperty("editorCollapsed");
-                return collapsedProp?.boolValue ?? false;
-            }
-            set {
-                var collapsedProp = serializedObject.FindProperty("editorCollapsed");
-                if (collapsedProp != null)
-                {
-                    collapsedProp.boolValue = value;
-                    serializedObject.ApplyModifiedProperties();
-                }
-            }
-        }
 
         protected override void OnHeaderGUI()
         {
@@ -56,82 +39,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public override void OnInspectorGUI()
         {
-            // CRITICAL: Ensure serializedObject is up to date for this specific component instance
             serializedObject.Update();
-            
+
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
-
-            // Fake header showing the assigned JS file name (or (No Script))
-            var jsAsset = javascriptFileProp.objectReferenceValue as TextAsset;
-            var displayTitle = jsAsset ? jsAsset.name : "(No Script)";
-            float fakeHeaderHeight = EditorStyles.toolbar.fixedHeight > 0 ? EditorStyles.toolbar.fixedHeight : 20f;
-            var viewWidth = EditorGUIUtility.currentViewWidth;
-            var fakeHeaderRect = new Rect(0, -20f, viewWidth, fakeHeaderHeight);
-
-            // Draw header background
-            GUI.Button(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
-
-            // Areas inside header: foldout and enabled toggle (do not intercept), title elsewhere
-            var foldRect = new Rect(fakeHeaderRect.x + 16f, fakeHeaderRect.y + 2f, 16f, fakeHeaderRect.height - 4f);
-            var iconRect = new Rect(foldRect.x + 2f, fakeHeaderRect.y, fakeHeaderRect.height - 4f, fakeHeaderRect.height - 2f);
-            GUI.Label(iconRect, EditorGUIUtility.GetIconForObject(target));
-            var toggleRect = new Rect(foldRect.xMax + 8f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
-            var titleRect = new Rect(toggleRect.xMax + 3f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
-
-            // Persisted collapse state per script stored in the component itself
-            var collapsedProp = serializedObject.FindProperty("editorCollapsed");
-            bool collapsed = collapsedProp?.boolValue ?? false;
-            bool expanded = !collapsed;
-            bool newExpanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
-            if (newExpanded != expanded)
-            {
-                collapsed = !newExpanded;
-                if (collapsedProp != null)
-                {
-                    collapsedProp.boolValue = collapsed;
-                    serializedObject.ApplyModifiedProperties();
-                }
-                Repaint();
-            }
-
-            // Enabled toggle (uses serialized m_Enabled)
-            var enabledProp = serializedObject.FindProperty("m_Enabled");
-            if (enabledProp != null)
-            {
-                bool newEnabled = EditorGUI.Toggle(toggleRect, enabledProp.boolValue);
-                if (newEnabled != enabledProp.boolValue)
-                {
-                    enabledProp.boolValue = newEnabled;
-                    serializedObject.ApplyModifiedProperties();
-                }
-            }
-
-            // Title label
-            GUI.Label(titleRect, displayTitle, EditorStyles.boldLabel);
-
-            // Add three icons on the right side
-            var iconSize = titleRect.height;
-            var iconSpacing = 0f;
-            var rightMargin = 7f;
-            var totalIconWidth = (iconSize * 3) + (iconSpacing * 2);
-            var startX = fakeHeaderRect.xMax - totalIconWidth - rightMargin;
             
-            // Question mark icon (help)
-            var helpIconRect = new Rect(startX, fakeHeaderRect.y, iconSize, iconSize);
-            GUI.Label(helpIconRect, EditorGUIUtility.IconContent("_Help").image);
-            
-            // Preset/context icon
-            var presetIconRect = new Rect(startX + iconSize + iconSpacing, fakeHeaderRect.y, iconSize, iconSize);
-            GUI.Label(presetIconRect, EditorGUIUtility.IconContent("Preset.Context").image);
-            
-            // Menu icon
-            var menuIconRect = new Rect(startX + (iconSize + iconSpacing) * 2, fakeHeaderRect.y, iconSize, iconSize);
-            GUI.Label(menuIconRect, EditorGUIUtility.IconContent("_Menu").image);
-
-            // If collapsed, do not draw the rest of the inspector
-            if (collapsed)
-                return;
-
             // Always show the Javascript File field at the very top (read-only)
             EditorGUI.BeginDisabledGroup(true);
             EditorGUILayout.ObjectField(new GUIContent("Script"),
