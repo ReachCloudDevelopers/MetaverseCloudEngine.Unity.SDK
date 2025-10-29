@@ -130,15 +130,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             // If collapsed, do not draw the rest of the inspector
             if (collapsed)
-            {
-                GUILayout.Space(1);
-            }
-
-            // If collapsed, do not draw the rest of the inspector
-            if (collapsed)
-            {
                 return;
-            }
 
             // Always show the Javascript File field at the very top (read-only)
             EditorGUI.BeginDisabledGroup(true);

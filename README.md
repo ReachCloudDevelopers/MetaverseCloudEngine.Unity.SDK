@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.33
-- Adjust icon spacing in MetaverseScriptEditor for improved layout
+## 2.202.34
+- refactor: simplify collapsed state handling in MetaverseScriptEditor
 
 Updated on October 29, 2025
