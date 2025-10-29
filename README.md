@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.32
-- Add editorCollapsed property to MetaverseScript for persistent collapse state in MetaverseScriptEditor
+## 2.202.33
+- Adjust icon spacing in MetaverseScriptEditor for improved layout
 
 Updated on October 29, 2025

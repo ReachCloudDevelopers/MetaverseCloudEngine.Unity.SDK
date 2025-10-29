@@ -111,7 +111,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             // Add three icons on the right side
             var iconSize = titleRect.height;
-            var iconSpacing = 2f;
+            var iconSpacing = 0f;
             var rightMargin = 7f;
             var totalIconWidth = (iconSize * 3) + (iconSpacing * 2);
             var startX = fakeHeaderRect.xMax - totalIconWidth - rightMargin;
