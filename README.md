@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.35
-- Remove KeepMetaverseScriptExpanded and related meta files; refactor MetaverseScriptEditor to streamline inspector functionality and add MetaverseScriptTitleBarEditor for enhanced title bar UI.
+## 2.202.36
+- Update MetaverseCloudEngine.ApiClient.dll to the latest version
 
 Updated on October 29, 2025
