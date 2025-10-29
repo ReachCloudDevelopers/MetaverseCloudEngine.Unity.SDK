@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.29
-- Update MetaverseCloudEngine.ApiClient.dll and MetaverseCloudEngine.Common.dll binaries
+## 2.202.30
+- Enhance JavaScript drag-and-drop handling to reuse existing empty MetaverseScript components and ensure unique collapse states for each script editor.
 
-Updated on October 28, 2025
+Updated on October 29, 2025

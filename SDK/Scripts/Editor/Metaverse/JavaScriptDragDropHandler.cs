@@ -135,9 +135,30 @@ namespace MetaverseCloudEngine.Unity.Editors
             Undo.SetCurrentGroupName("Add MetaverseScript (Drag & Drop)");
             int group = Undo.GetCurrentGroup();
 
-            var script = targetGameObject.GetComponent<MetaverseScript>();
-            if (!script)
+            // Check if there's an existing MetaverseScript with no script assigned
+            var existingScripts = targetGameObject.GetComponents<MetaverseScript>();
+            MetaverseScript emptyScript = null;
+            
+            foreach (var s in existingScripts)
+            {
+                if (s.javascriptFile == null)
+                {
+                    emptyScript = s;
+                    break;
+                }
+            }
+
+            MetaverseScript script;
+            if (emptyScript != null)
+            {
+                // Use the existing empty script
+                script = emptyScript;
+            }
+            else
+            {
+                // Add a new component since all existing scripts have files assigned
                 script = Undo.AddComponent<MetaverseScript>(targetGameObject);
+            }
 
             Undo.RecordObject(script, "Assign JavaScript File");
             script.javascriptFile = jsAsset;
@@ -209,8 +230,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                 
                 if (targetGameObject != null)
                 {
-                    // Check if MetaverseScript component already exists
-                    MetaverseScript existingScript = targetGameObject.GetComponent<MetaverseScript>();
+                    // Check if there's an existing MetaverseScript with no script assigned
+                    var existingScripts = targetGameObject.GetComponents<MetaverseScript>();
+                    MetaverseScript existingScript = null;
+                    
+                    foreach (var s in existingScripts)
+                    {
+                        if (s.javascriptFile == null)
+                        {
+                            existingScript = s;
+                            break;
+                        }
+                    }
                     
                     foreach (Object draggedObject in DragAndDrop.objectReferences)
                     {
@@ -219,7 +250,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         {
                             if (existingScript == null)
                             {
-                                // Add new MetaverseScript component
+                                // Add new MetaverseScript component since all have scripts assigned
                                 existingScript = targetGameObject.AddComponent<MetaverseScript>();
                             }
                             

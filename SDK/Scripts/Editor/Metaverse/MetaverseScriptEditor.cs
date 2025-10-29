@@ -35,9 +35,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private string GetPrefsKey() 
         {
-            var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
-            var jsAsset = javascriptFileProp.objectReferenceValue as TextAsset;
-            return "MVCE_MetaverseScriptEditor_Collapsed_" + (jsAsset ? jsAsset.GetInstanceID() : 0);
+            // Use the component's instance ID to ensure each MetaverseScript has its own collapse state
+            // This prevents multiple scripts from sharing the same collapse state
+            return "MVCE_MetaverseScriptEditor_Collapsed_" + target.GetInstanceID();
         }
 
         protected override void OnHeaderGUI()
