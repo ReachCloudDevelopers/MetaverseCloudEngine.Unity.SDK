@@ -51,6 +51,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         public override void OnInspectorGUI()
         {
+            // CRITICAL: Ensure serializedObject is up to date for this specific component instance
+            serializedObject.Update();
+            
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
 
             // Fake header showing the assigned JS file name (or (No Script))
@@ -70,8 +73,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             var toggleRect = new Rect(foldRect.xMax + 8f, fakeHeaderRect.y + 2f, 18f, fakeHeaderRect.height - 4f);
             var titleRect = new Rect(toggleRect.xMax + 3f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
 
-            // Persisted collapse state per script
-            var prefsKey = GetPrefsKey();
+            // Persisted collapse state per script - use the target component's instance ID
+            // This ensures each MetaverseScript component has its own independent collapse state
+            var targetScript = target as MetaverseScript;
+            var prefsKey = "MVCE_MetaverseScriptEditor_Collapsed_" + targetScript.GetInstanceID();
             bool collapsed = EditorPrefs.GetBool(prefsKey, false);
             bool expanded = !collapsed;
             bool newExpanded = EditorGUI.Foldout(foldRect, expanded, GUIContent.none, true);
@@ -79,6 +84,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 collapsed = !newExpanded;
                 EditorPrefs.SetBool(prefsKey, collapsed);
+                Repaint();
             }
 
             // Enabled toggle (uses serialized m_Enabled)

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.30
-- Enhance JavaScript drag-and-drop handling to reuse existing empty MetaverseScript components and ensure unique collapse states for each script editor.
+## 2.202.31
+- Update MetaverseScriptEditor to ensure serializedObject is up to date and improve collapse state management per component instance
 
 Updated on October 29, 2025
