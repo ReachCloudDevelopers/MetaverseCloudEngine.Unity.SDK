@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.36
-- Update MetaverseCloudEngine.ApiClient.dll to the latest version
+## 2.202.37
+- Update password visibility toggle button to use icon content
 
-Updated on October 29, 2025
+Updated on October 30, 2025

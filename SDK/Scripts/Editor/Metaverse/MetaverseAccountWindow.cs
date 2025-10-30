@@ -174,7 +174,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     using (_ = new EditorGUILayout.HorizontalScope())
                     {
                         _password = MetaverseEditorUtils.TextField("Password", _password, !_revealPassword);
-                        if (GUILayout.Button(_revealPassword ? "Hide" : "View", GUILayout.ExpandWidth(false), GUILayout.Width(50)))
+                        var content = new GUIContent(EditorGUIUtility.IconContent(_revealPassword ? "d_scenevis_visible_hover" : "d_scenevis_hidden_hover").image);
+                        if (GUILayout.Button(content, GUILayout.ExpandWidth(false), GUILayout.Width(50)))
                             _revealPassword = !_revealPassword;
                     }
                     if (_page is LoginPage.LogIn)
