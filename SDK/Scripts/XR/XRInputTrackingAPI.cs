@@ -95,7 +95,6 @@ namespace MetaverseCloudEngine.Unity.XR
         private static void OnTrackingOriginUpdated(XRInputSubsystem system)
         {
             OriginCentered?.Invoke(system);
-            MetaverseProgram.Logger?.Log("[XRInputTrackingAPI] Tracking Origin Updated");
         }
 
         /// <summary>

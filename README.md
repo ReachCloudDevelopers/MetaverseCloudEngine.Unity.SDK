@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.37
-- Update password visibility toggle button to use icon content
+## 2.202.38
+- Remove logging for tracking origin updates in XRInputTrackingAPI
 
 Updated on October 30, 2025
