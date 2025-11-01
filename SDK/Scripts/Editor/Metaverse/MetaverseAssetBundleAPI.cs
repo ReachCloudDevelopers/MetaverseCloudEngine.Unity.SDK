@@ -51,8 +51,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 ? BuildTarget.StandaloneOSX
                 : BuildTarget.StandaloneWindows64;
             
+#if UNITY_EDITOR_OSX
             if (Application.platform == RuntimePlatform.OSXEditor)
                 UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
+#endif
 
             preProcessBuild?.Invoke();
             try
