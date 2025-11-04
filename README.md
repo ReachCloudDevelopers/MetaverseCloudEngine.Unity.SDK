@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.41
-- Enhance error handling and backup recovery in EncryptedPrefs
+## 2.203.0
+- Add environment-based login fallback and improve error handling in LoginStore
 
-Updated on November 03, 2025
+Updated on November 04, 2025

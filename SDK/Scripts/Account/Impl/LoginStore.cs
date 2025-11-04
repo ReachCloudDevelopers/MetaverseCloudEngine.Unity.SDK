@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.ApiClient.Controllers;
 using MetaverseCloudEngine.Common.Models.DataTransfer;
+using MetaverseCloudEngine.Common.Models.Forms;
 using MetaverseCloudEngine.Unity.Async;
 using MetaverseCloudEngine.Unity.Account.Abstract;
 using MetaverseCloudEngine.Unity.Encryption;
@@ -254,6 +255,18 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 RefreshToken = null;
             }
 
+            // Attempt environment-based login as a fallback when no tokens are present
+            if (!ApiClient.Account.UseCookieAuthentication && string.IsNullOrEmpty(AccessToken))
+            {
+                var creds = GetEnvCredentials();
+                if (creds.HasValue)
+                {
+                    await AttemptLoginWithEnvAsync("InitializeAsync");
+                    _isInitialized = true;
+                    return;
+                }
+            }
+
             _isInitialized = true;
         }
 
@@ -319,6 +332,9 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
             MetaverseProgram.Logger.Log($"LoginStore: User logged out via {kind}. Clearing persisted tokens...");
             ClearPersistedTokens($"OnLoggedOut ({kind})");
+
+            // Auto-retry login using environment credentials, if available
+            await AttemptLoginWithEnvAsync($"OnLoggedOut ({kind})");
         }
 
         private async void OnTokensUpdated(UserTokenDto token)
@@ -459,20 +475,20 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             {
                 await UniTask.SwitchToMainThread();
             }
-            
+
             var message = $"The Login Store has been unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
                          "This is usually caused by:\n" +
                          "• Network connectivity issues\n" +
                          "• Server maintenance\n" +
                          "• DNS resolution problems\n\n" +
                          "Would you like to restart Unity? This may help resolve the issue.";
-            
+
             var restart = UnityEditor.EditorUtility.DisplayDialog(
                 "Login Store Connection Issues",
                 message,
                 "Restart Unity",
                 "Keep Retrying");
-            
+
             if (restart)
             {
                 MetaverseProgram.Logger.Log("User requested Unity restart due to LoginStore connection issues.");
@@ -491,6 +507,83 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             await InitializeAsync();
 #endif
         }
+
+        private static string ReadEnvironmentVariable(params string[] keys)
+        {
+            if (keys == null)
+                return null;
+            foreach (var key in keys)
+            {
+                try
+                {
+                    var value = Environment.GetEnvironmentVariable(key);
+                    if (!string.IsNullOrWhiteSpace(value))
+                        return value;
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogWarning($"LoginStore: Failed to read environment variable '{key}': {ex.Message}");
+                }
+            }
+            return null;
+        }
+
+        private (string username, string password)? GetEnvCredentials()
+        {
+            // Prefer METAVERSE_*; fall back to MV_*
+            var username = ReadEnvironmentVariable("METAVERSE_USERNAME", "MV_USERNAME");
+            var password = ReadEnvironmentVariable("METAVERSE_PASSWORD", "MV_PASSWORD");
+
+            if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                return (username, password);
+
+            return null;
+        }
+
+        private async Task<bool> AttemptLoginWithEnvAsync(string reason)
+        {
+            try
+            {
+                if (ApiClient.Account.UseCookieAuthentication)
+                    return false;
+
+                var creds = GetEnvCredentials();
+                if (!creds.HasValue)
+                {
+                    // Keep this log at Info to aid debugging but avoid noise
+                    MetaverseProgram.Logger.Log("LoginStore: No environment credentials detected; skipping auto-login.");
+                    return false;
+                }
+
+                MetaverseProgram.Logger.Log($"LoginStore: Environment credentials detected ({reason}); attempting username/password sign-in.");
+                await WaitForNetworkConnectivityAsync();
+
+                var form = new GenerateSystemUserTokenForm
+                {
+                    UserNameOrEmail = creds.Value.username,
+                    Password = creds.Value.password,
+                    RememberMe = true
+                };
+
+                var response = await ApiClient.Account.PasswordSignInAsync(form);
+                if (!response.Succeeded)
+                {
+                    var error = await response.GetErrorAsync();
+                    MetaverseProgram.Logger.LogWarning($"LoginStore: Environment sign-in failed: {BuildServerReasonMessage(error)}");
+                    return false;
+                }
+
+                // Tokens will be persisted via LoggedIn/TokensUpdated events
+                MetaverseProgram.Logger.Log("LoginStore: Environment sign-in succeeded.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"LoginStore: Exception during environment sign-in: {ex.Message}");
+                return false;
+            }
+        }
+
 
         private async Task WaitForNetworkConnectivityAsync()
         {
