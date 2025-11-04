@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.202.40
-- Update .gitignore to include additional files
+## 2.202.41
+- Enhance error handling and backup recovery in EncryptedPrefs
 
 Updated on November 03, 2025

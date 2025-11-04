@@ -120,6 +120,16 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             catch (Exception e)
             {
                 MetaverseProgram.Logger.LogWarning($"Failed to load config from {configPath}: {e}");
+
+                // Attempt to recover from backup
+                if (TryRecoverFromBackup(configPath))
+                {
+                    MetaverseProgram.Logger.Log($"Successfully recovered config from backup for {configPath}");
+                }
+                else
+                {
+                    MetaverseProgram.Logger.LogWarning($"Failed to recover config from backup for {configPath}. Starting with empty config.");
+                }
             }
             finally
             {
@@ -132,6 +142,9 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             var configPath = GetConfigPath();
             try
             {
+                // Create backup before writing
+                CreateBackup(configPath);
+
                 var json = JsonConvert.SerializeObject(_config);
                 WriteConfig(configPath, json);
             }
@@ -194,6 +207,102 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
             {
                 _ = GetConfigPath();
             }
+        }
+
+        private static string GetBackupPath(string configPath)
+        {
+            return configPath + ".backup";
+        }
+
+        private void CreateBackup(string configPath)
+        {
+            try
+            {
+                if (UsePlayerPrefs())
+                {
+                    // For PlayerPrefs (WebGL), copy the encrypted value to a backup key
+                    var encryptedKey = _encryptor.EncryptString(configPath);
+                    var backupKey = _encryptor.EncryptString(GetBackupPath(configPath));
+
+                    if (PlayerPrefs.HasKey(encryptedKey))
+                    {
+                        var currentValue = PlayerPrefs.GetString(encryptedKey);
+                        PlayerPrefs.SetString(backupKey, currentValue);
+                        PlayerPrefs.Save();
+                    }
+                }
+                else
+                {
+                    // For file-based storage, copy the file
+                    if (System.IO.File.Exists(configPath))
+                    {
+                        var backupPath = GetBackupPath(configPath);
+                        System.IO.File.Copy(configPath, backupPath, overwrite: true);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                MetaverseProgram.Logger.LogWarning($"Failed to create backup for {configPath}: {e}");
+            }
+        }
+
+        private bool TryRecoverFromBackup(string configPath)
+        {
+            try
+            {
+                var backupPath = GetBackupPath(configPath);
+
+                if (UsePlayerPrefs())
+                {
+                    // For PlayerPrefs (WebGL), try to restore from backup key
+                    var backupKey = _encryptor.EncryptString(backupPath);
+
+                    if (PlayerPrefs.HasKey(backupKey))
+                    {
+                        var backupValue = PlayerPrefs.GetString(backupKey);
+                        var json = _encryptor.DecryptString(backupValue);
+
+                        if (!string.IsNullOrEmpty(json))
+                        {
+                            // Validate the backup by attempting to deserialize
+                            _config = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                            // Restore the main config from backup
+                            var encryptedKey = _encryptor.EncryptString(configPath);
+                            PlayerPrefs.SetString(encryptedKey, backupValue);
+                            PlayerPrefs.Save();
+
+                            return true;
+                        }
+                    }
+                }
+                else
+                {
+                    // For file-based storage, try to restore from backup file
+                    if (System.IO.File.Exists(backupPath))
+                    {
+                        var json = System.IO.File.ReadAllText(backupPath);
+
+                        if (!string.IsNullOrEmpty(json))
+                        {
+                            // Validate the backup by attempting to deserialize
+                            _config = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                            // Restore the main config from backup
+                            System.IO.File.Copy(backupPath, configPath, overwrite: true);
+
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                MetaverseProgram.Logger.LogWarning($"Failed to recover from backup for {configPath}: {e}");
+            }
+
+            return false;
         }
     }
 }

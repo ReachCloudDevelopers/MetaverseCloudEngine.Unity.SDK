@@ -145,8 +145,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
             private readonly Dictionary<string, Stopwatch> _timers = new(StringComparer.Ordinal);
             private readonly Stack<string> _groupStack = new();
+            private readonly MetaverseScript _ctx;
 
-            public ConsoleObject(string prefix) => _prefix = string.IsNullOrWhiteSpace(prefix) ? "Missing Script" : prefix;
+            public ConsoleObject(MetaverseScript ctx, string prefix)
+            {
+                _ctx = ctx;
+                _prefix = string.IsNullOrWhiteSpace(prefix) ? "Missing Script" : prefix;
+            }
 
             public void log(params object[] args) => Log(MetaverseProgram.Logger.Log, args);
 
@@ -156,7 +161,22 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             public void warn(params object[] args) => Log(MetaverseProgram.Logger.LogWarning, args);
 
-            public void error(params object[] args) => Log(MetaverseProgram.Logger.LogError, args);
+            public void error(params object[] args)
+            {
+                if (args != null && args.Length == 1 && args[0] is Exception ex)
+                {
+                    HandleJsEx(_ctx.javascriptFile, ex);
+                    return;
+                }
+
+                if (args != null && args.Length == 1 && args[0] is JsError e)
+                {
+                    HandleJsEx(_ctx.javascriptFile, new JavaScriptException(e));
+                    return;
+                }
+
+                Log(MetaverseProgram.Logger.LogError, args);
+            }
 
             public void exception(params object[] args) => Log(MetaverseProgram.Logger.LogError, args.Length > 0 ? args : new object[] { "Exception" });
 
@@ -511,7 +531,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
         /// <summary>
         /// Retrieves the console object allowed to be accessed from JavaScript.
         /// </summary>
-        private ConsoleObject console => _console ??= new ConsoleObject(javascriptFile ? javascriptFile.name : "Missing Script");
+        private ConsoleObject console => _console ??= new ConsoleObject(this, javascriptFile ? javascriptFile.name : "Missing Script");
 
         /// <summary>
         /// Provides a helper context exposed to other scripts via GetMetaverseScript.
@@ -1826,8 +1846,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                     }
                     catch (Exception ex)
                     {
-                        MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing main script '{javascriptFile?.name}': {ex}");
-                        throw;
+                        HandleJsEx(javascriptFile, ex);
+                        return;
                     }
                 }
 
@@ -1842,6 +1862,21 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
             }, cancellationToken: destroyCancellationToken);
 
+        }
+
+        private static void HandleJsEx(TextAsset file, Exception ex)
+        {
+            if (ex is JavaScriptException jse)
+            {
+                jse.Source = file?.name;
+                string path = "";
+#if UNITY_EDITOR
+                path = UnityEditor.AssetDatabase.GetAssetPath(file);
+#endif
+                MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] {jse.Message} in <b>{file?.name}</b>\n{jse.JavaScriptStackTrace.Replace("(:", $"(<a href=\"{path}\"line={jse.Location.Start.Line}>./{path}:</a>")}");
+            }
+            else
+                MetaverseProgram.Logger.LogError($"[METAVERSE_SCRIPT] Exception executing main script '{file?.name}': {ex}");
         }
 
         private unsafe void DefaultEngineOptions(Options options, bool strict)
