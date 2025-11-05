@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.4
-- Add try/catch wrapper around UpdateDataPoses in FromOVRHandDataSource to prevent app crashes
+## 2.203.5
+- Add metadata file for FixFromOVRHandDataSourceUpdateDataPoses
 
 Updated on November 05, 2025
