@@ -383,14 +383,6 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         {
             yield return new WaitUntil(() => _started);
 
-#if MV_META_CORE && UNITY_ANDROID && !UNITY_EDITOR
-            // Validate headset pose before continuing initialization.
-            yield return ValidateHeadsetPoseRoutine();
-            if (_headsetPoseValidationFailed)
-                yield break;
-#endif
-
-
             InitializeServiceOptions();
             RegisterServices();
 
@@ -424,86 +416,6 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             _initializationFailureActions.Clear();
             Initialized?.Invoke();
         }
-
-#if MV_META_CORE && UNITY_ANDROID && !UNITY_EDITOR
-        private IEnumerator ValidateHeadsetPoseRoutine()
-        {
-            const float intervalSec = 1f;
-            const int maxFailures = 5;
-            int consecutiveFailures = 0;
-
-            while (true)
-            {
-                try
-                {
-                    if (OVRManager.display != null)
-                        OVRManager.display.RecenterPose();
-                }
-                catch (Exception e)
-                {
-                    MetaverseProgram.Logger.LogWarning($"[METASPACE] RecenterPose failed: {e.Message}");
-                }
-
-                yield return new WaitForSeconds(intervalSec);
-
-                float y = 0f;
-                bool gotPose = false;
-                try
-                {
-                    var pose = OVRPlugin.GetNodePose(OVRPlugin.Node.Head, OVRPlugin.Step.Render);
-                    y = pose.Position.y;
-                    gotPose = true;
-                }
-                catch (Exception e)
-                {
-                    MetaverseProgram.Logger.LogWarning($"[METASPACE] Failed to read OVRPlugin pose: {e.Message}");
-                }
-
-                if (gotPose && y > 0.5f)
-                {
-                    MetaverseProgram.Logger.Log("[METASPACE] Headset pose validation succeeded (y > 0.5).");
-                    yield break;
-                }
-
-                consecutiveFailures++;
-                MetaverseProgram.Logger.LogWarning($"[METASPACE] Headset pose validation not ready (y={y:0.###}). Attempt {consecutiveFailures}/{maxFailures}.");
-
-                if (consecutiveFailures >= maxFailures)
-                {
-                    _headsetPoseValidationFailed = true;
-                    TriggerMetaSpaceJoinFailure("Headset pose validation failed: Y offset did not exceed 0.5 after recenters.");
-                    yield break;
-                }
-            }
-        }
-
-        private void TriggerMetaSpaceJoinFailure(string reason)
-        {
-            MetaverseProgram.Logger.LogError($"[METASPACE] {reason} Triggering join failure and returning to home screen.");
-#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
-            try
-            {
-                MetaverseProgram.RuntimeServices.InternalSceneManager.EnterHomeScreen(onError: e =>
-                    MetaverseProgram.Logger.LogError($"[METASPACE] Failed to enter home screen after pose validation failure: {(e ?? "Unknown error")}"));
-            }
-            catch (Exception e)
-            {
-                MetaverseProgram.Logger.LogError($"[METASPACE] Error triggering join failure: {e}");
-            }
-#else
-            try
-            {
-                // Fallback: destroy this MetaSpace so OnReady(onFailed) callbacks can be invoked.
-                Destroy(gameObject);
-            }
-            catch (Exception e)
-            {
-                MetaverseProgram.Logger.LogError($"[METASPACE] Error destroying MetaSpace after pose validation failure: {e}");
-            }
-#endif
-        }
-#endif
-
 
         private IEnumerator PreloadMetaPrefabsRoutine()
         {
