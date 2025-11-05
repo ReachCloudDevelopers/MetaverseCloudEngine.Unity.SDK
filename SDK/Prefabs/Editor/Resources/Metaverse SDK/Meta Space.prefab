@@ -1108,7 +1108,7 @@ MonoBehaviour:
   shadowQuality: 0
   shadowResolution: 0
   maxShadowDistance: 0
-  antiAliasing: 4
+  antiAliasing: 0
   anisotropicFiltering: 2
   globalTextureLimit: 0
   softParticles: 1

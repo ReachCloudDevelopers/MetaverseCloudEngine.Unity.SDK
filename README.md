@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.0
-- Add environment-based login fallback and improve error handling in LoginStore
+## 2.203.1
+- Set antiAliasing to 0 in Meta Space prefab
 
-Updated on November 04, 2025
+Updated on November 05, 2025
