@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.5
-- Add metadata file for FixFromOVRHandDataSourceUpdateDataPoses
+## 2.203.6
+- Add FixPointableCanvasRegisterTryCatch to handle NullReferenceExceptions in PointableCanvasModule
 
 Updated on November 05, 2025
