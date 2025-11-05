@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.2
-- Add headset pose validation for MetaSpace initialization
+## 2.203.3
+- Update MetaSpace.cs to restrict headset pose validation to Android builds only
 
 Updated on November 05, 2025

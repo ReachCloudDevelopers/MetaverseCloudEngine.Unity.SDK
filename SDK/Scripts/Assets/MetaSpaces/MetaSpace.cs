@@ -383,7 +383,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         {
             yield return new WaitUntil(() => _started);
 
-#if MV_META_CORE
+#if MV_META_CORE && UNITY_ANDROID && !UNITY_EDITOR
             // Validate headset pose before continuing initialization.
             yield return ValidateHeadsetPoseRoutine();
             if (_headsetPoseValidationFailed)
