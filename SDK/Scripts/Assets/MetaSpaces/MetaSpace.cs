@@ -78,6 +78,11 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         private bool _started;
         private static MetaSpace _instance;
 
+#if MV_META_CORE
+        private bool _headsetPoseValidationFailed;
+#endif
+
+
         #endregion
 
         #region Properties
@@ -169,37 +174,37 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         /// Event that is raised when the Meta Space finishes loading prefabs.
         /// </summary>
         public event Action LoadingPrefabsCompleted;
-        
+
         /// <summary>
         /// The service that provides multiplayer networking functionality.
         /// </summary>
         public IMetaSpaceNetworkingService NetworkingService => GetService<IMetaSpaceNetworkingService>();
-        
+
         /// <summary>
         /// The service that provides management of player groups, similar to teams in pvp games.
         /// </summary>
         public IPlayerGroupsService PlayerGroupsService => GetService<IPlayerGroupsService>();
-        
+
         /// <summary>
         /// The service that provides management of the state of the Meta Space (started, not started, etc).
         /// </summary>
         public IMetaSpaceStateService StateService => GetService<IMetaSpaceStateService>();
-        
+
         /// <summary>
         /// The service that provides management of player spawning.
         /// </summary>
         public IPlayerSpawnService PlayerSpawnService => GetService<IPlayerSpawnService>();
-        
+
         /// <summary>
         /// The service that provides management of the microphone.
         /// </summary>
         public IMicrophoneService MicrophoneService => GetService<IMicrophoneService>();
-        
+
         /// <summary>
         /// The service that provides management of the video camera.
         /// </summary>
         public IVideoCameraService VideoCameraService => GetService<IVideoCameraService>();
-        
+
         #endregion
 
         #region Unity Events
@@ -220,7 +225,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         {
             if (MetaverseProgram.IsQuitting) return;
             base.OnDestroy();
-            
+
             ResetApplicationRuntimeSettings();
             DisposeServices();
             OnDestroyInternal();
@@ -228,7 +233,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             if (!IsInitialized)
                 foreach (var act in _initializationFailureActions)
                     act?.Invoke();
-            
+
             foreach (var pId in _preAllocatedPrefabIds)
                 MetaPrefabLoadingAPI.UnRegisterPrefabInstance(pId);
         }
@@ -322,7 +327,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                         return;
                     }
                 }
-                
+
                 MetaverseProgram.Logger.LogError(
                     $"[METASPACE] Failed to register action for MetaSpace.OnReady: {e.GetBaseException()}");
             }
@@ -347,7 +352,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                     .MetaSpaces.FindAsync(CurrentlyLoadedMetaSpaceDto.Id)
                     .ResponseThen(r =>
                     {
-                        if (r.UpdatedDate is not null && 
+                        if (r.UpdatedDate is not null &&
                             r.UpdatedDate > (
                                 CurrentlyLoadedMetaSpaceDto.UpdatedDate ??
                                 CurrentlyLoadedMetaSpaceDto.CreatedDate))
@@ -357,7 +362,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                         }
                         upToDate?.Invoke();
                     }, e => onError?.Invoke(e));
-                
+
             }, () => onError?.Invoke("MetaSpace failed to initialize."));
         }
 
@@ -377,6 +382,14 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         private IEnumerator InitializeRoutine()
         {
             yield return new WaitUntil(() => _started);
+
+#if MV_META_CORE
+            // Validate headset pose before continuing initialization.
+            yield return ValidateHeadsetPoseRoutine();
+            if (_headsetPoseValidationFailed)
+                yield break;
+#endif
+
 
             InitializeServiceOptions();
             RegisterServices();
@@ -399,8 +412,8 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             {
                 LoadingPrefabsCompleted?.Invoke();
             }
-            catch (Exception e) 
-            { 
+            catch (Exception e)
+            {
                 MetaverseProgram.Logger.LogError($"[METASPACE] {e}");
             }
 
@@ -412,6 +425,86 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             Initialized?.Invoke();
         }
 
+#if MV_META_CORE && UNITY_ANDROID && !UNITY_EDITOR
+        private IEnumerator ValidateHeadsetPoseRoutine()
+        {
+            const float intervalSec = 1f;
+            const int maxFailures = 5;
+            int consecutiveFailures = 0;
+
+            while (true)
+            {
+                try
+                {
+                    if (OVRManager.display != null)
+                        OVRManager.display.RecenterPose();
+                }
+                catch (Exception e)
+                {
+                    MetaverseProgram.Logger.LogWarning($"[METASPACE] RecenterPose failed: {e.Message}");
+                }
+
+                yield return new WaitForSeconds(intervalSec);
+
+                float y = 0f;
+                bool gotPose = false;
+                try
+                {
+                    var pose = OVRPlugin.GetNodePose(OVRPlugin.Node.Head, OVRPlugin.Step.Render);
+                    y = pose.Position.y;
+                    gotPose = true;
+                }
+                catch (Exception e)
+                {
+                    MetaverseProgram.Logger.LogWarning($"[METASPACE] Failed to read OVRPlugin pose: {e.Message}");
+                }
+
+                if (gotPose && y > 0.5f)
+                {
+                    MetaverseProgram.Logger.Log("[METASPACE] Headset pose validation succeeded (y > 0.5).");
+                    yield break;
+                }
+
+                consecutiveFailures++;
+                MetaverseProgram.Logger.LogWarning($"[METASPACE] Headset pose validation not ready (y={y:0.###}). Attempt {consecutiveFailures}/{maxFailures}.");
+
+                if (consecutiveFailures >= maxFailures)
+                {
+                    _headsetPoseValidationFailed = true;
+                    TriggerMetaSpaceJoinFailure("Headset pose validation failed: Y offset did not exceed 0.5 after recenters.");
+                    yield break;
+                }
+            }
+        }
+
+        private void TriggerMetaSpaceJoinFailure(string reason)
+        {
+            MetaverseProgram.Logger.LogError($"[METASPACE] {reason} Triggering join failure and returning to home screen.");
+#if METAVERSE_CLOUD_ENGINE_INTERNAL && METAVERSE_CLOUD_ENGINE_INITIALIZED
+            try
+            {
+                MetaverseProgram.RuntimeServices.InternalSceneManager.EnterHomeScreen(onError: e =>
+                    MetaverseProgram.Logger.LogError($"[METASPACE] Failed to enter home screen after pose validation failure: {(e ?? "Unknown error")}"));
+            }
+            catch (Exception e)
+            {
+                MetaverseProgram.Logger.LogError($"[METASPACE] Error triggering join failure: {e}");
+            }
+#else
+            try
+            {
+                // Fallback: destroy this MetaSpace so OnReady(onFailed) callbacks can be invoked.
+                Destroy(gameObject);
+            }
+            catch (Exception e)
+            {
+                MetaverseProgram.Logger.LogError($"[METASPACE] Error destroying MetaSpace after pose validation failure: {e}");
+            }
+#endif
+        }
+#endif
+
+
         private IEnumerator PreloadMetaPrefabsRoutine()
         {
             var networking = GetService<IMetaSpaceNetworkingService>();
@@ -419,7 +512,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
             if (networking is not null)
                 yield return new WaitUntil(() => networking.IsReady);
             MetaverseProgram.Logger.Log("[METASPACE] Beginning to preload prefabs...");
-            
+
             var preloadedPrefabs = new List<Guid>();
             var prefabIds = ScanEntireSceneForPreLoadableMetaPrefabs(networking);
             var totalPrefabsToLoad = prefabIds.Length;
@@ -453,7 +546,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
 
                     if (_preAllocatedPrefabIds.Contains(pId))
                         MetaPrefabLoadingAPI.RegisterPrefabInstance(pId);
-                    
+
                     var subPrefabIds = prefab.GetComponentsInChildren<MetaPrefabSpawner>()
                         .Where(x => x)
                         .SelectMany(x => x.gameObject.GetMetaPrefabSpawnerIds())
@@ -511,7 +604,7 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
                     spawner.retryAttempts = 999;
                     return spawner;
                 }).ToList();
-            
+
             _preAllocatedPrefabIds.AddRange(loadOnStartSpawners.Select(x => x.ID!.Value));
 
             return FindObjectsOfType<MetaPrefabSpawner>().SelectMany(y => y.gameObject.GetMetaPrefabSpawners())

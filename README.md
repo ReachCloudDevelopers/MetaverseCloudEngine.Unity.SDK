@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.1
-- Set antiAliasing to 0 in Meta Space prefab
+## 2.203.2
+- Add headset pose validation for MetaSpace initialization
 
 Updated on November 05, 2025
