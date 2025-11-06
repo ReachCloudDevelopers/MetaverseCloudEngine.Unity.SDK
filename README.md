@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.8
-- Add MV_META_INTERACTION define for interaction SDK integration
+## 2.203.9
+- Add null-conditional guard for DataProvider.GetSkeletonPoseData() to prevent NRE
 
-Updated on November 05, 2025
+Updated on November 06, 2025
