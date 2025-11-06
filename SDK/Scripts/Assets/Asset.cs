@@ -43,13 +43,18 @@ namespace MetaverseCloudEngine.Unity.Assets
             DontPublish,
             Publish,
         }
-        
+
         [SerializeField, HideInInspector] private AssetBuildPlatform supportedPlatforms = (AssetBuildPlatform)~0;
         [SerializeField, HideInInspector] private PublishMode publish = PublishMode.Auto;
         [SerializeField, HideInInspector] protected string id;
         [SerializeField, HideInInspector] protected string blockchainSource;
         [SerializeField, HideInInspector] protected BlockchainType blockchainType;
         [Group("Meta Data"), InlineProperty(LabelWidth = 0), LabelText(""), SerializeField] private TMetaData metaData;
+
+        // Retry mechanism fields
+        [SerializeField, HideInInspector] private bool lastUploadFailed;
+        [SerializeField, HideInInspector] private string[] lastBundlePlatforms = System.Array.Empty<string>();
+        [SerializeField, HideInInspector] private string[] lastBundlePaths = System.Array.Empty<string>();
 
         /// <summary>
         /// The ID of the asset. This is a unique identifier that is used to identify the asset in the
@@ -167,10 +172,37 @@ namespace MetaverseCloudEngine.Unity.Assets
                         p |= Platform.iOS;
                     return p;
                 }
-                
+
                 return (Platform)supportedPlatforms;
             }
             set => supportedPlatforms = (AssetBuildPlatform)value;
+        }
+
+        /// <summary>
+        /// Gets or sets whether the last upload attempt failed.
+        /// </summary>
+        public bool LastUploadFailed
+        {
+            get => lastUploadFailed;
+            set => lastUploadFailed = value;
+        }
+
+        /// <summary>
+        /// Gets the platforms for the last failed upload.
+        /// </summary>
+        public string[] LastBundlePlatforms
+        {
+            get => lastBundlePlatforms ?? System.Array.Empty<string>();
+            set => lastBundlePlatforms = value;
+        }
+
+        /// <summary>
+        /// Gets the file paths for the last failed upload.
+        /// </summary>
+        public string[] LastBundlePaths
+        {
+            get => lastBundlePaths ?? System.Array.Empty<string>();
+            set => lastBundlePaths = value;
         }
 
         protected virtual void Reset()

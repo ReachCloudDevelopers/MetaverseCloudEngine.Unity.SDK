@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.11
-- Fix null handling in DataProvider.GetSkeletonPoseData() replacement
+## 2.203.12
+- Refactor package installer menu item and enhance asset upload retry mechanism
 
 Updated on November 06, 2025

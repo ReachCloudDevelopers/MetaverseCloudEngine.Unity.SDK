@@ -489,7 +489,18 @@ namespace MetaverseCloudEngine.Unity.Editors
                             Upload(GetMainAsset(Target), Target, serializedObject, false);
                             GUIUtility.ExitGUI();
                         }
-                        
+
+                        // Show retry UI if last upload failed and bundle files still exist
+                        if (ShouldShowRetryUI())
+                        {
+                            EditorGUILayout.HelpBox("We've detected the most recent update has failed, press the button below to retry", MessageType.Warning);
+                            if (GUILayout.Button("Retry Upload"))
+                            {
+                                RetryUpload();
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+
                         if (CanPublish() && _publishProperty != null)
                         {
                             EditorGUILayout.PropertyField(_publishProperty);
@@ -1352,9 +1363,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                     "Upload Failed",
                     "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
                     "Ok");
+
+                // Store failure state and bundle paths for retry
+                StoreBundleInfoForRetry(builds);
                 return;
             }
-            
+
             var buildsEnumerable = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
             var openStreams = new List<Stream>();
             var options = buildsEnumerable.Select(x =>
@@ -1456,7 +1470,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     var dto = result.Result.GetResultAsync().Result;
                     MetaverseProgram.Logger.Log(
-                        $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.\n" + 
+                        $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.\n" +
                             platformsString);
                     EditorUtility.DisplayDialog("Upload Successful",
                         $"\"{assetUpsertForm.Name}\" was uploaded successfully!" + platformsString, "Ok");
@@ -1477,11 +1491,17 @@ namespace MetaverseCloudEngine.Unity.Editors
                             return;
                         var asset = FindObjectOfType<TAsset>(true);
                         if (asset)
+                        {
                             ApplyMetaData(new SerializedObject(asset), dto);
+                            ClearBundleRetryInfo(asset);
+                        }
                     }
                     else
+                    {
                         ApplyMetaData(serializedObject, dto);
-                    
+                        ClearBundleRetryInfo(Target);
+                    }
+
                     onBuildSuccess?.Invoke(dto, buildsEnumerable);
                 }
                 else
@@ -1493,11 +1513,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                         return;
 
                     var prettyErrorString = Task
-                        .Run(async () => 
-                            await result.Result.GetErrorAsync(), 
+                        .Run(async () =>
+                            await result.Result.GetErrorAsync(),
                             uploadCancellation.Token).Result
                         .ToPrettyErrorString();
-                    
+
                     // Check if this is an authentication error and we can retry
                     var isAuthError = prettyErrorString.Contains("Unauthorized") || prettyErrorString.Contains("401");
                     if (isAuthError && tries < 2) // Allow one more retry for auth errors
@@ -1519,7 +1539,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                         UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
                         return;
                     }
-                    
+
+                    // Store failure state and bundle paths for retry
+                    StoreBundleInfoForRetry(builds);
                     UploadFailure(prettyErrorString);
                 }
             }
@@ -1568,6 +1590,117 @@ namespace MetaverseCloudEngine.Unity.Editors
                 return;
 
             EditorPrefs.SetFloat(UploadSpeedPrefKey, clampedBytesPerSecond);
+        }
+
+        private void StoreBundleInfoForRetry(IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds)
+        {
+            if (Target == null)
+                return;
+
+            var buildsArray = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
+
+            Target.LastUploadFailed = true;
+            Target.LastBundlePlatforms = buildsArray.Select(x => x.Platforms.ToString()).ToArray();
+            Target.LastBundlePaths = buildsArray.Select(x => x.OutputPath).ToArray();
+
+            EditorUtility.SetDirty(Target);
+            serializedObject.ApplyModifiedProperties();
+            AssetDatabase.SaveAssetIfDirty(Target);
+        }
+
+        private void ClearBundleRetryInfo(TAsset asset)
+        {
+            if (asset == null)
+                return;
+
+            asset.LastUploadFailed = false;
+            asset.LastBundlePlatforms = System.Array.Empty<string>();
+            asset.LastBundlePaths = System.Array.Empty<string>();
+
+            EditorUtility.SetDirty(asset);
+            if (serializedObject?.targetObject == asset)
+                serializedObject.ApplyModifiedProperties();
+            AssetDatabase.SaveAssetIfDirty(asset);
+        }
+
+        private bool ShouldShowRetryUI()
+        {
+            if (Target == null || !Target.LastUploadFailed)
+                return false;
+
+            var platforms = Target.LastBundlePlatforms;
+            var paths = Target.LastBundlePaths;
+
+            if (platforms == null || paths == null || platforms.Length == 0 || paths.Length == 0)
+                return false;
+
+            if (platforms.Length != paths.Length)
+                return false;
+
+            // Check if all bundle files still exist
+            return paths.All(File.Exists);
+        }
+
+        private void RetryUpload()
+        {
+            if (Target == null || !Target.LastUploadFailed)
+                return;
+
+            var platforms = Target.LastBundlePlatforms;
+            var paths = Target.LastBundlePaths;
+
+            if (platforms == null || paths == null || platforms.Length != paths.Length)
+            {
+                EditorUtility.DisplayDialog("Retry Failed", "Bundle information is incomplete or corrupted.", "Ok");
+                ClearBundleRetryInfo(Target);
+                return;
+            }
+
+            // Verify all files exist
+            var missingFiles = paths.Where(p => !File.Exists(p)).ToArray();
+            if (missingFiles.Any())
+            {
+                EditorUtility.DisplayDialog("Retry Failed",
+                    $"Some bundle files no longer exist:\n{string.Join("\n", missingFiles)}", "Ok");
+                ClearBundleRetryInfo(Target);
+                return;
+            }
+
+            // Reconstruct BundleBuild objects from stored data
+            var builds = new List<MetaverseAssetBundleAPI.BundleBuild>();
+            for (int i = 0; i < platforms.Length; i++)
+            {
+                if (Enum.TryParse<Platform>(platforms[i], out var platform))
+                {
+                    builds.Add(new MetaverseAssetBundleAPI.BundleBuild
+                    {
+                        Platforms = platform,
+                        OutputPath = paths[i]
+                    });
+                }
+            }
+
+            if (builds.Count == 0)
+            {
+                EditorUtility.DisplayDialog("Retry Failed", "Could not parse platform information.", "Ok");
+                ClearBundleRetryInfo(Target);
+                return;
+            }
+
+            // Get the asset upsert form
+            var form = GetUpsertForm(Target.ID, Target, true);
+            if (form == null)
+            {
+                EditorUtility.DisplayDialog("Retry Failed", "Could not create upload form.", "Ok");
+                return;
+            }
+
+            // Get the main asset path for bundlePath parameter
+            var mainAsset = GetMainAsset(Target);
+            var bundlePath = mainAsset != null ? AssetDatabase.GetAssetPath(mainAsset as Object) : string.Empty;
+
+            // Retry the upload
+            UploadBundles(Controller, bundlePath, builds, form);
         }
 
         protected void ApplyMetaData(SerializedObject obj, TAssetDto dto)

@@ -34,7 +34,7 @@ namespace MetaverseCloudEngine.Unity.Installer
         private static string _currentPackage;
         private static double _currentPackageStartTime;
         
-        [MenuItem("Assets/Metaverse Cloud Engine/Install Required Packages", false, int.MaxValue)]
+        [MenuItem("Assets/Metaverse Cloud Engine/Force Update", false, int.MaxValue)]
         public static void ForceInstallPackages()
         {
             SessionState.SetBool(InitialUpdateCheckFlag, false);
