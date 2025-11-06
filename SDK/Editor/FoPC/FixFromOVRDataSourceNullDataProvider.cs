@@ -25,8 +25,8 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             var candidates = bodyFiles.Concat(handFiles)
                 .Where(x =>
                     x.Replace("\\", "/").StartsWith("Library/PackageCache/com.meta.xr.sdk.interaction.ovr@") &&
-                    (x.Replace("\\", "/").EndsWith("Runtime/Scripts/Input/FromOVRBodyDataSource.cs") ||
-                     x.Replace("\\", "/").EndsWith("Runtime/Scripts/Input/FromOVRHandDataSource.cs")))
+                    (x.Replace("\\", "/").EndsWith("/FromOVRBodyDataSource.cs") ||
+                     x.Replace("\\", "/").EndsWith("/FromOVRHandDataSource.cs")))
                 .ToArray();
 
             if (candidates.Length == 0) return;

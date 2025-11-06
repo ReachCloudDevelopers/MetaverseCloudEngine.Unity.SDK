@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.9
-- Add null-conditional guard for DataProvider.GetSkeletonPoseData() to prevent NRE
+## 2.203.10
+- Fix file path checks for OVR data source candidates
 
 Updated on November 06, 2025
