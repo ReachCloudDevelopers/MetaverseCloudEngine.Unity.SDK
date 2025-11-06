@@ -2577,6 +2577,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 #if VUPLEX_STANDALONE
                 , typeof(Vuplex.WebView.CanvasWebViewPrefab).Assembly
 #endif
+#if MV_META_INTERACTION
+                , typeof(Oculus.Interaction.Body.Input.Body).Assembly
+#endif
             };
             return assemblies
                 .Concat(GetExtensionMethodTypes().Select(x => x.Assembly).Distinct())

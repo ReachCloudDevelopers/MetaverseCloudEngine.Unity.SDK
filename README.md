@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.7
-- Remove headset pose validation for Android in MetaSpace initialization
+## 2.203.8
+- Add MV_META_INTERACTION define for interaction SDK integration
 
 Updated on November 05, 2025

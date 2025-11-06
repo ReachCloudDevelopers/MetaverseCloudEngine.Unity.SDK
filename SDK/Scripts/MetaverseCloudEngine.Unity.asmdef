@@ -121,6 +121,11 @@
             "define": "MV_META_CORE"
         },
         {
+            "name": "com.meta.xr.sdk.interaction",
+            "expression": "",
+            "define": "MV_META_INTERACTION"
+        },
+        {
             "name": "com.meta.xr.sdk.avatars",
             "expression": "",
             "define": "MV_META_AVATAR"
