@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.10
-- Fix file path checks for OVR data source candidates
+## 2.203.11
+- Fix null handling in DataProvider.GetSkeletonPoseData() replacement
 
 Updated on November 06, 2025

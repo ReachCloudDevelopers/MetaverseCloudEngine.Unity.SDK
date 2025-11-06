@@ -32,7 +32,7 @@ namespace MetaverseCloudEngine.Unity.FixingOtherPeoplesCode
             if (candidates.Length == 0) return;
 
             const string target = "var data = DataProvider.GetSkeletonPoseData();";
-            const string replacement = "var data = DataProvider?/*PATCHED*/.GetSkeletonPoseData();";
+            const string replacement = "var data = DataProvider?/*PATCHED*/.GetSkeletonPoseData() ?? default;";
 
             foreach (var file in candidates)
             {
