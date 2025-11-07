@@ -490,17 +490,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                             GUIUtility.ExitGUI();
                         }
 
-                        // Show retry UI if last upload failed and bundle files still exist
-                        if (ShouldShowRetryUI())
-                        {
-                            EditorGUILayout.HelpBox("We've detected the most recent update has failed, press the button below to retry", MessageType.Warning);
-                            if (GUILayout.Button("Retry Upload"))
-                            {
-                                RetryUpload();
-                                GUIUtility.ExitGUI();
-                            }
-                        }
-
                         if (CanPublish() && _publishProperty != null)
                         {
                             EditorGUILayout.PropertyField(_publishProperty);
@@ -1237,6 +1226,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             IUpsertAssets<TAssetDto, TAssetUpsertForm> upsertController,
             Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null)
         {
+            // Store build context for potential retry
+            _lastBuildMainAsset = mainAsset;
+            _lastBuildAsset = asset;
+            _lastBuildAssetUpsertForm = assetUpsertForm;
+            _lastBuildUpsertController = upsertController;
+            _lastBuildOnSuccess = onBuildSuccess;
+
             TryDisableGPUInstancingOnWebGLIfUserWantsTo(mainAsset, asset);
 
             switch (mainAsset)
@@ -1343,10 +1339,43 @@ namespace MetaverseCloudEngine.Unity.Editors
             catch (Exception e) { Debug.LogException(e); /* ignored */ }
         }
 
-        private static void OnBuildError(object e)
+        // Store build context for retry
+        private object _lastBuildMainAsset;
+        private TAsset _lastBuildAsset;
+        private TAssetUpsertForm _lastBuildAssetUpsertForm;
+        private IUpsertAssets<TAssetDto, TAssetUpsertForm> _lastBuildUpsertController;
+        private Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> _lastBuildOnSuccess;
+        private SerializedObject _lastBuildSerializedObject;
+
+        private void OnBuildError(object e)
         {
-            EditorUtility.DisplayDialog("Build Failed", $"Asset bundle building process failed. {e.ToPrettyErrorString()}", "Ok");
             EditorUtility.ClearProgressBar();
+
+            // Show dialog with retry option
+            int option = EditorUtility.DisplayDialogComplex(
+                "Build Failed",
+                $"Asset bundle building process failed. {e.ToPrettyErrorString()}\n\nWould you like to retry the build?",
+                "Retry",
+                "Cancel",
+                "Ok");
+
+            // If user clicked "Retry" (option 0), attempt retry immediately
+            if (option == 0)
+            {
+                RetryBuild();
+            }
+        }
+
+        private void RetryBuild()
+        {
+            if (_lastBuildMainAsset == null || _lastBuildAsset == null || _lastBuildAssetUpsertForm == null || _lastBuildUpsertController == null)
+            {
+                EditorUtility.DisplayDialog("Retry Failed", "Build information is incomplete or corrupted.", "Ok");
+                return;
+            }
+
+            // Retry the build
+            BeginBuildAndUpload(_lastBuildMainAsset, _lastBuildAsset, _lastBuildAssetUpsertForm, _lastBuildUpsertController, _lastBuildOnSuccess);
         }
 
         private async void UploadBundles(
@@ -1359,13 +1388,23 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             if (tries >= 3)
             {
-                EditorUtility.DisplayDialog(
-                    "Upload Failed",
-                    "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
-                    "Ok");
-
                 // Store failure state and bundle paths for retry
                 StoreBundleInfoForRetry(builds);
+
+                // Show dialog with retry option
+                int option = EditorUtility.DisplayDialogComplex(
+                    "Upload Failed",
+                    "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
+                    "Retry",
+                    "Cancel",
+                    "Ok");
+
+                // If user clicked "Retry" (option 0), attempt retry immediately
+                if (option == 0)
+                {
+                    RetryUpload();
+                }
+
                 return;
             }
 
@@ -1542,13 +1581,41 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     // Store failure state and bundle paths for retry
                     StoreBundleInfoForRetry(builds);
-                    UploadFailure(prettyErrorString);
+                    ShowUploadFailureDialog(prettyErrorString);
                 }
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions during upload
+                MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
+
+                // Store failure state and bundle paths for retry
+                StoreBundleInfoForRetry(builds);
+                ShowUploadFailureDialog(ex.Message);
             }
             finally
             {
                 foreach (var stream in openStreams)
                     try { stream?.Dispose(); } catch { /* ignored */ }
+            }
+        }
+
+        private void ShowUploadFailureDialog(string errorMessage)
+        {
+            EditorUtility.ClearProgressBar();
+
+            // Show dialog with retry option
+            int option = EditorUtility.DisplayDialogComplex(
+                "Upload Failed",
+                $"{errorMessage.ToPrettyErrorString()}\n\nWould you like to retry the upload?",
+                "Retry",
+                "Cancel",
+                "Ok");
+
+            // If user clicked "Retry" (option 0), attempt retry immediately
+            if (option == 0)
+            {
+                RetryUpload();
             }
         }
 

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.15
-- Add FixUnitDebugLogWarning to suppress excessive Debug.LogWarning messages in Unit.cs
+## 2.203.16
+- Implement retry functionality for asset build and upload failures
 
 Updated on November 07, 2025
