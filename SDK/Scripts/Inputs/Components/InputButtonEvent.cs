@@ -27,7 +27,7 @@ namespace MetaverseCloudEngine.Unity.Inputs.Components
         }
 
         [LabelText("")]
-        [PropertySpace(-10, 10)]
+        [PropertySpace(10, 10)]
         [Indent(-1)]
         public InputActionProperty action;
         [Space]

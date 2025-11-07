@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.18
-- Add FixUnitConnectionDebugLogWarning to suppress excessive warning logs during Visual Scripting
+## 2.203.19
+- fix: adjust PropertySpace attribute for action property in InputButtonEvent
 
 Updated on November 07, 2025
