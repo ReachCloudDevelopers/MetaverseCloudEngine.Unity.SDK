@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.19
-- fix: adjust PropertySpace attribute for action property in InputButtonEvent
+## 2.203.20
+- Refactor upload failure handling and retry logic in AssetEditor; streamline build target restoration in MetaverseAssetBundleAPI.
 
 Updated on November 07, 2025

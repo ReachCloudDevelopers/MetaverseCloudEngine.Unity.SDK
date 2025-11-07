@@ -251,17 +251,19 @@ namespace MetaverseCloudEngine.Unity.Editors
                     yield return null;
                 }
 
+                // Switch back to the original build target before invoking callbacks/dialogs
+                var defaultGroup = BuildPipeline.GetBuildTargetGroup(originalBuildTarget);
+                EditorUserBuildSettings.SwitchActiveBuildTarget(defaultGroup, originalBuildTarget);
+                EditorUserBuildSettings.selectedBuildTargetGroup = defaultGroup;
+                if (defaultGroup == BuildTargetGroup.Standalone)
+                    EditorUserBuildSettings.selectedStandaloneTarget = originalBuildTarget;
+
                 completed?.Invoke(successfulBuilds);
             }
             finally
             {
                 if (lockedAssemblies)
                     EditorApplication.UnlockReloadAssemblies();
-                var defaultGroup = BuildPipeline.GetBuildTargetGroup(originalBuildTarget);
-                EditorUserBuildSettings.SwitchActiveBuildTarget(defaultGroup, originalBuildTarget);
-                EditorUserBuildSettings.selectedBuildTargetGroup = defaultGroup;
-                if (defaultGroup == BuildTargetGroup.Standalone)
-                    EditorUserBuildSettings.selectedStandaloneTarget = originalBuildTarget;
                 postProcessBuild?.Invoke();
             }
         }

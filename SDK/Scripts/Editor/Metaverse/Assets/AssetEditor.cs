@@ -1402,7 +1402,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 // If user clicked "Retry" (option 0), attempt retry immediately
                 if (option == 0)
                 {
-                    RetryUpload();
+                    UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess);
                 }
 
                 return;
@@ -1581,7 +1581,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     // Store failure state and bundle paths for retry
                     StoreBundleInfoForRetry(builds);
-                    ShowUploadFailureDialog(prettyErrorString);
+                    ShowUploadFailureDialog(prettyErrorString, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
                 }
             }
             catch (Exception ex)
@@ -1591,7 +1591,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 // Store failure state and bundle paths for retry
                 StoreBundleInfoForRetry(builds);
-                ShowUploadFailureDialog(ex.Message);
+                ShowUploadFailureDialog(ex.Message, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
             }
             finally
             {
@@ -1600,7 +1600,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private void ShowUploadFailureDialog(string errorMessage)
+        private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null)
         {
             EditorUtility.ClearProgressBar();
 
@@ -1615,7 +1615,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             // If user clicked "Retry" (option 0), attempt retry immediately
             if (option == 0)
             {
-                RetryUpload();
+                retryCallback?.Invoke();
             }
         }
 
@@ -1685,89 +1685,16 @@ namespace MetaverseCloudEngine.Unity.Editors
             asset.LastBundlePaths = System.Array.Empty<string>();
 
             EditorUtility.SetDirty(asset);
-            if (serializedObject?.targetObject == asset)
-                serializedObject.ApplyModifiedProperties();
+            try
+            {
+                if (serializedObject?.targetObject == asset)
+                    serializedObject.ApplyModifiedProperties();
+            }
+            catch
+            {
+                // ignored
+            }
             AssetDatabase.SaveAssetIfDirty(asset);
-        }
-
-        private bool ShouldShowRetryUI()
-        {
-            if (Target == null || !Target.LastUploadFailed)
-                return false;
-
-            var platforms = Target.LastBundlePlatforms;
-            var paths = Target.LastBundlePaths;
-
-            if (platforms == null || paths == null || platforms.Length == 0 || paths.Length == 0)
-                return false;
-
-            if (platforms.Length != paths.Length)
-                return false;
-
-            // Check if all bundle files still exist
-            return paths.All(File.Exists);
-        }
-
-        private void RetryUpload()
-        {
-            if (Target == null || !Target.LastUploadFailed)
-                return;
-
-            var platforms = Target.LastBundlePlatforms;
-            var paths = Target.LastBundlePaths;
-
-            if (platforms == null || paths == null || platforms.Length != paths.Length)
-            {
-                EditorUtility.DisplayDialog("Retry Failed", "Bundle information is incomplete or corrupted.", "Ok");
-                ClearBundleRetryInfo(Target);
-                return;
-            }
-
-            // Verify all files exist
-            var missingFiles = paths.Where(p => !File.Exists(p)).ToArray();
-            if (missingFiles.Any())
-            {
-                EditorUtility.DisplayDialog("Retry Failed",
-                    $"Some bundle files no longer exist:\n{string.Join("\n", missingFiles)}", "Ok");
-                ClearBundleRetryInfo(Target);
-                return;
-            }
-
-            // Reconstruct BundleBuild objects from stored data
-            var builds = new List<MetaverseAssetBundleAPI.BundleBuild>();
-            for (int i = 0; i < platforms.Length; i++)
-            {
-                if (Enum.TryParse<Platform>(platforms[i], out var platform))
-                {
-                    builds.Add(new MetaverseAssetBundleAPI.BundleBuild
-                    {
-                        Platforms = platform,
-                        OutputPath = paths[i]
-                    });
-                }
-            }
-
-            if (builds.Count == 0)
-            {
-                EditorUtility.DisplayDialog("Retry Failed", "Could not parse platform information.", "Ok");
-                ClearBundleRetryInfo(Target);
-                return;
-            }
-
-            // Get the asset upsert form
-            var form = GetUpsertForm(Target.ID, Target, true);
-            if (form == null)
-            {
-                EditorUtility.DisplayDialog("Retry Failed", "Could not create upload form.", "Ok");
-                return;
-            }
-
-            // Get the main asset path for bundlePath parameter
-            var mainAsset = GetMainAsset(Target);
-            var bundlePath = mainAsset != null ? AssetDatabase.GetAssetPath(mainAsset as Object) : string.Empty;
-
-            // Retry the upload
-            UploadBundles(Controller, bundlePath, builds, form);
         }
 
         protected void ApplyMetaData(SerializedObject obj, TAssetDto dto)
