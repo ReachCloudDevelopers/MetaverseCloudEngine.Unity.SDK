@@ -1,4 +1,4 @@
-#if MV_META_INTERACTION
+#if MV_META_INTERACTION && METAVERSE_CLOUD_ENGINE
 
 using UnityEngine;
 using Oculus.Interaction.Body.Input;

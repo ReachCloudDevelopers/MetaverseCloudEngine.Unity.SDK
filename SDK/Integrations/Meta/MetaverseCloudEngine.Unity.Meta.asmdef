@@ -11,7 +11,8 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [
-        "MV_META_INTERACTION"
+        "MV_META_INTERACTION",
+        "METAVERSE_CLOUD_ENGINE"
     ],
     "versionDefines": [
         {
