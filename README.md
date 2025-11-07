@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.20
-- Refactor upload failure handling and retry logic in AssetEditor; streamline build target restoration in MetaverseAssetBundleAPI.
+## 2.203.21
+- Disable API client logging by commenting out the log message handler
 
 Updated on November 07, 2025

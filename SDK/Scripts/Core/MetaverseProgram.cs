@@ -226,7 +226,8 @@ namespace MetaverseCloudEngine.Unity
                         Logger?.LogWarning(deviceIdWarmupError);
                     }
 
-                    ApiClient.LogMessage += message => Logger.Log($"[API_CLIENT] {message}");
+                    // Uncomment to enable API client logging
+                    // ApiClient.LogMessage += message => Logger.Log($"[API_CLIENT] {message}");
 
                     DetectAssetVersion();
 
