@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.14
-- Add METAVERSE_CLOUD_ENGINE to defineConstraints and update preprocessor directives
+## 2.203.15
+- Add FixUnitDebugLogWarning to suppress excessive Debug.LogWarning messages in Unit.cs
 
-Updated on November 06, 2025
+Updated on November 07, 2025
