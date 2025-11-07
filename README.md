@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.16
-- Implement retry functionality for asset build and upload failures
+## 2.203.17
+- Implement error handling for model and classes file loading in SegFormer and YOLO components
 
 Updated on November 07, 2025

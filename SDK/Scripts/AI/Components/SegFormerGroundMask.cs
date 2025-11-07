@@ -8,6 +8,7 @@ using MetaverseCloudEngine.Unity.AI;
 using System;
 using System.IO;
 using System.Collections.Generic;
+using MetaverseCloudEngine.Unity.Async;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -202,11 +203,40 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return deps;
         }
 
+        private void DeleteCachedFileAndRetry(string filePath, string reason)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(filePath))
+                    return;
+
+                if (File.Exists(filePath))
+                {
+                    MetaverseProgram.Logger.Log($"SegFormer: Deleting corrupted cached file '{filePath}' due to {reason}.");
+                    File.Delete(filePath);
+                }
+
+                // Trigger re-fetch after a short delay to allow cleanup
+                MetaverseDispatcher.WaitForSeconds(0.5f, () =>
+                {
+                    if (!this) return;
+                    MetaverseProgram.Logger.Log("SegFormer: Re-fetching resources after cache clear.");
+                    FetchResources();
+                });
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"SegFormer: Failed to delete cached file '{filePath}': {ex.Message}");
+            }
+        }
+
         private void Run(string[] fetchedPaths = null)
         {
             // Choose robust backend: prefer GPUCompute if supported, else CPU. WebGL uses CPU.
 
             Model model = null;
+            string modelPath = null;
+
             if (fetchedPaths != null && fetchedPaths.Length > 0)
             {
                 foreach (var p in fetchedPaths)
@@ -214,24 +244,60 @@ namespace MetaverseCloudEngine.Unity.AI.Components
                     if (string.IsNullOrEmpty(p)) continue;
                     if (p.EndsWith(".onnx", StringComparison.OrdinalIgnoreCase) || p.EndsWith(".sentis", StringComparison.OrdinalIgnoreCase))
                     {
-                        model = ModelLoader.Load(p);
-                        break;
+                        modelPath = p;
+                        try
+                        {
+                            model = ModelLoader.Load(p);
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            MetaverseProgram.Logger.LogError($"Failed to load ONNX model from '{p}': {ex.Message}. Attempting re-download.");
+                            DeleteCachedFileAndRetry(p, "ONNX parsing error");
+                            return;
+                        }
                     }
                 }
             }
             else if (modelAsset)
             {
-                model = ModelLoader.Load(modelAsset);
+                try
+                {
+                    model = ModelLoader.Load(modelAsset);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to load embedded ONNX model: {ex.Message}");
+                    enabled = false;
+                    return;
+                }
             }
             else if (!string.IsNullOrEmpty(modelLocalPath) && File.Exists(modelLocalPath))
             {
-                model = ModelLoader.Load(modelLocalPath);
+                try
+                {
+                    model = ModelLoader.Load(modelLocalPath);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to load ONNX model from '{modelLocalPath}': {ex.Message}");
+                    enabled = false;
+                    return;
+                }
             }
 
             if (model == null)
             {
                 MetaverseProgram.Logger.LogError("SegFormer model is missing or not found.");
-                enabled = false;
+                if (!string.IsNullOrEmpty(modelPath))
+                {
+                    MetaverseProgram.Logger.Log("Attempting to re-download corrupted ONNX model.");
+                    DeleteCachedFileAndRetry(modelPath, "null model after load");
+                }
+                else
+                {
+                    enabled = false;
+                }
                 return;
             }
 

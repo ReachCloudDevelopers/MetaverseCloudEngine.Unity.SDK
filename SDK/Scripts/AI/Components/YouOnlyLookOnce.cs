@@ -10,6 +10,7 @@ using UnityEngine.Events;
 using UnityEngine.UI;
 using System.Collections.ObjectModel;
 using UnityEngine.Rendering;
+using MetaverseCloudEngine.Unity.Async;
 
 namespace MetaverseCloudEngine.Unity.AI.Components
 {
@@ -333,15 +334,64 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             return deps;
         }
 
+        private void DeleteCachedFileAndRetry(string filePath, string reason)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(filePath))
+                    return;
+
+                if (File.Exists(filePath))
+                {
+                    MetaverseProgram.Logger.Log($"YOLO: Deleting corrupted cached file '{filePath}' due to {reason}.");
+                    File.Delete(filePath);
+                }
+
+                // Trigger re-fetch after a short delay to allow cleanup
+                MetaverseDispatcher.WaitForSeconds(0.5f, () =>
+                {
+                    if (!this) return;
+                    MetaverseProgram.Logger.Log("YOLO: Re-fetching resources after cache clear.");
+                    FetchResources();
+                });
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"YOLO: Failed to delete cached file '{filePath}': {ex.Message}");
+            }
+        }
+
         private void Run(string[] fetchedPaths = null)
         {
             string classesText;
-            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".names"), out var classesPath) && !string.IsNullOrEmpty(classesPath))
-                classesText = File.ReadAllText(classesPath);
+            string classesPath = null;
+            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".names"), out classesPath) && !string.IsNullOrEmpty(classesPath))
+            {
+                try
+                {
+                    classesText = File.ReadAllText(classesPath);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to read classes file at '{classesPath}': {ex.Message}. Attempting re-download.");
+                    DeleteCachedFileAndRetry(classesPath, "label file read error");
+                    return;
+                }
+            }
             else if (classesAsset)
                 classesText = classesAsset.text;
             else if (!string.IsNullOrEmpty(classesLocalPath) && File.Exists(classesLocalPath))
-                classesText = File.ReadAllText(classesLocalPath);
+            {
+                try
+                {
+                    classesText = File.ReadAllText(classesLocalPath);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to read classes file at '{classesLocalPath}': {ex.Message}");
+                    return;
+                }
+            }
             else
             {
                 MetaverseProgram.Logger.LogError("Classes file is missing or not found.");
@@ -351,23 +401,89 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             if (string.IsNullOrEmpty(classesText))
             {
                 MetaverseProgram.Logger.LogError("Classes file is empty or not found.");
+                if (!string.IsNullOrEmpty(classesPath))
+                {
+                    MetaverseProgram.Logger.Log("Attempting to re-download empty label file.");
+                    DeleteCachedFileAndRetry(classesPath, "empty label file");
+                }
                 return;
             }
 
-            _labels = classesText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            try
+            {
+                _labels = classesText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                if (_labels == null || _labels.Length == 0)
+                {
+                    MetaverseProgram.Logger.LogError("Classes file contains no valid labels.");
+                    if (!string.IsNullOrEmpty(classesPath))
+                    {
+                        MetaverseProgram.Logger.Log("Attempting to re-download invalid label file.");
+                        DeleteCachedFileAndRetry(classesPath, "invalid label file");
+                    }
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"Failed to parse classes file: {ex.Message}");
+                if (!string.IsNullOrEmpty(classesPath))
+                {
+                    MetaverseProgram.Logger.Log("Attempting to re-download corrupted label file.");
+                    DeleteCachedFileAndRetry(classesPath, "label file parsing error");
+                }
+                return;
+            }
 
             var backend = BackendType.CPU;
             Model model = null;
-            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".onnx") || x.EndsWith(".sentis"), out var modelPath) && !string.IsNullOrEmpty(modelPath))
-                model = ModelLoader.Load(modelPath);
+            string modelPath = null;
+
+            if (fetchedPaths != null && fetchedPaths.TryGetFirstOrDefault(x => x.EndsWith(".onnx") || x.EndsWith(".sentis"), out modelPath) && !string.IsNullOrEmpty(modelPath))
+            {
+                try
+                {
+                    model = ModelLoader.Load(modelPath);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to load ONNX model from '{modelPath}': {ex.Message}. Attempting re-download.");
+                    DeleteCachedFileAndRetry(modelPath, "ONNX parsing error");
+                    return;
+                }
+            }
             else if (modelAsset)
-                model = ModelLoader.Load(modelAsset);
+            {
+                try
+                {
+                    model = ModelLoader.Load(modelAsset);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to load embedded ONNX model: {ex.Message}");
+                    return;
+                }
+            }
             else if (!string.IsNullOrEmpty(modelLocalPath) && File.Exists(modelLocalPath))
-                model = ModelLoader.Load(modelLocalPath);
+            {
+                try
+                {
+                    model = ModelLoader.Load(modelLocalPath);
+                }
+                catch (Exception ex)
+                {
+                    MetaverseProgram.Logger.LogError($"Failed to load ONNX model from '{modelLocalPath}': {ex.Message}");
+                    return;
+                }
+            }
 
             if (model == null)
             {
                 MetaverseProgram.Logger.LogError("Model is missing or not found.");
+                if (!string.IsNullOrEmpty(modelPath))
+                {
+                    MetaverseProgram.Logger.Log("Attempting to re-download corrupted ONNX model.");
+                    DeleteCachedFileAndRetry(modelPath, "null model after load");
+                }
                 return;
             }
 
