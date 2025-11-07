@@ -12,7 +12,11 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.12
-- Refactor package installer menu item and enhance asset upload retry mechanism
+## 2.203.13
+- Add Meta integration and Oculus interaction extensions
+- 
+- - Introduced new assembly definition for Meta integration.
+- - Added OculusInteractionExtensions class with methods for body pose retrieval.
+- - Updated existing assembly definitions to include new references.
 
 Updated on November 06, 2025

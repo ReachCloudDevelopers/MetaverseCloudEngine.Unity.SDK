@@ -2469,6 +2469,9 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 , typeof(Functional)
                 , typeof(TextureConverter)
 #endif
+#if MV_META_INTERACTION
+                , typeof(MetaverseCloudEngine.Unity.Meta.OculusInteractionExtensions)
+#endif
             };
         }
 

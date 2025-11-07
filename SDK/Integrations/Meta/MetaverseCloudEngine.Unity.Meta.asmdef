@@ -1,0 +1,24 @@
+{
+    "name": "MetaverseCloudEngine.Unity.Meta",
+    "rootNamespace": "MetaverseCloudEngine.Unity.Meta",
+    "references": [
+        "GUID:2a230cb87a1d3ba4a98bdc0ddae76e6c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "MV_META_INTERACTION"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.meta.xr.sdk.interaction",
+            "expression": "",
+            "define": "MV_META_INTERACTION"
+        }
+    ],
+    "noEngineReferences": false
+}
