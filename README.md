@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.22
-- Refactor LoginStore: Remove excessive logging and streamline token validation process
+## 2.204.0
+- Add BatchBuilderWindow for batch building and uploading MetaSpaces and MetaPrefabs
 
 Updated on November 11, 2025
