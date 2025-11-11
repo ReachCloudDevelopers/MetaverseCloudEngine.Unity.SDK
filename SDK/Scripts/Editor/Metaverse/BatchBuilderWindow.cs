@@ -570,50 +570,22 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private bool SceneContainsMetaSpace(string scenePath)
         {
-            // Use a more robust method to check for MetaSpace component
-            // First try a quick text search
+            // Check if the scene file contains a reference to the MetaSpace script
+            // The MetaSpace script GUID is: d6d49d5dd1953ec498f194bd8c73176b
+            // Unity scene files reference scripts with: "m_Script: {fileID: 11500000, guid: d6d49d5dd1953ec498f194bd8c73176b"
             try
             {
                 var sceneContents = System.IO.File.ReadAllText(scenePath);
 
-                // Look for the MetaSpace MonoBehaviour reference
-                // The GUID for MetaSpace script is consistent
-                if (!sceneContents.Contains("MetaSpace"))
-                {
-                    return false;
-                }
-
-                // More thorough check: look for the actual component reference pattern
-                // Unity scene files contain "--- !u!114" for MonoBehaviour components
-                // followed by "m_Script: {fileID: 11500000, guid: <script_guid>}"
-                if (sceneContents.Contains("m_Script:") &&
-                    (sceneContents.Contains("MetaSpace") || sceneContents.Contains("metaSpace")))
-                {
-                    // Additional validation: check if it's actually a component, not just a reference
-                    var lines = sceneContents.Split('\n');
-                    for (int i = 0; i < lines.Length; i++)
-                    {
-                        if (lines[i].Contains("m_Name: MetaSpace") ||
-                            (lines[i].Contains("m_Script:") && i + 5 < lines.Length))
-                        {
-                            // Check nearby lines for MetaSpace type
-                            for (int j = Math.Max(0, i - 5); j < Math.Min(lines.Length, i + 10); j++)
-                            {
-                                if (lines[j].Contains("MetaSpace") && lines[j].Contains("m_Script"))
-                                {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
+                // Look for the MetaSpace script GUID in the scene file
+                // This is the most reliable way to detect if a scene has a MetaSpace component
+                return sceneContents.Contains("d6d49d5dd1953ec498f194bd8c73176b");
             }
             catch
             {
-                // If text search fails, ignore this scene
+                // If we can't read the file, assume it doesn't contain MetaSpace
+                return false;
             }
-
-            return false;
         }
 
         #endregion

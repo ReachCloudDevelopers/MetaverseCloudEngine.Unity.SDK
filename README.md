@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.2
-- Add search and asset type filters to BatchBuilderWindow
+## 2.204.3
+- Refactor SceneContainsMetaSpace method for improved MetaSpace detection
 
 Updated on November 11, 2025
