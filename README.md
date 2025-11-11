@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.0
-- Add BatchBuilderWindow for batch building and uploading MetaSpaces and MetaPrefabs
+## 2.204.1
+- Fixed compiler errors.
 
 Updated on November 11, 2025

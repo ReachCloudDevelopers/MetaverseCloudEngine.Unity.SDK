@@ -811,10 +811,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             // Get supported platforms from MetaSpace
-            var platforms = metaSpace.MetaData.SupportedPlatforms;
-            if (platforms == Platform.None)
+            var platforms = metaSpace.SupportedPlatforms;
+            if (platforms == 0)
             {
-                platforms = Platform.Windows | Platform.Android | Platform.iOS | Platform.WebGL;
+                platforms = Platform.StandaloneWindows64 | Platform.Android | Platform.iOS | Platform.WebGL;
             }
 
             // Build the scene
@@ -849,10 +849,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             // Get supported platforms from MetaPrefab
-            var platforms = metaPrefab.MetaData.SupportedPlatforms;
-            if (platforms == Platform.None)
+            var platforms = metaPrefab.SupportedPlatforms;
+            if (platforms == 0)
             {
-                platforms = Platform.Windows | Platform.Android | Platform.iOS | Platform.WebGL;
+                platforms = Platform.StandaloneWindows64 | Platform.Android | Platform.iOS | Platform.WebGL;
             }
 
             // Build the prefab
