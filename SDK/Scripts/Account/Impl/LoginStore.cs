@@ -163,15 +163,12 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             const int maxRetries = 3;
 
-            MetaverseProgram.Logger.Log($"LoginStore: Beginning initialization. UseCookieAuth: {ApiClient.Account.UseCookieAuthentication}, HasAccessToken: {!string.IsNullOrEmpty(AccessToken)}");
-
             if (ApiClient.Account.UseCookieAuthentication || !string.IsNullOrEmpty(AccessToken))
             {
 #if UNITY_EDITOR
                 await WaitForNetworkConnectivityAsync();  // Skip network wait in editor
 #endif
 
-                MetaverseProgram.Logger.Log($"LoginStore: Validating tokens with server...");
                 var response =
                     !ApiClient.Account.UseCookieAuthentication ?
                         await ApiClient.Account.ValidateTokenAsync(AccessToken, RefreshToken, refreshTokenRetries: 2) :  // Reduced retries globally for faster feedback
@@ -187,11 +184,8 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
 #if UNITY_EDITOR
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Editor fast-fail; proceeding as unauthenticated.");
                             _isInitialized = true;
                             return;
-#else
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: 403 Forbidden. Server: {serverReason}. Retrying with backoff...");
 #endif
                         }
 
@@ -201,11 +195,8 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         // For 500+ errors: Retry up to 3 times
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
-                            MetaverseProgram.Logger.LogWarning($"LoginStore: 5xx error (Attempt #{_initializationRetries}/{maxRetries}). Server: {serverReason}. Retrying in {delaySeconds}s...");
-
                             if (_initializationRetries >= maxRetries)
                             {
-                                MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached for server error. Server: {serverReason}. Proceeding as unauthenticated.");
                                 _isInitialized = true;
                                 return;
                             }
@@ -225,30 +216,15 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         }
 
                         // For other errors: Up to 3 retries
-                        MetaverseProgram.Logger.LogWarning($"LoginStore: Non-5xx error (Attempt #{_initializationRetries}/{maxRetries}). Status: {response.StatusCode}. Server: {serverReason}");
                         if (_initializationRetries < maxRetries)
                         {
                             await DelayAsync((int)(delaySeconds * 1000));
                             await InitializeAsync();
                         }
-                        else
-                        {
-                            MetaverseProgram.Logger.LogError($"LoginStore: Max retries ({maxRetries}) reached. Server: {serverReason}. Proceeding as unauthenticated.");
-                        }
-                    }
-                    else
-                    {
-                        MetaverseProgram.Logger.Log($"LoginStore: Token validation successful. Status: {response.StatusCode}");
                     }
 
                     _isInitialized = true;
                     return;
-                }
-
-                var errorMessage = await response.GetErrorAsync();
-                if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    MetaverseProgram.Logger.LogWarning("LoginStore: Failed to initialize - invalid token: " + BuildServerReasonMessage(errorMessage));
                 }
 
                 AccessToken = null;
@@ -296,7 +272,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 await UniTask.SwitchToMainThread();
             }
 
-            MetaverseProgram.Logger.Log($"LoginStore: User logged in via {kind}. Persisting tokens...");
             PersistTokens(ApiClient.Account.AccessToken, ApiClient.Account.RefreshToken, "OnLoggedIn");
         }
 
@@ -314,7 +289,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             // This prevents tokens from being cleared during editor domain reload
             if (!_isInitialized)
             {
-                MetaverseProgram.Logger.Log($"LoginStore: Logout event during initialization (user: {(user != null ? "present" : "null")}), preserving tokens.");
                 return;
             }
 
@@ -323,14 +297,9 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 #if UNITY_EDITOR
                 if (!Application.isPlaying)
                     UnityEditor.EditorUtility.DisplayDialog("Session Expired", "Your session has expired. Please sign in again.", "OK");
-                else
-                    MetaverseProgram.Logger.LogWarning("LoginStore: Your session has expired. Please sign in again.");
-#else
-                MetaverseProgram.Logger.LogWarning("LoginStore: Your session has expired. Please sign in again.");
 #endif
             }
 
-            MetaverseProgram.Logger.Log($"LoginStore: User logged out via {kind}. Clearing persisted tokens...");
             ClearPersistedTokens($"OnLoggedOut ({kind})");
 
             // Auto-retry login using environment credentials, if available
@@ -351,7 +320,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             var accessToken = ApiClient.Account.AccessToken;
             var refreshToken = ApiClient.Account.RefreshToken;
 
-            MetaverseProgram.Logger.Log($"LoginStore: Tokens updated via event. AccessToken present: {!string.IsNullOrEmpty(accessToken)}, RefreshToken present: {!string.IsNullOrEmpty(refreshToken)}");
             PersistTokens(accessToken, refreshToken, "OnTokensUpdated");
         }
 
@@ -376,7 +344,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
             if (changed)
             {
-                MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens persisted (immediate)");
                 // Use a more robust flush mechanism that handles assembly reloads better
                 FlushPrefsSafely();
             }
@@ -389,7 +356,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
             AccessToken = null;
             RefreshToken = null;
-            MetaverseProgram.Logger.Log($"LoginStore: {source} - Tokens cleared (immediate)");
             FlushPrefs();
         }
 
@@ -404,7 +370,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 #else
                 PlayerPrefs.Save();
 #endif
-                MetaverseProgram.Logger.Log("LoginStore: Preferences flushed successfully");
             }
             catch (Exception ex)
             {
@@ -412,7 +377,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             }
         }
 
-        [System.Diagnostics.Conditional("UNITY_EDITOR")]
+        [Conditional("UNITY_EDITOR")]
         private static void FlushPrefs()
         {
 #if UNITY_EDITOR
@@ -428,7 +393,6 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private static void RegisterAssemblyReloadHandler()
         {
             UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            UnityEditor.AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 
         private static void OnBeforeAssemblyReload()
@@ -441,25 +405,10 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 // EditorPrefs doesn't have a Save method in all Unity versions, but PlayerPrefs.Save() handles both
                 // In newer Unity versions, EditorPrefs.Save() may not exist, so we skip it
 #endif
-                MetaverseProgram.Logger.Log("LoginStore: Preferences flushed before assembly reload");
             }
             catch (Exception ex)
             {
                 MetaverseProgram.Logger.LogError($"LoginStore: Failed to flush preferences before assembly reload: {ex.Message}");
-            }
-        }
-
-        private static void OnAfterAssemblyReload()
-        {
-            try
-            {
-                // After assembly reload, ensure our static state is properly initialized
-                // This helps prevent issues where the LoginStore instance might be in an inconsistent state
-                MetaverseProgram.Logger.Log("LoginStore: Assembly reload completed - ensuring token persistence integrity");
-            }
-            catch (Exception ex)
-            {
-                MetaverseProgram.Logger.LogError($"LoginStore: Error during post-assembly reload initialization: {ex.Message}");
             }
         }
 #endif
@@ -520,15 +469,15 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                     if (!string.IsNullOrWhiteSpace(value))
                         return value;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    MetaverseProgram.Logger.LogWarning($"LoginStore: Failed to read environment variable '{key}': {ex.Message}");
+                    // Silently ignore
                 }
             }
             return null;
         }
 
-        private (string username, string password)? GetEnvCredentials()
+        private static (string username, string password)? GetEnvCredentials()
         {
             // Prefer METAVERSE_*; fall back to MV_*
             var username = ReadEnvironmentVariable("METAVERSE_USERNAME", "MV_USERNAME");
@@ -550,12 +499,9 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var creds = GetEnvCredentials();
                 if (!creds.HasValue)
                 {
-                    // Keep this log at Info to aid debugging but avoid noise
-                    MetaverseProgram.Logger.Log("LoginStore: No environment credentials detected; skipping auto-login.");
                     return false;
                 }
 
-                MetaverseProgram.Logger.Log($"LoginStore: Environment credentials detected ({reason}); attempting username/password sign-in.");
                 await WaitForNetworkConnectivityAsync();
 
                 var form = new GenerateSystemUserTokenForm
@@ -568,18 +514,14 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 var response = await ApiClient.Account.PasswordSignInAsync(form);
                 if (!response.Succeeded)
                 {
-                    var error = await response.GetErrorAsync();
-                    MetaverseProgram.Logger.LogWarning($"LoginStore: Environment sign-in failed: {BuildServerReasonMessage(error)}");
                     return false;
                 }
 
                 // Tokens will be persisted via LoggedIn/TokensUpdated events
-                MetaverseProgram.Logger.Log("LoginStore: Environment sign-in succeeded.");
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
-                MetaverseProgram.Logger.LogError($"LoginStore: Exception during environment sign-in: {ex.Message}");
                 return false;
             }
         }
@@ -589,23 +531,16 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             if (Application.isEditor)
             {
-                MetaverseProgram.Logger.Log("LoginStore: Editor mode - skipping network wait for speed.");
                 return;
             }
 
             if (Application.internetReachability != NetworkReachability.NotReachable)
                 return;
 
-            var stopwatch = Stopwatch.StartNew();
-            MetaverseProgram.Logger.LogWarning("LoginStore: Waiting for network connectivity before initializing session.");
-
             while (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 await DelayAsync(2000);
             }
-
-            stopwatch.Stop();
-            MetaverseProgram.Logger.Log($"LoginStore: Network connectivity restored after {stopwatch.Elapsed.TotalSeconds:F1}s; continuing initialization.");
         }
 
         private async Task DelayAsync(int milliseconds)

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.203.21
-- Disable API client logging by commenting out the log message handler
+## 2.203.22
+- Refactor LoginStore: Remove excessive logging and streamline token validation process
 
-Updated on November 07, 2025
+Updated on November 11, 2025
