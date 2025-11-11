@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.3
-- Refactor SceneContainsMetaSpace method for improved MetaSpace detection
+## 2.204.4
+- Enhance MetaSpace detection by caching prefab GUIDs and updating scene check logic
 
 Updated on November 11, 2025

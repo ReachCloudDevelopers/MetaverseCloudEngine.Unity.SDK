@@ -478,6 +478,40 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             _allAssets.Clear();
 
+            // First, find all prefabs with MetaSpace component and cache their GUIDs
+            // We need this to detect scenes that reference MetaSpace prefabs
+            var metaSpacePrefabGuids = new HashSet<string>();
+            var prefabGuids = AssetDatabase.FindAssets("t:Prefab");
+
+            foreach (var guid in prefabGuids)
+            {
+                var prefabPath = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(prefabPath)) continue;
+
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (prefab == null) continue;
+
+                // Check if prefab has MetaSpace component - cache its GUID for scene detection
+                if (prefab.GetComponent<MetaSpace>() != null)
+                {
+                    metaSpacePrefabGuids.Add(guid);
+                }
+
+                // Check if prefab has MetaPrefab component - add to asset list
+                if (prefab.GetComponent<MetaPrefab>() != null)
+                {
+                    var assetItem = new AssetItem
+                    {
+                        assetPath = prefabPath,
+                        assetName = prefab.name,
+                        assetType = AssetItem.AssetType.MetaPrefab,
+                        isSelected = false,
+                        status = AssetItem.BuildStatus.Pending
+                    };
+                    _allAssets.Add(assetItem);
+                }
+            }
+
             // Find all MetaSpace assets (scenes with MetaSpace component)
             // We'll search for all scenes and check them more thoroughly
             var sceneGuids = AssetDatabase.FindAssets("t:Scene");
@@ -501,8 +535,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     var scenePath = AssetDatabase.GUIDToAssetPath(guid);
                     if (string.IsNullOrEmpty(scenePath)) continue;
 
-                    // Check if scene contains MetaSpace component using a more robust method
-                    if (SceneContainsMetaSpace(scenePath))
+                    // Check if scene contains MetaSpace component (directly or via prefab reference)
+                    if (SceneContainsMetaSpace(scenePath, metaSpacePrefabGuids))
                     {
                         var assetItem = new AssetItem
                         {
@@ -536,31 +570,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }
             }
 
-            // Find all MetaPrefab assets (prefabs with MetaPrefab component)
-            var prefabGuids = AssetDatabase.FindAssets("t:Prefab");
-            foreach (var guid in prefabGuids)
-            {
-                var prefabPath = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(prefabPath)) continue;
-
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-                if (prefab == null) continue;
-
-                // Check if prefab has MetaPrefab component
-                if (prefab.GetComponent<MetaPrefab>() != null)
-                {
-                    var assetItem = new AssetItem
-                    {
-                        assetPath = prefabPath,
-                        assetName = prefab.name,
-                        assetType = AssetItem.AssetType.MetaPrefab,
-                        isSelected = false,
-                        status = AssetItem.BuildStatus.Pending
-                    };
-                    _allAssets.Add(assetItem);
-                }
-            }
-
             // Sort by type then name
             _allAssets = _allAssets.OrderBy(a => a.assetType).ThenBy(a => a.assetName).ToList();
 
@@ -568,18 +577,36 @@ namespace MetaverseCloudEngine.Unity.Editors
             RestoreBatchSelection();
         }
 
-        private bool SceneContainsMetaSpace(string scenePath)
+        private bool SceneContainsMetaSpace(string scenePath, HashSet<string> metaSpacePrefabGuids)
         {
-            // Check if the scene file contains a reference to the MetaSpace script
-            // The MetaSpace script GUID is: d6d49d5dd1953ec498f194bd8c73176b
-            // Unity scene files reference scripts with: "m_Script: {fileID: 11500000, guid: d6d49d5dd1953ec498f194bd8c73176b"
+            // Check if the scene file contains:
+            // 1. A direct reference to the MetaSpace script (GUID: d6d49d5dd1953ec498f194bd8c73176b)
+            // 2. A reference to any prefab that contains a MetaSpace component
+            //
+            // This handles both cases:
+            // - MetaSpace component added directly to a GameObject in the scene
+            // - MetaSpace prefab instantiated in the scene
             try
             {
                 var sceneContents = System.IO.File.ReadAllText(scenePath);
 
-                // Look for the MetaSpace script GUID in the scene file
-                // This is the most reliable way to detect if a scene has a MetaSpace component
-                return sceneContents.Contains("d6d49d5dd1953ec498f194bd8c73176b");
+                // Check for direct MetaSpace component reference
+                if (sceneContents.Contains("d6d49d5dd1953ec498f194bd8c73176b"))
+                {
+                    return true;
+                }
+
+                // Check for references to MetaSpace prefabs
+                // When a prefab is instantiated in a scene, the scene file contains the prefab's GUID
+                foreach (var prefabGuid in metaSpacePrefabGuids)
+                {
+                    if (sceneContents.Contains(prefabGuid))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
             catch
             {
