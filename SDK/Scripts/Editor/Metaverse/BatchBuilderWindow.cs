@@ -58,6 +58,8 @@ namespace MetaverseCloudEngine.Unity.Editors
         private const string EditorPrefsPrefix = "MetaverseBatchBuilder_";
         private const string CurrentBatchKey = EditorPrefsPrefix + "CurrentBatch";
         private const string BatchListKey = EditorPrefsPrefix + "BatchList";
+        private const string SearchFilterKey = EditorPrefsPrefix + "SearchFilter";
+        private const string AssetTypeFilterKey = EditorPrefsPrefix + "AssetTypeFilter";
 
         private List<AssetItem> _allAssets = new List<AssetItem>();
         private List<string> _batchNames = new List<string>();
@@ -71,11 +73,26 @@ namespace MetaverseCloudEngine.Unity.Editors
         private float _buildProgress;
         private string _currentBuildAssetName;
 
+        private string _searchFilter = "";
+        private AssetTypeFilter _assetTypeFilter = AssetTypeFilter.All;
+
         private GUIStyle _statusIconStyle;
         private Texture2D _pendingIcon;
         private Texture2D _buildingIcon;
         private Texture2D _successIcon;
         private Texture2D _failedIcon;
+        private bool _stylesInitialized;
+
+        #endregion
+
+        #region Enums
+
+        private enum AssetTypeFilter
+        {
+            All,
+            MetaSpacesOnly,
+            MetaPrefabsOnly
+        }
 
         #endregion
 
@@ -97,17 +114,25 @@ namespace MetaverseCloudEngine.Unity.Editors
         private void OnEnable()
         {
             LoadBatches();
+            LoadFilters();
             DiscoverAssets();
-            InitializeStyles();
         }
 
         private void OnDisable()
         {
             SaveBatches();
+            SaveFilters();
         }
 
         private void OnGUI()
         {
+            // Initialize styles on first GUI call (can't be done in OnEnable)
+            if (!_stylesInitialized)
+            {
+                InitializeStyles();
+                _stylesInitialized = true;
+            }
+
             MetaverseEditorUtils.Header("Batch Builder");
 
             EditorGUILayout.Space(5);
@@ -192,7 +217,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Assets", EditorStyles.boldLabel);
-                
+
                 if (GUILayout.Button("Refresh", GUILayout.Width(80)))
                 {
                     DiscoverAssets();
@@ -211,6 +236,11 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 EditorGUILayout.Space(3);
 
+                // Filters
+                DrawFilters();
+
+                EditorGUILayout.Space(3);
+
                 // Asset list header
                 EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
                 GUILayout.Label("", GUILayout.Width(20)); // Checkbox
@@ -223,7 +253,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 // Scrollable asset list
                 _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition, GUILayout.ExpandHeight(true));
 
-                foreach (var asset in _allAssets)
+                var filteredAssets = GetFilteredAssets();
+                foreach (var asset in filteredAssets)
                 {
                     DrawAssetItem(asset);
                 }
@@ -231,9 +262,67 @@ namespace MetaverseCloudEngine.Unity.Editors
                 EditorGUILayout.EndScrollView();
 
                 // Summary
-                var selectedCount = _allAssets.Count(a => a.isSelected);
-                EditorGUILayout.LabelField($"Selected: {selectedCount} / {_allAssets.Count}", EditorStyles.miniLabel);
+                var selectedCount = filteredAssets.Count(a => a.isSelected);
+                EditorGUILayout.LabelField($"Selected: {selectedCount} / {filteredAssets.Count} (Total: {_allAssets.Count})", EditorStyles.miniLabel);
             });
+        }
+
+        private void DrawFilters()
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            // Search filter
+            EditorGUILayout.LabelField("Search:", GUILayout.Width(50));
+            var newSearchFilter = EditorGUILayout.TextField(_searchFilter, GUILayout.ExpandWidth(true));
+            if (newSearchFilter != _searchFilter)
+            {
+                _searchFilter = newSearchFilter;
+                SaveFilters();
+            }
+
+            // Clear search button
+            if (!string.IsNullOrEmpty(_searchFilter) && GUILayout.Button("✕", GUILayout.Width(25)))
+            {
+                _searchFilter = "";
+                SaveFilters();
+                GUI.FocusControl(null);
+            }
+
+            EditorGUILayout.Space(10);
+
+            // Asset type filter
+            EditorGUILayout.LabelField("Type:", GUILayout.Width(40));
+            var newAssetTypeFilter = (AssetTypeFilter)EditorGUILayout.EnumPopup(_assetTypeFilter, GUILayout.Width(150));
+            if (newAssetTypeFilter != _assetTypeFilter)
+            {
+                _assetTypeFilter = newAssetTypeFilter;
+                SaveFilters();
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private List<AssetItem> GetFilteredAssets()
+        {
+            var filtered = _allAssets.AsEnumerable();
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(_searchFilter))
+            {
+                filtered = filtered.Where(a =>
+                    a.assetName.IndexOf(_searchFilter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    a.assetPath.IndexOf(_searchFilter, StringComparison.OrdinalIgnoreCase) >= 0);
+            }
+
+            // Apply asset type filter
+            filtered = _assetTypeFilter switch
+            {
+                AssetTypeFilter.MetaSpacesOnly => filtered.Where(a => a.assetType == AssetItem.AssetType.MetaSpace),
+                AssetTypeFilter.MetaPrefabsOnly => filtered.Where(a => a.assetType == AssetItem.AssetType.MetaPrefab),
+                _ => filtered
+            };
+
+            return filtered.ToList();
         }
 
         private void DrawAssetItem(AssetItem asset)
@@ -390,30 +479,60 @@ namespace MetaverseCloudEngine.Unity.Editors
             _allAssets.Clear();
 
             // Find all MetaSpace assets (scenes with MetaSpace component)
+            // We'll search for all scenes and check them more thoroughly
             var sceneGuids = AssetDatabase.FindAssets("t:Scene");
-            foreach (var guid in sceneGuids)
+            var currentScenePath = EditorSceneManager.GetActiveScene().path;
+            var scenesToRestore = new List<string>();
+
+            // Save currently loaded scenes
+            for (int i = 0; i < EditorSceneManager.sceneCount; i++)
             {
-                var scenePath = AssetDatabase.GUIDToAssetPath(guid);
-                if (string.IsNullOrEmpty(scenePath)) continue;
-
-                // Check if scene contains MetaSpace component
-                var sceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath);
-                if (sceneAsset == null) continue;
-
-                // We need to check the scene for MetaSpace component
-                // This is a bit tricky without loading the scene, so we'll use a heuristic
-                // or we can load it temporarily
-                if (SceneContainsMetaSpace(scenePath))
+                var scene = EditorSceneManager.GetSceneAt(i);
+                if (!string.IsNullOrEmpty(scene.path))
                 {
-                    var assetItem = new AssetItem
+                    scenesToRestore.Add(scene.path);
+                }
+            }
+
+            try
+            {
+                foreach (var guid in sceneGuids)
+                {
+                    var scenePath = AssetDatabase.GUIDToAssetPath(guid);
+                    if (string.IsNullOrEmpty(scenePath)) continue;
+
+                    // Check if scene contains MetaSpace component using a more robust method
+                    if (SceneContainsMetaSpace(scenePath))
                     {
-                        assetPath = scenePath,
-                        assetName = System.IO.Path.GetFileNameWithoutExtension(scenePath),
-                        assetType = AssetItem.AssetType.MetaSpace,
-                        isSelected = false,
-                        status = AssetItem.BuildStatus.Pending
-                    };
-                    _allAssets.Add(assetItem);
+                        var assetItem = new AssetItem
+                        {
+                            assetPath = scenePath,
+                            assetName = System.IO.Path.GetFileNameWithoutExtension(scenePath),
+                            assetType = AssetItem.AssetType.MetaSpace,
+                            isSelected = false,
+                            status = AssetItem.BuildStatus.Pending
+                        };
+                        _allAssets.Add(assetItem);
+                    }
+                }
+            }
+            finally
+            {
+                // Restore original scenes if they were changed
+                if (scenesToRestore.Count > 0 && EditorSceneManager.GetActiveScene().path != currentScenePath)
+                {
+                    try
+                    {
+                        EditorSceneManager.OpenScene(scenesToRestore[0], OpenSceneMode.Single);
+                        for (int i = 1; i < scenesToRestore.Count; i++)
+                        {
+                            EditorSceneManager.OpenScene(scenesToRestore[i], OpenSceneMode.Additive);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore errors when restoring scenes
+                    }
                 }
             }
 
@@ -451,17 +570,66 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private bool SceneContainsMetaSpace(string scenePath)
         {
-            // Try to find MetaSpace component in scene without fully loading it
-            // We'll use a simple text search as a heuristic
+            // Use a more robust method to check for MetaSpace component
+            // First try a quick text search
             try
             {
                 var sceneContents = System.IO.File.ReadAllText(scenePath);
-                return sceneContents.Contains("MetaSpace") && sceneContents.Contains("m_Script:");
+
+                // Look for the MetaSpace MonoBehaviour reference
+                // The GUID for MetaSpace script is consistent
+                if (!sceneContents.Contains("MetaSpace"))
+                {
+                    return false;
+                }
+
+                // More thorough check: look for the actual component reference pattern
+                // Unity scene files contain "--- !u!114" for MonoBehaviour components
+                // followed by "m_Script: {fileID: 11500000, guid: <script_guid>}"
+                if (sceneContents.Contains("m_Script:") &&
+                    (sceneContents.Contains("MetaSpace") || sceneContents.Contains("metaSpace")))
+                {
+                    // Additional validation: check if it's actually a component, not just a reference
+                    var lines = sceneContents.Split('\n');
+                    for (int i = 0; i < lines.Length; i++)
+                    {
+                        if (lines[i].Contains("m_Name: MetaSpace") ||
+                            (lines[i].Contains("m_Script:") && i + 5 < lines.Length))
+                        {
+                            // Check nearby lines for MetaSpace type
+                            for (int j = Math.Max(0, i - 5); j < Math.Min(lines.Length, i + 10); j++)
+                            {
+                                if (lines[j].Contains("MetaSpace") && lines[j].Contains("m_Script"))
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
             }
             catch
             {
-                return false;
+                // If text search fails, ignore this scene
             }
+
+            return false;
+        }
+
+        #endregion
+
+        #region Filter Management
+
+        private void LoadFilters()
+        {
+            _searchFilter = EditorPrefs.GetString(SearchFilterKey, "");
+            _assetTypeFilter = (AssetTypeFilter)EditorPrefs.GetInt(AssetTypeFilterKey, 0);
+        }
+
+        private void SaveFilters()
+        {
+            EditorPrefs.SetString(SearchFilterKey, _searchFilter);
+            EditorPrefs.SetInt(AssetTypeFilterKey, (int)_assetTypeFilter);
         }
 
         #endregion
