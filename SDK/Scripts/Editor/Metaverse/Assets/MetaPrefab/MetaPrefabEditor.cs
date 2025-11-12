@@ -92,7 +92,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             base.DrawUploadControls();
         }
 
-        protected override PrefabUpsertForm GetUpsertForm(Guid? id, MetaPrefab asset, bool willUpload)
+        public override PrefabUpsertForm GetUpsertForm(Guid? id, MetaPrefab asset, bool willUpload)
         {
             if (!EditorUtility.IsPersistent(asset.gameObject))
                 throw new Exception("The object you're trying to upload is not a prefab.");

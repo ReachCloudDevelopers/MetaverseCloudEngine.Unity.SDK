@@ -40,7 +40,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        protected override MetaSpaceUpsertForm GetUpsertForm(Guid? id, MetaSpace asset, bool willUpload)
+        public override MetaSpaceUpsertForm GetUpsertForm(Guid? id, MetaSpace asset, bool willUpload)
         {
             var form = base.GetUpsertForm(id, asset, willUpload);
             form.VRSupport = asset.MetaData.VRSupport;

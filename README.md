@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.5
-- Refactor AssetEditor and BatchBuilderWindow for improved async handling and method visibility
+## 2.204.6
+- refactor: change access modifiers for GetUpsertForm methods and simplify upload process in BatchBuilderWindow
 
-Updated on November 11, 2025
+Updated on November 12, 2025

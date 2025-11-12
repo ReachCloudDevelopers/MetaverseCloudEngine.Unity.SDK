@@ -989,10 +989,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 builds =>
                 {
                     asset.status = AssetItem.BuildStatus.Success;
-                    MetaSpaceEditor editor = null;
-                    Editor.CreateCachedEditor(metaSpace, typeof(MetaSpaceEditor), ref editor);
-                    editor.Init();
-                    editor .UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, builds, metaSpace, null, onSuccess);
+                    FinishBuildAndUploadScene(asset, onSuccess, onError, builds, out scene, out metaSpace);
                 },
                 platformOptions: null,
                 failed: onError);
@@ -1029,14 +1026,43 @@ namespace MetaverseCloudEngine.Unity.Editors
                 builds =>
                 {
                     asset.status = AssetItem.BuildStatus.Success;
-                    MetaPrefabEditor editor = null;
-                    Editor.CreateCachedEditor(prefab, typeof(MetaPrefabEditor), ref editor);
-                    editor.Init();
-                    editor.UploadBundles(MetaverseProgram.ApiClient.Prefabs, builds, metaPrefab, null, onSuccess);
+                    FinishBuildAndUploadPrefab(asset, onSuccess, onError, builds, out prefab, out metaPrefab);
                 },
                 onPreProcessBuild: null,
                 platformOptions: null,
                 failed: onError);
+        }
+
+        private static void FinishBuildAndUploadScene(
+            AssetItem asset,
+            Action onSuccess,
+            Action<object> onError,
+            IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
+            out Scene scene,
+            out MetaSpace metaSpace)
+        {
+            scene = EditorSceneManager.OpenScene(asset.assetPath, OpenSceneMode.Single);
+            metaSpace = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<MetaSpace>(true)).FirstOrDefault();
+            Editor editor = Editor.CreateEditor(metaSpace, typeof(MetaSpaceEditor));
+            var form = ((MetaSpaceEditor)editor).GetUpsertForm(metaSpace.ID, metaSpace, true);
+            ((MetaSpaceEditor)editor).Init();
+            ((MetaSpaceEditor)editor).UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, scene.path, builds, form, (_, _) => onSuccess(), onError);
+        }
+
+        private static void FinishBuildAndUploadPrefab(
+            AssetItem asset,
+            Action onSuccess,
+            Action<object> onError,
+            IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
+            out GameObject prefab,
+            out MetaPrefab metaPrefab)
+        {
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(asset.assetPath);
+            metaPrefab = prefab.GetComponent<MetaPrefab>();
+            Editor editor = Editor.CreateEditor(metaPrefab, typeof(MetaPrefabEditor));
+            var form = ((MetaPrefabEditor)editor).GetUpsertForm(metaPrefab.ID, metaPrefab, true);
+            ((MetaPrefabEditor)editor).Init();
+            ((MetaPrefabEditor)editor).UploadBundles(MetaverseProgram.ApiClient.Prefabs, asset.assetPath, builds, form, (_, _) => onSuccess(), onError);
         }
 
         #endregion

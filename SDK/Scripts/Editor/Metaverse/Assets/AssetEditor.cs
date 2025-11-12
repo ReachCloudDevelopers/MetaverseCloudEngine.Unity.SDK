@@ -161,7 +161,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             _requestedReviewVersionDto = false;
         }
 
-        protected virtual TAssetUpsertForm GetUpsertForm(Guid? id, TAsset asset, bool willUpload)
+        public virtual TAssetUpsertForm GetUpsertForm(Guid? id, TAsset asset, bool willUpload)
         {
             return new TAssetUpsertForm
             {
@@ -1378,12 +1378,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             BeginBuildAndUpload(_lastBuildMainAsset, _lastBuildAsset, _lastBuildAssetUpsertForm, _lastBuildUpsertController, _lastBuildOnSuccess);
         }
 
-        public async Task UploadBundles(
+        public void UploadBundles(
             IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
             string bundlePath,
             IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
             TAssetUpsertForm assetUpsertForm,
             Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess = null,
+            Action<object> onError = null,
             int tries = 0)
         {
             if (tries >= 3)
@@ -1401,7 +1402,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 // If user clicked "Retry" (option 0), attempt retry immediately
                 if (option == 0)
-                    await UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess);
+                    UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess);
+                else
+                    onError?.Invoke("Upload cancelled.");
 
                 return;
             }
@@ -1475,7 +1478,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             break;
                         }
 
-                        await Task.Delay(100);
+                        Thread.Sleep(100);
                     }
 
                     sw.Stop();
@@ -1488,7 +1491,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
                             "Finalizing...",
                             1f);
-                        await Task.Delay(1000);
+                        Thread.Sleep(1000);
                     }
                 }
                 finally
@@ -1549,36 +1552,26 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (uploadCancellation.IsCancellationRequested)
                         return;
 
-                    var prettyErrorString = (await result.Result.GetErrorAsync()).ToPrettyErrorString();
-
-                    // Check if this is an authentication error and we can retry
+                    var prettyErrorString = Task.Run(async () => await result.Result.GetErrorAsync()).ToPrettyErrorString();
                     var isAuthError = prettyErrorString.Contains("Unauthorized") || prettyErrorString.Contains("401");
-                    if (isAuthError && tries < 2) // Allow one more retry for auth errors
+                    if (isAuthError && tries < 2)
                     {
                         MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
-
-                        // Wait for any ongoing token refresh to complete by ensuring session validity
-                        var ensureSessionTask = MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync();
-                        if (ensureSessionTask != null)
-                        {
-                            await ensureSessionTask;
-                            MetaverseProgram.Logger.Log($"Token refresh completed. New tokens: AccessToken={MetaverseProgram.ApiClient.Account.AccessToken != null}, RefreshToken={MetaverseProgram.ApiClient.Account.RefreshToken != null}");
-                        }
-                        await Task.Delay(500);
-                        await UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
+                        var _ = Task.Run(async () => await MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync()).Result;
+                        Thread.Sleep(500);
+                        UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError, tries + 1);
                         return;
                     }
 
                     StoreBundleInfoForRetry(builds);
-                    await ShowUploadFailureDialog(prettyErrorString, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
+                    ShowUploadFailureDialog(prettyErrorString, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError), () => onError?.Invoke(prettyErrorString));
                 }
             }
             catch (Exception ex)
             {
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
-
                 StoreBundleInfoForRetry(builds);
-                await ShowUploadFailureDialog(ex.Message, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
+                ShowUploadFailureDialog(ex.Message, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError), () => onError?.Invoke(ex));
             }
             finally
             {
@@ -1587,7 +1580,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private async Task ShowUploadFailureDialog(string errorMessage, Func<Task> retryCallback = null)
+        private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null, Action doneCallback = null)
         {
             EditorUtility.ClearProgressBar();
 
@@ -1601,9 +1594,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             // If user clicked "Retry" (option 0), attempt retry immediately
             if (option == 0)
-            {
-                await retryCallback();
-            }
+                retryCallback();
+            else
+                doneCallback();
         }
 
         private static void UploadFailure(object error)
