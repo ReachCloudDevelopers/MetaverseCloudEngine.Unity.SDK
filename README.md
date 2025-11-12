@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.7
-- Add suppressDialog option to upload bundles method for improved user experience
+## 2.204.8
+- Add option to suppress upload failure dialogs in AssetEditor
 
 Updated on November 12, 2025

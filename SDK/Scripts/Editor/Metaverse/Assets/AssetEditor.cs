@@ -1392,12 +1392,14 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 StoreBundleInfoForRetry(builds);
 
-                int option = EditorUtility.DisplayDialogComplex(
-                    "Upload Failed",
-                    "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
-                    "Retry",
-                    "Cancel",
-                    "Ok");
+                int option = !suppressDialog 
+                    ? EditorUtility.DisplayDialogComplex(
+                        "Upload Failed",
+                        "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
+                        "Retry",
+                        "Cancel",
+                        "Ok")
+                    : 0;
 
                 if (option == 0)
                     UploadBundles(
@@ -1581,16 +1583,25 @@ namespace MetaverseCloudEngine.Unity.Editors
                     }
 
                     StoreBundleInfoForRetry(builds);
-                    ShowUploadFailureDialog(prettyErrorString,
-                        () => UploadBundles(
+                    if (!suppressDialog)
+                        ShowUploadFailureDialog(prettyErrorString,
+                            () => UploadBundles(
+                                controller,
+                                bundlePath,
+                                builds,
+                                assetUpsertForm,
+                                onBuildSuccess,
+                                onError),
+                            () => onError?.Invoke(prettyErrorString));
+                    else
+                        UploadBundles(
                             controller,
                             bundlePath,
                             builds,
                             assetUpsertForm,
                             onBuildSuccess,
-                            onError),
-                        () => onError?.Invoke(prettyErrorString),
-                        suppressDialog);
+                            onError,
+                            suppressDialog: suppressDialog);
                 }
             }
             catch (Exception ex)
@@ -1598,16 +1609,25 @@ namespace MetaverseCloudEngine.Unity.Editors
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
 
                 StoreBundleInfoForRetry(builds);
-                ShowUploadFailureDialog(ex.Message,
-                    () => UploadBundles(
+                if (!suppressDialog)
+                    ShowUploadFailureDialog(ex.Message,
+                        () => UploadBundles(
+                            controller,
+                            bundlePath,
+                            builds,
+                            assetUpsertForm,
+                            onBuildSuccess,
+                            onError),
+                        () => onError?.Invoke(ex));
+                else
+                    UploadBundles(
                         controller,
                         bundlePath,
                         builds,
                         assetUpsertForm,
                         onBuildSuccess,
-                        onError),
-                    () => onError?.Invoke(ex),
-                    suppressDialog);
+                        onError,
+                        suppressDialog: suppressDialog);
             }
             finally
             {

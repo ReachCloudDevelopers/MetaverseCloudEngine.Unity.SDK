@@ -1046,7 +1046,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             Editor editor = Editor.CreateEditor(metaSpace, typeof(MetaSpaceEditor));
             var form = ((MetaSpaceEditor)editor).GetUpsertForm(metaSpace.ID, metaSpace, true);
             ((MetaSpaceEditor)editor).Init();
-            ((MetaSpaceEditor)editor).UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, scene.path, builds, form, (_, _) => onSuccess(), onError);
+            ((MetaSpaceEditor)editor).UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, scene.path, builds, form, (_, _) => onSuccess(), onError, suppressDialog: true);
         }
 
         private static void FinishBuildAndUploadPrefab(
@@ -1062,7 +1062,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             Editor editor = Editor.CreateEditor(metaPrefab, typeof(MetaPrefabEditor));
             var form = ((MetaPrefabEditor)editor).GetUpsertForm(metaPrefab.ID, metaPrefab, true);
             ((MetaPrefabEditor)editor).Init();
-            ((MetaPrefabEditor)editor).UploadBundles(MetaverseProgram.ApiClient.Prefabs, asset.assetPath, builds, form, (_, _) => onSuccess(), onError);
+            ((MetaPrefabEditor)editor).UploadBundles(MetaverseProgram.ApiClient.Prefabs, asset.assetPath, builds, form, (_, _) => onSuccess(), onError, suppressDialog: true);
         }
 
         #endregion
