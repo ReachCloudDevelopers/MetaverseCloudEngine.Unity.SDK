@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.6
-- refactor: change access modifiers for GetUpsertForm methods and simplify upload process in BatchBuilderWindow
+## 2.204.7
+- Add suppressDialog option to upload bundles method for improved user experience
 
 Updated on November 12, 2025
