@@ -132,7 +132,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         public abstract AssetController<TAssetDto, TAssetQueryParams, TAssetUpsertForm> Controller { get; }
         public override bool RequiresConstantRepaint() => true;
 
-        private void Init()
+        public void Init()
         {
             if (!Target)
                 Target = target as TAsset;
@@ -1378,7 +1378,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             BeginBuildAndUpload(_lastBuildMainAsset, _lastBuildAsset, _lastBuildAssetUpsertForm, _lastBuildUpsertController, _lastBuildOnSuccess);
         }
 
-        private async void UploadBundles(
+        public async Task UploadBundles(
             IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
             string bundlePath,
             IEnumerable<MetaverseAssetBundleAPI.BundleBuild> builds,
@@ -1401,9 +1401,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 // If user clicked "Retry" (option 0), attempt retry immediately
                 if (option == 0)
-                {
-                    UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess);
-                }
+                    await UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess);
 
                 return;
             }
@@ -1477,7 +1475,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             break;
                         }
 
-                        Thread.Sleep(100);
+                        await Task.Delay(100);
                     }
 
                     sw.Stop();
@@ -1490,7 +1488,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
                             "Finalizing...",
                             1f);
-                        Thread.Sleep(1000);
+                        await Task.Delay(1000);
                     }
                 }
                 finally
@@ -1551,11 +1549,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (uploadCancellation.IsCancellationRequested)
                         return;
 
-                    var prettyErrorString = Task
-                        .Run(async () =>
-                            await result.Result.GetErrorAsync(),
-                            uploadCancellation.Token).Result
-                        .ToPrettyErrorString();
+                    var prettyErrorString = (await result.Result.GetErrorAsync()).ToPrettyErrorString();
 
                     // Check if this is an authentication error and we can retry
                     var isAuthError = prettyErrorString.Contains("Unauthorized") || prettyErrorString.Contains("401");
@@ -1570,28 +1564,21 @@ namespace MetaverseCloudEngine.Unity.Editors
                             await ensureSessionTask;
                             MetaverseProgram.Logger.Log($"Token refresh completed. New tokens: AccessToken={MetaverseProgram.ApiClient.Account.AccessToken != null}, RefreshToken={MetaverseProgram.ApiClient.Account.RefreshToken != null}");
                         }
-
-                        // Wait a moment for token propagation
                         await Task.Delay(500);
-
-                        // Retry the upload
-                        UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
+                        await UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, tries + 1);
                         return;
                     }
 
-                    // Store failure state and bundle paths for retry
                     StoreBundleInfoForRetry(builds);
-                    ShowUploadFailureDialog(prettyErrorString, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
+                    await ShowUploadFailureDialog(prettyErrorString, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
                 }
             }
             catch (Exception ex)
             {
-                // Handle any exceptions during upload
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
 
-                // Store failure state and bundle paths for retry
                 StoreBundleInfoForRetry(builds);
-                ShowUploadFailureDialog(ex.Message, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
+                await ShowUploadFailureDialog(ex.Message, () => UploadBundles(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess));
             }
             finally
             {
@@ -1600,7 +1587,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null)
+        private async Task ShowUploadFailureDialog(string errorMessage, Func<Task> retryCallback = null)
         {
             EditorUtility.ClearProgressBar();
 
@@ -1615,7 +1602,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             // If user clicked "Retry" (option 0), attempt retry immediately
             if (option == 0)
             {
-                retryCallback?.Invoke();
+                await retryCallback();
             }
         }
 

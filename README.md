@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.4
-- Enhance MetaSpace detection by caching prefab GUIDs and updating scene check logic
+## 2.204.5
+- Refactor AssetEditor and BatchBuilderWindow for improved async handling and method visibility
 
 Updated on November 11, 2025

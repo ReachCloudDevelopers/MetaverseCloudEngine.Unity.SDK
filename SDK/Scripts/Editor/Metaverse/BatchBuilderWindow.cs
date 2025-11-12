@@ -969,8 +969,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 return;
             }
 
-            // Find MetaSpace component
-            var metaSpace = UnityEngine.Object.FindObjectOfType<MetaSpace>();
+            var metaSpace = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<MetaSpace>(true)).FirstOrDefault();
             if (metaSpace == null)
             {
                 onError?.Invoke("Scene does not contain a MetaSpace component");
@@ -990,8 +989,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 builds =>
                 {
                     asset.status = AssetItem.BuildStatus.Success;
-                    Debug.Log($"[Batch Builder] Successfully built MetaSpace: {asset.assetName}");
-                    onSuccess?.Invoke();
+                    MetaSpaceEditor editor = null;
+                    Editor.CreateCachedEditor(metaSpace, typeof(MetaSpaceEditor), ref editor);
+                    editor.Init();
+                    editor .UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, builds, metaSpace, null, onSuccess);
                 },
                 platformOptions: null,
                 failed: onError);
@@ -1028,8 +1029,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 builds =>
                 {
                     asset.status = AssetItem.BuildStatus.Success;
-                    Debug.Log($"[Batch Builder] Successfully built MetaPrefab: {asset.assetName}");
-                    onSuccess?.Invoke();
+                    MetaPrefabEditor editor = null;
+                    Editor.CreateCachedEditor(prefab, typeof(MetaPrefabEditor), ref editor);
+                    editor.Init();
+                    editor.UploadBundles(MetaverseProgram.ApiClient.Prefabs, builds, metaPrefab, null, onSuccess);
                 },
                 onPreProcessBuild: null,
                 platformOptions: null,
