@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.8
-- Add option to suppress upload failure dialogs in AssetEditor
+## 2.204.9
+- Add internet connection check before uploading bundles and fix progress display
 
 Updated on November 12, 2025

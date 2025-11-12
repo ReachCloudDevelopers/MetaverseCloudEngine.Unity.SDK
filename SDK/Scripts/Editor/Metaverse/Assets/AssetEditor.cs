@@ -1388,6 +1388,29 @@ namespace MetaverseCloudEngine.Unity.Editors
             int tries = 0,
             bool suppressDialog = false)
         {
+            if (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                if (EditorUtility.DisplayDialog(
+                    "Internet Connection Required",
+                    "Please check your internet connection and try again.",
+                    "Retry",
+                    "Cancel"))
+                {
+                    UploadBundles(
+                        controller,
+                        bundlePath,
+                        builds,
+                        assetUpsertForm,
+                        onBuildSuccess,
+                        onError,
+                        tries + 1,
+                        suppressDialog);
+                    return;
+                }
+                onError?.Invoke("Upload cancelled.");
+                return;
+            }
+
             if (tries >= 3)
             {
                 StoreBundleInfoForRetry(builds);
@@ -1606,6 +1629,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
             catch (Exception ex)
             {
+                ex = ex.GetBaseException();
+
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
 
                 StoreBundleInfoForRetry(builds);

@@ -390,7 +390,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorGUI.ProgressBar(
                         EditorGUILayout.GetControlRect(false, 20),
                         _buildProgress,
-                        $"{_currentBuildIndex + 1} / {_allAssets.Count(a => a.isSelected)}");
+                        $"{_currentBuildIndex} / {_allAssets.Count(a => a.isSelected)}");
 
                     if (GUILayout.Button("Cancel", GUILayout.Height(30)))
                     {
