@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.9
-- Add internet connection check before uploading bundles and fix progress display
+## 2.204.10
+- Update MetaverseCloudEngine binaries and symbols
 
-Updated on November 12, 2025
+Updated on November 13, 2025
