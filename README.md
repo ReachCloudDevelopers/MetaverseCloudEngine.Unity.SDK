@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.11
-- Refactor upload error handling and retry logic in AssetEditor
+## 2.204.12
+- Refactor dialog display logic in AssetEditor to use DisplayDialog instead of DisplayDialogComplex
 
 Updated on November 13, 2025

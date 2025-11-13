@@ -1415,8 +1415,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 StoreBundleInfoForRetry(builds);
 
-                int retry = !suppressDialog 
-                    ? EditorUtility.DisplayDialogComplex(
+                var retry = !suppressDialog 
+                    ? EditorUtility.DisplayDialog(
                         "Upload Failed",
                         "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
                         "Retry",
@@ -1665,7 +1665,7 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             EditorUtility.ClearProgressBar();
 
-            int retry = EditorUtility.DisplayDialogComplex(
+            var retry = EditorUtility.DisplayDialog(
                 "Upload Failed",
                 $"{errorMessage.ToPrettyErrorString()}\n\nWould you like to retry the upload?",
                 "Retry",
