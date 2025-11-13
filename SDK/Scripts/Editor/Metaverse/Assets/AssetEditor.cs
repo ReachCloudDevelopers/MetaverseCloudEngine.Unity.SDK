@@ -1590,17 +1590,25 @@ namespace MetaverseCloudEngine.Unity.Editors
                     if (isAuthError && tries < 2)
                     {
                         MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
-                        var _ = Task.Run(async () => await MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync()).Result;
+                        var tokenResult = Task.Run(async () => await MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync()).Result;
+                        if (tokenResult.RequiresReauthentication)
+                        {
+                            MetaverseAccountWindow.Open(() =>
+                            {
+                                UploadBundles(
+                                    controller,
+                                    bundlePath,
+                                    builds,
+                                    assetUpsertForm,
+                                    onBuildSuccess,
+                                    onError,
+                                    tries + 1,
+                                    suppressDialog);
+                            });
+                            return;
+                        }
                         Thread.Sleep(500);
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            tries + 1,
-                            suppressDialog);
+                        onError?.Invoke("Authentication error.");
                         return;
                     }
 
