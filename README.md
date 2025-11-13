@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.10
-- Update MetaverseCloudEngine binaries and symbols
+## 2.204.11
+- Refactor upload error handling and retry logic in AssetEditor
 
 Updated on November 13, 2025

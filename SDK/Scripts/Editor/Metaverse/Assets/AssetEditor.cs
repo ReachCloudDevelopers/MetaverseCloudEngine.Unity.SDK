@@ -1415,16 +1415,15 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 StoreBundleInfoForRetry(builds);
 
-                int option = !suppressDialog 
+                int retry = !suppressDialog 
                     ? EditorUtility.DisplayDialogComplex(
                         "Upload Failed",
                         "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
                         "Retry",
-                        "Cancel",
-                        "Ok")
-                    : 0;
+                        "Cancel")
+                    : false;
 
-                if (option == 0)
+                if (retry)
                     UploadBundles(
                         controller,
                         bundlePath,
@@ -1586,8 +1585,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         return;
                     }
 
-                    var prettyErrorString = Task.Run(async () => await result.Result.GetErrorAsync()).ToPrettyErrorString();
-                    var isAuthError = prettyErrorString.Contains("Unauthorized") || prettyErrorString.Contains("401");
+                    var error = Task.Run(async () => await result.Result.GetErrorAsync()).Result.ToPrettyErrorString();
+                    var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
                     if (isAuthError && tries < 2)
                     {
                         MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
@@ -1607,7 +1606,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     StoreBundleInfoForRetry(builds);
                     if (!suppressDialog)
-                        ShowUploadFailureDialog(prettyErrorString,
+                        ShowUploadFailureDialog(error,
                             () => UploadBundles(
                                 controller,
                                 bundlePath,
@@ -1615,7 +1614,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 assetUpsertForm,
                                 onBuildSuccess,
                                 onError),
-                            () => onError?.Invoke(prettyErrorString));
+                            () => onError?.Invoke(error));
                     else
                         UploadBundles(
                             controller,
@@ -1629,13 +1628,14 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
             catch (Exception ex)
             {
-                ex = ex.GetBaseException();
+                while (ex.InnerException != null)
+                    ex = ex.InnerException;
 
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
 
                 StoreBundleInfoForRetry(builds);
                 if (!suppressDialog)
-                    ShowUploadFailureDialog(ex.Message,
+                    ShowUploadFailureDialog(ex.ToString(),
                         () => UploadBundles(
                             controller,
                             bundlePath,
@@ -1665,14 +1665,13 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             EditorUtility.ClearProgressBar();
 
-            int option = EditorUtility.DisplayDialogComplex(
+            int retry = EditorUtility.DisplayDialogComplex(
                 "Upload Failed",
                 $"{errorMessage.ToPrettyErrorString()}\n\nWould you like to retry the upload?",
                 "Retry",
-                "Cancel",
-                "Ok");
+                "Cancel");
 
-            if (option == 0)
+            if (retry)
                 retryCallback();
             else
                 doneCallback();
