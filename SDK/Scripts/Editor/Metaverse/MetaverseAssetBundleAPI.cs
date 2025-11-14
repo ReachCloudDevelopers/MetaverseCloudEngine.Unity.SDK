@@ -81,13 +81,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                 AssetDatabase.SaveAssets();
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
-                if (!TryForceSaveOpenScenes())
-                {
-                    if (!forceSaveScene)
-                        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-                    else
-                        throw new OperationCanceledException("Unable to auto-save open scenes before building. Please save them and try again.");
-                }
 
                 // Create the build output directory.
                 if (!Directory.Exists(MetaverseBuildDirectory))
@@ -180,6 +173,14 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                         try
                         {
+                            if (!TryForceSaveOpenScenes())
+                            {
+                                if (!forceSaveScene)
+                                    EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+                                else
+                                    throw new OperationCanceledException("Unable to auto-save open scenes before building. Please save them and try again.");
+                            }
+
                             if (lockedAssemblies)
                             {
                                 EditorApplication.UnlockReloadAssemblies();
