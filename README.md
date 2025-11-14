@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.16
-- Refactor thread handling in LoginStore to ensure Unity main thread execution for async operations
+## 2.204.17
+- refactor: update EnsureUnityThreadAsync to use async/await pattern
 
 Updated on November 14, 2025

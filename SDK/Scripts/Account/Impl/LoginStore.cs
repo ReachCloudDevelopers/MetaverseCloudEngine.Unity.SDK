@@ -599,11 +599,12 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             await UniTask.Delay(milliseconds);
         }
 
-        private static UniTask EnsureUnityThreadAsync()
+        private static async UniTask EnsureUnityThreadAsync()
         {
-            return PlayerLoopHelper.IsMainThread
-                ? UniTask.CompletedTask
-                : UniTask.SwitchToMainThread();
+            if (PlayerLoopHelper.IsMainThread)
+                return;
+
+            await UniTask.SwitchToMainThread();
         }
     }
 }
