@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using Newtonsoft.Json.Linq;
 using JetBrains.Annotations;
 using UnityEditor;
@@ -18,7 +19,9 @@ namespace MetaverseCloudEngine.Unity.Installer
     {
         private const string InitialUpdateCheckFlag = "MVCE_InitialUpdateCheck";
         private const string GitHubRawBase = "https://raw.githubusercontent.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK";
+        private const string GitHubApiBase = "https://api.github.com/repos/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK";
         private const string PackageJsonRelativePath = "Packages/MetaverseCloudEngine.Unity.SDK/package.json";
+        private const string DefaultUpdatePrompt = "A newer Metaverse Cloud Engine SDK build is available. Install it now to ensure all required packages stay in sync?";
 
         private static readonly string[] PackagesToInstall =
         {
@@ -76,14 +79,13 @@ namespace MetaverseCloudEngine.Unity.Installer
                     if (TryBuildPackageUpdateInfo(package, latestCommitHash, out var updateInfo))
                     {
                         Debug.Log($"Successfully built package update info. Changelog length: {updateInfo?.FullChangelog?.Length ?? 0}");
-                        if (!MetaverseSdkUpdateWindow.ShowModal(updateInfo))
+                        if (!PromptForUpdate(updateInfo))
                             return;
                     }
                     else
                     {
                         Debug.LogWarning("Failed to build package update info, using fallback dialog.");
-                        const string fallbackMessage = "A newer Metaverse Cloud Engine SDK build is available. Install it now to ensure all required packages stay in sync?";
-                        if (!EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", fallbackMessage, "Install Update", "Skip"))
+                        if (!PromptForUpdate(null))
                             return;
                     }
                 }
@@ -135,9 +137,7 @@ namespace MetaverseCloudEngine.Unity.Installer
             try
             {
                 using var httpClient = CreateGitHubWebClient();
-                var packageJsonUrl = $"{GitHubRawBase}/{commitHash}/{PackageJsonRelativePath}";
-                Debug.Log($"Fetching package.json from: {packageJsonUrl}");
-                var json = httpClient.DownloadString(packageJsonUrl);
+                var json = DownloadPackageJson(httpClient, commitHash);
                 var jObject = JObject.Parse(json);
 
                 var version = jObject["version"]?.Value<string>() ?? commitHash;
@@ -164,6 +164,37 @@ namespace MetaverseCloudEngine.Unity.Installer
                 info = null;
                 return false;
             }
+        }
+
+        private static string DownloadPackageJson(WebClient httpClient, string commitHash)
+        {
+            try
+            {
+                return DownloadPackageJsonViaApi(httpClient, commitHash);
+            }
+            catch (Exception apiEx)
+            {
+                Debug.LogWarning($"Metaverse Cloud Engine: failed to fetch package metadata via GitHub API. {apiEx.GetType().Name}: {apiEx.Message}. Falling back to raw content.");
+                var packageJsonUrl = $"{GitHubRawBase}/{commitHash}/{PackageJsonRelativePath}";
+                Debug.Log($"Fetching package.json from: {packageJsonUrl}");
+                return httpClient.DownloadString(packageJsonUrl);
+            }
+        }
+
+        private static string DownloadPackageJsonViaApi(WebClient httpClient, string commitHash)
+        {
+            var packageJsonApiUrl = $"{GitHubApiBase}/contents/{PackageJsonRelativePath}?ref={commitHash}";
+            Debug.Log($"Fetching package.json via API from: {packageJsonApiUrl}");
+            var apiResponse = httpClient.DownloadString(packageJsonApiUrl);
+            var jObject = JObject.Parse(apiResponse);
+            var content = jObject["content"]?.Value<string>();
+            var encoding = jObject["encoding"]?.Value<string>();
+            if (string.IsNullOrEmpty(content) || !string.Equals(encoding, "base64", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Unexpected response while fetching package.json via GitHub API.");
+
+            var normalizedContent = content.Replace("\n", string.Empty);
+            var bytes = Convert.FromBase64String(normalizedContent);
+            return Encoding.UTF8.GetString(bytes);
         }
 
         private static string NormalizeChangelog(string changelog)
@@ -195,6 +226,48 @@ namespace MetaverseCloudEngine.Unity.Installer
 
             var section = changelog.Substring(startIndex, nextIndex - startIndex);
             return section.Trim();
+        }
+
+        private static bool PromptForUpdate(MetaverseSdkUpdateInfo info)
+        {
+            if (info != null)
+            {
+                try
+                {
+                    return MetaverseSdkUpdateWindow.ShowModal(info);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"Metaverse Cloud Engine: failed to open update window, falling back to dialog. {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            var message = BuildUpdateDialogMessage(info);
+            return EditorUtility.DisplayDialog("Metaverse Cloud Engine SDK Update", message, "Install Update", "Skip");
+        }
+
+        private static string BuildUpdateDialogMessage(MetaverseSdkUpdateInfo info)
+        {
+            if (info is null)
+                return DefaultUpdatePrompt;
+
+            var builder = new StringBuilder();
+            builder.AppendLine(DefaultUpdatePrompt);
+            builder.AppendLine();
+            builder.AppendLine($"Current version: {info.CurrentVersion ?? "Unknown"}");
+            builder.AppendLine($"Available version: {info.AvailableVersion ?? "Unknown"}");
+            if (!string.IsNullOrEmpty(info.CommitHash))
+                builder.AppendLine($"Commit: {info.CommitHash}");
+
+            var changelog = string.IsNullOrEmpty(info.LatestEntry) ? info.FullChangelog : info.LatestEntry;
+            if (!string.IsNullOrEmpty(changelog))
+            {
+                builder.AppendLine();
+                builder.AppendLine("Latest changelog:");
+                builder.AppendLine(changelog.Trim());
+            }
+
+            return builder.ToString().Trim();
         }
 
         private static void OnPostprocessAllAssets(
