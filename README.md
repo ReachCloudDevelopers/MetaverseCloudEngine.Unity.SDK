@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.15
-- Refactor package update handling and improve GitHub API integration for package.json retrieval
+## 2.204.16
+- Refactor thread handling in LoginStore to ensure Unity main thread execution for async operations
 
 Updated on November 14, 2025

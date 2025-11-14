@@ -308,6 +308,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             if (kind == AccountController.LogOutKind.InvalidAccessToken)
             {
 #if UNITY_EDITOR
+                await EnsureUnityThreadAsync();
                 if (!Application.isPlaying)
                     UnityEditor.EditorUtility.DisplayDialog("Session Expired", "Your session has expired. Please sign in again.", "OK");
 #endif
@@ -326,10 +327,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
             try
             {
-                if (Application.isPlaying)
-                {
-                    await UniTask.SwitchToMainThread();
-                }
+                await EnsureUnityThreadAsync();
 
                 await _tokenPersistenceSemaphore.WaitAsync();
                 try
@@ -351,10 +349,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         {
             try
             {
-                if (Application.isPlaying)
-                {
-                    await UniTask.SwitchToMainThread();
-                }
+                await EnsureUnityThreadAsync();
 
                 await _tokenPersistenceSemaphore.WaitAsync();
                 try
@@ -469,10 +464,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
         private async Task ShowRestartDialogAsync(string statusCode)
         {
 #if UNITY_EDITOR
-            if (Application.isPlaying)
-            {
-                await UniTask.SwitchToMainThread();
-            }
+            await EnsureUnityThreadAsync();
 
             var message = $"The Login Store has been unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
                          "This is usually caused by:\n" +
@@ -578,6 +570,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 
         private async Task WaitForNetworkConnectivityAsync()
         {
+            await EnsureUnityThreadAsync();
             if (Application.isEditor)
             {
                 return;
@@ -589,19 +582,28 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             while (Application.internetReachability == NetworkReachability.NotReachable)
             {
                 await DelayAsync(2000);
+                await EnsureUnityThreadAsync();
             }
         }
 
         private async Task DelayAsync(int milliseconds)
         {
-            if (Application.isPlaying)
-            {
-                await UniTask.Delay(milliseconds);
-            }
-            else
+#if UNITY_EDITOR
+            await EnsureUnityThreadAsync();
+            if (!Application.isPlaying)
             {
                 await Task.Delay(milliseconds);
+                return;
             }
+#endif
+            await UniTask.Delay(milliseconds);
+        }
+
+        private static UniTask EnsureUnityThreadAsync()
+        {
+            return PlayerLoopHelper.IsMainThread
+                ? UniTask.CompletedTask
+                : UniTask.SwitchToMainThread();
         }
     }
 }
