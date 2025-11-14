@@ -30,6 +30,24 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private const string MetaverseBuildDirectory = "Builds/MetaverseAssetBundles";
 
+        private static bool TryForceSaveOpenScenes()
+        {
+            for (var i = 0; i < EditorSceneManager.sceneCount; i++)
+            {
+                var openScene = EditorSceneManager.GetSceneAt(i);
+                if (!openScene.IsValid() || !openScene.isDirty)
+                    continue;
+
+                if (string.IsNullOrEmpty(openScene.path))
+                    return false;
+
+                if (!EditorSceneManager.SaveScene(openScene))
+                    return false;
+            }
+
+            return true;
+        }
+
         private static IEnumerator BuildAssetBundle(
             string bundleId,
             string[] dependencies,
@@ -63,12 +81,12 @@ namespace MetaverseCloudEngine.Unity.Editors
                 AssetDatabase.SaveAssets();
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
-                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                if (!TryForceSaveOpenScenes())
                 {
                     if (!forceSaveScene)
                         EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                     else
-                        throw new OperationCanceledException("You must save the open scene before building.");
+                        throw new OperationCanceledException("Unable to auto-save open scenes before building. Please save them and try again.");
                 }
 
                 // Create the build output directory.

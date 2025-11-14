@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.17
-- refactor: update EnsureUnityThreadAsync to use async/await pattern
+## 2.204.18
+- Implement auto-save for open scenes before building asset bundles
 
 Updated on November 14, 2025
