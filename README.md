@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.13
-- Improve authentication error handling during asset upload
+## 2.204.14
+- Enhance LoginStore and ClampTransformMagnitude functionality; add token persistence and clamping events
 
-Updated on November 13, 2025
+Updated on November 14, 2025

@@ -1589,10 +1589,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                     var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
                     if (isAuthError && tries < 2)
                     {
-                        MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
                         var tokenResult = Task.Run(async () => await MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync()).Result;
                         if (tokenResult.RequiresReauthentication)
                         {
+                            MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
                             MetaverseAccountWindow.Open(() =>
                             {
                                 UploadBundles(

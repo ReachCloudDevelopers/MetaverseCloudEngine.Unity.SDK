@@ -9,6 +9,7 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 {
     public class EncryptedPrefs : IPrefs
     {
+        private readonly object _configLock = new object();
         private Dictionary<string, object> _config;
         private readonly IEncryptor _encryptor = new AES();
 
@@ -22,77 +23,98 @@ namespace MetaverseCloudEngine.Unity.Services.Implementation
 
         public void DeleteKey(string key)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
+                key = _encryptor.EncryptString(key);
 
-            _config.Remove(key);
+                _config.Remove(key);
 
-            Save();
+                Save();
+            }
         }
 
         public float GetFloat(string key, float defaultValue)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
+                key = _encryptor.EncryptString(key);
 
-            return _config.TryGetValue(key, out var value) 
-                ? Convert.ToSingle(value)
-                : defaultValue;
+                return _config.TryGetValue(key, out var value)
+                    ? Convert.ToSingle(value)
+                    : defaultValue;
+            }
         }
 
         public int GetInt(string key, int defaultValue)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
+                key = _encryptor.EncryptString(key);
 
-            return _config.TryGetValue(key, out var value) 
-                ? Convert.ToInt32(value) 
-                : defaultValue;
+                return _config.TryGetValue(key, out var value)
+                    ? Convert.ToInt32(value)
+                    : defaultValue;
+            }
         }
 
         public string GetString(string key, string defaultValue)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
+                key = _encryptor.EncryptString(key);
 
-            return _config.TryGetValue(key, out var value) 
-                ? _encryptor.DecryptString((string)value) 
-                : defaultValue;
+                return _config.TryGetValue(key, out var value)
+                    ? _encryptor.DecryptString((string)value)
+                    : defaultValue;
+            }
         }
 
         public void SetFloat(string key, float value)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
-            _config[key] = value;
+                key = _encryptor.EncryptString(key);
+                _config[key] = value;
 
-            Save();
+                Save();
+            }
         }
 
         public void SetInt(string key, int value)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
-            _config[key] = value;
+                key = _encryptor.EncryptString(key);
+                _config[key] = value;
 
-            Save();
+                Save();
+            }
         }
 
         public void SetString(string key, string value)
         {
-            Load();
+            lock (_configLock)
+            {
+                Load();
 
-            key = _encryptor.EncryptString(key);
-            value = _encryptor.EncryptString(value);
-            _config[key] = value;
+                key = _encryptor.EncryptString(key);
+                value = _encryptor.EncryptString(value);
+                _config[key] = value;
 
-            Save();
+                Save();
+            }
         }
 
         private void Load()

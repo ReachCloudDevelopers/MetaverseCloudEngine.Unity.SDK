@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.ApiClient.Controllers;
@@ -22,6 +23,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
     public class LoginStore : ILoginStore
     {
         private readonly AES _aes;
+        private readonly SemaphoreSlim _tokenPersistenceSemaphore = new(1, 1);
 
         private string _plainTextAccessToken;
         private string _plainTextRefreshToken;
@@ -181,6 +183,8 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         var errorDetails = await response.GetErrorAsync();
                         var serverReason = BuildServerReasonMessage(errorDetails);
 
+                        MetaverseProgram.Logger.LogWarning($"LoginStore: Token validation during initialization failed with status {(int)response.StatusCode} ({response.StatusCode}). Details: {serverReason}");
+
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
 #if UNITY_EDITOR
@@ -192,20 +196,18 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         _initializationRetries++;
                         var delaySeconds = Math.Min(2, 0.5 * _initializationRetries); // Short backoff
 
-                        // For 500+ errors: Retry up to 3 times
+                        // For 500+ errors: Retry up to 3 times, then optionally prompt to restart in editor
                         if ((int)response.StatusCode >= 500 && (int)response.StatusCode < 600)
                         {
                             if (_initializationRetries >= maxRetries)
                             {
-                                _isInitialized = true;
-                                return;
-                            }
-
-                            // After maxRetries, show dialog
-                            if (_initializationRetries >= maxRetries && !_hasShownRetryDialog)
-                            {
-                                _hasShownRetryDialog = true;
-                                await ShowRestartDialogAsync(response.StatusCode.ToString());
+#if UNITY_EDITOR
+                                if (!_hasShownRetryDialog)
+                                {
+                                    _hasShownRetryDialog = true;
+                                    await ShowRestartDialogAsync(response.StatusCode.ToString());
+                                }
+#endif
                                 _isInitialized = true;
                                 return;
                             }
@@ -227,8 +229,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                     return;
                 }
 
-                AccessToken = null;
-                RefreshToken = null;
+                await ClearPersistedTokensAsync("InitializeAsync:Unauthorized");
             }
 
             // Attempt environment-based login as a fallback when no tokens are present
@@ -262,28 +263,40 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                 _plainTextRefreshToken = _aes.DecryptString(encrypted);
         }
 
-        private async void OnLoggedIn(SystemUserDto user, AccountController.LogInKind kind)
+        private void OnLoggedIn(SystemUserDto user, AccountController.LogInKind kind)
         {
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            if (Application.isPlaying)
-            {
-                await UniTask.SwitchToMainThread();
-            }
-
-            PersistTokens(ApiClient.Account.AccessToken, ApiClient.Account.RefreshToken, "OnLoggedIn");
+            PersistCurrentTokensAsync("OnLoggedIn").Forget();
         }
 
-        private async void OnLoggedOut(SystemUserDto user, AccountController.LogOutKind kind)
+        private void OnLoggedOut(SystemUserDto user, AccountController.LogOutKind kind)
+        {
+            HandleLoggedOutAsync(kind).Forget();
+        }
+
+        private void OnTokensUpdated(UserTokenDto token)
         {
             if (ApiClient.Account.UseCookieAuthentication)
                 return;
 
-            if (Application.isPlaying)
-            {
-                await UniTask.SwitchToMainThread();
-            }
+            PersistCurrentTokensAsync("OnTokensUpdated").Forget();
+        }
+
+        private async UniTask PersistCurrentTokensAsync(string source)
+        {
+            // Get the current tokens from the API client (these should be the updated ones)
+            var accessToken = ApiClient.Account.AccessToken;
+            var refreshToken = ApiClient.Account.RefreshToken;
+
+            await UpdateTokensSafeAsync(accessToken, refreshToken, source);
+        }
+
+        private async UniTask HandleLoggedOutAsync(AccountController.LogOutKind kind)
+        {
+            if (ApiClient.Account.UseCookieAuthentication)
+                return;
 
             // Don't clear tokens if initialization hasn't completed yet
             // This prevents tokens from being cleared during editor domain reload
@@ -300,27 +313,63 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 #endif
             }
 
-            ClearPersistedTokens($"OnLoggedOut ({kind})");
+            await ClearPersistedTokensAsync($"OnLoggedOut ({kind})");
 
             // Auto-retry login using environment credentials, if available
             await AttemptLoginWithEnvAsync($"OnLoggedOut ({kind})");
         }
 
-        private async void OnTokensUpdated(UserTokenDto token)
+        private async UniTask UpdateTokensSafeAsync(string accessToken, string refreshToken, string source)
         {
-            if (ApiClient.Account.UseCookieAuthentication)
+            if (string.IsNullOrEmpty(accessToken) && string.IsNullOrEmpty(refreshToken))
                 return;
 
-            if (Application.isPlaying)
+            try
             {
-                await UniTask.SwitchToMainThread();
+                if (Application.isPlaying)
+                {
+                    await UniTask.SwitchToMainThread();
+                }
+
+                await _tokenPersistenceSemaphore.WaitAsync();
+                try
+                {
+                    PersistTokens(accessToken, refreshToken, source);
+                }
+                finally
+                {
+                    _tokenPersistenceSemaphore.Release();
+                }
             }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"LoginStore: Failed to persist tokens ({source}): {ex}");
+            }
+        }
 
-            // Get the current tokens from the API client (these should be the updated ones)
-            var accessToken = ApiClient.Account.AccessToken;
-            var refreshToken = ApiClient.Account.RefreshToken;
+        private async UniTask ClearPersistedTokensAsync(string source)
+        {
+            try
+            {
+                if (Application.isPlaying)
+                {
+                    await UniTask.SwitchToMainThread();
+                }
 
-            PersistTokens(accessToken, refreshToken, "OnTokensUpdated");
+                await _tokenPersistenceSemaphore.WaitAsync();
+                try
+                {
+                    ClearPersistedTokens(source);
+                }
+                finally
+                {
+                    _tokenPersistenceSemaphore.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                MetaverseProgram.Logger.LogError($"LoginStore: Failed to clear persisted tokens ({source}): {ex}");
+            }
         }
 
         private void PersistTokens(string accessToken, string refreshToken, string source)
