@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.24
-- Refactor upload progress handling to ensure progress bar is cleared in all scenarios
+## 2.204.25
+- Refactor asset upload process to use async/await pattern for improved performance and readability
 
 Updated on November 15, 2025
