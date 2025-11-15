@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.26
-- Add missing GUID reference to MetaverseCloudEngine.Unity.Editor assembly definition
+## 2.204.27
+- Enable async uploads with UniTask support and add dependency for com.cysharp.unitask
 
 Updated on November 15, 2025

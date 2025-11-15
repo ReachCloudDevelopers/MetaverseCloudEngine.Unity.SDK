@@ -129,6 +129,11 @@
             "name": "com.cesium.unity",
             "expression": "",
             "define": "MV_CESIUM_UNITY"
+        },
+        {
+            "name": "com.cysharp.unitask",
+            "expression": "",
+            "define": "MV_UNITASK"
         }
     ],
     "noEngineReferences": false

@@ -8,7 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Stopwatch = System.Diagnostics.Stopwatch;
+#if MV_UNITASK
 using Cysharp.Threading.Tasks;
+#endif
 using MetaverseCloudEngine.ApiClient;
 using MetaverseCloudEngine.ApiClient.Controllers;
 using MetaverseCloudEngine.ApiClient.Options;
@@ -1390,9 +1392,17 @@ namespace MetaverseCloudEngine.Unity.Editors
             int tries = 0,
             bool suppressDialog = false)
         {
+#if MV_UNITASK
             UploadBundlesAsync(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog).Forget();
+#else
+            const string message = "UniTask is not enabled. Enable MV_UNITASK or install com.cysharp.unitask to use async uploads.";
+            if (!suppressDialog)
+                EditorUtility.DisplayDialog("Upload Not Supported", message, "Ok");
+            onError?.Invoke(message);
+#endif
         }
 
+#if MV_UNITASK
         private UniTask UploadBundlesAsync(
             IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
             string bundlePath,
@@ -1741,6 +1751,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             while (EditorApplication.timeSinceStartup < end)
                 await UniTask.Yield(PlayerLoopTiming.Update);
         }
+#endif
         private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null, Action doneCallback = null)
         {
             EditorUtility.ClearProgressBar();
