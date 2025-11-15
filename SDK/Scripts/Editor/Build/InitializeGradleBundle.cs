@@ -16,11 +16,11 @@ namespace MetaverseCloudEngine.Unity.Editors.Builds
                 .SelectMany(x =>
                 {
                     try { return x.GetTypes(); }
-                    catch (Exception e) { return Array.Empty<Type>(); }
+                    catch { return Array.Empty<Type>(); }
                 }).Where(x =>
                 {
                     try { return typeof(IInitializeGradleBundle).IsAssignableFrom(x) && x.IsClass && !x.IsAbstract; }
-                    catch (Exception e) { return false; }
+                    catch { return false; }
                 }).ToArray();
             
             var instances = types.Select(type =>

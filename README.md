@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.27
-- Enable async uploads with UniTask support and add dependency for com.cysharp.unitask
+## 2.204.28
+- Refactor exception handling in Gradle bundle classes and improve upload progress reporting in AssetEditor
 
 Updated on November 15, 2025
