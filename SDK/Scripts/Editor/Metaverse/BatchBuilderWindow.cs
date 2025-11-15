@@ -77,10 +77,6 @@ namespace MetaverseCloudEngine.Unity.Editors
         private AssetTypeFilter _assetTypeFilter = AssetTypeFilter.All;
 
         private GUIStyle _statusIconStyle;
-        private Texture2D _pendingIcon;
-        private Texture2D _buildingIcon;
-        private Texture2D _successIcon;
-        private Texture2D _failedIcon;
         private bool _stylesInitialized;
 
         #endregion
@@ -338,15 +334,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             // Status icon
-            var statusIcon = GetStatusIcon(asset.status);
-            if (statusIcon != null)
-            {
-                GUILayout.Label(statusIcon, _statusIconStyle, GUILayout.Width(60), GUILayout.Height(18));
-            }
-            else
-            {
-                GUILayout.Label(asset.status.ToString(), GUILayout.Width(60));
-            }
+            var statusLabel = GetStatusLabel(asset.status);
+            GUILayout.Label(statusLabel, _statusIconStyle, GUILayout.Width(60), GUILayout.Height(18));
 
             // Name
             GUILayout.Label(asset.assetName, GUILayout.Width(200));
@@ -435,39 +424,24 @@ namespace MetaverseCloudEngine.Unity.Editors
             _statusIconStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                imagePosition = ImagePosition.ImageOnly
+                richText = true,
+                fontSize = 14
             };
-
-            // Load or create status icons
-            _pendingIcon = CreateColorTexture(new Color(0.5f, 0.5f, 0.5f, 1f));
-            _buildingIcon = CreateColorTexture(new Color(1f, 0.7f, 0f, 1f));
-            _successIcon = CreateColorTexture(new Color(0f, 0.8f, 0f, 1f));
-            _failedIcon = CreateColorTexture(new Color(0.8f, 0f, 0f, 1f));
         }
 
-        private Texture2D CreateColorTexture(Color color)
+        private string GetStatusLabel(AssetItem.BuildStatus status)
         {
-            var tex = new Texture2D(16, 16);
-            var pixels = new Color[16 * 16];
-            for (int i = 0; i < pixels.Length; i++)
+            (string symbol, Color color) = status switch
             {
-                pixels[i] = color;
-            }
-            tex.SetPixels(pixels);
-            tex.Apply();
-            return tex;
-        }
-
-        private Texture2D GetStatusIcon(AssetItem.BuildStatus status)
-        {
-            return status switch
-            {
-                AssetItem.BuildStatus.Pending => _pendingIcon,
-                AssetItem.BuildStatus.Building => _buildingIcon,
-                AssetItem.BuildStatus.Success => _successIcon,
-                AssetItem.BuildStatus.Failed => _failedIcon,
-                _ => null
+                AssetItem.BuildStatus.Pending => ("○", new Color(0.7f, 0.7f, 0.7f)),
+                AssetItem.BuildStatus.Building => ("○", new Color(1f, 0.7f, 0f)),
+                AssetItem.BuildStatus.Success => ("✓", new Color(0f, 0.8f, 0f)),
+                AssetItem.BuildStatus.Failed => ("✕", new Color(0.9f, 0.2f, 0.2f)),
+                _ => ("•", Color.gray)
             };
+
+            var hex = ColorUtility.ToHtmlStringRGB(color);
+            return $"<color=#{hex}>{symbol}</color>";
         }
 
         #endregion
@@ -1068,4 +1042,3 @@ namespace MetaverseCloudEngine.Unity.Editors
         #endregion
     }
 }
-

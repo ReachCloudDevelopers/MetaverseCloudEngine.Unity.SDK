@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.21
-- Refactor upload logic to improve error handling and streamline bundle uploads
+## 2.204.22
+- Refactor status icon handling in BatchBuilderWindow to use text labels instead of textures
 
 Updated on November 15, 2025
