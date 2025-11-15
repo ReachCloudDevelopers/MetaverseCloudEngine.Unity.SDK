@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.20
-- Update AssetEditor and MetaverseAssetBundleAPI for improved upload handling and error management; upgrade .NETStandard version to 2.1 in dependencies
+## 2.204.21
+- Refactor upload logic to improve error handling and streamline bundle uploads
 
-Updated on November 14, 2025
+Updated on November 15, 2025

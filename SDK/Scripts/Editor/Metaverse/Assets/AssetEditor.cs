@@ -1459,8 +1459,99 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             var buildsArray = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
+            var routine = UploadBundlesRoutineCore(
+                controller,
+                bundlePath,
+                buildsArray,
+                assetUpsertForm,
+                onBuildSuccess,
+                onError,
+                tries,
+                suppressDialog).GetEnumerator();
+
+            try
+            {
+                while (true)
+                {
+                    bool moveNext;
+                    try
+                    {
+                        moveNext = routine.MoveNext();
+                    }
+                    catch (Exception ex)
+                    {
+                        HandleUploadException(
+                            ex,
+                            controller,
+                            bundlePath,
+                            buildsArray,
+                            assetUpsertForm,
+                            onBuildSuccess,
+                            onError,
+                            suppressDialog);
+                        yield break;
+                    }
+
+                    if (!moveNext)
+                        yield break;
+
+                    yield return routine.Current;
+                }
+            }
+            finally
+            {
+                if (routine is IDisposable disposable)
+                    disposable.Dispose();
+            }
+        }
+
+        private void HandleUploadException(
+            Exception exception,
+            IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
+            string bundlePath,
+            MetaverseAssetBundleAPI.BundleBuild[] builds,
+            TAssetUpsertForm assetUpsertForm,
+            Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess,
+            Action<object> onError,
+            bool suppressDialog)
+        {
+            exception = exception.GetBaseException();
+            MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {exception}");
+
+            StoreBundleInfoForRetry(builds);
+            if (!suppressDialog)
+                ShowUploadFailureDialog(exception.ToString(),
+                    () => UploadBundles(
+                        controller,
+                        bundlePath,
+                        builds,
+                        assetUpsertForm,
+                        onBuildSuccess,
+                        onError),
+                    () => onError?.Invoke(exception));
+            else
+                UploadBundles(
+                    controller,
+                    bundlePath,
+                    builds,
+                    assetUpsertForm,
+                    onBuildSuccess,
+                    onError,
+                    suppressDialog: suppressDialog);
+        }
+
+        private IEnumerable UploadBundlesRoutineCore(
+            IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
+            string bundlePath,
+            MetaverseAssetBundleAPI.BundleBuild[] builds,
+            TAssetUpsertForm assetUpsertForm,
+            Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess,
+            Action<object> onError,
+            int tries,
+            bool suppressDialog)
+        {
             var openStreams = new List<Stream>();
-            var platformOptions = buildsArray.Select(x =>
+            var platformOptions = builds.Select(x =>
             {
                 var stream = File.OpenRead(x.OutputPath);
                 openStreams.Add(stream);
@@ -1472,7 +1563,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 };
             }).ToArray();
 
-            var totalBytes = buildsArray.Sum(x => new FileInfo(x.OutputPath).Length);
+            var totalBytes = builds.Sum(x => new FileInfo(x.OutputPath).Length);
             double uploadDurationSeconds = 0;
 
             var uploadCancellation = new CancellationTokenSource();
@@ -1505,7 +1596,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }
 
                 var uploadResponse = uploadTask.Result;
-                var platformString = "\n- " + string.Join("\n- ", buildsArray.Select(x => x.Platforms.ToString()));
+                var platformString = "\n- " + string.Join("\n- ", builds.Select(x => x.Platforms.ToString()));
                 if (uploadResponse.Succeeded)
                 {
                     var dtoTask = uploadResponse.GetResultAsync();
@@ -1550,7 +1641,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         ClearBundleRetryInfo(Target);
                     }
 
-                    onBuildSuccess?.Invoke(dto, buildsArray);
+                    onBuildSuccess?.Invoke(dto, builds);
                 }
                 else
                 {
@@ -1614,33 +1705,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                             suppressDialog: suppressDialog);
                 }
             }
-            catch (Exception ex)
-            {
-                ex = ex.GetBaseException();
-
-                MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
-
-                StoreBundleInfoForRetry(builds);
-                if (!suppressDialog)
-                    ShowUploadFailureDialog(ex.ToString(),
-                        () => UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError),
-                        () => onError?.Invoke(ex));
-                else
-                    UploadBundles(
-                        controller,
-                        bundlePath,
-                        builds,
-                        assetUpsertForm,
-                        onBuildSuccess,
-                        onError,
-                        suppressDialog: suppressDialog);
-            }
             finally
             {
                 foreach (var stream in openStreams)
@@ -1649,13 +1713,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                     catch { /* ignored */ }
                 }
             }
-        }
-
-        private static IEnumerable DelayRealtimeSeconds(float seconds)
-        {
-            var end = EditorApplication.timeSinceStartup + seconds;
-            while (EditorApplication.timeSinceStartup < end)
-                yield return null;
         }
 
         private IEnumerable MonitorUploadProgress(
@@ -1721,6 +1778,13 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
 
             EditorUtility.ClearProgressBar();
+        }
+
+        private static IEnumerable DelayRealtimeSeconds(float seconds)
+        {
+            var end = EditorApplication.timeSinceStartup + seconds;
+            while (EditorApplication.timeSinceStartup < end)
+                yield return null;
         }
 
         private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null, Action doneCallback = null)
