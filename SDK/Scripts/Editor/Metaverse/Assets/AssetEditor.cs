@@ -1502,6 +1502,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 if (routine is IDisposable disposable)
                     disposable.Dispose();
+
+                EditorUtility.ClearProgressBar();
             }
         }
 

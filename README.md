@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.22
-- Refactor status icon handling in BatchBuilderWindow to use text labels instead of textures
+## 2.204.23
+- Clear progress bar after disposing of routines in AssetEditor
 
 Updated on November 15, 2025
