@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.19
-- Refactor scene saving logic to ensure open scenes are saved before building asset bundles
+## 2.204.20
+- Update AssetEditor and MetaverseAssetBundleAPI for improved upload handling and error management; upgrade .NETStandard version to 2.1 in dependencies
 
 Updated on November 14, 2025

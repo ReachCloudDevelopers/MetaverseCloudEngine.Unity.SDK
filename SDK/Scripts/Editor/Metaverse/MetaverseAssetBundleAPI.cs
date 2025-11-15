@@ -173,6 +173,11 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                         try
                         {
+                            if (MetaverseProgram.IsInitialized && !MetaverseProgram.ApiClient.Account.IsLoggedIn)
+                            {
+                                throw new InvalidOperationException("Account was logged out while trying to upload.");
+                            }
+
                             if (!TryForceSaveOpenScenes())
                             {
                                 if (!forceSaveScene)
