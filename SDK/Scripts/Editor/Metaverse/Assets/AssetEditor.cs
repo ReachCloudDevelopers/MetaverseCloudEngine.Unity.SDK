@@ -1714,6 +1714,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     try { stream?.Dispose(); }
                     catch { /* ignored */ }
                 }
+
+                EditorUtility.ClearProgressBar();
             }
         }
 
@@ -1725,61 +1727,66 @@ namespace MetaverseCloudEngine.Unity.Editors
             bool suppressDialog,
             Action<double> durationCaptured)
         {
-            var uploadSizeMB = totalBytes / 1024f / 1024f;
-            var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
-            var savedUploadSpeed = hasSavedUploadSpeed ? Math.Max(EditorPrefs.GetFloat(UploadSpeedPrefKey), 0f) : 0f;
-            var bytesPerSecondForEstimate = hasSavedUploadSpeed && savedUploadSpeed > 0f
-                ? (double)savedUploadSpeed
-                : DefaultSimulatedBytesPerSecond;
-            var estimatedSeconds = totalBytes <= 0 || bytesPerSecondForEstimate <= 0
-                ? 0
-                : totalBytes / bytesPerSecondForEstimate;
-
-            var sw = Stopwatch.StartNew();
-            while (!uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
+            try
             {
-                double progress = 0;
-                double? etaSecondsRemaining = null;
-                if (totalBytes > 0 && estimatedSeconds > 0)
+                var uploadSizeMB = totalBytes / 1024f / 1024f;
+                var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
+                var savedUploadSpeed = hasSavedUploadSpeed ? Math.Max(EditorPrefs.GetFloat(UploadSpeedPrefKey), 0f) : 0f;
+                var bytesPerSecondForEstimate = hasSavedUploadSpeed && savedUploadSpeed > 0f
+                    ? (double)savedUploadSpeed
+                    : DefaultSimulatedBytesPerSecond;
+                var estimatedSeconds = totalBytes <= 0 || bytesPerSecondForEstimate <= 0
+                    ? 0
+                    : totalBytes / bytesPerSecondForEstimate;
+
+                var sw = Stopwatch.StartNew();
+                while (!uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
                 {
-                    var elapsed = sw.Elapsed.TotalSeconds;
-                    progress = Math.Min(elapsed / estimatedSeconds, 1);
-                    if (hasSavedUploadSpeed)
-                        etaSecondsRemaining = Math.Max(estimatedSeconds - elapsed, 0);
+                    double progress = 0;
+                    double? etaSecondsRemaining = null;
+                    if (totalBytes > 0 && estimatedSeconds > 0)
+                    {
+                        var elapsed = sw.Elapsed.TotalSeconds;
+                        progress = Math.Min(elapsed / estimatedSeconds, 1);
+                        if (hasSavedUploadSpeed)
+                            etaSecondsRemaining = Math.Max(estimatedSeconds - elapsed, 0);
+                    }
+
+                    var progressMessage = progress < 1
+                        ? hasSavedUploadSpeed && estimatedSeconds > 0
+                            ? $"Uploading assets... ETA {FormatEta(etaSecondsRemaining)}"
+                            : "Uploading assets..."
+                        : "Verifying upload...";
+
+                    if (!suppressDialog && EditorUtility.DisplayCancelableProgressBar(
+                            $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",
+                            progressMessage,
+                            (float)progress))
+                    {
+                        cancellationSource.Cancel();
+                        break;
+                    }
+
+                    yield return null;
                 }
 
-                var progressMessage = progress < 1
-                    ? hasSavedUploadSpeed && estimatedSeconds > 0
-                        ? $"Uploading assets... ETA {FormatEta(etaSecondsRemaining)}"
-                        : "Uploading assets..."
-                    : "Verifying upload...";
+                sw.Stop();
+                durationCaptured?.Invoke(sw.Elapsed.TotalSeconds);
 
-                if (!suppressDialog && EditorUtility.DisplayCancelableProgressBar(
+                if (uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested && !suppressDialog)
+                {
+                    EditorUtility.DisplayProgressBar(
                         $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",
-                        progressMessage,
-                        (float)progress))
-                {
-                    cancellationSource.Cancel();
-                    break;
+                        "Finalizing...",
+                        1f);
+                    foreach (var _ in DelayRealtimeSeconds(1f))
+                        yield return _;
                 }
-
-                yield return null;
             }
-
-            sw.Stop();
-            durationCaptured?.Invoke(sw.Elapsed.TotalSeconds);
-
-            if (uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested && !suppressDialog)
+            finally
             {
-                EditorUtility.DisplayProgressBar(
-                    $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",
-                    "Finalizing...",
-                    1f);
-                foreach (var _ in DelayRealtimeSeconds(1f))
-                    yield return _;
+                EditorUtility.ClearProgressBar();
             }
-
-            EditorUtility.ClearProgressBar();
         }
 
         private static IEnumerable DelayRealtimeSeconds(float seconds)

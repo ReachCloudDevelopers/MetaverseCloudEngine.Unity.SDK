@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.23
-- Clear progress bar after disposing of routines in AssetEditor
+## 2.204.24
+- Refactor upload progress handling to ensure progress bar is cleared in all scenarios
 
 Updated on November 15, 2025
