@@ -114,7 +114,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 var totalProgressPlatforms = progressOrder.Count;
                 if (totalProgressPlatforms > 0)
-                    MetaverseAssetBundleBuildProgressWindow.Begin(bundleId, progressOrder);
+                    MetaverseAssetBundleBuildProgress.Begin(bundleId, progressOrder);
 
                 var processedPlatforms = 0;
                 var platformProgressIndex = 0;
@@ -138,7 +138,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             if (totalProgressPlatforms > 0)
                             {
                                 processedPlatforms++;
-                                MetaverseAssetBundleBuildProgressWindow.ReportPlatformSkipped(
+                                MetaverseAssetBundleBuildProgress.ReportPlatformSkipped(
                                     platform,
                                     platformProgressIndex,
                                     totalProgressPlatforms,
@@ -161,7 +161,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         if (totalProgressPlatforms > 0)
                         {
                             processedPlatforms++;
-                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformSkipped(
+                            MetaverseAssetBundleBuildProgress.ReportPlatformSkipped(
                                 platform,
                                 platformProgressIndex,
                                 totalProgressPlatforms,
@@ -181,7 +181,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     if (totalProgressPlatforms > 0)
                     {
-                        MetaverseAssetBundleBuildProgressWindow.ReportPlatformStarted(
+                        MetaverseAssetBundleBuildProgress.ReportPlatformStarted(
                             platform,
                             platformProgressIndex,
                             totalProgressPlatforms,
@@ -287,7 +287,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             if (totalProgressPlatforms > 0)
                             {
                                 processedPlatforms++;
-                                MetaverseAssetBundleBuildProgressWindow.ReportPlatformCompleted(
+                                MetaverseAssetBundleBuildProgress.ReportPlatformCompleted(
                                     platform,
                                     platformProgressIndex,
                                     totalProgressPlatforms,
@@ -308,7 +308,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             e.Message);
                         if (totalProgressPlatforms > 0)
                         {
-                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                            MetaverseAssetBundleBuildProgress.ReportPlatformFailed(
                                 platform,
                                 platformProgressIndex,
                                 totalProgressPlatforms,
@@ -325,7 +325,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         if (totalProgressPlatforms > 0)
                         {
                             var reason = string.IsNullOrEmpty(e.Message) ? "Build cancelled." : e.Message;
-                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                            MetaverseAssetBundleBuildProgress.ReportPlatformFailed(
                                 platform,
                                 platformProgressIndex,
                                 totalProgressPlatforms,
@@ -344,7 +344,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             e.Message);
                         if (totalProgressPlatforms > 0)
                         {
-                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                            MetaverseAssetBundleBuildProgress.ReportPlatformFailed(
                                 platform,
                                 platformProgressIndex,
                                 totalProgressPlatforms,
@@ -363,7 +363,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             e.Message);
                         if (totalProgressPlatforms > 0)
                         {
-                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                            MetaverseAssetBundleBuildProgress.ReportPlatformFailed(
                                 platform,
                                 platformProgressIndex,
                                 totalProgressPlatforms,
@@ -394,7 +394,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     else
                         finishedMessage = $"Asset bundle build complete ({processedPlatforms}/{totalProgressPlatforms} platforms).";
 
-                    MetaverseAssetBundleBuildProgressWindow.ReportBuildFinished(
+                    MetaverseAssetBundleBuildProgress.ReportBuildFinished(
                         finishedMessage,
                         processedPlatforms,
                         totalProgressPlatforms,

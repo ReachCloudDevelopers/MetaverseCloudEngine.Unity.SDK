@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.31
-- Add MetaverseAssetBundleBuildProgressWindow for improved build progress tracking
+## 2.204.32
+- Refactor asset bundle progress reporting: replace MetaverseAssetBundleBuildProgressWindow with MetaverseAssetBundleBuildProgress for improved integration with Unity's native progress system.
 
 Updated on November 15, 2025
