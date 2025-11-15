@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.28
-- Refactor exception handling in Gradle bundle classes and improve upload progress reporting in AssetEditor
+## 2.204.29
+- Replace EditorUtility.SwitchToMainThread() with EditorUtility.ClearProgressBar() in exception handling
 
 Updated on November 15, 2025

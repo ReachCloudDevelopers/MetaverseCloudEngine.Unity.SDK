@@ -1749,7 +1749,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             catch (Exception e)
             {
                 await UniTask.SwitchToMainThread();
-                EditorUtility.SwitchToMainThread();
+                EditorUtility.ClearProgressBar();
             }
         }
 
