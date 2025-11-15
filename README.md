@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.29
-- Replace EditorUtility.SwitchToMainThread() with EditorUtility.ClearProgressBar() in exception handling
+## 2.204.30
+- Lock and unlock assembly reloads during asset upload process
 
 Updated on November 15, 2025

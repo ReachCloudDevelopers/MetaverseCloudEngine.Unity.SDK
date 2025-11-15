@@ -1692,6 +1692,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             try
             {
                 await UniTask.SwitchToMainThread();
+                EditorApplication.LockReloadAssemblies();
 
                 var uploadSizeMB = totalBytes / 1024f / 1024f;
                 var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
@@ -1731,7 +1732,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         break;
                     }
 
-                    await UniTask.Yield(PlayerLoopTiming.Update);
+                    await UniTask.Delay(100);
                 }
 
                 sw.Stop();
@@ -1746,10 +1747,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                     await DelayRealtimeSecondsAsync(1f);
                 }
             }
-            catch (Exception e)
+            finally
             {
-                await UniTask.SwitchToMainThread();
                 EditorUtility.ClearProgressBar();
+                EditorApplication.UnlockReloadAssemblies();
             }
         }
 
