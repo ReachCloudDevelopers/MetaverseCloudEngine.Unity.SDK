@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.25
-- Refactor asset upload process to use async/await pattern for improved performance and readability
+## 2.204.26
+- Add missing GUID reference to MetaverseCloudEngine.Unity.Editor assembly definition
 
 Updated on November 15, 2025
