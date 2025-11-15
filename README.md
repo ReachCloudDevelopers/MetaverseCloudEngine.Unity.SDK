@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.30
-- Lock and unlock assembly reloads during asset upload process
+## 2.204.31
+- Add MetaverseAssetBundleBuildProgressWindow for improved build progress tracking
 
 Updated on November 15, 2025

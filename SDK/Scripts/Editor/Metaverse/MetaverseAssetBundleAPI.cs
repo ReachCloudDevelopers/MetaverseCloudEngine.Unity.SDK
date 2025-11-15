@@ -103,18 +103,50 @@ namespace MetaverseCloudEngine.Unity.Editors
                     targetPlatforms.Add(Platform.WebGL);
                 }
 
+                var progressOrder = new List<Platform>();
+                var seenPlatformIds = new HashSet<int>();
+                foreach (var targetPlatform in targetPlatforms)
+                {
+                    var platformKey = (int)targetPlatform;
+                    if (seenPlatformIds.Add(platformKey))
+                        progressOrder.Add(targetPlatform);
+                }
+
+                var totalProgressPlatforms = progressOrder.Count;
+                if (totalProgressPlatforms > 0)
+                    MetaverseAssetBundleBuildProgressWindow.Begin(bundleId, progressOrder);
+
+                var processedPlatforms = 0;
+                var platformProgressIndex = 0;
+                var buildTerminatedWithError = false;
+                var buildWasCancelled = false;
+                var hadPlatformFailures = false;
+
                 // Let's start processing each platform.
                 var alreadyDonePlatforms = new List<int>();
                 foreach (var platform in targetPlatforms.Where(
                              platform => !alreadyDonePlatforms.Contains((int)platform)))
                 {
                     alreadyDonePlatforms.Add((int)platform);
+                    platformProgressIndex++;
 
                     BuildTarget buildTarget;
                     if (platform != Platform.AndroidVR)
                     {
                         if (!Enum.TryParse(platform.ToString(), out buildTarget))
+                        {
+                            if (totalProgressPlatforms > 0)
+                            {
+                                processedPlatforms++;
+                                MetaverseAssetBundleBuildProgressWindow.ReportPlatformSkipped(
+                                    platform,
+                                    platformProgressIndex,
+                                    totalProgressPlatforms,
+                                    processedPlatforms,
+                                    "Unable to map platform to Unity BuildTarget.");
+                            }
                             continue;
+                        }
                     }
                     else
                     {
@@ -126,6 +158,16 @@ namespace MetaverseCloudEngine.Unity.Editors
                     {
                         Debug.LogError(
                             $"Build target {platform} is not supported by your Unity Editor configuration. Please install the necessary development kits.");
+                        if (totalProgressPlatforms > 0)
+                        {
+                            processedPlatforms++;
+                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformSkipped(
+                                platform,
+                                platformProgressIndex,
+                                totalProgressPlatforms,
+                                processedPlatforms,
+                                "Build target support is missing in this Unity Editor.");
+                        }
                         continue;
                     }
                     
@@ -136,6 +178,15 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
                     
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+
+                    if (totalProgressPlatforms > 0)
+                    {
+                        MetaverseAssetBundleBuildProgressWindow.ReportPlatformStarted(
+                            platform,
+                            platformProgressIndex,
+                            totalProgressPlatforms,
+                            processedPlatforms);
+                    }
 
                     var targetBundleId = $"{bundleId}_{platform}";
                     var validAssetNames = new List<string>();
@@ -232,6 +283,16 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 OutputPath = results.BundleInfos.Select(x => x.Value.FileName).First(),
                                 Platforms = platform
                             });
+
+                            if (totalProgressPlatforms > 0)
+                            {
+                                processedPlatforms++;
+                                MetaverseAssetBundleBuildProgressWindow.ReportPlatformCompleted(
+                                    platform,
+                                    platformProgressIndex,
+                                    totalProgressPlatforms,
+                                    processedPlatforms);
+                            }
                         }
                         finally
                         {
@@ -245,12 +306,35 @@ namespace MetaverseCloudEngine.Unity.Editors
                         MetaverseProgram.Logger.Log(
                             $"<b><color=red>Failed</color></b> to build platform {platform}. Check the console for build errors: " +
                             e.Message);
+                        if (totalProgressPlatforms > 0)
+                        {
+                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                                platform,
+                                platformProgressIndex,
+                                totalProgressPlatforms,
+                                processedPlatforms,
+                                e.Message,
+                                false);
+                        }
+                        hadPlatformFailures = true;
                     }
-                    catch (OperationCanceledException)
+                    catch (OperationCanceledException e)
                     {
                         MetaverseProgram.Logger.Log(
                             $"<b><color=red>Failed</color></b> to build platform {platform}: Build was cancelled. Check the console for build errors.");
+                        if (totalProgressPlatforms > 0)
+                        {
+                            var reason = string.IsNullOrEmpty(e.Message) ? "Build cancelled." : e.Message;
+                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                                platform,
+                                platformProgressIndex,
+                                totalProgressPlatforms,
+                                processedPlatforms,
+                                reason,
+                                true);
+                        }
                         successfulBuilds.Clear();
+                        buildWasCancelled = true;
                         break;
                     }
                     catch (AccessViolationException e)
@@ -258,6 +342,17 @@ namespace MetaverseCloudEngine.Unity.Editors
                         MetaverseProgram.Logger.Log(
                             $"<b><color=red>Failed</color></b> to build platform {platform}: Access violation. Check the console for build errors: " +
                             e.Message);
+                        if (totalProgressPlatforms > 0)
+                        {
+                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                                platform,
+                                platformProgressIndex,
+                                totalProgressPlatforms,
+                                processedPlatforms,
+                                e.Message,
+                                true);
+                        }
+                        buildTerminatedWithError = true;
                         successfulBuilds.Clear();
                         break;
                     }
@@ -266,6 +361,17 @@ namespace MetaverseCloudEngine.Unity.Editors
                         MetaverseProgram.Logger.Log(
                             $"<b><color=red>Failed</color></b> to build platform {platform}: An unexpected error occurred. Check the console for build errors: " +
                             e.Message);
+                        if (totalProgressPlatforms > 0)
+                        {
+                            MetaverseAssetBundleBuildProgressWindow.ReportPlatformFailed(
+                                platform,
+                                platformProgressIndex,
+                                totalProgressPlatforms,
+                                processedPlatforms,
+                                e.Message,
+                                true);
+                        }
+                        buildTerminatedWithError = true;
                         successfulBuilds.Clear();
                         break;
                     }
@@ -273,6 +379,26 @@ namespace MetaverseCloudEngine.Unity.Editors
                     AssetDatabase.ReleaseCachedFileHandles();
                     AssetDatabase.Refresh();
                     yield return null;
+                }
+
+                if (totalProgressPlatforms > 0)
+                {
+                    var finalHadFailures = buildWasCancelled || buildTerminatedWithError || hadPlatformFailures;
+                    string finishedMessage;
+                    if (buildWasCancelled)
+                        finishedMessage = $"Asset bundle build cancelled after {processedPlatforms}/{totalProgressPlatforms} platforms.";
+                    else if (buildTerminatedWithError)
+                        finishedMessage = $"Asset bundle build failed after {processedPlatforms}/{totalProgressPlatforms} platforms.";
+                    else if (hadPlatformFailures)
+                        finishedMessage = $"Asset bundle build completed with errors ({processedPlatforms}/{totalProgressPlatforms} platforms succeeded).";
+                    else
+                        finishedMessage = $"Asset bundle build complete ({processedPlatforms}/{totalProgressPlatforms} platforms).";
+
+                    MetaverseAssetBundleBuildProgressWindow.ReportBuildFinished(
+                        finishedMessage,
+                        processedPlatforms,
+                        totalProgressPlatforms,
+                        finalHadFailures);
                 }
 
                 // Switch back to the original build target before invoking callbacks/dialogs
