@@ -1525,6 +1525,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     StoreBundleInfoForRetry(buildsArray);
                     await UniTask.SwitchToMainThread();
                     if (!suppressDialog)
+                    {
                         ShowUploadFailureDialog(ex.ToString(),
                             () => UploadBundles(
                                 controller,
@@ -1534,15 +1535,14 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 onBuildSuccess,
                                 onError),
                             () => onError?.Invoke(ex));
+                    }
                     else
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            buildsArray,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            suppressDialog: suppressDialog);
+                    {
+                        // In batch/suppressed-dialog mode, don't silently auto-retry on exceptions.
+                        // Surface the error so callers like BatchBuilderWindow can mark the
+                        // asset as failed and continue/stop according to their policy.
+                        onError?.Invoke(ex);
+                    }
                 }
             }
             finally
