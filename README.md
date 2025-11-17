@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.40
-- Remove suppressDialog check from upload completion condition in AssetEditor
+## 2.204.41
+- Enhance error handling and validation in MetaSpace and MetaPrefab upload processes
 
 Updated on November 17, 2025

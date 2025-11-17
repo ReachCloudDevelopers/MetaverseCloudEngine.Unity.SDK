@@ -1015,12 +1015,43 @@ namespace MetaverseCloudEngine.Unity.Editors
             out Scene scene,
             out MetaSpace metaSpace)
         {
-            scene = EditorSceneManager.OpenScene(asset.assetPath, OpenSceneMode.Single);
-            metaSpace = scene.GetRootGameObjects().SelectMany(x => x.GetComponentsInChildren<MetaSpace>(true)).FirstOrDefault();
-            Editor editor = Editor.CreateEditor(metaSpace, typeof(MetaSpaceEditor));
-            var form = ((MetaSpaceEditor)editor).GetUpsertForm(metaSpace.ID, metaSpace, true);
-            ((MetaSpaceEditor)editor).Init();
-            ((MetaSpaceEditor)editor).UploadBundles(MetaverseProgram.ApiClient.MetaSpaces, scene.path, builds, form, (_, _) => onSuccess(), onError, suppressDialog: true);
+            scene = default;
+            metaSpace = default;
+
+            try
+            {
+                if (builds == null || !builds.Any())
+                    throw new InvalidOperationException("No bundle builds were produced for the MetaSpace upload.");
+
+                scene = EditorSceneManager.OpenScene(asset.assetPath, OpenSceneMode.Single);
+                metaSpace = scene.GetRootGameObjects()
+                    .SelectMany(x => x.GetComponentsInChildren<MetaSpace>(true))
+                    .FirstOrDefault();
+
+                if (!metaSpace)
+                    throw new InvalidOperationException($"Scene '{asset.assetName}' no longer contains a MetaSpace component.");
+
+                var editor = Editor.CreateEditor(metaSpace, typeof(MetaSpaceEditor)) as MetaSpaceEditor;
+                if (!editor)
+                    throw new InvalidOperationException("Failed to create a MetaSpaceEditor instance for upload.");
+
+                editor.Init();
+                var form = editor.GetUpsertForm(metaSpace.ID, metaSpace, true);
+
+                editor.UploadBundles(
+                    MetaverseProgram.ApiClient.MetaSpaces,
+                    scene.path,
+                    builds,
+                    form,
+                    (_, _) => InvokeContinuation(onSuccess, asset, onError),
+                    error => HandleUploadError(asset, error, onError),
+                    suppressDialog: true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Batch Builder] Failed to finalize MetaSpace '{asset.assetName}': {ex}");
+                onError?.Invoke(ex);
+            }
         }
 
         private static void FinishBuildAndUploadPrefab(
@@ -1031,12 +1062,72 @@ namespace MetaverseCloudEngine.Unity.Editors
             out GameObject prefab,
             out MetaPrefab metaPrefab)
         {
-            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(asset.assetPath);
-            metaPrefab = prefab.GetComponent<MetaPrefab>();
-            Editor editor = Editor.CreateEditor(metaPrefab, typeof(MetaPrefabEditor));
-            var form = ((MetaPrefabEditor)editor).GetUpsertForm(metaPrefab.ID, metaPrefab, true);
-            ((MetaPrefabEditor)editor).Init();
-            ((MetaPrefabEditor)editor).UploadBundles(MetaverseProgram.ApiClient.Prefabs, asset.assetPath, builds, form, (_, _) => onSuccess(), onError, suppressDialog: true);
+            prefab = null;
+            metaPrefab = null;
+
+            try
+            {
+                if (builds == null || !builds.Any())
+                    throw new InvalidOperationException("No bundle builds were produced for the MetaPrefab upload.");
+
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(asset.assetPath);
+                if (!prefab)
+                    throw new InvalidOperationException($"Unable to load prefab at path '{asset.assetPath}'.");
+
+                metaPrefab = prefab.GetComponent<MetaPrefab>();
+                if (!metaPrefab)
+                    throw new InvalidOperationException("Prefab does not contain a MetaPrefab component anymore.");
+
+                var editor = Editor.CreateEditor(metaPrefab, typeof(MetaPrefabEditor)) as MetaPrefabEditor;
+                if (!editor)
+                    throw new InvalidOperationException("Failed to create a MetaPrefabEditor instance for upload.");
+
+                editor.Init();
+                var form = editor.GetUpsertForm(metaPrefab.ID, metaPrefab, true);
+
+                editor.UploadBundles(
+                    MetaverseProgram.ApiClient.Prefabs,
+                    asset.assetPath,
+                    builds,
+                    form,
+                    (_, _) => InvokeContinuation(onSuccess, asset, onError),
+                    error => HandleUploadError(asset, error, onError),
+                    suppressDialog: true);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Batch Builder] Failed to finalize prefab '{asset.assetName}': {ex}");
+                onError?.Invoke(ex);
+            }
+        }
+
+        private static void HandleUploadError(AssetItem asset, object error, Action<object> onError)
+        {
+            if (error == null)
+            {
+                Debug.LogError($"[Batch Builder] Upload error reported for '{asset.assetName}' but no message was provided.");
+                onError?.Invoke("Unknown upload error");
+                return;
+            }
+
+            Debug.LogError($"[Batch Builder] Upload error for '{asset.assetName}': {error}");
+            onError?.Invoke(error);
+        }
+
+        private static void InvokeContinuation(Action continuation, AssetItem asset, Action<object> onError)
+        {
+            if (continuation == null)
+                return;
+
+            try
+            {
+                continuation();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Batch Builder] Continuation for '{asset.assetName}' failed: {ex}");
+                onError?.Invoke(ex);
+            }
         }
 
         #endregion
