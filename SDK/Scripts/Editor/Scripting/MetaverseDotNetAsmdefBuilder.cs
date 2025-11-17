@@ -6,6 +6,7 @@ using MetaverseCloudEngine.Unity.Scripting.Components;
 using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEngine;
+using JetBrains.Annotations;
 
 namespace MetaverseCloudEngine.Unity.Editors
 {
@@ -336,7 +337,10 @@ namespace MetaverseCloudEngine.Unity.Editors
         [Serializable]
         private class AsmdefJson
         {
+            [UsedImplicitly]
+            #pragma warning disable CS0649
             public string name;
+            #pragma warning restore CS0649
         }
 
         // --- Auto-rebuild support --------------------------------------------------------------

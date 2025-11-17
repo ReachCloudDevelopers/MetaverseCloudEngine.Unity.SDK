@@ -12,13 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.33
-- Add DotNow proxy and caching for MetaverseDotNetScript
-- 
-- - Implemented MetaverseDotNetScriptBaseProxy to enable DotNow script instantiation and method invocation.
-- - Created MetaverseDotNetScriptCache to manage DotNow AppDomain and assembly loading for script instances.
-- - Introduced MetaverseDotNetScriptILScanner for IL-level scanning to detect usage of blocked CLR APIs.
-- - Added MetaverseDotNetScriptSecurity to enforce security policies on assemblies and types.
-- - Included metadata files for new scripts to ensure proper integration with Unity.
+## 2.204.34
+- Add JetBrains.Annotations usage for implicit usage in AsmdefJson class
 
 Updated on November 17, 2025
