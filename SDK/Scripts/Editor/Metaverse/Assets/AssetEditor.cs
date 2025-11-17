@@ -1783,7 +1783,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 sw.Stop();
                 durationCaptured?.Invoke(sw.Elapsed.TotalSeconds);
 
-                if (uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested && !suppressDialog)
+                if (uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
                 {
                     EditorUtility.DisplayProgressBar(
                         $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",

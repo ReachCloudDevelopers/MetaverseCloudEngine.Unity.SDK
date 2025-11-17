@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.39
-- Improve error handling in asset upload process to ensure exceptions are surfaced in batch mode
+## 2.204.40
+- Remove suppressDialog check from upload completion condition in AssetEditor
 
 Updated on November 17, 2025
