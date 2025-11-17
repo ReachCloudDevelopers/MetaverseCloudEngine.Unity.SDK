@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.34
-- Add JetBrains.Annotations usage for implicit usage in AsmdefJson class
+## 2.204.35
+- Refactor TryEnsureAssemblyAsset method for improved readability and maintainability
 
 Updated on November 17, 2025

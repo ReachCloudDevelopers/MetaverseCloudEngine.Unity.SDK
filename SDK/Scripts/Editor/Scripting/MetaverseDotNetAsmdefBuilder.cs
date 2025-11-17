@@ -125,98 +125,96 @@ namespace MetaverseCloudEngine.Unity.Editors
                 Debug.LogWarning($"[METAVERSE_DOTNET_SCRIPT] Wrote assembly bytes to '{outputAssetPath}', but Unity did not import it as a TextAsset.");
             }
         }
-			internal static bool TryEnsureAssemblyAsset(string asmdefAssetPath, out TextAsset assemblyAsset)
-			{
-				assemblyAsset = null;
+        internal static bool TryEnsureAssemblyAsset(string asmdefAssetPath, out TextAsset assemblyAsset)
+        {
+            assemblyAsset = null;
 
-				if (string.IsNullOrEmpty(asmdefAssetPath))
-					return false;
+            if (string.IsNullOrEmpty(asmdefAssetPath))
+                return false;
 
-				// Prevent writing into Library or other non-asset locations.
-				if (asmdefAssetPath.StartsWith("Library/", StringComparison.OrdinalIgnoreCase))
-				{
-					Debug.LogError("[METAVERSE_DOTNET_SCRIPT] Cannot build from asmdef located under the Library folder.");
-					return false;
-				}
+            // Prevent writing into Library or other non-asset locations.
+            if (asmdefAssetPath.StartsWith("Library/", StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.LogError("[METAVERSE_DOTNET_SCRIPT] Cannot build from asmdef located under the Library folder.");
+                return false;
+            }
 
-				var assemblyName = GetAssemblyNameFromAsmdefAssetPath(asmdefAssetPath);
-				if (string.IsNullOrEmpty(assemblyName))
-					return false;
+            var assemblyName = GetAssemblyNameFromAsmdefAssetPath(asmdefAssetPath);
+            if (string.IsNullOrEmpty(assemblyName))
+                return false;
 
-				var outputAssetPath = GetOutputAssetPath(asmdefAssetPath, assemblyName);
-				var outputAbsolutePath = Path.GetFullPath(outputAssetPath);
+            var outputAssetPath = GetOutputAssetPath(asmdefAssetPath, assemblyName);
+            var outputAbsolutePath = Path.GetFullPath(outputAssetPath);
 
-				// If the asset already exists and can be loaded, just return it.
-				if (File.Exists(outputAbsolutePath))
-				{
-					assemblyAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(outputAssetPath);
-					if (assemblyAsset != null)
-						return true;
-				}
+            // If the asset already exists and can be loaded, just return it.
+            if (File.Exists(outputAbsolutePath))
+            {
+                assemblyAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(outputAssetPath);
+                if (assemblyAsset != null)
+                    return true;
+            }
 
-				if (EditorApplication.isCompiling)
-				{
-					Debug.LogWarning("[METAVERSE_DOTNET_SCRIPT] Scripts are currently compiling. Please wait for compilation to finish and try again.");
-					return false;
-				}
+            if (EditorApplication.isCompiling)
+            {
+                Debug.LogWarning("[METAVERSE_DOTNET_SCRIPT] Scripts are currently compiling. Please wait for compilation to finish and try again.");
+                return false;
+            }
 
-				var assembly = FindCompiledAssemblyByName(assemblyName);
-				if (assembly == null)
-				{
-					Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Could not find compiled assembly for '{assemblyName}'. Make sure scripts are compiled successfully.");
-					return false;
-				}
+            var assembly = FindCompiledAssemblyByName(assemblyName);
+            if (assembly == null)
+            {
+                Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Could not find compiled assembly for '{assemblyName}'. Make sure scripts are compiled successfully.");
+                return false;
+            }
 
-				if (string.IsNullOrEmpty(assembly.outputPath) || !File.Exists(assembly.outputPath))
-				{
-					Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Compiled assembly for '{assemblyName}' does not have a valid output path.");
-					return false;
-				}
+            if (string.IsNullOrEmpty(assembly.outputPath) || !File.Exists(assembly.outputPath))
+            {
+                Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Compiled assembly for '{assemblyName}' does not have a valid output path.");
+                return false;
+            }
 
-				byte[] assemblyBytes;
-				try
-				{
-					assemblyBytes = File.ReadAllBytes(assembly.outputPath);
-				}
-				catch (Exception ex)
-				{
-					Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Failed to read compiled assembly '{assembly.outputPath}': {ex}");
-					return false;
-				}
+            byte[] assemblyBytes;
+            try
+            {
+                assemblyBytes = File.ReadAllBytes(assembly.outputPath);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Failed to read compiled assembly '{assembly.outputPath}': {ex}");
+                return false;
+            }
 
-				if (!MetaverseDotNetScriptSecurity.ValidateAssemblyBytes(assemblyBytes, out var securityMessage))
-				{
-					Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Security validation failed for asmdef '{assemblyName}': {securityMessage}");
-					return false;
-				}
+            if (!MetaverseDotNetScriptSecurity.ValidateAssemblyBytes(assemblyBytes, out var securityMessage))
+            {
+                Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Security validation failed for asmdef '{assemblyName}': {securityMessage}");
+                return false;
+            }
 
-				try
-				{
-					Directory.CreateDirectory(Path.GetDirectoryName(outputAbsolutePath) ?? string.Empty);
-					File.WriteAllBytes(outputAbsolutePath, assemblyBytes);
-				}
-				catch (Exception ex)
-				{
-					Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Failed to write assembly asset to '{outputAssetPath}': {ex}");
-					return false;
-				}
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(outputAbsolutePath) ?? string.Empty);
+                File.WriteAllBytes(outputAbsolutePath, assemblyBytes);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[METAVERSE_DOTNET_SCRIPT] Failed to write assembly asset to '{outputAssetPath}': {ex}");
+                return false;
+            }
 
-				AssetDatabase.ImportAsset(outputAssetPath, ImportAssetOptions.ForceUpdate);
-				AssetDatabase.Refresh();
+            AssetDatabase.ImportAsset(outputAssetPath, ImportAssetOptions.ForceUpdate);
+            AssetDatabase.Refresh();
 
-				assemblyAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(outputAssetPath);
-				if (!assemblyAsset)
-				{
-					Debug.LogWarning($"[METAVERSE_DOTNET_SCRIPT] Wrote assembly bytes to '{outputAssetPath}', but Unity did not import it as a TextAsset.");
-					return false;
-				}
+            assemblyAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(outputAssetPath);
+            if (!assemblyAsset)
+            {
+                Debug.LogWarning($"[METAVERSE_DOTNET_SCRIPT] Wrote assembly bytes to '{outputAssetPath}', but Unity did not import it as a TextAsset.");
+                return false;
+            }
 
-				CreateOrUpdateMetadataForAssembly(asmdefAssetPath, assemblyName, assemblyBytes, outputAssetPath);
+            CreateOrUpdateMetadataForAssembly(asmdefAssetPath, assemblyName, assemblyBytes, outputAssetPath);
 
-				return true;
-			}
-
-
+            return true;
+        }
 
         private static string GetAssemblyNameFromAsmdefAssetPath(string asmdefAssetPath)
         {
@@ -338,9 +336,9 @@ namespace MetaverseCloudEngine.Unity.Editors
         private class AsmdefJson
         {
             [UsedImplicitly]
-            #pragma warning disable CS0649
+#pragma warning disable CS0649
             public string name;
-            #pragma warning restore CS0649
+#pragma warning restore CS0649
         }
 
         // --- Auto-rebuild support --------------------------------------------------------------
