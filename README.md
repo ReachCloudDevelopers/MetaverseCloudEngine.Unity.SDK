@@ -12,7 +12,13 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.32
-- Refactor asset bundle progress reporting: replace MetaverseAssetBundleBuildProgressWindow with MetaverseAssetBundleBuildProgress for improved integration with Unity's native progress system.
+## 2.204.33
+- Add DotNow proxy and caching for MetaverseDotNetScript
+- 
+- - Implemented MetaverseDotNetScriptBaseProxy to enable DotNow script instantiation and method invocation.
+- - Created MetaverseDotNetScriptCache to manage DotNow AppDomain and assembly loading for script instances.
+- - Introduced MetaverseDotNetScriptILScanner for IL-level scanning to detect usage of blocked CLR APIs.
+- - Added MetaverseDotNetScriptSecurity to enforce security policies on assemblies and types.
+- - Included metadata files for new scripts to ensure proper integration with Unity.
 
-Updated on November 15, 2025
+Updated on November 17, 2025

@@ -123,8 +123,22 @@ namespace MetaverseCloudEngine.Unity.Editors
         private const string UploadSpeedPrefKey = "MetaverseCloudEngine_Unity_LastUploadSpeedBytesPerSecond";
         private const double DefaultSimulatedBytesPerSecond = 2.0 * 1024 * 1024;
 
+        private static int _activeUploadCount;
+
+        private static bool UploadInProgress => _activeUploadCount > 0;
+
+        private static void IncrementUploadInProgress()
+        {
+            _activeUploadCount++;
+        }
+
+        private static void DecrementUploadInProgress()
+        {
+            _activeUploadCount = Math.Max(0, _activeUploadCount - 1);
+        }
+
         public TAsset Target { get; private set; }
-        
+
         public static bool AskToTurnOffGPUInstancing {
             get => EditorPrefs.GetBool(nameof(AskToTurnOffGPUInstancing), true);
             set => EditorPrefs.SetBool(nameof(AskToTurnOffGPUInstancing), value);
@@ -469,69 +483,83 @@ namespace MetaverseCloudEngine.Unity.Editors
                 return;
             }
 
-            MetaverseEditorUtils.Box(() =>
+            if (UploadInProgress)
             {
-                var currentUser = MetaverseProgram.ApiClient.Account.CurrentUser;
-                var protectedEmailString = currentUser.Email[..1] + "****" + currentUser.Email[(currentUser.Email.IndexOf('@')-1)..];
-                EditorGUILayout.LabelField("You are logged in as: " + currentUser.UserName + " (" + protectedEmailString + ")");
+                EditorGUILayout.HelpBox("An upload is currently in progress. Please wait for it to complete before starting another upload or metadata update.", MessageType.Info);
+            }
 
-                if (targets.Length == 1)
+            var wasEnabled = GUI.enabled;
+            GUI.enabled = wasEnabled && !UploadInProgress;
+            try
+            {
+                MetaverseEditorUtils.Box(() =>
                 {
-                    var updateMetadataLanguageString = Target.ID == null ? "Create" : "Update Metadata";
-                    if (AllowUpdateMetadata && (Target.ID != null || GetMainAsset(Target) == null) && GUILayout.Button(updateMetadataLanguageString) &&
-                        EditorUtility.DisplayDialog(updateMetadataLanguageString, "You are about to update metadata. Are you sure you want to do that?", "Yes", "Cancel"))
+                    var currentUser = MetaverseProgram.ApiClient.Account.CurrentUser;
+                    var protectedEmailString = currentUser.Email[..1] + "****" + currentUser.Email[(currentUser.Email.IndexOf('@')-1)..];
+                    EditorGUILayout.LabelField("You are logged in as: " + currentUser.UserName + " (" + protectedEmailString + ")");
+
+                    if (targets.Length == 1)
                     {
-                        Upload(GetMainAsset(Target), Target, serializedObject, true);
-                        return;
-                    }
+                        var updateMetadataLanguageString = Target.ID == null ? "Create" : "Update Metadata";
+                        if (AllowUpdateMetadata && (Target.ID != null || GetMainAsset(Target) == null) && GUILayout.Button(updateMetadataLanguageString) &&
+                            EditorUtility.DisplayDialog(updateMetadataLanguageString, "You are about to update metadata. Are you sure you want to do that?", "Yes", "Cancel"))
+                        {
+                            Upload(GetMainAsset(Target), Target, serializedObject, true);
+                            return;
+                        }
 
 #if MV_BUILD_PIPELINE
-                    if (GetMainAsset(Target) != null)
-                    {
-                        if (GUILayout.Button("Build & Upload") && EditorUtility.DisplayDialog("Build & Upload", $"You are about to build the asset bundle(s) and upload. This could take a long time. Are you sure you want to do it?", "Yes", "Cancel"))
+                        if (GetMainAsset(Target) != null)
                         {
-                            Upload(GetMainAsset(Target), Target, serializedObject, false);
-                            GUIUtility.ExitGUI();
-                        }
+                            if (GUILayout.Button("Build & Upload") && EditorUtility.DisplayDialog("Build & Upload", $"You are about to build the asset bundle(s) and upload. This could take a long time. Are you sure you want to do it?", "Yes", "Cancel"))
+                            {
+                                Upload(GetMainAsset(Target), Target, serializedObject, false);
+                                GUIUtility.ExitGUI();
+                            }
 
-                        if (CanPublish() && _publishProperty != null)
-                        {
-                            EditorGUILayout.PropertyField(_publishProperty);
+                            if (CanPublish() && _publishProperty != null)
+                            {
+                                EditorGUILayout.PropertyField(_publishProperty);
+                            }
                         }
-                    }
 #else
-                    EditorGUILayout.HelpBox("Please Install Scriptable Build Pipeline v1.21.22 or Newer from the Package Manager", MessageType.Warning);
-                    GUI.enabled = false;
-                    try
-                    {
-                        GUILayout.Button("Build & Upload");
-                    }
-                    finally
-                    {
-                        GUI.enabled = true;
-                    }
-#endif
-                }
-                else
-                {
-                    var nullIDs = targets.All(x => ((TAsset)x).ID == null);
-                    var nullMainAssets = targets.All(x => GetMainAsset((TAsset)x) == null);
-                    var updateMetadataLanguageString = nullIDs ? "Create" : "Update Metadata";
-                    if (AllowUpdateMetadata && (!nullIDs || GetMainAsset(Target) == null) && nullMainAssets && GUILayout.Button(updateMetadataLanguageString) &&
-                        EditorUtility.DisplayDialog(updateMetadataLanguageString, "You are about to update metadata for the selected assets. Are you sure you want to do that?", "Yes", "Cancel"))
-                    {
-                        foreach (var t in targets)
+                        EditorGUILayout.HelpBox("Please Install Scriptable Build Pipeline v1.21.22 or Newer from the Package Manager", MessageType.Warning);
+                        GUI.enabled = false;
+                        try
                         {
-                            var asset = (TAsset)t;
-                            Upload(GetMainAsset(asset), asset, new SerializedObject(asset), true);
+                            GUILayout.Button("Build & Upload");
+                        }
+                        finally
+                        {
+                            GUI.enabled = true;
+                        }
+#endif
+                    }
+                    else
+                    {
+                        var nullIDs = targets.All(x => ((TAsset)x).ID == null);
+                        var nullMainAssets = targets.All(x => GetMainAsset((TAsset)x) == null);
+                        var updateMetadataLanguageString = nullIDs ? "Create" : "Update Metadata";
+                        if (AllowUpdateMetadata && (!nullIDs || GetMainAsset(Target) == null) && nullMainAssets && GUILayout.Button(updateMetadataLanguageString) &&
+                            EditorUtility.DisplayDialog(updateMetadataLanguageString, "You are about to update metadata for the selected assets. Are you sure you want to do that?", "Yes", "Cancel"))
+                        {
+                            foreach (var t in targets)
+                            {
+                                var asset = (TAsset)t;
+                                Upload(GetMainAsset(asset), asset, new SerializedObject(asset), true);
+                            }
                         }
                     }
-                }
 
-                DrawPlatformControls();
+                    DrawPlatformControls();
 
-                DrawThumbnailControls();
-            });
+                    DrawThumbnailControls();
+                });
+            }
+            finally
+            {
+                GUI.enabled = wasEnabled;
+            }
         }
 
         private void DrawPublishControls()
@@ -1426,92 +1454,100 @@ namespace MetaverseCloudEngine.Unity.Editors
         {
             await UniTask.SwitchToMainThread();
 
-            if (Application.internetReachability == NetworkReachability.NotReachable)
-            {
-                if (EditorUtility.DisplayDialog(
-                        "Internet Connection Required",
-                        "Please check your internet connection and try again.",
-                        "Retry",
-                        "Cancel"))
-                {
-                    UploadBundles(
-                        controller,
-                        bundlePath,
-                        builds,
-                        assetUpsertForm,
-                        onBuildSuccess,
-                        onError,
-                        tries + 1,
-                        suppressDialog);
-                }
-                else
-                {
-                    onError?.Invoke("Upload cancelled.");
-                }
-
-                return;
-            }
-
-            if (tries >= 3)
-            {
-                StoreBundleInfoForRetry(builds);
-
-                var retry = !suppressDialog 
-                    ? EditorUtility.DisplayDialog(
-                        "Upload Failed",
-                        "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
-                        "Retry",
-                        "Cancel")
-                    : false;
-
-                if (retry)
-                    UploadBundles(
-                        controller,
-                        bundlePath,
-                        builds,
-                        assetUpsertForm,
-                        onBuildSuccess,
-                        onError,
-                        tries,
-                        suppressDialog);
-                else
-                    onError?.Invoke("Upload cancelled.");
-
-                return;
-            }
-
-            var buildsArray = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
-
+            IncrementUploadInProgress();
             try
             {
-                await ExecuteUploadAsync(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog);
-            }
-            catch (Exception ex)
-            {
-                ex = ex.GetBaseException();
-                MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
+                if (Application.internetReachability == NetworkReachability.NotReachable)
+                {
+                    if (EditorUtility.DisplayDialog(
+                            "Internet Connection Required",
+                            "Please check your internet connection and try again.",
+                            "Retry",
+                            "Cancel"))
+                    {
+                        UploadBundles(
+                            controller,
+                            bundlePath,
+                            builds,
+                            assetUpsertForm,
+                            onBuildSuccess,
+                            onError,
+                            tries + 1,
+                            suppressDialog);
+                    }
+                    else
+                    {
+                        onError?.Invoke("Upload cancelled.");
+                    }
 
-                StoreBundleInfoForRetry(buildsArray);
-                await UniTask.SwitchToMainThread();
-                if (!suppressDialog)
-                    ShowUploadFailureDialog(ex.ToString(),
-                        () => UploadBundles(
+                    return;
+                }
+
+                if (tries >= 3)
+                {
+                    StoreBundleInfoForRetry(builds);
+
+                    var retry = !suppressDialog
+                        ? EditorUtility.DisplayDialog(
+                            "Upload Failed",
+                            "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
+                            "Retry",
+                            "Cancel")
+                        : false;
+
+                    if (retry)
+                        UploadBundles(
+                            controller,
+                            bundlePath,
+                            builds,
+                            assetUpsertForm,
+                            onBuildSuccess,
+                            onError,
+                            tries,
+                            suppressDialog);
+                    else
+                        onError?.Invoke("Upload cancelled.");
+
+                    return;
+                }
+
+                var buildsArray = builds as MetaverseAssetBundleAPI.BundleBuild[] ?? builds.ToArray();
+
+                try
+                {
+                    await ExecuteUploadAsync(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog);
+                }
+                catch (Exception ex)
+                {
+                    ex = ex.GetBaseException();
+                    MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {ex}");
+
+                    StoreBundleInfoForRetry(buildsArray);
+                    await UniTask.SwitchToMainThread();
+                    if (!suppressDialog)
+                        ShowUploadFailureDialog(ex.ToString(),
+                            () => UploadBundles(
+                                controller,
+                                bundlePath,
+                                buildsArray,
+                                assetUpsertForm,
+                                onBuildSuccess,
+                                onError),
+                            () => onError?.Invoke(ex));
+                    else
+                        UploadBundles(
                             controller,
                             bundlePath,
                             buildsArray,
                             assetUpsertForm,
                             onBuildSuccess,
-                            onError),
-                        () => onError?.Invoke(ex));
-                else
-                    UploadBundles(
-                        controller,
-                        bundlePath,
-                        buildsArray,
-                        assetUpsertForm,
-                        onBuildSuccess,
-                        onError,
-                        suppressDialog: suppressDialog);
+                            onError,
+                            suppressDialog: suppressDialog);
+                }
+            }
+            finally
+            {
+                DecrementUploadInProgress();
             }
         }
 
@@ -1731,6 +1767,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         cancellationSource.Cancel();
                         break;
                     }
+
+                    EditorApplication.QueuePlayerLoopUpdate();
 
                     await UniTask.Delay(100);
                 }

@@ -116,9 +116,16 @@ namespace MetaverseCloudEngine.Unity.Editors
 			EditorApplication.update += OnUpdate;
 			Selection.selectionChanged -= OnSelectionChanged;
 			Selection.selectionChanged += OnSelectionChanged;
+			EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+			EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 		}
 
 		private static void OnSelectionChanged() => _callbacks.Clear();
+
+		private static void OnPlayModeStateChanged(PlayModeStateChange state)
+		{
+			_callbacks.Clear();
+		}
 
 		private static void OnUpdate()
 		{

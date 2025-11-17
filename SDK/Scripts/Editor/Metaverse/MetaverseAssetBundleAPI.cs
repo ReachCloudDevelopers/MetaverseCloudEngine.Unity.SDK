@@ -252,7 +252,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                     Group = group,
                                     Target = buildTarget,
                                     ScriptOptions = ScriptCompilationOptions.None,
-                                    UseCache = true,
+                                    UseCache = false, // Sadly Unity 2022.3.X causing this to freeze dramatically long periods of time, so it's best to set this to false.
                                 },
                                 new BundleBuildContent
                                 (

@@ -23,11 +23,36 @@ namespace MetaverseCloudEngine.Unity.Installer
         private const string PackageJsonRelativePath = "Packages/MetaverseCloudEngine.Unity.SDK/package.json";
         private const string DefaultUpdatePrompt = "A newer Metaverse Cloud Engine SDK build is available. Install it now to ensure all required packages stay in sync?";
 
-        private static readonly string[] PackagesToInstall =
+        private sealed class GitDependency
         {
-            "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
-            "https://github.com/Unity-Technologies/AssetBundles-Browser.git",
-            "https://github.com/ReachCloudDevelopers/GLTFUtility.git",
+            internal GitDependency(string packageName, string url, string commitHash)
+            {
+                PackageName = packageName;
+                Url = url;
+                CommitHash = commitHash;
+            }
+
+            public string PackageName { get; }
+            public string Url { get; }
+            public string CommitHash { get; }
+
+            public string InstallUrl => string.IsNullOrEmpty(CommitHash) ? Url : $"{Url}#{CommitHash}";
+        }
+
+        private static readonly GitDependency[] GitDependencies =
+        {
+            new GitDependency(
+                packageName: "com.cysharp.unitask",
+                url: "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
+                commitHash: "73a63b7f672b88f7e9992f6917eb458a8cbb6fa9"),
+            new GitDependency(
+                packageName: "com.unity.assetbundlebrowser",
+                url: "https://github.com/Unity-Technologies/AssetBundles-Browser.git",
+                commitHash: "ad2a81ec3068eafd48753df1825a8dd7201ce60c"),
+            new GitDependency(
+                packageName: "com.siccity.gltfutility",
+                url: "https://github.com/ReachCloudDevelopers/GLTFUtility.git",
+                commitHash: "ac11547cf9c1cfa4524aea79254c1629474b3f01"),
         };
 
         private static readonly Queue<string> PendingPackages = new();
@@ -71,7 +96,8 @@ namespace MetaverseCloudEngine.Unity.Installer
                     return;
                 }
                 
-                var package = list.Result.FirstOrDefault(x => x.name.StartsWith("com.reachcloud.metaverse-cloud-sdk"));
+                var installedPackages = list.Result?.ToList() ?? new List<PackageInfo>();
+                var package = installedPackages.FirstOrDefault(x => x.name.StartsWith("com.reachcloud.metaverse-cloud-sdk"));
                 var latestCommitHash = GetLatestCommit(package);
                 
                 if (!string.IsNullOrEmpty(latestCommitHash))
@@ -90,7 +116,7 @@ namespace MetaverseCloudEngine.Unity.Installer
                     }
                 }
 
-                while (!TryUpdatePackages(latestCommitHash))
+                while (!TryUpdatePackages(latestCommitHash, installedPackages))
                     System.Threading.Thread.Sleep(500);
 
                 if (!string.IsNullOrEmpty(latestCommitHash))
@@ -296,7 +322,7 @@ namespace MetaverseCloudEngine.Unity.Installer
         }
 
         [UsedImplicitly]
-        private static bool TryUpdatePackages(string commitHash)
+        private static bool TryUpdatePackages(string commitHash, IReadOnlyList<PackageInfo> installedPackages)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
@@ -306,7 +332,7 @@ namespace MetaverseCloudEngine.Unity.Installer
 
             if (!PendingPackages.Any() && _packageRequest is null && _packagesProcessed == 0)
             {
-                EnqueuePackages(commitHash);
+                EnqueuePackages(commitHash, installedPackages);
                 if (_packagesTotal == 0)
                 {
                     OnPackagesInstalled();
@@ -389,17 +415,62 @@ namespace MetaverseCloudEngine.Unity.Installer
             Debug.LogWarning("Metaverse Cloud Engine: package check cancelled by user.");
         }
 
-        private static void EnqueuePackages(string commitHash)
+        private static void EnqueuePackages(string commitHash, IReadOnlyList<PackageInfo> installedPackages)
         {
             ResetPackageUpdateState();
 
-            foreach (var package in PackagesToInstall)
-                PendingPackages.Enqueue(package);
+            foreach (var dependency in GitDependencies)
+            {
+                if (DependencyNeedsInstall(dependency, installedPackages, out var installedPackage))
+                {
+                    PendingPackages.Enqueue(dependency.InstallUrl);
+                }
+                else
+                {
+                    LogDependencyUpToDate(dependency, installedPackage);
+                }
+            }
 
             if (!string.IsNullOrEmpty(commitHash))
                 PendingPackages.Enqueue($"https://github.com/ReachCloudDevelopers/MetaverseCloudEngine.Unity.SDK.git#{commitHash}");
 
             _packagesTotal = PendingPackages.Count;
+        }
+
+        private static bool DependencyNeedsInstall(GitDependency dependency, IReadOnlyList<PackageInfo> installedPackages, out PackageInfo installedPackage)
+        {
+            installedPackage = null;
+            if (dependency is null)
+                return false;
+
+            var packages = installedPackages ?? Array.Empty<PackageInfo>();
+            installedPackage = packages.FirstOrDefault(x =>
+                string.Equals(x.name, dependency.PackageName, StringComparison.OrdinalIgnoreCase));
+
+            if (installedPackage is null)
+                return true;
+
+            if (string.IsNullOrEmpty(dependency.CommitHash))
+                return true;
+
+            var installedHash = installedPackage.git?.hash;
+            if (string.IsNullOrEmpty(installedHash))
+                return true;
+
+            return !string.Equals(installedHash, dependency.CommitHash, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void LogDependencyUpToDate(GitDependency dependency, PackageInfo installedPackage)
+        {
+            var packageLabel = dependency?.PackageName ?? GetFriendlyPackageName(installedPackage?.packageId ?? installedPackage?.name);
+            var installedHash = installedPackage?.git?.hash;
+            if (!string.IsNullOrEmpty(installedHash) && installedHash.Length > 7)
+                installedHash = installedHash.Substring(0, 7);
+
+            if (string.IsNullOrEmpty(installedHash))
+                Debug.Log($"Metaverse Cloud Engine: dependency '{packageLabel}' already installed, skipping download.");
+            else
+                Debug.Log($"Metaverse Cloud Engine: dependency '{packageLabel}' already at {installedHash}, skipping download.");
         }
 
         private static void ResetPackageUpdateState()

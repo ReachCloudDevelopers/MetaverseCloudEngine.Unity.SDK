@@ -32,8 +32,13 @@ namespace MetaverseCloudEngine.Unity.Editors.Builds
                 foreach (var o in behaviours)
                 {
                     var importer = (MonoImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(o));
-                    importer.SetIcon(editorIcon);
-                    importer.SaveAndReimport();
+                    var existingIcon = importer.GetIcon();
+                    var assetPath = AssetDatabase.GetAssetPath(existingIcon);
+                    if (string.IsNullOrEmpty(assetPath))
+                    {
+                        importer.SetIcon(editorIcon);
+                        importer.SaveAndReimport();
+                    }
                 }
             }
             finally
