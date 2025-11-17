@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.37
-- Improve handling of missing editor targets for MetaSpaces during uploads
+## 2.204.38
+- Refactor error handling in AssetEditor to improve user feedback during upload failures
 
 Updated on November 17, 2025

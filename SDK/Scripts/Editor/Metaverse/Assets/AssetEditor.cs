@@ -1694,6 +1694,7 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     StoreBundleInfoForRetry(builds);
                     if (!suppressDialog)
+                    {
                         ShowUploadFailureDialog(error,
                             () => UploadBundles(
                                 controller,
@@ -1703,15 +1704,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 onBuildSuccess,
                                 onError),
                             () => onError?.Invoke(error));
+                    }
                     else
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            suppressDialog: suppressDialog);
+                    {
+                        // When dialogs are suppressed (e.g., batch building), we should not
+                        // auto-retry indefinitely with no user feedback. Instead, surface the
+                        // error so callers (like BatchBuilderWindow) can mark the asset as
+                        // failed and continue or stop according to their own policy.
+                        onError?.Invoke(error);
+                    }
                 }
             }
             finally
