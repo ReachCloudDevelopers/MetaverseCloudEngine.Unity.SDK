@@ -1,3 +1,5 @@
+#if MV_DOTNOW_SCRIPTING
+
 using System;
 using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Unity.Services.Abstract;
@@ -181,3 +183,5 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
     }
 }
 
+
+#endif // MV_DOTNOW_SCRIPTING

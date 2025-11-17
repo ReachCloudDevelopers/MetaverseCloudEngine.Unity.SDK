@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.35
-- Refactor TryEnsureAssemblyAsset method for improved readability and maintainability
+## 2.204.36
+- Add MV_DOTNOW_SCRIPTING preprocessor directives to multiple scripts
 
 Updated on November 17, 2025

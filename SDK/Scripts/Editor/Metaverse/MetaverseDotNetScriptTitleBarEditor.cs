@@ -1,3 +1,5 @@
+#if MV_DOTNOW_SCRIPTING
+
 using System;
 using MetaverseCloudEngine.Unity.Scripting.Components;
 using UnityEditor;
@@ -139,3 +141,5 @@ namespace MetaverseCloudEngine.Unity.Editors
     }
 }
 
+
+#endif // MV_DOTNOW_SCRIPTING

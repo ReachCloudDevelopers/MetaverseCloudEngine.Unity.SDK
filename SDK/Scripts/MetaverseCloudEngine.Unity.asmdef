@@ -256,6 +256,11 @@
             "name": "com.xvisio-technology.xvsdk-unity",
             "expression": "",
             "define": "MV_XVISIO"
+        },
+        {
+            "name": "com.scottyboy805.dotnow",
+            "expression": "",
+            "define": "MV_DOTNOW_SCRIPTING"
         }
     ],
     "noEngineReferences": false
