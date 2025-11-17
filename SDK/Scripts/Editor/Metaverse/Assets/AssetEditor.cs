@@ -1636,13 +1636,19 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     if (!Target)
                     {
-                        if (!typeof(MetaSpace).IsAssignableFrom(typeof(TAsset)))
-                            return;
-                        var asset = FindObjectOfType<TAsset>(true);
-                        if (asset)
+                        // If the editor target has gone missing (for example, the scene was
+                        // reloaded or the object was unloaded), we still want the upload to
+                        // be treated as successful so that batch operations can continue.
+                        // For MetaSpaces we make a best-effort attempt to find an instance
+                        // in the currently loaded scenes and apply the metadata to it.
+                        if (typeof(MetaSpace).IsAssignableFrom(typeof(TAsset)))
                         {
-                            ApplyMetaData(new SerializedObject(asset), dto);
-                            ClearBundleRetryInfo(asset);
+                            var asset = FindObjectOfType<TAsset>(true);
+                            if (asset)
+                            {
+                                ApplyMetaData(new SerializedObject(asset), dto);
+                                ClearBundleRetryInfo(asset);
+                            }
                         }
                     }
                     else

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.36
-- Add MV_DOTNOW_SCRIPTING preprocessor directives to multiple scripts
+## 2.204.37
+- Improve handling of missing editor targets for MetaSpaces during uploads
 
 Updated on November 17, 2025
