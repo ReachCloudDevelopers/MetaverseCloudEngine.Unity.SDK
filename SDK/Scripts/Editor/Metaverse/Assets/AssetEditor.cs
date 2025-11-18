@@ -1553,10 +1553,10 @@ namespace MetaverseCloudEngine.Unity.Editors
             double uploadDurationSeconds = 0;
 
             using var uploadCancellation = new CancellationTokenSource();
-            var uploadTask = controller.UpsertPlatformsAsync(
+            var uploadTask = Task.Run(async() => await controller.UpsertPlatformsAsync(
                 platformOptions,
                 form: assetUpsertForm,
-                cancellationToken: uploadCancellation.Token);
+                cancellationToken: uploadCancellation.Token), uploadCancellation.Token);
 
             try
             {
