@@ -1633,7 +1633,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 {
                     var error = WaitForTaskResult(uploadResponse.GetErrorAsync()).ToPrettyErrorString();
                     var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
-                    if (isAuthError && tries < 2)
+                    if (isAuthError)
                     {
                         var tokenResult = WaitForTaskResult(MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync());
                         if (tokenResult.RequiresReauthentication)
