@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.48
-- fix: simplify authentication error handling in AssetEditor
+## 2.204.49
+- Disable async shader compilation during asset bundle build process
 
 Updated on November 18, 2025

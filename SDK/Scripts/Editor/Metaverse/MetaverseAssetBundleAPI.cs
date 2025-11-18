@@ -75,12 +75,14 @@ namespace MetaverseCloudEngine.Unity.Editors
 #endif
 
             preProcessBuild?.Invoke();
+            var oldAllowAsyncShaderCompile = ShaderUtil.allowAsyncCompilation;
             try
             {
                 // Make sure all dirty assets are saved and cleaned up.
                 AssetDatabase.SaveAssets();
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
+                ShaderUtil.allowAsyncCompilation = false;
 
                 // Create the build output directory.
                 if (!Directory.Exists(MetaverseBuildDirectory))
@@ -414,6 +416,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             {
                 if (lockedAssemblies)
                     EditorApplication.UnlockReloadAssemblies();
+                ShaderUtil.allowAsyncCompilation = oldAllowAsyncShaderCompile;
                 postProcessBuild?.Invoke();
             }
         }
