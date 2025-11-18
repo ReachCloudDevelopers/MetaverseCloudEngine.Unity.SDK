@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.42
-- Refactor asset upload methods to remove UniTask dependency and simplify synchronous execution
+## 2.204.43
+- Start upload task before monitoring progress in AssetEditor
 
 Updated on November 17, 2025

@@ -1714,6 +1714,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                     : totalBytes / bytesPerSecondForEstimate;
 
                 var sw = Stopwatch.StartNew();
+
+                uploadTask.Start();
+
                 while (!uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
                 {
                     double progress = 0;
