@@ -1571,7 +1571,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 ApiResponse<TAssetDto> uploadResponse;
                 try
                 {
-                    uploadResponse = uploadTask.GetAwaiter().GetResult();
+                    uploadResponse = WaitForTaskResult(uploadTask);
                 }
                 catch (OperationCanceledException)
                 {
@@ -1582,7 +1582,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 var platformString = "\n- " + string.Join("\n- ", builds.Select(x => x.Platforms.ToString()));
                 if (uploadResponse.Succeeded)
                 {
-                    var dto = uploadResponse.GetResultAsync().GetAwaiter().GetResult();
+                    var dto = WaitForTaskResult(uploadResponse.GetResultAsync());
 
                     MetaverseProgram.Logger.Log(
                         $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.\n{platformString}");
@@ -1631,11 +1631,11 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }
                 else
                 {
-                    var error = uploadResponse.GetErrorAsync().GetAwaiter().GetResult().ToPrettyErrorString();
+                    var error = WaitForTaskResult(uploadResponse.GetErrorAsync()).ToPrettyErrorString();
                     var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
                     if (isAuthError && tries < 2)
                     {
-                        var tokenResult = MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync().GetAwaiter().GetResult();
+                        var tokenResult = WaitForTaskResult(MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync());
                         if (tokenResult.RequiresReauthentication)
                         {
                             MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after token refresh (attempt {tries + 1}/3)...");
@@ -1778,10 +1778,26 @@ namespace MetaverseCloudEngine.Unity.Editors
             var end = EditorApplication.timeSinceStartup + seconds;
             while (EditorApplication.timeSinceStartup < end)
             {
-                EditorApplication.QueuePlayerLoopUpdate();
-                EditorApplication.Step();
+                PumpEditorOnce();
                 Thread.Sleep(15);
             }
+        }
+
+        private static void PumpEditorOnce()
+        {
+            EditorApplication.QueuePlayerLoopUpdate();
+            EditorApplication.Step();
+        }
+
+        private static T WaitForTaskResult<T>(Task<T> task)
+        {
+            while (!task.IsCompleted)
+            {
+                PumpEditorOnce();
+                Thread.Sleep(15);
+            }
+
+            return task.GetAwaiter().GetResult();
         }
         private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null, Action doneCallback = null)
         {

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.43
-- Start upload task before monitoring progress in AssetEditor
+## 2.204.44
+- Refactor task handling in AssetEditor for improved responsiveness
 
 Updated on November 17, 2025
