@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.41
-- Enhance error handling and validation in MetaSpace and MetaPrefab upload processes
+## 2.204.42
+- Refactor asset upload methods to remove UniTask dependency and simplify synchronous execution
 
 Updated on November 17, 2025
