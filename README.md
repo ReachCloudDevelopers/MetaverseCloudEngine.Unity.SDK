@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.46
-- Refactor upload task to run asynchronously with cancellation support
+## 2.204.47
+- Add internet connectivity check for uploads and handle task exceptions
 
 Updated on November 18, 2025

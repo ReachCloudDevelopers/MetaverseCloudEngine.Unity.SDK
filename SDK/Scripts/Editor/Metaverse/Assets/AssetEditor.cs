@@ -1717,6 +1717,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 while (!uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
                 {
+                    if (Application.internetReachability == NetworkReachability.NotReachable)
+                        throw new InvalidOperationException("Internet is required for uploads.");
+
                     double progress = 0;
                     double? etaSecondsRemaining = null;
                     if (totalBytes > 0 && estimatedSeconds > 0)
@@ -1789,6 +1792,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static T WaitForTaskResult<T>(Task<T> task)
         {
+            if (task.Exception != null)
+                throw task.Exception;
+
             while (!task.IsCompleted)
             {
                 PumpEditorOnce();
