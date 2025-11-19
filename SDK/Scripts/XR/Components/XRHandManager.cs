@@ -365,36 +365,9 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 #if MV_OPENXR
                     case MetaQuestTouchPlusControllerProfile.QuestTouchPlusController metaPlus:
                         
-                        return GetMetaQuestControllerPoseFallback(
-                            metaPlus, 
-                            isLHand, 
-                            usePointerPose, 
-                            metaPlus.devicePosition, 
-                            metaPlus.deviceRotation, 
-                            metaPlus.pointerPosition, 
-                            metaPlus.pointerRotation);
-                    
-                    case MetaQuestTouchProControllerProfile.QuestProTouchController meta:
-                        
-                        return GetMetaQuestControllerPoseFallback(
-                            meta, 
-                            isLHand, 
-                            usePointerPose, 
-                            meta.devicePosition, 
-                            meta.deviceRotation, 
-                            meta.pointerPosition, 
-                            meta.pointerRotation);
-                    
-                    case OculusTouchControllerProfile.OculusTouchController oculus:
-                        
-                        return GetMetaQuestControllerPoseFallback(
-                            oculus, 
-                            isLHand, 
-                            usePointerPose, 
-                            oculus.devicePosition, 
-                            oculus.deviceRotation, 
-                            oculus.pointerPosition, 
-                            oculus.pointerRotation);
+                        return new Pose(
+                            metaPlus.pointerPosition.value + GetControllerPositionOffset(metaPlus.deviceRotation.value, Quaternion.identity, isLHand),
+                            metaPlus.pointerRotation.value * GetControllerRotationOffset(isLHand));
 
                     case ValveIndexControllerProfile.ValveIndexController valve:
                         

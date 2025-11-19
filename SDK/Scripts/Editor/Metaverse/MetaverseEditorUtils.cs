@@ -306,8 +306,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         }
 #endif
                         ToggleOpenXRFeature<UnityEngine.XR.OpenXR.Features.Interactions.MetaQuestTouchPlusControllerProfile>(openXRSettings, usingOpenXR);
-                        ToggleOpenXRFeature<MetaQuestTouchProControllerProfile>(openXRSettings, usingOpenXR);
-                        ToggleOpenXRFeature<OculusTouchControllerProfile>(openXRSettings, usingOpenXR);
+                        //ToggleOpenXRFeature<MetaQuestTouchProControllerProfile>(openXRSettings, usingOpenXR);
+                        //ToggleOpenXRFeature<OculusTouchControllerProfile>(openXRSettings, usingOpenXR);
                         ToggleOpenXRFeature<HTCViveControllerProfile>(openXRSettings, usingOpenXR);
                         ToggleOpenXRFeature<ValveIndexControllerProfile>(openXRSettings, usingOpenXR);
                     }

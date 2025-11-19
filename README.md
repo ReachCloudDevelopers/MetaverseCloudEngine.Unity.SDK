@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.51
-- Add MetaQuestTouchPlusControllerProfile support and refactor controller pose handling
+## 2.204.52
+- Refactor XR controller pose handling and comment out unused features
 
 Updated on November 19, 2025
