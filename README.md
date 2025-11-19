@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.50
-- Remove async shader compilation handling in asset bundle build process
+## 2.204.51
+- Add MetaQuestTouchPlusControllerProfile support and refactor controller pose handling
 
-Updated on November 18, 2025
+Updated on November 19, 2025

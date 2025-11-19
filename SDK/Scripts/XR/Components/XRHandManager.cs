@@ -317,6 +317,43 @@ namespace MetaverseCloudEngine.Unity.XR.Components
             return device != null && device.devicePosition.value.sqrMagnitude > 0 && device.enabled;
         }
 
+        private Pose GetMetaQuestControllerPoseFallback(
+            TrackedDevice controller, 
+            bool isLHand, 
+            bool usePointerPose, 
+            UnityEngine.InputSystem.Controls.Vector3Control devicePositionControl, 
+            UnityEngine.InputSystem.Controls.QuaternionControl deviceRotationControl, 
+            UnityEngine.InputSystem.Controls.Vector3Control pointerPositionControl, 
+            UnityEngine.InputSystem.Controls.QuaternionControl pointerRotationControl)
+        {
+#if MV_META_CORE
+            OVRPlugin.HandState handState = default;
+            if (OVRPlugin.GetHandState(OVRPlugin.Step.Render,
+                    isLHand ? OVRPlugin.Hand.HandLeft : OVRPlugin.Hand.HandRight, ref handState) && handState.Status == OVRPlugin.HandStatus.HandTracked)
+                return new Pose(
+                    devicePositionControl.value + handState.PointerPose.Position.FromFlippedZVector3f() + GetControllerPositionOffset(deviceRotationControl.value, Quaternion.identity, isLHand),
+                    deviceRotationControl.value * handState.PointerPose.Orientation.FromFlippedZQuatf() * GetControllerRotationOffset(isLHand));
+            var ovrPose = OVRManager.GetOpenVRControllerOffset(
+                isLHand ? XRNode.LeftHand : XRNode.RightHand);
+            return new Pose(
+                devicePositionControl.value + ovrPose.position + GetControllerPositionOffset(deviceRotationControl.value, ovrPose.orientation, isLHand, new Vector3(0, 0, 0.045f)),
+                deviceRotationControl.value * ovrPose.orientation * GetControllerRotationOffset(isLHand));
+#else
+            if (usePointerPose)
+            {
+                return new Pose(
+                    pointerPositionControl.value + GetControllerPositionOffset(deviceRotationControl.value, Quaternion.identity, isLHand),
+                    pointerRotationControl.value * GetControllerRotationOffset(isLHand));
+            }
+            else
+            {
+                return new Pose(
+                    devicePositionControl.value + GetControllerPositionOffset(deviceRotationControl.value, Quaternion.identity, isLHand),
+                    deviceRotationControl.value * GetControllerRotationOffset(isLHand));
+            }
+#endif
+        }
+
         private Pose GetControllerPose(TrackedDevice controller, bool isLHand, bool usePointerPose)
         {
             if (usePointerPose)
@@ -326,19 +363,47 @@ namespace MetaverseCloudEngine.Unity.XR.Components
                     case MetaAimHand aimHand:
                         return new Pose(aimHand.devicePosition.value + GetHandPositionOffset(aimHand.deviceRotation.value, isLHand), aimHand.deviceRotation.value * GetHandRotationOffset(isLHand));
 #if MV_OPENXR
+                    case MetaQuestTouchPlusControllerProfile.QuestTouchPlusController metaPlus:
+                        
+                        return GetMetaQuestControllerPoseFallback(
+                            metaPlus, 
+                            isLHand, 
+                            usePointerPose, 
+                            metaPlus.devicePosition, 
+                            metaPlus.deviceRotation, 
+                            metaPlus.pointerPosition, 
+                            metaPlus.pointerRotation);
+                    
                     case MetaQuestTouchProControllerProfile.QuestProTouchController meta:
-                        return new Pose(
-                            meta.pointerPosition.value + GetControllerPositionOffset(meta.deviceRotation.value, Quaternion.identity, isLHand),
-                            meta.pointerRotation.value * GetControllerRotationOffset(isLHand));
+                        
+                        return GetMetaQuestControllerPoseFallback(
+                            meta, 
+                            isLHand, 
+                            usePointerPose, 
+                            meta.devicePosition, 
+                            meta.deviceRotation, 
+                            meta.pointerPosition, 
+                            meta.pointerRotation);
+                    
                     case OculusTouchControllerProfile.OculusTouchController oculus:
-                        return new Pose(
-                            oculus.pointerPosition.value + GetControllerPositionOffset(oculus.deviceRotation.value, Quaternion.identity, isLHand),
-                            oculus.pointerRotation.value * GetControllerRotationOffset(isLHand));
+                        
+                        return GetMetaQuestControllerPoseFallback(
+                            oculus, 
+                            isLHand, 
+                            usePointerPose, 
+                            oculus.devicePosition, 
+                            oculus.deviceRotation, 
+                            oculus.pointerPosition, 
+                            oculus.pointerRotation);
+
                     case ValveIndexControllerProfile.ValveIndexController valve:
+                        
                         return new Pose(
                             valve.pointerPosition.value + GetControllerPositionOffset(valve.deviceRotation.value, Quaternion.identity, isLHand),
                             valve.pointerRotation.value * GetControllerRotationOffset(isLHand));
+                    
                     case HTCViveControllerProfile.ViveController vive:
+                        
                         return new Pose(
                             vive.pointerPosition.value + GetControllerPositionOffset(vive.deviceRotation.value, Quaternion.identity, isLHand),
                             vive.pointerRotation.value * GetControllerRotationOffset(isLHand));
@@ -346,22 +411,18 @@ namespace MetaverseCloudEngine.Unity.XR.Components
 #if MV_USING_OCULUS_SDK
                     case OculusTouchController oculusTouchController:
                     {
-                        OVRPlugin.HandState handState = default;
-                        if (OVRPlugin.GetHandState(OVRPlugin.Step.Render,
-                                isLHand ? OVRPlugin.Hand.HandLeft : OVRPlugin.Hand.HandRight, ref handState) && handState.Status == OVRPlugin.HandStatus.HandTracked)
-                            return new Pose(
-                                oculusTouchController.devicePosition.value + handState.PointerPose.Position.FromFlippedZVector3f() + GetControllerPositionOffset(oculusTouchController.deviceRotation.value, Quaternion.identity, isLHand),
-                                oculusTouchController.deviceRotation.value * handState.PointerPose.Orientation.FromFlippedZQuatf() * GetControllerRotationOffset(isLHand));
-                        var ovrPose = OVRManager.GetOpenVRControllerOffset(
-                            isLHand ? XRNode.LeftHand : XRNode.RightHand);
-                        return new Pose(
-                            oculusTouchController.devicePosition.value + ovrPose.position + GetControllerPositionOffset(oculusTouchController.deviceRotation.value, ovrPose.orientation, isLHand, new Vector3(0, 0, 0.045f)),
-                            oculusTouchController.deviceRotation.value * ovrPose.orientation * GetControllerRotationOffset(isLHand));
+                        return GetMetaQuestControllerPoseFallback(
+                            oculusTouchController, 
+                            isLHand, 
+                            usePointerPose, 
+                            oculusTouchController.devicePosition, 
+                            oculusTouchController.deviceRotation, 
+                            oculusTouchController.pointerPosition, 
+                            oculusTouchController.pointerRotation);
                     }
 #endif
                     default:
                     {
-                        print("Using Default Pose");   
                         return new Pose(
                             controller.devicePosition.value + GetControllerPositionOffset(controller.deviceRotation.value, Quaternion.identity, isLHand),
                             controller.deviceRotation.value * GetControllerRotationOffset(isLHand));
