@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.52
-- Refactor XR controller pose handling and comment out unused features
+## 2.204.53
+- Add OnParticleCollision event handling to MetaverseScript
 
-Updated on November 19, 2025
+Updated on November 23, 2025

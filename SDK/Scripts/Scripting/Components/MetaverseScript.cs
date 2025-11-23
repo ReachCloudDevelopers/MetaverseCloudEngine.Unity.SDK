@@ -446,6 +446,8 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             UnRegisterNetworkRPCs = 134217728,
 
             OnGUI = 268435456,
+
+            OnParticleCollision = 536870912,
         }
 
         private const string ThisProperty = "_this";
@@ -1421,6 +1423,14 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
             JsValue method = null;
             if (_methods?.TryGetValue(ScriptFunctions.OnCollisionStay2D, out method) == true)
                 try { _ = _engine.Invoke(method, collision); } catch (Exception e) { console.error($"Error in OnCollisionStay2D on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
+        }
+
+        private unsafe void OnParticleCollision(GameObject other)
+        {
+            if (!_ready) return;
+            JsValue method = null;
+            if (_methods?.TryGetValue(ScriptFunctions.OnParticleCollision, out method) == true)
+                try { _ = _engine.Invoke(method, other); } catch (Exception e) { console.error($"Error in OnParticleCollision on {(javascriptFile ? javascriptFile.name : "Missing Script")}: {e.GetBaseException()}"); }
         }
 
         public override unsafe void OnNetworkReady(bool offline)
