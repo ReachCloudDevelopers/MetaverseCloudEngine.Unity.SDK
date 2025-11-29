@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.53
-- Add OnParticleCollision event handling to MetaverseScript
+## 2.204.54
+- Add Target property to SetPosition component for flexible positioning
 
-Updated on November 23, 2025
+Updated on November 29, 2025

@@ -69,6 +69,14 @@ namespace MetaverseCloudEngine.Unity.Components
             set => position = new Vector3(position.x, position.y, value);
         }
 
+        /// <summary>
+        /// Gets or sets the target object to set the position of.
+        /// </summary>
+        public Transform Target {
+            get => target;
+            set => target = value;
+        }
+
         private void OnValidate()
         {
             if (!target) target = transform;
