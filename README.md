@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.54
-- Add Target property to SetPosition component for flexible positioning
+## 2.204.55
+- Refactor logging messages in LoginStore to include "Metaverse Authentication" for clarity
 
-Updated on November 29, 2025
+Updated on November 30, 2025

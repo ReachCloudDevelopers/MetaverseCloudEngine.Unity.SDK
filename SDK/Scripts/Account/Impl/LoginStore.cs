@@ -183,7 +183,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
                         var errorDetails = await response.GetErrorAsync();
                         var serverReason = BuildServerReasonMessage(errorDetails);
 
-                        MetaverseProgram.Logger.LogWarning($"LoginStore: Token validation during initialization failed with status {(int)response.StatusCode} ({response.StatusCode}). Details: {serverReason}");
+                        MetaverseProgram.Logger.LogWarning($"Metaverse Authentication: Token validation during initialization failed with status {(int)response.StatusCode} ({response.StatusCode}). Details: {serverReason}");
 
                         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                         {
@@ -341,7 +341,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             }
             catch (Exception ex)
             {
-                MetaverseProgram.Logger.LogError($"LoginStore: Failed to persist tokens ({source}): {ex}");
+                MetaverseProgram.Logger.LogError($"Metaverse Authentication: Failed to persist tokens ({source}): {ex}");
             }
         }
 
@@ -363,7 +363,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             }
             catch (Exception ex)
             {
-                MetaverseProgram.Logger.LogError($"LoginStore: Failed to clear persisted tokens ({source}): {ex}");
+                MetaverseProgram.Logger.LogError($"Metaverse Authentication: Failed to clear persisted tokens ({source}): {ex}");
             }
         }
 
@@ -417,7 +417,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             }
             catch (Exception ex)
             {
-                MetaverseProgram.Logger.LogError($"LoginStore: Failed to flush preferences: {ex.Message}");
+                MetaverseProgram.Logger.LogError($"Metaverse Authentication: Failed to flush preferences: {ex.Message}");
             }
         }
 
@@ -452,7 +452,7 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
             }
             catch (Exception ex)
             {
-                MetaverseProgram.Logger.LogError($"LoginStore: Failed to flush preferences before assembly reload: {ex.Message}");
+                MetaverseProgram.Logger.LogError($"Metaverse Authentication: Failed to flush preferences before assembly reload: {ex.Message}");
             }
         }
 #endif
@@ -466,34 +466,39 @@ namespace MetaverseCloudEngine.Unity.Account.Poco
 #if UNITY_EDITOR
             await EnsureUnityThreadAsync();
 
-            var message = $"The Login Store has been unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
+            var message = $"Unable to connect to the authentication server after {_initializationRetries} attempts (Status: {statusCode}).\n\n" +
                          "This is usually caused by:\n" +
                          "• Network connectivity issues\n" +
                          "• Server maintenance\n" +
                          "• DNS resolution problems\n\n" +
                          "Would you like to restart Unity? This may help resolve the issue.";
 
-            var restart = UnityEditor.EditorUtility.DisplayDialog(
-                "Login Store Connection Issues",
+            var restart = UnityEditor.EditorUtility.DisplayDialogComplex(
+                "Authentication Connection Issues",
                 message,
                 "Restart Unity",
-                "Keep Retrying");
+                "Keep Retrying",
+                "Continue Offline");
 
-            if (restart)
+            if (restart == 0)
             {
-                MetaverseProgram.Logger.Log("User requested Unity restart due to LoginStore connection issues.");
+                MetaverseProgram.Logger.Log("User requested Unity restart due to Metaverse Authentication connection issues.");
                 UnityEditor.EditorApplication.OpenProject(Application.dataPath.Replace("/Assets", ""));
             }
-            else
+            else if (restart == 1)
             {
                 // Reset the flag so they can be prompted again after another 10 attempts
                 _hasShownRetryDialog = false;
-                MetaverseProgram.Logger.Log("User chose to keep retrying LoginStore initialization.");
+                MetaverseProgram.Logger.Log("User chose to keep retrying Metaverse Authentication initialization.");
                 await InitializeAsync();
+            }
+            else
+            {
+
             }
 #else
             // In builds, just log and continue retrying silently
-            MetaverseProgram.Logger.LogWarning($"LoginStore has retried {_initializationRetries} times. Continuing to retry in background...");
+            MetaverseProgram.Logger.LogWarning($"Metaverse Authentication has retried {_initializationRetries} times. Continuing to retry in background...");
             await InitializeAsync();
 #endif
         }
