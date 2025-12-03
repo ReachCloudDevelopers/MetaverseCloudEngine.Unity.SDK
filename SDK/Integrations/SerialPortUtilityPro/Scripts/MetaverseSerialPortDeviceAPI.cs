@@ -231,16 +231,30 @@ namespace MetaverseCloudEngine.Unity.SPUP
             try
             {
                 static bool IsHexString(string s) => !string.IsNullOrEmpty(s) && s.All(Uri.IsHexDigit);
+                bool isUsbComPort = _data.SerialNumber.StartsWith("COM") && _openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb;
 
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, MetaverseSerialPortUtilityInterop.SettableFieldID.OpenMethod, (int)_openSystem);
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, _data.Vendor);
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.Port, _data.PortName ?? string.Empty);
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, _data.Product);
-                if (_openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb or MetaverseSerialPortUtilityInterop.OpenSystem.Pci)
+
+                if (isUsbComPort)
                 {
-                    if (!IsHexString(_data.Product)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, string.Empty);
-                    if (!IsHexString(_data.Vendor)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, string.Empty);
+                    // For USB COM ports, only set serial number and device name
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, string.Empty);
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, string.Empty);
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.Port, string.Empty);
                 }
+                else
+                {
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, _data.Vendor);
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _portProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.Port, _data.PortName ?? string.Empty);
+                    MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, _data.Product);
+                    
+                    if (_openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb or MetaverseSerialPortUtilityInterop.OpenSystem.Pci)
+                    {
+                        if (!IsHexString(_data.Product)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, string.Empty);
+                        if (!IsHexString(_data.Vendor)) MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, string.Empty);
+                    }
+                }
+
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.SerialNumber, _data.SerialNumber);
                 MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _deviceNameProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.DeviceName, string.IsNullOrEmpty(_data.SerialNumber) 
                     ? _data.Vendor

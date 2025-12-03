@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.55
-- Refactor logging messages in LoginStore to include "Metaverse Authentication" for clarity
+## 2.204.56
+- Refactor USB COM port handling in MetaverseSerialPortDeviceAPI to set properties conditionally based on port type
 
-Updated on November 30, 2025
+Updated on December 03, 2025
