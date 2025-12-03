@@ -183,7 +183,8 @@ namespace MetaverseCloudEngine.Unity.SPUP
             var serNum = _data.SerialNumber;
             if (string.IsNullOrEmpty(serNum))
                 serNum = _data.Vendor;
-            return GetSerialNumber() == serNum && IsAnyDeviceOpened();
+            var activeSerNum = GetSerialNumber();
+            return (activeSerNum == serNum || (activeSerNum == _data.PortName && _data.PortName?.StartsWith("COM") == true)) && IsAnyDeviceOpened();
         }
 
         /// <summary>
@@ -231,12 +232,18 @@ namespace MetaverseCloudEngine.Unity.SPUP
             try
             {
                 static bool IsHexString(string s) => !string.IsNullOrEmpty(s) && s.All(Uri.IsHexDigit);
-                bool isUsbComPort = _data.SerialNumber.StartsWith("COM") && _openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb;
+                bool isUsbComPort = (_data.SerialNumber.StartsWith("COM") || _data.PortName.StartsWith("COM")) && _openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb;
 
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, MetaverseSerialPortUtilityInterop.SettableFieldID.OpenMethod, (int)_openSystem);
 
+                string serialNumber = _data.SerialNumber;
                 if (isUsbComPort)
                 {
+                    if (_data.SerialNumber.StartsWith("COM"))
+                        serialNumber = _data.SerialNumber;
+                    else if (_data.PortName.StartsWith("COM"))
+                        serialNumber = _data.PortName;
+                    
                     // For USB COM ports, only set serial number and device name
                     MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _vendorIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.VendorID, string.Empty);
                     MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _productIdProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.ProductID, string.Empty);
@@ -255,10 +262,10 @@ namespace MetaverseCloudEngine.Unity.SPUP
                     }
                 }
 
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.SerialNumber, _data.SerialNumber);
-                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _deviceNameProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.DeviceName, string.IsNullOrEmpty(_data.SerialNumber) 
+                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _serialNumberProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.SerialNumber, serialNumber);
+                MetaverseSerialPortUtilityInterop.SetProperty(_spup, ref _deviceNameProperty, MetaverseSerialPortUtilityInterop.SettablePropertyID.DeviceName, string.IsNullOrEmpty(serialNumber) 
                     ? _data.Vendor
-                    : _data.SerialNumber);
+                    : serialNumber);
             }
             catch (Exception e)
             {

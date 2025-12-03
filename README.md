@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.56
-- Refactor USB COM port handling in MetaverseSerialPortDeviceAPI to set properties conditionally based on port type
+## 2.204.57
+- Enhance serial number handling for USB COM ports in MetaverseSerialPortDeviceAPI
 
 Updated on December 03, 2025
