@@ -327,8 +327,11 @@ namespace MetaverseCloudEngine.Unity.Async
                 return;
             }
 
-            var endTime = Time.unscaledTime + seconds;
-            WaitUntil(() => Time.unscaledTime > endTime, onSuccess);
+            // Use DateTime.UtcNow instead of Time.unscaledTime to ensure timing works correctly
+            // even when the browser tab is backgrounded in WebGL (where Unity's game loop is throttled).
+            // DateTime.UtcNow continues to advance regardless of Unity's frame rate or focus state.
+            var endTime = DateTime.UtcNow.AddSeconds(seconds);
+            WaitUntil(() => DateTime.UtcNow >= endTime, onSuccess);
         }
 
         public static void AtEndOfFrame(Action action)

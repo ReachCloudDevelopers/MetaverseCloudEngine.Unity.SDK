@@ -165,13 +165,17 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private bool _anyDetectedThisFrame;
         private float _nextUpdateTime;
         private static Material _lineMaterial;
+        private static int _instanceCount;
         private readonly List<YoloDetection> _frameBuffer = new(64);
         private ReadOnlyCollection<YoloDetection> _frameView;
         private Model _model;
         private bool _gpuWarmupTried;
+        private int _gpuLockId;
 
         private void Awake()
         {
+            _instanceCount++;
+            _gpuLockId = GpuInferenceLock.GenerateId();
             _eventLookup.Clear();
             _wildcardEvents.Clear();
             foreach (var p in labelEvents.Where(p => !string.IsNullOrEmpty(p.label)))
@@ -199,6 +203,8 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnDestroy()
         {
+            _instanceCount--;
+            GpuInferenceLock.ForceRelease(_gpuLockId);
             DisposeWorker();
             if (_webCamTex)
             {
@@ -207,6 +213,13 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             }
             if (_scratchRT) Destroy(_scratchRT);
             if (_overlayRT) Destroy(_overlayRT);
+
+            // Clean up static material when last instance is destroyed
+            if (_instanceCount == 0 && _lineMaterial)
+            {
+                Destroy(_lineMaterial);
+                _lineMaterial = null;
+            }
         }
 
         private void Update()
@@ -225,21 +238,39 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var source = AcquireSourceTexture();
             if (!source || (_webCamTex && !_webCamTex.isPlaying)) return;
 
-            var attemptedFallback = false;
-            while (true)
+            // GPU inference synchronization: skip this frame if another component is using the GPU
+            var needsGpuLock = _backendSelected == BackendType.GPUCompute;
+            if (needsGpuLock && !GpuInferenceLock.TryAcquire(_gpuLockId))
             {
-                if (TryRunInference(source, out var failureStage, out var failureMessage))
-                    break;
+                // Another inference component is currently using the GPU; skip this frame
+                return;
+            }
 
-                var reason = string.IsNullOrEmpty(failureStage) ? failureMessage : $"{failureStage}: {failureMessage}";
-                if (attemptedFallback || !TryFallbackToCpu(reason))
+            try
+            {
+                var attemptedFallback = false;
+                while (true)
                 {
-                    if (!string.IsNullOrEmpty(failureStage) || !string.IsNullOrEmpty(failureMessage))
-                        MetaverseProgram.Logger.LogWarning($"YOLO inference aborted on {_backendSelected}: {reason}");
-                    return;
-                }
+                    if (TryRunInference(source, out var failureStage, out var failureMessage))
+                        break;
 
-                attemptedFallback = true;
+                    var reason = string.IsNullOrEmpty(failureStage) ? failureMessage : $"{failureStage}: {failureMessage}";
+                    if (attemptedFallback || !TryFallbackToCpu(reason))
+                    {
+                        if (!string.IsNullOrEmpty(failureStage) || !string.IsNullOrEmpty(failureMessage))
+                            MetaverseProgram.Logger.LogWarning($"YOLO inference aborted on {_backendSelected}: {reason}");
+                        return;
+                    }
+
+                    attemptedFallback = true;
+                }
+            }
+            finally
+            {
+                if (needsGpuLock)
+                {
+                    GpuInferenceLock.Release(_gpuLockId);
+                }
             }
         }
 

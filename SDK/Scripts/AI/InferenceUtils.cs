@@ -1,5 +1,6 @@
 #if MV_UNITY_AI_INFERENCE
 using System;
+using System.Threading;
 using Unity.InferenceEngine;
 using UnityEngine;
 
@@ -10,6 +11,92 @@ namespace MetaverseCloudEngine.Unity.AI
         Auto,
         CPU,
         GPU
+    }
+
+    /// <summary>
+    /// Provides GPU inference synchronization to prevent concurrent GPU inference operations
+    /// from different inference components, which can cause visual glitches and crashes.
+    /// </summary>
+    public static class GpuInferenceLock
+    {
+        private static readonly object SyncRoot = new();
+        private static int _lockHolder;
+        private static int _nextId = 1;
+
+        /// <summary>
+        /// Generates a unique ID for an inference component to use with locking.
+        /// </summary>
+        public static int GenerateId()
+        {
+            return Interlocked.Increment(ref _nextId);
+        }
+
+        /// <summary>
+        /// Tries to acquire the GPU inference lock without blocking.
+        /// </summary>
+        /// <param name="componentId">Unique ID of the component requesting the lock.</param>
+        /// <returns>True if the lock was acquired, false if another component holds the lock.</returns>
+        public static bool TryAcquire(int componentId)
+        {
+            lock (SyncRoot)
+            {
+                if (_lockHolder == 0 || _lockHolder == componentId)
+                {
+                    _lockHolder = componentId;
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Releases the GPU inference lock if held by the specified component.
+        /// </summary>
+        /// <param name="componentId">Unique ID of the component releasing the lock.</param>
+        public static void Release(int componentId)
+        {
+            lock (SyncRoot)
+            {
+                if (_lockHolder == componentId)
+                {
+                    _lockHolder = 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Forces release of the lock (used when a component is destroyed while holding the lock).
+        /// </summary>
+        /// <param name="componentId">Unique ID of the component being destroyed.</param>
+        public static void ForceRelease(int componentId)
+        {
+            Release(componentId);
+        }
+
+        /// <summary>
+        /// Checks if the lock is currently held by any component.
+        /// </summary>
+        public static bool IsLocked
+        {
+            get
+            {
+                lock (SyncRoot)
+                {
+                    return _lockHolder != 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Checks if the lock is held by the specified component.
+        /// </summary>
+        public static bool IsHeldBy(int componentId)
+        {
+            lock (SyncRoot)
+            {
+                return _lockHolder == componentId;
+            }
+        }
     }
 
     public static class InferenceUtils

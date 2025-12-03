@@ -65,11 +65,14 @@ namespace MetaverseCloudEngine.Unity.AI.Components
         private float _nextUpdateTime;
         private WebCamTexture _webCamTex;
         private BackendType _backendSelected = BackendType.CPU;
+        private int _gpuLockId;
 
         private const int InputHW = 512;            // matches exporter
 
         private void Awake()
         {
+            _gpuLockId = GpuInferenceLock.GenerateId();
+
             // If neither embedded model nor local path is available, fetch from cloud, else run immediately.
             if (!modelAsset && (string.IsNullOrEmpty(modelLocalPath) || !File.Exists(modelLocalPath)))
             {
@@ -83,6 +86,7 @@ namespace MetaverseCloudEngine.Unity.AI.Components
 
         private void OnDestroy()
         {
+            GpuInferenceLock.ForceRelease(_gpuLockId);
             _worker?.Dispose();
             if (_scratchRT) Destroy(_scratchRT);
             if (_maskRT) Destroy(_maskRT);
@@ -109,48 +113,66 @@ namespace MetaverseCloudEngine.Unity.AI.Components
             var src = AcquireSourceTexture();
             if (!src || (_webCamTex && !_webCamTex.isPlaying)) return;
 
-            var preferRgbaMask = NeedsRgbaMask();
-            if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight || (preferRgbaMask && IsSingleChannel(_maskRT)))
+            // GPU inference synchronization: skip this frame if another component is using the GPU
+            var needsGpuLock = _backendSelected == BackendType.GPUCompute;
+            if (needsGpuLock && !GpuInferenceLock.TryAcquire(_gpuLockId))
             {
-                if (_maskRT) Destroy(_maskRT);
-                _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight, preferRgbaMask);
-            }
-
-            // Ensure scratch RT exists
-            if (_scratchRT == null)
-            {
-                _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
-                { filterMode = FilterMode.Bilinear };
-            }
-
-            // Resize + flip source → 512x512 on GPU
-            Graphics.Blit(src, _scratchRT);
-
-            // Upload to device tensor (NCHW) on GPU
-            using var input = new Tensor<float>(new TensorShape(1, 3, InputHW, InputHW));
-            TextureConverter.ToTensor(_scratchRT, input);     // stays on device
-
-            // Run fused graph (normalization+argmax+upsample inside model)
-            try { _worker.Schedule(input); }
-            catch (Exception ex)
-            {
-                MetaverseProgram.Logger.LogWarning($"SegFormer schedule failed on {_backendSelected}: {ex.Message}");
+                // Another inference component is currently using the GPU; skip this frame
                 return;
             }
 
-            // Get output tensor and render directly to RT (no Readback)
-            if (!outputMask) return;
-            if (_worker.PeekOutput("ground_mask") is Tensor<float> mask && _maskRT != null)
+            try
             {
-                try
+                var preferRgbaMask = NeedsRgbaMask();
+                if (_maskRT == null || _maskRT.width != outputWidth || _maskRT.height != outputHeight || (preferRgbaMask && IsSingleChannel(_maskRT)))
                 {
-                    if (!_maskRT.IsCreated()) _maskRT.Create();
-                    TextureConverter.RenderToTexture(mask, _maskRT);
-                    onMaskUpdated?.Invoke(_maskRT);
+                    if (_maskRT) Destroy(_maskRT);
+                    _maskRT = CreateMaskRenderTexture(outputWidth, outputHeight, preferRgbaMask);
                 }
+
+                // Ensure scratch RT exists
+                if (_scratchRT == null)
+                {
+                    _scratchRT = new RenderTexture(InputHW, InputHW, 0, RenderTextureFormat.ARGB32)
+                    { filterMode = FilterMode.Bilinear };
+                }
+
+                // Resize + flip source → 512x512 on GPU
+                Graphics.Blit(src, _scratchRT);
+
+                // Upload to device tensor (NCHW) on GPU
+                using var input = new Tensor<float>(new TensorShape(1, 3, InputHW, InputHW));
+                TextureConverter.ToTensor(_scratchRT, input);     // stays on device
+
+                // Run fused graph (normalization+argmax+upsample inside model)
+                try { _worker.Schedule(input); }
                 catch (Exception ex)
                 {
-                    MetaverseProgram.Logger.LogWarning($"RenderToTexture failed: {ex.Message}");
+                    MetaverseProgram.Logger.LogWarning($"SegFormer schedule failed on {_backendSelected}: {ex.Message}");
+                    return;
+                }
+
+                // Get output tensor and render directly to RT (no Readback)
+                if (!outputMask) return;
+                if (_worker.PeekOutput("ground_mask") is Tensor<float> mask && _maskRT != null)
+                {
+                    try
+                    {
+                        if (!_maskRT.IsCreated()) _maskRT.Create();
+                        TextureConverter.RenderToTexture(mask, _maskRT);
+                        onMaskUpdated?.Invoke(_maskRT);
+                    }
+                    catch (Exception ex)
+                    {
+                        MetaverseProgram.Logger.LogWarning($"RenderToTexture failed: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                if (needsGpuLock)
+                {
+                    GpuInferenceLock.Release(_gpuLockId);
                 }
             }
         }
