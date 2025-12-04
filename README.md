@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.60
-- Add metadata file for FixXRBaseInteractorSelectExitTryCatch
+## 2.204.61
+- Add patch for XRBaseInteractable.cs to handle null interactorObject in OnSelectExiting
 
 Updated on December 04, 2025
