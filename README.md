@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.59
-- Add try/catch wrapper around interactionManager.SelectExit in XRBaseInteractor.cs to prevent exceptions
+## 2.204.60
+- Add metadata file for FixXRBaseInteractorSelectExitTryCatch
 
 Updated on December 04, 2025
