@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.204.58
-- Enhance GPU inference synchronization and improve timing accuracy in async tasks
+## 2.204.59
+- Add try/catch wrapper around interactionManager.SelectExit in XRBaseInteractor.cs to prevent exceptions
 
-Updated on December 03, 2025
+Updated on December 04, 2025
