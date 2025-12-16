@@ -50,9 +50,13 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
 #if UNITY_EDITOR
             if (progress == null && !MetaverseDispatcher.UseUniTaskThreading)
             {
+                if (MetaverseProgram.ApiClientLoggingEnabled)
+                    MetaverseProgram.Logger.Log($"[HTTP] -> {request.Method} {request.RequestUri}");
                 var response = await EditorHttpClient.SendAsync(request, cancellationToken);
                 if (response.Content != null)
                     await response.Content.LoadIntoBufferAsync();
+                if (MetaverseProgram.ApiClientLoggingEnabled)
+                    MetaverseProgram.Logger.Log($"[HTTP] <- {(int)response.StatusCode} {response.StatusCode} {request.Method} {request.RequestUri}");
                 return response;
             }
 #endif
@@ -62,6 +66,11 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                 var httpResponseMessage = UniTask.Create(async () =>
                 {
                     await UniTask.SwitchToMainThread(cancellationToken);
+
+#if UNITY_EDITOR
+                    if (MetaverseProgram.ApiClientLoggingEnabled)
+                        MetaverseProgram.Logger.Log($"[HTTP] -> {request.Method} {request.RequestUri}");
+#endif
 
                     var uploadHandler = request.Content != null
                         ? new UploadHandlerRaw(await request.Content.ReadAsByteArrayAsync())
@@ -107,6 +116,10 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                         var responseMessage = e.ToHttpResponseMessage();
                         if (responseMessage.Content != null)
                             await responseMessage.Content.LoadIntoBufferAsync();
+#if UNITY_EDITOR
+                        if (MetaverseProgram.ApiClientLoggingEnabled)
+                            MetaverseProgram.Logger.Log($"[HTTP] <- exception {request.Method} {request.RequestUri}: {e.GetType().Name}");
+#endif
                         return responseMessage;
                     }
 
@@ -131,6 +144,10 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                             await responseMessage.Content.LoadIntoBufferAsync();
                         }
 
+#if UNITY_EDITOR
+                        if (MetaverseProgram.ApiClientLoggingEnabled)
+                            MetaverseProgram.Logger.Log($"[HTTP] <- {(int)responseMessage.StatusCode} {responseMessage.StatusCode} {request.Method} {request.RequestUri}");
+#endif
                         return responseMessage;
                     }
                 }).AsTask();

@@ -75,6 +75,35 @@ namespace MetaverseCloudEngine.Unity
 #if UNITY_EDITOR
         private const string IsBuildingAssetBundleKey = "MetaverseAssetBundleAPI_ResetPlatform";
         private const string InternalIsIsPackagingSDKKey = "MetaverseAssetBundleAPI_IsPackagingSDK";
+        private const string ApiClientLoggingPrefKey = "MetaverseCloudEngine.ApiClient.Logging";
+
+        private static Action<string> _apiClientLogForwarder;
+
+        public static bool ApiClientLoggingEnabled
+        {
+            get => UnityEditor.EditorPrefs.GetBool(ApiClientLoggingPrefKey, false);
+            set
+            {
+                UnityEditor.EditorPrefs.SetBool(ApiClientLoggingPrefKey, value);
+                ApplyApiClientLogging();
+            }
+        }
+
+        private static void ApplyApiClientLogging()
+        {
+            if (ApiClient == null)
+                return;
+
+            _apiClientLogForwarder ??= message =>
+            {
+                if (!string.IsNullOrWhiteSpace(message))
+                    Logger.Log($"[API_CLIENT] {message}");
+            };
+
+            ApiClient.LogMessage -= _apiClientLogForwarder;
+            if (ApiClientLoggingEnabled)
+                ApiClient.LogMessage += _apiClientLogForwarder;
+        }
 
         public static bool IsBuildingAssetBundle {
             get => UnityEditor.SessionState.GetBool(IsBuildingAssetBundleKey, false);
@@ -216,6 +245,14 @@ namespace MetaverseCloudEngine.Unity
                             UseCookieAuthentication = Application.platform == RuntimePlatform.WebGLPlayer,
                         }
                     };
+
+                    // Reduce aggressive preflight session validation. The API client defaults to a 5-minute
+                    // refresh threshold, which can cause the validate endpoint to be hit on every request
+                    // when tokens have short lifetimes (common in the Editor).
+                    ApiClient.Account.RefreshThreshold = TimeSpan.FromSeconds(30);
+#if UNITY_EDITOR
+                    ApplyApiClientLogging();
+#endif
 
                     try
                     {

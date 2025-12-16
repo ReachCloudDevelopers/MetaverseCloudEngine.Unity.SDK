@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using MetaverseCloudEngine.Unity.Account;
+using MetaverseCloudEngine.Unity.Async;
 using UnityEditor;
 using UnityEditor.Build.Pipeline.Utilities;
 using UnityEngine;
@@ -100,6 +102,79 @@ namespace MetaverseCloudEngine.Unity.Editors
                 .Where(x => AssetDatabase.GUIDToAssetPath(x).StartsWith("Assets/"))
                 .Select(x => (UnityEngine.Object)AssetDatabase.LoadAssetAtPath<Texture2D>(AssetDatabase.GUIDToAssetPath(x)));
             Selection.objects = assets.ToArray();
+        }
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Enable API Client Logging")]
+        public static void EnableApiClientLogging()
+        {
+            MetaverseProgram.ApiClientLoggingEnabled = true;
+            Debug.Log("Metaverse Authentication: API client logging enabled.");
+        }
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Enable API Client Logging", true)]
+        private static bool EnableApiClientLoggingValidate() => !MetaverseProgram.ApiClientLoggingEnabled;
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Disable API Client Logging")]
+        public static void DisableApiClientLogging()
+        {
+            MetaverseProgram.ApiClientLoggingEnabled = false;
+            Debug.Log("Metaverse Authentication: API client logging disabled.");
+        }
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Disable API Client Logging", true)]
+        private static bool DisableApiClientLoggingValidate() => MetaverseProgram.ApiClientLoggingEnabled;
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Dump Session Info")]
+        public static void DumpSessionInfo()
+        {
+            if (MetaverseProgram.ApiClient == null)
+            {
+                Debug.LogWarning("Metaverse Authentication: ApiClient not initialized yet.");
+                return;
+            }
+
+            var account = MetaverseProgram.ApiClient.Account;
+            var userName = account.CurrentUser?.UserName ?? "(none)";
+            var accessTokenPresent = !string.IsNullOrEmpty(account.AccessToken);
+            var refreshTokenPresent = !string.IsNullOrEmpty(account.RefreshToken);
+            var apiClientExpiresUtc = AccountTokenUtility.GetApiClientAccessTokenExpirationUtc(account)?.ToString("u") ?? "unknown";
+            var jwtExpiresUtc = AccountTokenUtility.TryGetJwtExpirationUtc(account.AccessToken)?.ToString("u") ?? "unknown";
+
+            Debug.Log(
+                "Metaverse Authentication: Session Info\n" +
+                $"- LoggedIn: {account.IsLoggedIn}\n" +
+                $"- User: {userName}\n" +
+                $"- AccessToken: {(accessTokenPresent ? "present" : "missing")}\n" +
+                $"- RefreshToken: {(refreshTokenPresent ? "present" : "missing")}\n" +
+                $"- ApiClient AccessTokenExpirationUtc: {apiClientExpiresUtc}\n" +
+                $"- JWT exp (UTC): {jwtExpiresUtc}\n" +
+                $"- RefreshThreshold: {account.RefreshThreshold}\n" +
+                $"- ApiClientLoggingEnabled: {MetaverseProgram.ApiClientLoggingEnabled}");
+        }
+
+        [MenuItem(MetaverseConstants.MenuItems.ToolsMenuRootPath + "Authentication/Force Session Refresh")]
+        public static void ForceSessionRefresh()
+        {
+            if (MetaverseProgram.ApiClient == null)
+            {
+                Debug.LogWarning("Metaverse Authentication: ApiClient not initialized yet.");
+                return;
+            }
+
+            Debug.Log("Metaverse Authentication: Forcing session validation/refresh...");
+            MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync().Then(result =>
+            {
+                var expiresUtc = AccountTokenUtility.GetApiClientAccessTokenExpirationUtc(MetaverseProgram.ApiClient.Account)?.ToString("u") ?? "unknown";
+                Debug.Log(
+                    "Metaverse Authentication: EnsureValidSessionAsync\n" +
+                    $"- Succeeded: {result.Succeeded}\n" +
+                    $"- Refreshed: {result.Refreshed}\n" +
+                    $"- RequiresReauthentication: {result.RequiresReauthentication}\n" +
+                    $"- AccessTokenExpirationUtc: {expiresUtc}");
+            }, err =>
+            {
+                Debug.LogWarning($"Metaverse Authentication: EnsureValidSessionAsync failed: {err}");
+            });
         }
     }
 }
