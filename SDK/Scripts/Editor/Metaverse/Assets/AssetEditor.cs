@@ -1382,15 +1382,14 @@ namespace MetaverseCloudEngine.Unity.Editors
             EditorUtility.ClearProgressBar();
 
             // Show dialog with retry option
-            int option = EditorUtility.DisplayDialogComplex(
+            bool retry = EditorUtility.DisplayDialog(
                 "Build Failed",
                 $"Asset bundle building process failed. {e.ToPrettyErrorString()}\n\nWould you like to retry the build?",
                 "Retry",
-                "Cancel",
-                "Ok");
+                "Cancel");
 
-            // If user clicked "Retry" (option 0), attempt retry immediately
-            if (option == 0)
+            // If user clicked "Retry", attempt retry immediately
+            if (retry)
             {
                 RetryBuild();
             }

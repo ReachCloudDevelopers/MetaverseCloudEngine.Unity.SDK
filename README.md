@@ -12,13 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.0
-- feat: Add API client logging and session management utilities
-- 
-- - Implemented API client logging functionality in MetaverseProgram.cs, allowing for detailed HTTP request/response logging.
-- - Introduced methods in MetaverseEditorToolsMenu.cs to enable and disable API client logging, and to dump session information for debugging purposes.
-- - Enhanced the UploadBundles method in AssetEditor.cs to utilize coroutines for better upload management and error handling.
-- - Created AccountTokenUtility.cs for managing access token expiration and JWT parsing, improving session validation processes.
-- - Updated MetaverseWebClient.cs to log HTTP requests and responses when API client logging is enabled.
+## 2.205.1
+- Fix compilation errors for OVRPlugin and SpeechToTextAgent on iOS and WebGL platforms
 
-Updated on December 16, 2025
+Updated on December 20, 2025

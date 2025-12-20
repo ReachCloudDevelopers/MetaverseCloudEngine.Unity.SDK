@@ -177,6 +177,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
 #endif
                     
+                    AssetDatabase.SaveAssets();
+                    yield return Resources.UnloadUnusedAssets();
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
 
                     if (totalProgressPlatforms > 0)

@@ -1,5 +1,4 @@
-﻿#if !UNITY_WEBGL
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,6 +8,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
     [RequireComponent(typeof(RectTransform))]
     public class RectTransformSafeZone : MonoBehaviour
     {
+#if !UNITY_WEBGL
         private RectTransform _rectTransform;
         private Canvas _canvas;
 
@@ -143,6 +143,6 @@ namespace MetaverseCloudEngine.Unity.UI.Components
             for (int i = 0; i < Helpers.Count; i++)
                 Helpers[i].ApplySafeArea();
         }
+#endif
     }
 }
-#endif
