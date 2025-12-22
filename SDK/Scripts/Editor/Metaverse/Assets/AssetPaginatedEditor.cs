@@ -69,7 +69,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 Offset = (uint)offset,
                 NameFilter = filter,
                 Writeable = WriteableAssetsOnly,
-                AdvancedSearch = false,
+                AdvancedSearch = !string.IsNullOrEmpty(filter),
             };
 
             if (qParams is PrefabQueryParams pqParams && string.IsNullOrEmpty(filter))

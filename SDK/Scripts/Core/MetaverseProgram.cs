@@ -79,15 +79,7 @@ namespace MetaverseCloudEngine.Unity
 
         private static Action<string> _apiClientLogForwarder;
 
-        public static bool ApiClientLoggingEnabled
-        {
-            get => UnityEditor.EditorPrefs.GetBool(ApiClientLoggingPrefKey, false);
-            set
-            {
-                UnityEditor.EditorPrefs.SetBool(ApiClientLoggingPrefKey, value);
-                ApplyApiClientLogging();
-            }
-        }
+        public static bool ApiClientLoggingEnabled { get; set; }
 
         private static void ApplyApiClientLogging()
         {

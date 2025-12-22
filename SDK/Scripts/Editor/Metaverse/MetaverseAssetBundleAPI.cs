@@ -81,6 +81,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 AssetDatabase.SaveAssets();
                 MetaPrefabLoadingAPI.ClearPool(false);
                 MetaverseProjectConfigurator.ConfigureXRLoaders(true);
+                PreProcessAudioClips(dependencies);
 
                 // Create the build output directory.
                 if (!Directory.Exists(MetaverseBuildDirectory))
@@ -786,6 +787,27 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }, includeIOSFix: false);
 
             EditorCoroutineUtility.StartCoroutineOwnerless(buildRoutine);
+        }
+
+        private static void PreProcessAudioClips(string[] dependencies)
+        {
+            if (dependencies == null || dependencies.Length == 0)
+                return;
+
+            var allDependencies = AssetDatabase.GetDependencies(dependencies, true);
+            foreach (var path in allDependencies)
+            {
+                var audioImporter = AssetImporter.GetAtPath(path) as AudioImporter;
+                if (audioImporter == null) continue;
+
+                var settings = audioImporter.defaultSampleSettings;
+                if (!settings.preloadAudioData)
+                {
+                    settings.preloadAudioData = true;
+                    audioImporter.defaultSampleSettings = settings;
+                    audioImporter.SaveAndReimport();
+                }
+            }
         }
     }
 }

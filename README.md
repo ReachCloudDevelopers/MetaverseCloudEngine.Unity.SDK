@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.1
-- Fix compilation errors for OVRPlugin and SpeechToTextAgent on iOS and WebGL platforms
+## 2.205.2
+- Refactor asset querying and logging mechanisms; enhance audio clip preprocessing
 
-Updated on December 20, 2025
+Updated on December 22, 2025

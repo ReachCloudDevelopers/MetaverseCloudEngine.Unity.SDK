@@ -30,6 +30,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 var response = await QueryAssetsAsync(queryParams);
                 if (response.Succeeded)
                     return await response.GetResultAsync();
+                Debug.LogError($"Failed to query assets: {response.GetErrorAsync().Result}");
                 return Array.Empty<TAssetDto>();
             });
         }
@@ -43,7 +44,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 Count = (uint)count,
                 NameFilter = filter,
                 Writeable = WriteableOnly,
-                AdvancedSearch = false,
+                AdvancedSearch = !string.IsNullOrEmpty(filter),
             };
         }
     }

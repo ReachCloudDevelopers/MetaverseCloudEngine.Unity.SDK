@@ -12,6 +12,9 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         protected override Task<ApiResponse<IEnumerable<PrefabDto>>> QueryAssetsAsync(PrefabQueryParams queryParams)
         {
+            queryParams.AdvancedSearch = false;
+            queryParams.ChildPrefabs = true;
+            queryParams.Writeable = false;
             return MetaverseProgram.ApiClient.Prefabs.GetAllAsync(queryParams);
         }
     }
