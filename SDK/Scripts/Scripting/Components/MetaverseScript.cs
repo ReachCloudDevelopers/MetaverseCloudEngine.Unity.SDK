@@ -328,7 +328,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                 if (args == null || args.Length == 0)
                     return string.Empty;
 
-                return string.Join(", ", args.Select(FormatArgument));
+                return string.Join(" ", args.Select(FormatArgument));
             }
 
             private static string FormatArgument(object value) => value switch

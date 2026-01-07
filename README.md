@@ -12,7 +12,8 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.2
-- Refactor asset querying and logging mechanisms; enhance audio clip preprocessing
+## 2.205.3
+- - Updated Unity version and meta files.
+- - Fixed formatting issue with FormatArguments function in MetaverseScript.
 
-Updated on December 22, 2025
+Updated on January 07, 2026
