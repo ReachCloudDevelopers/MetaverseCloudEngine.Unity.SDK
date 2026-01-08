@@ -35,6 +35,8 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
         public Camera RaycastCamera { get => raycastCamera; set => raycastCamera = value; }
 
+        public static DraggableGameObject Current { get; private set; }
+
         private void Reset()
         {
             raycastCamera = GetComponentInParent<Camera>(true);
@@ -57,11 +59,21 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         private void Update()
         {
             if (Input.GetMouseButtonDown(targetMouseButton))
-                _isSelecting = true;
+            {
+                if (Current == null)
+                {
+                    _isSelecting = true;
+                }
+            }
             else if (Input.GetMouseButtonUp(targetMouseButton))
+            {
                 ReleaseSelection();
+            }
+
             if (_isSelecting || _simulateSelecting)
+            {
                 OnSelecting();
+            }
         }
 
         private void OnDisable()
@@ -148,6 +160,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
             {
                 _initialDistance = hitInfo.distance;
                 _lastSelectedGameObject = draggable;
+                Current = draggable;
                 
                 // Store initial plane point and normal based on drag plane type
                 _initialPlanePoint = draggable.transform.position;
@@ -210,7 +223,13 @@ namespace MetaverseCloudEngine.Unity.UI.Components
             if (!_isSelecting && !_simulateSelecting && !_lastSelectedGameObject)
                 return;
             if (_lastSelectedGameObject)
+            {
                 _lastSelectedGameObject.DeselectedBy(this);
+                if (Current == _lastSelectedGameObject)
+                {
+                    Current = null;
+                }
+            }
             _lastSelectedGameObject = null;
             _isSelecting = false;
             _simulateSelecting = false;

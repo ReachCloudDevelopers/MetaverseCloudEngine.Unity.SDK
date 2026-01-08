@@ -21,8 +21,10 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         [HideIf(nameof(rectArea))]
         [SerializeField] private bool ignoreIfOverUI = true;
         [PropertyOrder(-997)]
-        [SerializeField] private bool performOnClickOrTap = true;
+        [SerializeField] private bool ignoreIfDragging = true;
         [PropertyOrder(-996)]
+        [SerializeField] private bool performOnClickOrTap = true;
+        [PropertyOrder(-995)]
         [PropertySpace(SpaceAfter = 15)]
         [SerializeField, Min(0)] private int targetMouseButton;
 
@@ -61,7 +63,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
         public virtual bool IsClicking()
         {
-            return Input.GetMouseButtonDown(targetMouseButton);
+            return Input.GetMouseButtonUp(targetMouseButton);
         }
 
         public override bool CanPerform()
@@ -72,6 +74,13 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         public override bool GetRay(out Ray ray)
         {
             Vector3 position = Input.mousePosition;
+            
+            if (ignoreIfDragging && DragGameObject.Current != null)
+            {
+                ray = default;
+                return false;
+            }
+
             if (!rectArea)
             {
                 if (ignoreIfOverUI)
