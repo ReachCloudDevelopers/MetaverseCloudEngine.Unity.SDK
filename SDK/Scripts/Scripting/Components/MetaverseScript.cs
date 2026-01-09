@@ -2064,7 +2064,7 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
                         context.NetworkObject.uNull()?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p))
                 },
                 {
-                    ClientRPCOthersBufferedFunction,
+                    ClientRPCOthersBufferedFunction, 
                     (Action<short, object>)((rpc, p) =>
                         context.NetworkObject.uNull()
                             ?.InvokeRPC(rpc, NetworkMessageReceivers.Others, p, buffered: true))
