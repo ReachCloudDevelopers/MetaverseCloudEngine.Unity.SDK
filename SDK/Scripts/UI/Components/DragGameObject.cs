@@ -14,6 +14,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
         [Header("Input")]
         [SerializeField, Min(0)] private int targetMouseButton;
+        [SerializeField, Min(0f)] private float screenRayBlockDuration = 0.05f;
 
         [Header("Raycast Filter")]
         [SerializeField] private LayerMask layerMask = Physics.DefaultRaycastLayers;
@@ -36,6 +37,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         public Camera RaycastCamera { get => raycastCamera; set => raycastCamera = value; }
 
         public static DraggableGameObject Current { get; private set; }
+        public static float ScreenRayBlockedUntil { get; private set; }
 
         private void Reset()
         {
@@ -234,6 +236,14 @@ namespace MetaverseCloudEngine.Unity.UI.Components
             _isSelecting = false;
             _simulateSelecting = false;
             _hadSelection = false;
+
+            if (screenRayBlockDuration > 0f)
+            {
+                var blockedUntil = Time.unscaledTime + screenRayBlockDuration;
+                if (blockedUntil > ScreenRayBlockedUntil)
+                    ScreenRayBlockedUntil = blockedUntil;
+            }
+
             onDeslected?.Invoke();
         }
 

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.4
-- Enhance drag-and-drop functionality by introducing a static Current property in DragGameObject and modifying selection logic. Update ScreenCameraRay to ignore clicks when dragging.
+## 2.205.5
+- Add screen ray block duration to prevent input during dragging
 
-Updated on January 07, 2026
+Updated on January 08, 2026

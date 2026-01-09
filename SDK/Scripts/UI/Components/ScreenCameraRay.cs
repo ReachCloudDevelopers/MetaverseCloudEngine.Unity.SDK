@@ -63,6 +63,8 @@ namespace MetaverseCloudEngine.Unity.UI.Components
 
         public virtual bool IsClicking()
         {
+            if (ignoreIfDragging && Time.unscaledTime < DragGameObject.ScreenRayBlockedUntil)
+                return false;
             return Input.GetMouseButtonUp(targetMouseButton);
         }
 
@@ -75,7 +77,7 @@ namespace MetaverseCloudEngine.Unity.UI.Components
         {
             Vector3 position = Input.mousePosition;
             
-            if (ignoreIfDragging && DragGameObject.Current != null)
+            if (ignoreIfDragging && (DragGameObject.Current != null || Time.unscaledTime < DragGameObject.ScreenRayBlockedUntil))
             {
                 ray = default;
                 return false;
