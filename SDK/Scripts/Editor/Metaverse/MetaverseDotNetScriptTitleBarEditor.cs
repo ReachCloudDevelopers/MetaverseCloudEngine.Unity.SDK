@@ -31,11 +31,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 
             var displayTitle = BuildTitle(assemblyAsset, className);
 
-            var viewWidth = EditorGUIUtility.currentViewWidth;
-            var fakeHeaderRect = new Rect(0, 1.5f, viewWidth, rect.height);
+            var fakeHeaderRect = new Rect(0, 0, rect.width, rect.height);
 
             // Draw header background to match MetaverseScript
-            GUI.Button(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
+            GUI.Box(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
 
             // Layout mirrors MetaverseScriptTitleBarEditor
             var foldRect = new Rect(fakeHeaderRect.x + 4f, fakeHeaderRect.y, 16f, fakeHeaderRect.height - 4f);
@@ -49,7 +48,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 fakeHeaderRect.height);
 
             // Foldout and enabled toggle
-            EditorGUI.Foldout(foldRect, InternalEditorUtility.GetIsInspectorExpanded(@object), GUIContent.none, true);
+            var isExpanded = InternalEditorUtility.GetIsInspectorExpanded(script);
+            var newExpanded = EditorGUI.Foldout(foldRect, isExpanded, GUIContent.none, true);
+            if (newExpanded != isExpanded)
+                InternalEditorUtility.SetIsInspectorExpanded(script, newExpanded);
 
             var enabledProp = serializedObject.FindProperty("m_Enabled");
             if (enabledProp != null)

@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.7
-- Fixed some prefabs not being displayed in prefab picker editor.
+## 2.205.8
+- Add error handling for API client availability and ensure unique internal IDs for MetaverseScript components
 
-Updated on January 12, 2026
+Updated on January 13, 2026

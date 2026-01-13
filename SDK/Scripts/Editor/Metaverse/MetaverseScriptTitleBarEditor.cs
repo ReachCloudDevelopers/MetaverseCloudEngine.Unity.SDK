@@ -16,6 +16,9 @@ namespace MetaverseCloudEngine.Unity.Editors
     [InitializeOnLoad]
     internal static class MetaverseScriptTitleBarEditor
     {
+		private const string ExpandedPrefsPrefix = "MetaverseCloudEngine.MetaverseScript.expanded.";
+		private const string InternalIdFieldName = "_internalId";
+
         static MetaverseScriptTitleBarEditor()
 		{
 			ComponentTitlebarGUI.OnTitlebarGUI += OnTitlebarGUI;
@@ -25,17 +28,18 @@ namespace MetaverseCloudEngine.Unity.Editors
 		{
 			if (@object is not MetaverseScript ms) return;
 
+			EnsureHasUniqueInternalId(ms);
+
 			var serializedObject = new SerializedObject(ms);
             var javascriptFileProp = serializedObject.FindProperty("javascriptFile");
 
             // Fake header showing the assigned JS file name (or (No Script))
             var jsAsset = javascriptFileProp.objectReferenceValue as TextAsset;
             var displayTitle = jsAsset ? ObjectNames.NicifyVariableName(jsAsset.name) + " (Script)" : "(No Script)";
-            var viewWidth = EditorGUIUtility.currentViewWidth;
-            var fakeHeaderRect = new Rect(0, 1.5f, viewWidth, rect.height);
+			var fakeHeaderRect = new Rect(0, 0, rect.width, rect.height);
 
             // Draw header background
-            GUI.Button(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
+			GUI.Box(fakeHeaderRect, GUIContent.none, EditorStyles.toolbar);
 
             // Areas inside header: foldout and enabled toggle (do not intercept), title elsewhere
             var foldRect = new Rect(fakeHeaderRect.x + 4f, fakeHeaderRect.y, 16f, fakeHeaderRect.height - 4f);
@@ -44,7 +48,20 @@ namespace MetaverseCloudEngine.Unity.Editors
             var toggleRect = new Rect(foldRect.xMax + 20f, fakeHeaderRect.y, 18f, fakeHeaderRect.height - 4f);
 			var titleRect = new Rect(toggleRect.xMax + 2f, fakeHeaderRect.y, fakeHeaderRect.width - (toggleRect.xMax - fakeHeaderRect.x) - 8f, fakeHeaderRect.height);
             
-			EditorGUI.Foldout(foldRect, InternalEditorUtility.GetIsInspectorExpanded(@object), GUIContent.none, true);
+			var prefsKey = ExpandedPrefsPrefix + ms.InternalId;
+			var isExpanded = EditorPrefs.GetBool(prefsKey, true);
+			var newExpanded = EditorGUI.Foldout(foldRect, isExpanded, GUIContent.none, true);
+			if (newExpanded != isExpanded)
+			{
+				EditorPrefs.SetBool(prefsKey, newExpanded);
+				InternalEditorUtility.SetIsInspectorExpanded(ms, newExpanded);
+			}
+			else
+			{
+				// Keep Unity's internal expanded state in sync with our per-component state.
+				if (InternalEditorUtility.GetIsInspectorExpanded(ms) != isExpanded)
+					InternalEditorUtility.SetIsInspectorExpanded(ms, isExpanded);
+			}
 
             // Enabled toggle (uses serialized m_Enabled)
             var enabledProp = serializedObject.FindProperty("m_Enabled");
@@ -79,6 +96,46 @@ namespace MetaverseCloudEngine.Unity.Editors
             var menuIconRect = new Rect(startX + (iconSize - 1) * 2, fakeHeaderRect.y, iconSize, iconSize);
             GUI.Label(menuIconRect, EditorGUIUtility.IconContent("_Menu").image);
         }
+
+		private static void EnsureHasUniqueInternalId(MetaverseScript ms)
+		{
+			if (!ms)
+				return;
+
+			// Ensure the ID exists and is unique among MetaverseScript components on the same GameObject.
+			var id = ms.InternalId;
+			if (string.IsNullOrEmpty(id))
+				id = null;
+
+			var scripts = ms.gameObject ? ms.gameObject.GetComponents<MetaverseScript>() : Array.Empty<MetaverseScript>();
+			var duplicateCount = 0;
+			for (var i = 0; i < scripts.Length; i++)
+			{
+				var other = scripts[i];
+				if (!other || other == ms)
+					continue;
+				if (!string.IsNullOrEmpty(other.InternalId) && other.InternalId == id)
+					duplicateCount++;
+			}
+
+			if (!string.IsNullOrEmpty(id) && duplicateCount == 0)
+				return;
+
+			Undo.RecordObject(ms, "Assign MetaverseScript ID");
+			var so = new SerializedObject(ms);
+			var idProp = so.FindProperty(InternalIdFieldName);
+			if (idProp != null)
+			{
+				idProp.stringValue = Guid.NewGuid().ToString("N");
+				so.ApplyModifiedProperties();
+			}
+			else
+			{
+				// Fallback: touch the property getter to generate an ID, then mark dirty.
+				_ = ms.InternalId;
+				EditorUtility.SetDirty(ms);
+			}
+		}
     }
 
 	public static class ComponentTitlebarGUI
@@ -165,7 +222,10 @@ namespace MetaverseCloudEngine.Unity.Editors
 							{
 								try
 								{
-									OnTitlebarGUI?.Invoke(GUILayoutUtility.GetLastRect(), localTarget);
+									var width = value2.contentRect.width > 1f ? value2.contentRect.width : value2.layout.width;
+									var height = value2.contentRect.height > 1f ? value2.contentRect.height : value2.layout.height;
+									var headerRect = new Rect(0, 0, width, height);
+									OnTitlebarGUI?.Invoke(headerRect, localTarget);
 								}
 								catch (Exception e)
 								{

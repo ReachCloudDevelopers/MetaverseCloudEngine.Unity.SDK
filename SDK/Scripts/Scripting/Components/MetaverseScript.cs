@@ -496,6 +496,27 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Tooltip("The file that contains the javascript.")]
         [Required] public TextAsset javascriptFile;
+
+        [SerializeField, HideInInspector]
+        private string _internalId;
+
+        public string InternalId
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_internalId))
+                {
+                    #if UNITY_EDITOR
+                    UnityEditor.Undo.RecordObject(this, "Assign MetaverseScript ID");
+                    #endif
+                    _internalId = Guid.NewGuid().ToString("N");
+                    #if UNITY_EDITOR
+                    UnityEditor.EditorUtility.SetDirty(this);
+                    #endif
+                }
+                return _internalId;
+            }
+        }
         
 #if UNITY_EDITOR
         [ContextMenu("Edit JavaScript...")]
@@ -515,6 +536,13 @@ namespace MetaverseCloudEngine.Unity.Scripting.Components
 
         [Space(10)]
         [SerializeField] private UnityEvent onInitialize = new();
+
+        private void OnValidate()
+        {
+            // Keep the ID stable/persistent for Editor tooling (foldouts, etc.)
+            if (string.IsNullOrEmpty(_internalId))
+                _internalId = Guid.NewGuid().ToString("N");
+        }
         
         private bool _ready;
         private Engine _engine;

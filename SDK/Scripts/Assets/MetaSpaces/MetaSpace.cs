@@ -343,11 +343,25 @@ namespace MetaverseCloudEngine.Unity.Assets.MetaSpaces
         {
             OnReady(() =>
             {
+                if (MetaverseProgram.ApiClient is null ||
+                    MetaverseProgram.ApiClient.MetaSpaces is null)
+                {
+                    onError?.Invoke("API client is not available.");
+                    return;
+                }
+
                 if (CurrentlyLoadedMetaSpaceDto is null)
                 {
                     onError?.Invoke("MetaSpace has not fully loaded.");
                     return;
                 }
+
+                if (CurrentlyLoadedMetaSpaceDto.Id is null)
+                {
+                    onError?.Invoke("MetaSpace has not fully loaded.");
+                    return;
+                }
+
                 MetaverseProgram.ApiClient
                     .MetaSpaces.FindAsync(CurrentlyLoadedMetaSpaceDto.Id)
                     .ResponseThen(r =>
