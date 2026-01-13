@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.8
-- Add error handling for API client availability and ensure unique internal IDs for MetaverseScript components
+## 2.205.9
+- Remove null check for CurrentlyLoadedMetaSpaceDto in MetaSpace loading logic
 
 Updated on January 13, 2026
