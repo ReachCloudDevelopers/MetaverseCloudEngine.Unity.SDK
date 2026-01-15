@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.9
-- Remove null check for CurrentlyLoadedMetaSpaceDto in MetaSpace loading logic
+## 2.205.10
+- Add FixTextMeshProUGUIOnPreRenderCanvasTryCatch to prevent NullReferenceException spam
 
-Updated on January 13, 2026
+Updated on January 15, 2026
