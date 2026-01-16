@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.205.10",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.205.10\n- Add FixTextMeshProUGUIOnPreRenderCanvasTryCatch to prevent NullReferenceException spam\n\nUpdated on January 15, 2026\n\n## 2.205.9\n- Remove null check for CurrentlyLoadedMetaSpaceDto in MetaSpace loading logic\n\nUpdated on January 13, 2026\n\n## 2.205.8\n- Add error handling for API client availability and ensure unique internal IDs for MetaverseScript components\n\nUpdated on January 13, 2026\n\n## 2.205.7\n- Fixed some prefabs not being displayed in prefab picker editor.\n\nUpdated on January 12, 2026\n\n## 2.205.6\n- Minor update\n\nUpdated on January 08, 2026\n\n## 2.205.5\n- Add screen ray block duration to prevent input during dragging\n\nUpdated on January 08, 2026\n\n## 2.205.4\n- Enhance drag-and-drop functionality by introducing a static Current property in DragGameObject and modifying selection logic. Update ScreenCameraRay to ignore clicks when dragging.\n\nUpdated on January 07, 2026\n\n## 2.205.3\n- - Updated Unity version and meta files.\n- - Fixed formatting issue with FormatArguments function in MetaverseScript.\n\nUpdated on January 07, 2026\n\n## 2.205.2\n- Refactor asset querying and logging mechanisms; enhance audio clip preprocessing\n\nUpdated on December 22, 2025\n\n## 2.205.1\n- Fix compilation errors for OVRPlugin and SpeechToTextAgent on iOS and WebGL platforms\n\nUpdated on December 20, 2025",
+  "version": "2.206.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.206.0\n- Add options to modify position and rotation weights in VRIKTrackerWeightsManager\n\nUpdated on January 16, 2026",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

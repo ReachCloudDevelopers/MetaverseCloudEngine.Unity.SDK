@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.205.10
-- Add FixTextMeshProUGUIOnPreRenderCanvasTryCatch to prevent NullReferenceException spam
+## 2.206.0
+- Add options to modify position and rotation weights in VRIKTrackerWeightsManager
 
-Updated on January 15, 2026
+Updated on January 16, 2026
