@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.1
-- Refactor GetTargetWeight method to simplify maxWeight check
+## 2.207.2
+- Fix incorrect variable name in GetTargetWeight method
 
 Updated on January 19, 2026

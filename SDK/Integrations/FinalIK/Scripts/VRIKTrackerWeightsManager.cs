@@ -156,7 +156,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
         private float GetTargetWeight(float maxWeight, float confidence)
         {
             if (maxWeight <= 0) return 1f;
-            return Mathf.Lerp(0, max, confidence);
+            return Mathf.Lerp(0, maxWeight, confidence);
         }
 
         private void OnRightLegConfidence(float f)
