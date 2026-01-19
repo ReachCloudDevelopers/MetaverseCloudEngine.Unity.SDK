@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.206.0",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.206.0\n- Add options to modify position and rotation weights in VRIKTrackerWeightsManager\n\nUpdated on January 16, 2026",
+  "version": "2.207.0",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.0\n- Refactor VRIKTrackerWeightsManager to use max weight settings for position and rotation adjustments\n\nUpdated on January 19, 2026",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
