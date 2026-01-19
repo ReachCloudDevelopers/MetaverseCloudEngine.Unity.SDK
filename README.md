@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.0
-- Refactor VRIKTrackerWeightsManager to use max weight settings for position and rotation adjustments
+## 2.207.1
+- Refactor GetTargetWeight method to simplify maxWeight check
 
 Updated on January 19, 2026
