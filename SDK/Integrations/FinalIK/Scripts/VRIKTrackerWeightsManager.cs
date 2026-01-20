@@ -22,6 +22,7 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
         [SerializeField] private bool modifyPositionWeights = true;
         [SerializeField] private bool modifyRotationWeights = true;
         [SerializeField] private bool useProceduralLegMovement = true;
+        [SerializeField] private bool useRecommendedLocomotionSettings = true;
 
         private readonly Dictionary<MetaverseXRTrackerType, MetaverseXRTracker> _trackers = new();
         private readonly Dictionary<MetaverseXRTrackerType, float> _confidence = new();
@@ -121,6 +122,13 @@ namespace MetaverseCloudEngine.Unity.Integrations.FullBodyEstimation.Integration
             {
                 float targetLocomotion = useProceduralLegMovement ? 1f : 0f;
                 _vrIk.solver.locomotion.weight = Mathf.Lerp(_vrIk.solver.locomotion.weight, targetLocomotion, interpolationSpeed * Time.deltaTime);
+
+                if (useRecommendedLocomotionSettings)
+                {
+                    _vrIk.solver.locomotion.footDistance = 0.2f;
+                    _vrIk.solver.locomotion.stepThreshold = 0.2f;
+                    _vrIk.solver.locomotion.angleThreshold = 45f;
+                }
             }
 #endif
             

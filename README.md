@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.3
-- Add procedural leg movement option to VRIKTrackerWeightsManager
+## 2.207.4
+- Add recommended locomotion settings to VRIKTrackerWeightsManager
 
 Updated on January 20, 2026
