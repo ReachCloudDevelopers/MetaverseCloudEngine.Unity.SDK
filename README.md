@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.2
-- Fix incorrect variable name in GetTargetWeight method
+## 2.207.3
+- Add procedural leg movement option to VRIKTrackerWeightsManager
 
-Updated on January 19, 2026
+Updated on January 20, 2026

@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.207.2",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.2\n- Fix incorrect variable name in GetTargetWeight method\n\nUpdated on January 19, 2026",
+  "version": "2.207.3",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.3\n- Add procedural leg movement option to VRIKTrackerWeightsManager\n\nUpdated on January 20, 2026",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
