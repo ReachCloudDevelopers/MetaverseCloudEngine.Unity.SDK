@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.4
-- Add recommended locomotion settings to VRIKTrackerWeightsManager
+## 2.207.5
+- Refactor MetaverseScriptTitleBarEditor to remove custom title bar implementation, relying on Unity's built-in header functionality.
 
-Updated on January 20, 2026
+Updated on January 24, 2026

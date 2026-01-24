@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.207.4",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.4\n- Add recommended locomotion settings to VRIKTrackerWeightsManager\n\nUpdated on January 20, 2026",
+  "version": "2.207.5",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.5\n- Refactor MetaverseScriptTitleBarEditor to remove custom title bar implementation, relying on Unity's built-in header functionality.\n\nUpdated on January 24, 2026\n\n## 2.207.4\n- Add recommended locomotion settings to VRIKTrackerWeightsManager\n\nUpdated on January 20, 2026",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",
