@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.5
-- Refactor MetaverseScriptTitleBarEditor to remove custom title bar implementation, relying on Unity's built-in header functionality.
+## 2.207.6
+- Improvements to the upload flow
 
-Updated on January 24, 2026
+Updated on January 28, 2026

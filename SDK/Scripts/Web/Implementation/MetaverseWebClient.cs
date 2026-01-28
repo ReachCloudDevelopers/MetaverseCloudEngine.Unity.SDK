@@ -351,10 +351,6 @@ namespace MetaverseCloudEngine.Unity.Web.Implementation
                         {
                             MetaverseProgram.Logger.LogError(unityWebRequest.downloadHandler.error);
                         }
-                        else
-                        {
-                            MetaverseProgram.Logger.LogError(e);
-                        }
 
                         isFinished = true;
                         return await e.ToHttpResponseMessage().ToApiResponseAsync<IAssetPlatformBundle>();

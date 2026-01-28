@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,7 +20,6 @@ using MetaverseCloudEngine.Unity.Assets.MetaSpaces;
 using MetaverseCloudEngine.Unity.Async;
 using Newtonsoft.Json;
 using TriInspectorMVCE;
-using Unity.EditorCoroutines.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -1434,7 +1432,17 @@ namespace MetaverseCloudEngine.Unity.Editors
             IncrementUploadInProgress();
             try
             {
-                EditorCoroutineUtility.StartCoroutineOwnerless(UploadBundlesRoutine(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog));
+                var context = new UploadBundlesContext(
+                    this,
+                    controller,
+                    bundlePath,
+                    buildsArray,
+                    assetUpsertForm,
+                    onBuildSuccess,
+                    onError,
+                    tries,
+                    suppressDialog);
+                context.Start();
             }
             catch
             {
@@ -1443,54 +1451,75 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
         }
 
-        private IEnumerator UploadBundlesRoutine(
-            IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
-            string bundlePath,
-            MetaverseAssetBundleAPI.BundleBuild[] builds,
-            TAssetUpsertForm assetUpsertForm,
-            Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess,
-            Action<object> onError,
-            int tries,
-            bool suppressDialog)
+        private sealed class UploadBundlesContext
         {
-            var lockedAssemblies = false;
-            var openStreams = new List<Stream>();
-            CancellationTokenSource uploadCancellation = null;
-
-            void HandleUploadException(Exception exception)
+            private enum Phase
             {
-                exception = exception?.GetBaseException() ?? exception;
-                MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {exception}");
-
-                if (builds != null && builds.Length > 0)
-                    StoreBundleInfoForRetry(builds);
-
-                if (!suppressDialog)
-                {
-                    ShowUploadFailureDialog(exception?.ToString() ?? "Unknown upload error.",
-                        () => UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            tries + 1,
-                            suppressDialog),
-                        () => onError?.Invoke(exception));
-                }
-                else
-                {
-                    onError?.Invoke((object)exception ?? "Unknown upload error.");
-                }
+                Uploading,
+                HandleUploadResponse,
+                WaitingForDto,
+                WaitingForError,
+                WaitingForSessionRefresh,
+                Completed
             }
 
-            try
+            private readonly AssetEditor<TAsset, TAssetMetadata, TAssetDto, TAssetQueryParams, TAssetUpsertForm, TPickerEditor> _owner;
+            private readonly IUpsertAssets<TAssetDto, TAssetUpsertForm> _controller;
+            private readonly string _bundlePath;
+            private readonly MetaverseAssetBundleAPI.BundleBuild[] _builds;
+            private readonly TAssetUpsertForm _assetUpsertForm;
+            private readonly Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> _onBuildSuccess;
+            private readonly Action<object> _onError;
+            private readonly int _tries;
+            private readonly bool _suppressDialog;
+
+            private readonly List<Stream> _openStreams = new();
+            private CancellationTokenSource _uploadCancellation;
+            private bool _lockedAssemblies;
+
+            private Task<ApiResponse<TAssetDto>> _uploadTask;
+            private ApiResponse<TAssetDto> _uploadResponse;
+            private Task<TAssetDto> _dtoTask;
+            private Task<string> _errorTask;
+            private Task<MetaverseCloudEngine.ApiClient.Controllers.AccountController.SessionValidationResult> _sessionTask;
+
+            private Phase _phase;
+
+            private long _totalBytes;
+            private double _lastUiUpdate;
+            private double _estimatedSeconds;
+            private Stopwatch _stopwatch;
+            private double _uploadDurationSeconds;
+
+            public UploadBundlesContext(
+                AssetEditor<TAsset, TAssetMetadata, TAssetDto, TAssetQueryParams, TAssetUpsertForm, TPickerEditor> owner,
+                IUpsertAssets<TAssetDto, TAssetUpsertForm> controller,
+                string bundlePath,
+                MetaverseAssetBundleAPI.BundleBuild[] builds,
+                TAssetUpsertForm assetUpsertForm,
+                Action<AssetDto, IEnumerable<MetaverseAssetBundleAPI.BundleBuild>> onBuildSuccess,
+                Action<object> onError,
+                int tries,
+                bool suppressDialog)
             {
-                if (builds == null || builds.Length == 0)
+                _owner = owner;
+                _controller = controller;
+                _bundlePath = bundlePath;
+                _builds = builds;
+                _assetUpsertForm = assetUpsertForm;
+                _onBuildSuccess = onBuildSuccess;
+                _onError = onError;
+                _tries = tries;
+                _suppressDialog = suppressDialog;
+            }
+
+            public void Start()
+            {
+                if (_builds == null || _builds.Length == 0)
                 {
-                    onError?.Invoke("No bundles were available to upload.");
-                    yield break;
+                    _onError?.Invoke("No bundles were available to upload.");
+                    Complete();
+                    return;
                 }
 
                 if (Application.internetReachability == NetworkReachability.NotReachable)
@@ -1503,29 +1532,30 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     if (retry)
                     {
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            tries + 1,
-                            suppressDialog);
+                        _owner.UploadBundles(
+                            _controller,
+                            _bundlePath,
+                            _builds,
+                            _assetUpsertForm,
+                            _onBuildSuccess,
+                            _onError,
+                            _tries + 1,
+                            _suppressDialog);
                     }
                     else
                     {
-                        onError?.Invoke("Upload cancelled.");
+                        _onError?.Invoke("Upload cancelled.");
                     }
 
-                    yield break;
+                    Complete();
+                    return;
                 }
 
-                if (tries >= 3)
+                if (_tries >= 3)
                 {
-                    StoreBundleInfoForRetry(builds);
+                    _owner.StoreBundleInfoForRetry(_builds);
 
-                    var retry = !suppressDialog && EditorUtility.DisplayDialog(
+                    var retry = !_suppressDialog && EditorUtility.DisplayDialog(
                         "Upload Failed",
                         "Uploading failed, please check your internet connection, or log-in and try again. If the issue persists, please restart Unity.",
                         "Retry",
@@ -1533,389 +1563,478 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                     if (retry)
                     {
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
+                        _owner.UploadBundles(
+                            _controller,
+                            _bundlePath,
+                            _builds,
+                            _assetUpsertForm,
+                            _onBuildSuccess,
+                            _onError,
                             0,
-                            suppressDialog);
+                            _suppressDialog);
                     }
                     else
                     {
-                        onError?.Invoke("Upload cancelled.");
+                        _onError?.Invoke("Upload cancelled.");
                     }
 
-                    yield break;
+                    Complete();
+                    return;
                 }
 
-                AssetPlatformUpsertOptions[] platformOptions = null;
-                long totalBytes = 0;
-                Exception prepareException = null;
+                AssetPlatformUpsertOptions[] platformOptions;
                 try
                 {
-                    platformOptions = builds.Select(x =>
+                    platformOptions = _builds.Select(x =>
                     {
                         var stream = File.OpenRead(x.OutputPath);
-                        openStreams.Add(stream);
+                        _openStreams.Add(stream);
                         return new AssetPlatformUpsertOptions
                         {
                             Stream = stream,
-                            AssetPath = bundlePath,
+                            AssetPath = _bundlePath,
                             Platform = x.Platforms,
                         };
                     }).ToArray();
 
-                    totalBytes = builds.Sum(x => new FileInfo(x.OutputPath).Length);
+                    _totalBytes = _builds.Sum(x => new FileInfo(x.OutputPath).Length);
                 }
                 catch (Exception ex)
                 {
-                    prepareException = ex;
+                    HandleUploadException(ex);
+                    return;
                 }
 
-                if (prepareException != null)
-                {
-                    HandleUploadException(prepareException);
-                    yield break;
-                }
+                var uploadSizeMb = _totalBytes / 1024f / 1024f;
+                MetaverseProgram.Logger.Log($"Uploading bundles for '{_assetUpsertForm.Name}' ({uploadSizeMb:N2} MB)...");
 
-                double uploadDurationSeconds = 0;
+                var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
+                var savedUploadSpeed = hasSavedUploadSpeed ? Math.Max(EditorPrefs.GetFloat(UploadSpeedPrefKey), 0f) : 0f;
+                var bytesPerSecondForEstimate = hasSavedUploadSpeed && savedUploadSpeed > 0f
+                    ? (double)savedUploadSpeed
+                    : DefaultSimulatedBytesPerSecond;
+                _estimatedSeconds = _totalBytes <= 0 || bytesPerSecondForEstimate <= 0
+                    ? 0
+                    : _totalBytes / bytesPerSecondForEstimate;
 
-                var uploadSizeMb = totalBytes / 1024f / 1024f;
-                MetaverseProgram.Logger.Log($"Uploading bundles for '{assetUpsertForm.Name}' ({uploadSizeMb:N2} MB)...");
+                _stopwatch = Stopwatch.StartNew();
+                _lastUiUpdate = 0d;
+                _uploadCancellation = new CancellationTokenSource();
 
-                uploadCancellation = new CancellationTokenSource();
                 EditorApplication.LockReloadAssemblies();
-                lockedAssemblies = true;
+                _lockedAssemblies = true;
 
-                Task<ApiResponse<TAssetDto>> uploadTask = null;
-                Exception startException = null;
                 try
                 {
-                    uploadTask = controller.UpsertPlatformsAsync(
+                    _uploadTask = _controller.UpsertPlatformsAsync(
                         platformOptions,
-                        form: assetUpsertForm,
-                        cancellationToken: uploadCancellation.Token);
+                        form: _assetUpsertForm,
+                        cancellationToken: _uploadCancellation.Token);
                 }
                 catch (Exception ex)
                 {
-                    startException = ex;
+                    HandleUploadException(ex);
+                    return;
                 }
 
-                if (startException != null)
+                _phase = Phase.Uploading;
+                EditorApplication.update += Update;
+            }
+
+            private void Update()
+            {
+                try
                 {
-                    HandleUploadException(startException);
-                    yield break;
-                }
+                    if (_phase == Phase.Completed)
+                        return;
 
-                yield return MonitorUploadProgressRoutine(
-                    uploadTask,
-                    assetUpsertForm.Name,
-                    totalBytes,
-                    uploadCancellation,
-                    suppressDialog,
-                    duration => uploadDurationSeconds = duration);
-
-                EditorUtility.ClearProgressBar();
-                if (lockedAssemblies)
-                {
-                    EditorApplication.UnlockReloadAssemblies();
-                    lockedAssemblies = false;
-                }
-
-                if (uploadCancellation.IsCancellationRequested)
-                {
-                    MetaverseProgram.Logger.Log($"Upload cancelled for '{assetUpsertForm.Name}'.");
-                    onError?.Invoke("Upload cancelled.");
-                    yield break;
-                }
-
-                while (!uploadTask.IsCompleted)
-                    yield return null;
-
-                if (uploadTask.IsCanceled)
-                {
-                    MetaverseProgram.Logger.Log($"Upload cancelled for '{assetUpsertForm.Name}'.");
-                    onError?.Invoke("Upload cancelled.");
-                    yield break;
-                }
-
-                if (uploadTask.IsFaulted)
-                {
-                    HandleUploadException(uploadTask.Exception);
-                    yield break;
-                }
-
-                var uploadResponse = uploadTask.Result;
-
-                var platformString = "\n- " + string.Join("\n- ", builds.Select(x => x.Platforms.ToString()));
-                if (uploadResponse.Succeeded)
-                {
-                    var dtoTask = uploadResponse.GetResultAsync();
-                    while (!dtoTask.IsCompleted)
-                        yield return null;
-
-                    if (dtoTask.IsCanceled)
+                    if (_uploadCancellation is { IsCancellationRequested: false } &&
+                        Application.internetReachability == NetworkReachability.NotReachable)
                     {
-                        MetaverseProgram.Logger.Log($"Upload cancelled for '{assetUpsertForm.Name}'.");
-                        onError?.Invoke("Upload cancelled.");
-                        yield break;
+                        _uploadCancellation.Cancel();
                     }
 
-                    if (dtoTask.IsFaulted)
+                    switch (_phase)
                     {
-                        HandleUploadException(dtoTask.Exception);
-                        yield break;
-                    }
-
-                    var dto = dtoTask.Result;
-
-                    MetaverseProgram.Logger.Log(
-                        $"<b><color=green>Successfully</color></b> uploaded bundles for '{assetUpsertForm.Name}'.\n{platformString}");
-
-                    if (!suppressDialog)
-                        EditorUtility.DisplayDialog(
-                            "Upload Successful",
-                            $"\"{assetUpsertForm.Name}\" was uploaded successfully!{platformString}",
-                            "Ok");
-
-                    TryPersistUploadSpeed(totalBytes, uploadDurationSeconds);
-
-                    if (assetUpsertForm.Listings != dto.Listings && !suppressDialog)
-                    {
-                        EditorUtility.DisplayDialog(
-                            "Listings Notice",
-                            $"Though you selected {assetUpsertForm.Listings} listing(s) for your asset, the server only allowed \"{dto.Listings}\". This can " +
-                            "happen if you are not a verified creator. Please check our documentation for publishing requirements.",
-                            "Ok");
-                    }
-
-                    if (!Target)
-                    {
-                        // If the editor target has gone missing (for example, the scene was
-                        // reloaded or the object was unloaded), we still want the upload to
-                        // be treated as successful so that batch operations can continue.
-                        // For MetaSpaces we make a best-effort attempt to find an instance
-                        // in the currently loaded scenes and apply the metadata to it.
-                        if (typeof(MetaSpace).IsAssignableFrom(typeof(TAsset)))
-                        {
-                            var asset = FindObjectOfType<TAsset>(true);
-                            if (asset)
+                        case Phase.Uploading:
+                            UpdateUploadProgressBar();
+                            if (_uploadTask is { IsCompleted: true })
                             {
-                                ApplyMetaData(new SerializedObject(asset), dto);
-                                ClearBundleRetryInfo(asset);
+                                _stopwatch?.Stop();
+                                _uploadDurationSeconds = _stopwatch?.Elapsed.TotalSeconds ?? 0;
+                                EditorUtility.ClearProgressBar();
+                                UnlockAssemblies();
+                                _phase = Phase.HandleUploadResponse;
                             }
-                        }
-                    }
-                    else
-                    {
-                        ApplyMetaData(serializedObject, dto);
-                        ClearBundleRetryInfo(Target);
-                    }
+                            break;
 
-                    onBuildSuccess?.Invoke(dto, builds);
-                    yield break;
+                        case Phase.HandleUploadResponse:
+                            HandleUploadResponse();
+                            break;
+
+                        case Phase.WaitingForDto:
+                            WaitForDto();
+                            break;
+
+                        case Phase.WaitingForError:
+                            WaitForError();
+                            break;
+
+                        case Phase.WaitingForSessionRefresh:
+                            WaitForSessionRefresh();
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    HandleUploadException(ex);
+                }
+            }
+
+            private void UpdateUploadProgressBar()
+            {
+                if (_uploadTask == null)
+                    return;
+
+                var now = EditorApplication.timeSinceStartup;
+                if (now - _lastUiUpdate < 0.1d)
+                    return;
+
+                _lastUiUpdate = now;
+
+                var uploadSizeMB = _totalBytes / 1024f / 1024f;
+                var elapsed = _stopwatch?.Elapsed.TotalSeconds ?? 0;
+
+                var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
+                var hasEstimate = _totalBytes > 0 && _estimatedSeconds > 0;
+                var normalizedProgress = hasEstimate
+                    ? Math.Min(elapsed / _estimatedSeconds, 0.95d)
+                    : 0.25d + 0.5d * Math.Abs(Math.Sin(elapsed * 0.5d));
+
+                var isVerifying = hasEstimate && elapsed >= _estimatedSeconds;
+                double? etaSecondsRemaining = null;
+                if (hasEstimate && hasSavedUploadSpeed)
+                    etaSecondsRemaining = Math.Max(_estimatedSeconds - elapsed, 0);
+
+                var progressMessage = !isVerifying
+                    ? hasSavedUploadSpeed && hasEstimate
+                        ? $"Uploading assets... ETA {FormatEta(etaSecondsRemaining)}"
+                        : "Uploading assets..."
+                    : elapsed >= _estimatedSeconds * 2
+                        ? "Still uploading... (taking longer than expected)"
+                        : "Verifying upload with server...";
+
+                if (_suppressDialog)
+                    progressMessage = "[Batch] " + progressMessage;
+
+                var canceled = EditorUtility.DisplayCancelableProgressBar(
+                    $"Uploading \"{_assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
+                    progressMessage,
+                    (float)normalizedProgress);
+
+                if (canceled)
+                    _uploadCancellation?.Cancel();
+            }
+
+            private void HandleUploadResponse()
+            {
+                if (_uploadCancellation is { IsCancellationRequested: true })
+                {
+                    MetaverseProgram.Logger.Log($"Upload cancelled for '{_assetUpsertForm.Name}'.");
+                    _onError?.Invoke("Upload cancelled.");
+                    Complete();
+                    return;
                 }
 
-                var errorTask = uploadResponse.GetErrorAsync();
-                while (!errorTask.IsCompleted)
-                    yield return null;
-
-                if (errorTask.IsCanceled)
+                if (_uploadTask == null)
                 {
-                    MetaverseProgram.Logger.Log($"Upload cancelled for '{assetUpsertForm.Name}'.");
-                    onError?.Invoke("Upload cancelled.");
-                    yield break;
+                    _onError?.Invoke("Unknown upload error.");
+                    Complete();
+                    return;
                 }
 
-                if (errorTask.IsFaulted)
+                if (_uploadTask.IsFaulted)
                 {
-                    HandleUploadException(errorTask.Exception);
-                    yield break;
+                    HandleUploadException(_uploadTask.Exception?.GetBaseException() ?? _uploadTask.Exception);
+                    return;
                 }
 
-                var error = errorTask.Result.ToPrettyErrorString();
-                MetaverseProgram.Logger.Log($"<b><color=red>Upload Failed</color></b> for '{assetUpsertForm.Name}': {error}");
-                var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
-                if (isAuthError)
+                if (_uploadTask.IsCanceled)
                 {
-                    var tokenTask = MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync();
-                    while (!tokenTask.IsCompleted)
-                        yield return null;
-
-                    if (tokenTask.IsCanceled)
-                    {
-                        onError?.Invoke("Authentication error.");
-                        yield break;
-                    }
-
-                    if (tokenTask.IsFaulted)
-                    {
-                        HandleUploadException(tokenTask.Exception);
-                        yield break;
-                    }
-
-                    var tokenResult = tokenTask.Result;
-                    if (tokenResult.Succeeded && !tokenResult.RequiresReauthentication)
-                    {
-                        MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after session refresh (attempt {tries + 1}/3)...");
-                        UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            tries + 1,
-                            suppressDialog);
-                        yield break;
-                    }
-
-                    if (tokenResult.RequiresReauthentication)
-                    {
-                        MetaverseProgram.Logger.Log($"Authentication required. Opening login to retry upload (attempt {tries + 1}/3)...");
-                        MetaverseAccountWindow.Open(() =>
-                        {
-                            UploadBundles(
-                                controller,
-                                bundlePath,
-                                builds,
-                                assetUpsertForm,
-                                onBuildSuccess,
-                                onError,
-                                tries + 1,
-                                suppressDialog);
-                        });
-                        yield break;
-                    }
-
-                    onError?.Invoke("Authentication error.");
-                    yield break;
+                    _onError?.Invoke("Upload cancelled.");
+                    Complete();
+                    return;
                 }
 
-                StoreBundleInfoForRetry(builds);
-                if (!suppressDialog)
+                _uploadResponse = _uploadTask.Result;
+                if (_uploadResponse.Succeeded)
                 {
-                    ShowUploadFailureDialog(error,
-                        () => UploadBundles(
-                            controller,
-                            bundlePath,
-                            builds,
-                            assetUpsertForm,
-                            onBuildSuccess,
-                            onError,
-                            tries + 1,
-                            suppressDialog),
-                        () => onError?.Invoke(error));
+                    ShowFinalizingProgress("Finalizing...");
+                    _dtoTask = _uploadResponse.GetResultAsync();
+                    _phase = Phase.WaitingForDto;
                 }
                 else
                 {
-                    // When dialogs are suppressed (e.g., batch building), we should not
-                    // auto-retry indefinitely with no user feedback. Instead, surface the
-                    // error so callers (like BatchBuilderWindow) can mark the asset as
-                    // failed and continue or stop according to their own policy.
-                    onError?.Invoke(error);
+                    ShowFinalizingProgress("Retrieving error...");
+                    _errorTask = _uploadResponse.GetErrorAsync();
+                    _phase = Phase.WaitingForError;
                 }
             }
-            finally
+
+            private void WaitForDto()
             {
-                DecrementUploadInProgress();
-                uploadCancellation?.Dispose();
-
-                foreach (var stream in openStreams)
-                    try { stream?.Dispose(); } catch { /* ignored */ }
-
-                EditorUtility.ClearProgressBar();
-                if (lockedAssemblies)
-                    EditorApplication.UnlockReloadAssemblies();
-            }
-        }
-
-        private static IEnumerator MonitorUploadProgressRoutine(
-            Task uploadTask,
-            string assetName,
-            long totalBytes,
-            CancellationTokenSource cancellationSource,
-            bool suppressDialog,
-            Action<double> durationCaptured)
-        {
-            var uploadSizeMB = totalBytes / 1024f / 1024f;
-            var hasSavedUploadSpeed = EditorPrefs.HasKey(UploadSpeedPrefKey);
-            var savedUploadSpeed = hasSavedUploadSpeed ? Math.Max(EditorPrefs.GetFloat(UploadSpeedPrefKey), 0f) : 0f;
-            var bytesPerSecondForEstimate = hasSavedUploadSpeed && savedUploadSpeed > 0f
-                ? (double)savedUploadSpeed
-                : DefaultSimulatedBytesPerSecond;
-            var estimatedSeconds = totalBytes <= 0 || bytesPerSecondForEstimate <= 0
-                ? 0
-                : totalBytes / bytesPerSecondForEstimate;
-
-            var sw = Stopwatch.StartNew();
-            var lastUiUpdate = 0d;
-
-            while (!uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
-            {
-                if (Application.internetReachability == NetworkReachability.NotReachable)
+                if (_dtoTask == null)
                 {
-                    cancellationSource.Cancel();
-                    break;
+                    HandleUploadException("Unknown upload response.");
+                    return;
                 }
 
-                var now = EditorApplication.timeSinceStartup;
-                if (now - lastUiUpdate >= 0.1d)
+                if (!_dtoTask.IsCompleted)
                 {
-                    lastUiUpdate = now;
+                    ShowFinalizingProgress("Finalizing...");
+                    return;
+                }
 
-                    var elapsed = sw.Elapsed.TotalSeconds;
-                    var hasEstimate = totalBytes > 0 && estimatedSeconds > 0;
-                    var normalizedProgress = hasEstimate
-                        ? Math.Min(elapsed / estimatedSeconds, 0.95d)
-                        : 0.25d + 0.5d * Math.Abs(Math.Sin(elapsed * 0.5d));
+                if (_dtoTask.IsFaulted)
+                {
+                    HandleUploadException(_dtoTask.Exception?.GetBaseException() ?? _dtoTask.Exception);
+                    return;
+                }
 
-                    var isVerifying = hasEstimate && elapsed >= estimatedSeconds;
-                    double? etaSecondsRemaining = null;
-                    if (hasEstimate && hasSavedUploadSpeed)
-                        etaSecondsRemaining = Math.Max(estimatedSeconds - elapsed, 0);
+                var dto = _dtoTask.Result;
+                var platformString = "\n- " + string.Join("\n- ", _builds.Select(x => x.Platforms.ToString()));
 
-                    var progressMessage = !isVerifying
-                        ? hasSavedUploadSpeed && hasEstimate
-                            ? $"Uploading assets... ETA {FormatEta(etaSecondsRemaining)}"
-                            : "Uploading assets..."
-                        : elapsed >= estimatedSeconds * 2
-                            ? "Still uploading... (taking longer than expected)"
-                            : "Verifying upload with server...";
+                MetaverseProgram.Logger.Log(
+                    $"<b><color=green>Successfully</color></b> uploaded bundles for '{_assetUpsertForm.Name}'.\n{platformString}");
 
-                    if (suppressDialog)
-                        progressMessage = "[Batch] " + progressMessage;
+                if (!_suppressDialog)
+                    EditorUtility.DisplayDialog(
+                        "Upload Successful",
+                        $"\"{_assetUpsertForm.Name}\" was uploaded successfully!{platformString}",
+                        "Ok");
 
-                    var canceled = EditorUtility.DisplayCancelableProgressBar(
-                        $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",
-                        progressMessage,
-                        (float)normalizedProgress);
+                TryPersistUploadSpeed(_totalBytes, _uploadDurationSeconds);
 
-                    if (canceled)
+                if (_assetUpsertForm.Listings != dto.Listings && !_suppressDialog)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Listings Notice",
+                        $"Though you selected {_assetUpsertForm.Listings} listing(s) for your asset, the server only allowed \"{dto.Listings}\". This can " +
+                        "happen if you are not a verified creator. Please check our documentation for publishing requirements.",
+                        "Ok");
+                }
+
+                if (!_owner.Target)
+                {
+                    if (typeof(MetaSpace).IsAssignableFrom(typeof(TAsset)))
                     {
-                        cancellationSource.Cancel();
-                        break;
+                        var asset = FindObjectOfType<TAsset>(true);
+                        if (asset)
+                        {
+                            _owner.ApplyMetaData(new SerializedObject(asset), dto);
+                            _owner.ClearBundleRetryInfo(asset);
+                        }
                     }
                 }
+                else
+                {
+                    _owner.ApplyMetaData(_owner.serializedObject, dto);
+                    _owner.ClearBundleRetryInfo(_owner.Target);
+                }
 
-                yield return null;
+                _onBuildSuccess?.Invoke(dto, _builds);
+                Complete();
             }
 
-            sw.Stop();
-            durationCaptured?.Invoke(sw.Elapsed.TotalSeconds);
-
-            if (uploadTask.IsCompleted && !cancellationSource.IsCancellationRequested)
+            private void WaitForError()
             {
+                if (_errorTask == null)
+                {
+                    HandleUploadException("Unknown upload error.");
+                    return;
+                }
+
+                if (!_errorTask.IsCompleted)
+                {
+                    ShowFinalizingProgress("Retrieving error...");
+                    return;
+                }
+
+                if (_errorTask.IsFaulted)
+                {
+                    HandleUploadException(_errorTask.Exception?.GetBaseException() ?? _errorTask.Exception);
+                    return;
+                }
+
+                var error = (_errorTask.Result?.ToPrettyErrorString() ?? "Unknown error.").ToPrettyErrorString();
+                MetaverseProgram.Logger.Log($"<b><color=red>Upload Failed</color></b> for '{_assetUpsertForm.Name}': {error}");
+
+                var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
+                if (isAuthError)
+                {
+                    ShowFinalizingProgress("Refreshing session...");
+                    _sessionTask = MetaverseProgram.ApiClient.Account.EnsureValidSessionAsync();
+                    _phase = Phase.WaitingForSessionRefresh;
+                    return;
+                }
+
+                _owner.StoreBundleInfoForRetry(_builds);
+                if (!_suppressDialog)
+                {
+                    _owner.ShowUploadFailureDialog(error,
+                        () => _owner.UploadBundles(
+                            _controller,
+                            _bundlePath,
+                            _builds,
+                            _assetUpsertForm,
+                            _onBuildSuccess,
+                            _onError,
+                            _tries + 1,
+                            _suppressDialog),
+                        () => _onError?.Invoke(error));
+                }
+                else
+                {
+                    _onError?.Invoke(error);
+                }
+
+                Complete();
+            }
+
+            private void WaitForSessionRefresh()
+            {
+                if (_sessionTask == null)
+                {
+                    _onError?.Invoke("Authentication error.");
+                    Complete();
+                    return;
+                }
+
+                if (!_sessionTask.IsCompleted)
+                {
+                    ShowFinalizingProgress("Refreshing session...");
+                    return;
+                }
+
+                if (_sessionTask.IsFaulted)
+                {
+                    HandleUploadException(_sessionTask.Exception?.GetBaseException() ?? _sessionTask.Exception);
+                    return;
+                }
+
+                var tokenResult = _sessionTask.Result;
+                if (tokenResult.Succeeded && !tokenResult.RequiresReauthentication)
+                {
+                    MetaverseProgram.Logger.Log($"Authentication error detected. Retrying upload after session refresh (attempt {_tries + 1}/3)...");
+                    _owner.UploadBundles(
+                        _controller,
+                        _bundlePath,
+                        _builds,
+                        _assetUpsertForm,
+                        _onBuildSuccess,
+                        _onError,
+                        _tries + 1,
+                        _suppressDialog);
+                    Complete();
+                    return;
+                }
+
+                if (tokenResult.RequiresReauthentication)
+                {
+                    MetaverseProgram.Logger.Log($"Authentication required. Opening login to retry upload (attempt {_tries + 1}/3)...");
+                    MetaverseAccountWindow.Open(() =>
+                    {
+                        _owner.UploadBundles(
+                            _controller,
+                            _bundlePath,
+                            _builds,
+                            _assetUpsertForm,
+                            _onBuildSuccess,
+                            _onError,
+                            _tries + 1,
+                            _suppressDialog);
+                    });
+                    Complete();
+                    return;
+                }
+
+                _onError?.Invoke("Authentication error.");
+                Complete();
+            }
+
+            private void ShowFinalizingProgress(string message)
+            {
+                var uploadSizeMB = _totalBytes / 1024f / 1024f;
                 EditorUtility.DisplayProgressBar(
-                    $"Uploading \"{assetName}\" ({uploadSizeMB:N2} MB)",
-                    "Finalizing...",
+                    $"Uploading \"{_assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
+                    message,
                     1f);
-                yield return null;
+            }
+
+            private void HandleUploadException(object exception)
+            {
+                var ex = exception as Exception;
+                ex = ex?.GetBaseException() ?? ex;
+                var msg = ex?.ToString() ?? exception?.ToString() ?? "Unknown upload error.";
+
+                MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {msg}");
+
+                if (_builds is { Length: > 0 })
+                    _owner.StoreBundleInfoForRetry(_builds);
+
+                if (!_suppressDialog)
+                {
+                    _owner.ShowUploadFailureDialog(msg,
+                        () => _owner.UploadBundles(
+                            _controller,
+                            _bundlePath,
+                            _builds,
+                            _assetUpsertForm,
+                            _onBuildSuccess,
+                            _onError,
+                            _tries + 1,
+                            _suppressDialog),
+                        () => _onError?.Invoke(ex ?? (object)msg));
+                }
+                else
+                {
+                    _onError?.Invoke(ex ?? (object)msg);
+                }
+
+                Complete();
+            }
+
+            private void UnlockAssemblies()
+            {
+                if (_lockedAssemblies)
+                {
+                    EditorApplication.UnlockReloadAssemblies();
+                    _lockedAssemblies = false;
+                }
+            }
+
+            private void Complete()
+            {
+                if (_phase == Phase.Completed)
+                    return;
+
+                _phase = Phase.Completed;
+                EditorApplication.update -= Update;
+
+                try { EditorUtility.ClearProgressBar(); } catch { /* ignored */ }
+                UnlockAssemblies();
+
+                _uploadCancellation?.Dispose();
+                _uploadCancellation = null;
+
+                foreach (var stream in _openStreams)
+                    try { stream?.Dispose(); } catch { /* ignored */ }
+                _openStreams.Clear();
+
+                DecrementUploadInProgress();
             }
         }
+
         private void ShowUploadFailureDialog(string errorMessage, Action retryCallback = null, Action doneCallback = null)
         {
             EditorUtility.ClearProgressBar();
@@ -1927,16 +2046,16 @@ namespace MetaverseCloudEngine.Unity.Editors
                 "Cancel");
 
             if (retry)
-                retryCallback();
+                retryCallback?.Invoke();
             else
-                doneCallback();
+                doneCallback?.Invoke();
         }
 
         private static void UploadFailure(object error)
         {
             EditorUtility.ClearProgressBar();
             EditorUtility.DisplayDialog("Upload Failed", $"{error.ToPrettyErrorString()}", "Ok");
-            MetaverseProgram.Logger.Log(error.ToString());
+            MetaverseProgram.Logger.Log(error?.ToString() ?? "Unknown upload error.");
         }
 
         private static string FormatEta(double? secondsRemaining)

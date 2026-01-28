@@ -172,15 +172,15 @@ namespace MetaverseCloudEngine.Unity.Editors
                         continue;
                     }
                     
-#if UNITY_2023_1_OR_NEWER
-                    //UnityEditor.QNX.Settings.architecture = EmbeddedArchitecture.Arm64;
-#else
+#if !UNITY_2023_1_OR_NEWER
                     EditorUserBuildSettings.selectedQnxArchitecture = QNXArchitecture.Arm64;
 #endif
                     
-                    AssetDatabase.SaveAssets();
-                    yield return Resources.UnloadUnusedAssets();
+                    AssetDatabase.ReleaseCachedFileHandles();
+
                     EditorUserBuildSettings.SwitchActiveBuildTarget(group, buildTarget);
+
+                    yield return null;
 
                     if (totalProgressPlatforms > 0)
                     {
@@ -199,12 +199,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                         throw new BuildFailedException("There were no valid assets to build.");
                     ApplyPlatformOptions(platformOptions, platform, validAssetNames, group);
 
-                    // Create sub-output directory.
                     var outputFolder = $"{Path.Combine(MetaverseBuildDirectory, targetBundleId)}_Data";
                     if (!Directory.Exists(outputFolder))
                         Directory.CreateDirectory(outputFolder);
 
-                    // Configure editor and settings.
 #if MV_ARFOUNDATION
                     if (buildTarget != BuildTarget.WebGL)
                         UnityEditor.XR.ARSubsystems.ARBuildProcessor.PreprocessBuild(buildTarget);
