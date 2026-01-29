@@ -220,7 +220,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
 
         private void OpenInternal()
         {
-            if (_isDisposed || !_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this))
+            if (_isDisposed || !_spup || (_opening.TryGetValue(_spup, out var openingDevice) && openingDevice != this) || _data == null)
             {
                 if (loggingEnabled)
                     MetaverseProgram.Logger.Log("[SPUP_DEVICE_API] Device open cancelled");
@@ -232,7 +232,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
             try
             {
                 static bool IsHexString(string s) => !string.IsNullOrEmpty(s) && s.All(Uri.IsHexDigit);
-                bool isUsbComPort = (_data.SerialNumber.StartsWith("COM") || _data.PortName.StartsWith("COM")) && _openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb;
+                bool isUsbComPort = ((_data.SerialNumber?.StartsWith("COM") ?? false) || (_data.PortName?.StartsWith("COM")?? false)) && _openSystem is MetaverseSerialPortUtilityInterop.OpenSystem.Usb;
 
                 MetaverseSerialPortUtilityInterop.SetField(_spup, ref _openMethodField, MetaverseSerialPortUtilityInterop.SettableFieldID.OpenMethod, (int)_openSystem);
 
