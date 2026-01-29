@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.6
-- Improvements to the upload flow
+## 2.207.7
+- Add pending bundle upload recovery functionality and enable logging by default
 
-Updated on January 28, 2026
+Updated on January 29, 2026

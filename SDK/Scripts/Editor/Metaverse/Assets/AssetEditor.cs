@@ -121,6 +121,8 @@ namespace MetaverseCloudEngine.Unity.Editors
 
         private static int _activeUploadCount;
 
+        private const string PendingUploadSessionStateKey = "MetaverseCloudEngine_Unity_PendingBundleUpload";
+
         private static bool UploadInProgress => _activeUploadCount > 0;
 
         private static void IncrementUploadInProgress()
@@ -238,6 +240,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 FetchAssetDtoInternal();
                 
                 DrawHeaderGUI();
+
+                DrawPendingUploadResumeUI();
 
                 DrawID();
 
@@ -692,6 +696,283 @@ namespace MetaverseCloudEngine.Unity.Editors
                 if (dto.Succeeded)
                     _assetDto = await dto.GetResultAsync();
             });
+        }
+
+        [Serializable]
+        private sealed class PendingBundleUploadState
+        {
+            [Serializable]
+            public sealed class PendingBuild
+            {
+                public int Platforms;
+                public string OutputPath;
+            }
+
+            public int Version = 1;
+            public string AssetType;
+            public string AssetServerId;
+            public string AssetName;
+            public string BundlePath;
+            public string AssetUpsertFormJson;
+            public bool SuppressDialog;
+            public PendingBuild[] Builds;
+            public long TotalBytes;
+            public string StartedUtc;
+        }
+
+        private static void SavePendingUploadState(PendingBundleUploadState state)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(state);
+                SessionState.SetString(PendingUploadSessionStateKey, json);
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        private static PendingBundleUploadState LoadPendingUploadState()
+        {
+            try
+            {
+                var json = SessionState.GetString(PendingUploadSessionStateKey, null);
+                if (string.IsNullOrWhiteSpace(json))
+                    return null;
+                return JsonConvert.DeserializeObject<PendingBundleUploadState>(json);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static void ClearPendingUploadState()
+        {
+            try
+            {
+                SessionState.EraseString(PendingUploadSessionStateKey);
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        private static void ShowEditorNotification(string message, double seconds = 4d)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+                return;
+
+            EditorApplication.delayCall += () =>
+            {
+                try
+                {
+                    var window = EditorWindow.focusedWindow ?? SceneView.lastActiveSceneView;
+                    if (window == null)
+                        return;
+
+                    window.ShowNotification(new GUIContent(message));
+
+                    var start = EditorApplication.timeSinceStartup;
+                    void Tick()
+                    {
+                        if (EditorApplication.timeSinceStartup - start < seconds)
+                            return;
+                        EditorApplication.update -= Tick;
+                        try { window.RemoveNotification(); } catch { /* ignored */ }
+                    }
+
+                    EditorApplication.update += Tick;
+                }
+                catch
+                {
+                    // ignored
+                }
+            };
+        }
+
+        private static IEnumerable<Platform> ExpandPlatformFlags(Platform platforms)
+        {
+            foreach (Platform p in Enum.GetValues(typeof(Platform)))
+            {
+                if ((int)p == 0)
+                    continue;
+                if (platforms.HasFlag(p))
+                    yield return p;
+            }
+        }
+
+        private static string BuildPendingUploadVerificationKey(PendingBundleUploadState state)
+        {
+            return state == null
+                ? null
+                : $"{state.AssetType}|{state.AssetServerId}";
+        }
+
+        private static readonly Dictionary<string, Task<(bool completed, TAssetDto dto, string error)>> PendingUploadVerificationTasks = new();
+
+        private void DrawPendingUploadResumeUI()
+        {
+            if (UploadInProgress)
+                return;
+
+            var state = LoadPendingUploadState();
+            if (state == null)
+                return;
+
+            // Only surface the prompt for the matching asset type & server id.
+            if (!string.Equals(state.AssetType, typeof(TAsset).AssemblyQualifiedName, StringComparison.Ordinal))
+                return;
+
+            var localServerId = _idProperty?.stringValue;
+            if (!string.IsNullOrWhiteSpace(state.AssetServerId) &&
+                !string.Equals(state.AssetServerId, localServerId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var buildCount = state.Builds?.Length ?? 0;
+            if (buildCount <= 0)
+            {
+                ClearPendingUploadState();
+                return;
+            }
+
+            // If the upload actually completed during an assembly/domain reload, we won't see the
+            // success log/dialog. Do a one-time server verification and auto-clear if completed.
+            if (Guid.TryParse(state.AssetServerId, out var verifyId) &&
+                MetaverseProgram.ApiClient?.Account?.IsLoggedIn == true)
+            {
+                var verificationKey = BuildPendingUploadVerificationKey(state);
+                if (!string.IsNullOrWhiteSpace(verificationKey))
+                {
+                    if (!PendingUploadVerificationTasks.TryGetValue(verificationKey, out var verificationTask))
+                    {
+                        PendingUploadVerificationTasks[verificationKey] = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                var response = await Controller.FindAsync(verifyId);
+                                if (!response.Succeeded)
+                                    return (false, default, await response.GetErrorAsync());
+
+                                var dto = await response.GetResultAsync();
+                                var requiredPlatforms = state.Builds
+                                    .SelectMany(b => ExpandPlatformFlags((Platform)b.Platforms))
+                                    .Distinct()
+                                    .ToArray();
+
+                                var uploadedPlatforms = (dto?.Platforms ?? Array.Empty<AssetPlatformDocumentDto>())
+                                    .Select(p => p.Platform)
+                                    .Distinct()
+                                    .ToHashSet();
+
+                                var missing = requiredPlatforms.Where(rp => !uploadedPlatforms.Contains(rp)).ToArray();
+                                return (missing.Length == 0, dto, missing.Length == 0 ? null : $"Missing platforms: {string.Join(", ", missing)}");
+                            }
+                            catch (Exception e)
+                            {
+                                return (false, default, e.Message);
+                            }
+                        });
+
+                        verificationTask = PendingUploadVerificationTasks[verificationKey];
+                    }
+
+                    if (!verificationTask.IsCompleted)
+                    {
+                        EditorGUILayout.HelpBox("Checking server to see if the upload already finished...", MessageType.Info);
+                    }
+                    else
+                    {
+                        PendingUploadVerificationTasks.Remove(verificationKey);
+
+                        if (verificationTask.IsFaulted)
+                        {
+                            // Fall through to resume UI.
+                        }
+                        else
+                        {
+                            var (completed, dto, error) = verificationTask.Result;
+                            if (completed && dto != null)
+                            {
+                                MetaverseProgram.Logger.Log($"<b><color=green>Successfully</color></b> uploaded bundles for '{state.AssetName ?? dto.Name}'. (Recovered after assembly reload)");
+                                ShowEditorNotification($"Upload complete: {state.AssetName ?? dto.Name}");
+
+                                try
+                                {
+                                    ApplyMetaData(serializedObject, dto);
+                                }
+                                catch
+                                {
+                                    // ignored
+                                }
+
+                                ClearPendingUploadState();
+                                GUIUtility.ExitGUI();
+                                return;
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(error))
+                                EditorGUILayout.HelpBox($"Server status check: {error}", MessageType.Warning);
+                        }
+                    }
+                }
+            }
+
+            var missingBuilds = state.Builds.Where(b => string.IsNullOrWhiteSpace(b?.OutputPath) || !File.Exists(b.OutputPath)).ToArray();
+            var hasMissing = missingBuilds.Length > 0;
+
+            var msg = new StringBuilder();
+            msg.AppendLine("A bundle upload appears to have been interrupted (likely by an assembly/domain reload). ");
+            msg.AppendLine($"Pending bundles: {buildCount}");
+            if (hasMissing)
+                msg.AppendLine($"Missing bundle files: {missingBuilds.Length} (rebuild may be required)");
+
+            EditorGUILayout.HelpBox(msg.ToString().TrimEnd(), hasMissing ? MessageType.Warning : MessageType.Info);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUI.BeginDisabledGroup(hasMissing);
+                if (GUILayout.Button("Resume Upload", GUILayout.Height(22)))
+                {
+                    try
+                    {
+                        var form = !string.IsNullOrWhiteSpace(state.AssetUpsertFormJson)
+                            ? JsonConvert.DeserializeObject<TAssetUpsertForm>(state.AssetUpsertFormJson)
+                            : GetUpsertForm(Guid.TryParse(localServerId, out var id) ? id : null, Target, willUpload: true);
+
+                        var builds = state.Builds
+                            .Select(b => new MetaverseAssetBundleAPI.BundleBuild
+                            {
+                                OutputPath = b.OutputPath,
+                                Platforms = (Platform)b.Platforms,
+                            })
+                            .ToArray();
+
+                        MetaverseProgram.Logger.Log($"Resuming interrupted bundle upload for '{state.AssetName ?? Target?.MetaData?.Name ?? Target?.name}'.");
+
+                        // Clear first so a second reload doesn't cause repeated prompts.
+                        ClearPendingUploadState();
+                        UploadBundles(Controller, state.BundlePath, builds, form, suppressDialog: state.SuppressDialog);
+                    }
+                    catch (Exception e)
+                    {
+                        MetaverseProgram.Logger.Log($"Failed to resume upload: {e.Message}");
+                    }
+
+                    GUIUtility.ExitGUI();
+                }
+                EditorGUI.EndDisabledGroup();
+
+                if (GUILayout.Button("Dismiss", GUILayout.Height(22)))
+                {
+                    ClearPendingUploadState();
+                    GUIUtility.ExitGUI();
+                }
+            }
         }
 
         protected virtual Texture2D AutoCaptureThumbnail(TAsset asset)
@@ -1585,6 +1866,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 AssetPlatformUpsertOptions[] platformOptions;
                 try
                 {
+                    PersistPendingUploadState();
+
                     platformOptions = _builds.Select(x =>
                     {
                         var stream = File.OpenRead(x.OutputPath);
@@ -1638,7 +1921,48 @@ namespace MetaverseCloudEngine.Unity.Editors
                 }
 
                 _phase = Phase.Uploading;
+
+                Update();
+
                 EditorApplication.update += Update;
+            }
+
+            private void PersistPendingUploadState()
+            {
+                try
+                {
+                    var ownerId = _owner?._idProperty?.stringValue;
+                    var formId = _assetUpsertForm?.Id?.ToString();
+                    var serverId = !string.IsNullOrWhiteSpace(formId) ? formId : ownerId;
+                    var state = new PendingBundleUploadState
+                    {
+                        AssetType = typeof(TAsset).AssemblyQualifiedName,
+                        AssetServerId = serverId,
+                        AssetName = _assetUpsertForm?.Name,
+                        BundlePath = _bundlePath,
+                        AssetUpsertFormJson = JsonConvert.SerializeObject(_assetUpsertForm),
+                        SuppressDialog = _suppressDialog,
+                        Builds = _builds
+                            ?.Select(b => new PendingBundleUploadState.PendingBuild
+                            {
+                                Platforms = (int)b.Platforms,
+                                OutputPath = b.OutputPath,
+                            })
+                            .ToArray(),
+                        TotalBytes = _builds?.Sum(b =>
+                        {
+                            try { return new FileInfo(b.OutputPath).Length; }
+                            catch { return 0L; }
+                        }) ?? 0,
+                        StartedUtc = DateTime.UtcNow.ToString("O"),
+                    };
+
+                    SavePendingUploadState(state);
+                }
+                catch
+                {
+                    // ignored
+                }
             }
 
             private void Update()
@@ -1652,6 +1976,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         Application.internetReachability == NetworkReachability.NotReachable)
                     {
                         _uploadCancellation.Cancel();
+                        MetaverseProgram.Logger.Log("Internet not reachable. Download cancelled.");
                     }
 
                     switch (_phase)
@@ -1741,6 +2066,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                 if (_uploadCancellation is { IsCancellationRequested: true })
                 {
                     MetaverseProgram.Logger.Log($"Upload cancelled for '{_assetUpsertForm.Name}'.");
+                    if (_suppressDialog)
+                        ShowEditorNotification($"Upload cancelled: {_assetUpsertForm.Name}");
                     _onError?.Invoke("Upload cancelled.");
                     Complete();
                     return;
@@ -1761,6 +2088,8 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 if (_uploadTask.IsCanceled)
                 {
+                    if (_suppressDialog)
+                        ShowEditorNotification($"Upload cancelled: {_assetUpsertForm.Name}");
                     _onError?.Invoke("Upload cancelled.");
                     Complete();
                     return;
@@ -1812,6 +2141,8 @@ namespace MetaverseCloudEngine.Unity.Editors
                         "Upload Successful",
                         $"\"{_assetUpsertForm.Name}\" was uploaded successfully!{platformString}",
                         "Ok");
+                else
+                    ShowEditorNotification($"Upload complete: {_assetUpsertForm.Name}");
 
                 TryPersistUploadSpeed(_totalBytes, _uploadDurationSeconds);
 
@@ -1868,6 +2199,14 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 var error = (_errorTask.Result?.ToPrettyErrorString() ?? "Unknown error.").ToPrettyErrorString();
                 MetaverseProgram.Logger.Log($"<b><color=red>Upload Failed</color></b> for '{_assetUpsertForm.Name}': {error}");
+
+                if (_suppressDialog)
+                {
+                    var shortError = error;
+                    if (!string.IsNullOrWhiteSpace(shortError) && shortError.Length > 140)
+                        shortError = shortError[..140] + "...";
+                    ShowEditorNotification($"Upload failed: {_assetUpsertForm.Name}\n{shortError}");
+                }
 
                 var isAuthError = error.Contains("Unauthorized") || error.Contains("401");
                 if (isAuthError)
@@ -1979,6 +2318,14 @@ namespace MetaverseCloudEngine.Unity.Editors
 
                 MetaverseProgram.Logger.Log($"<b><color=red>Exception</color></b> during upload: {msg}");
 
+                if (_suppressDialog)
+                {
+                    var shortError = msg;
+                    if (!string.IsNullOrWhiteSpace(shortError) && shortError.Length > 140)
+                        shortError = shortError[..140] + "...";
+                    ShowEditorNotification($"Upload error: {_assetUpsertForm.Name}\n{shortError}");
+                }
+
                 if (_builds is { Length: > 0 })
                     _owner.StoreBundleInfoForRetry(_builds);
 
@@ -2030,6 +2377,9 @@ namespace MetaverseCloudEngine.Unity.Editors
                 foreach (var stream in _openStreams)
                     try { stream?.Dispose(); } catch { /* ignored */ }
                 _openStreams.Clear();
+
+                // If we reach completion normally, clear any pending-resume marker.
+                ClearPendingUploadState();
 
                 DecrementUploadInProgress();
             }
