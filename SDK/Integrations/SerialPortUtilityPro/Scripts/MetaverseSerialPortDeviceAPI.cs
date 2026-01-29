@@ -13,7 +13,7 @@ namespace MetaverseCloudEngine.Unity.SPUP
     /// </summary>
     public class MetaverseSerialPortDeviceAPI : IDisposable
     {
-        public bool loggingEnabled = true;
+        public bool loggingEnabled = false;
         [Tooltip("The serial port utility component.")]
         public readonly UnityEvent<string> OnDeviceName = new();
         [Tooltip("Invoked when the device starts opening.")]

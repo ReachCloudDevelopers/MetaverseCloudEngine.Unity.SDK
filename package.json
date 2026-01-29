@@ -1,7 +1,7 @@
 {
   "name": "com.reachcloud.metaverse-cloud-sdk",
-  "version": "2.207.8",
-  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.8\n- Fix null reference handling in OpenInternal method of MetaverseSerialPortDeviceAPI\n\nUpdated on January 29, 2026\n\n## 2.207.7\n- Add pending bundle upload recovery functionality and enable logging by default\n\nUpdated on January 29, 2026\n\n## 2.207.6\n- Improvements to the upload flow\n\nUpdated on January 28, 2026\n\n## 2.207.5\n- Refactor MetaverseScriptTitleBarEditor to remove custom title bar implementation, relying on Unity's built-in header functionality.\n\nUpdated on January 24, 2026\n\n## 2.207.4\n- Add recommended locomotion settings to VRIKTrackerWeightsManager\n\nUpdated on January 20, 2026",
+  "version": "2.207.9",
+  "description": "The Unity SDK for the Metaverse Cloud Engine\n\n# Changelog\n\n## 2.207.9\n- disable logging by default in MetaverseSerialPortDeviceAPI\n\nUpdated on January 29, 2026\n\n## 2.207.8\n- Fix null reference handling in OpenInternal method of MetaverseSerialPortDeviceAPI\n\nUpdated on January 29, 2026\n\n## 2.207.7\n- Add pending bundle upload recovery functionality and enable logging by default\n\nUpdated on January 29, 2026\n\n## 2.207.6\n- Improvements to the upload flow\n\nUpdated on January 28, 2026\n\n## 2.207.5\n- Refactor MetaverseScriptTitleBarEditor to remove custom title bar implementation, relying on Unity's built-in header functionality.\n\nUpdated on January 24, 2026\n\n## 2.207.4\n- Add recommended locomotion settings to VRIKTrackerWeightsManager\n\nUpdated on January 20, 2026",
   "author": "Reach Cloud",
   "unity": "2022.3",
   "displayName": "Metaverse Cloud Engine Unity SDK",

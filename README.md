@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.8
-- Fix null reference handling in OpenInternal method of MetaverseSerialPortDeviceAPI
+## 2.207.9
+- disable logging by default in MetaverseSerialPortDeviceAPI
 
 Updated on January 29, 2026
