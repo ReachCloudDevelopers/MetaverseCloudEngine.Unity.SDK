@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.9
-- disable logging by default in MetaverseSerialPortDeviceAPI
+## 2.207.10
+- Add DisableARCoreExtensionsMultiplePluginsError to suppress ARCore Extensions error logs
 
-Updated on January 29, 2026
+Updated on February 02, 2026
