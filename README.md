@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.11
-- Remove unused upload state management and improve upload handling
+## 2.207.12
+- Fixed stalling uploads
 
 Updated on February 04, 2026

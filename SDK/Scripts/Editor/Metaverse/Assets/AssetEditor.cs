@@ -1450,7 +1450,7 @@ namespace MetaverseCloudEngine.Unity.Editors
             int tries = 0,
             bool suppressDialog = false)
         {
-            UploadBundlesInternal(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog);
+            UploadBundlesInternal(controller, bundlePath, builds, assetUpsertForm, onBuildSuccess, onError, tries, suppressDialog: suppressDialog);
         }
 
         private void UploadBundlesInternal(
@@ -1500,7 +1500,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             onBuildSuccess,
                             onError,
                             tries + 1,
-                            suppressDialog);
+                            suppressDialog: suppressDialog);
                     }
                     else
                     {
@@ -1530,7 +1530,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                             onBuildSuccess,
                             onError,
                             0,
-                            suppressDialog);
+                            suppressDialog: suppressDialog);
                     }
                     else
                     {
@@ -1569,7 +1569,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         buildsArray,
                         suppressDialog,
                         onError,
-                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog));
+                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog: suppressDialog));
                     return;
                 }
 
@@ -1598,10 +1598,10 @@ namespace MetaverseCloudEngine.Unity.Editors
                 try
                 {
                     // Keep it simple/synchronous: no state machine; just wait until the upload task completes.
-                    uploadTask = controller.UpsertPlatformsAsync(
+                    uploadTask = Task.Run(async () => await controller.UpsertPlatformsAsync(
                         platformOptions,
                         form: assetUpsertForm,
-                        cancellationToken: uploadCancellation.Token);
+                        cancellationToken: uploadCancellation.Token));
                 }
                 catch (Exception ex)
                 {
@@ -1611,7 +1611,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         buildsArray,
                         suppressDialog,
                         onError,
-                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog));
+                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog: suppressDialog));
                     return;
                 }
 
@@ -1668,16 +1668,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         if (suppressDialog)
                             progressMessage = "[Batch] " + progressMessage;
 
-                        if (suppressDialog)
-                        {
-                            EditorUtility.DisplayProgressBar(
-                                $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
-                                progressMessage,
-                                (float)normalizedProgress);
-                        }
-                        else
-                        {
-                            var canceled = EditorUtility.DisplayCancelableProgressBar(
+                        var canceled = EditorUtility.DisplayCancelableProgressBar(
                                 $"Uploading \"{assetUpsertForm.Name}\" ({uploadSizeMB:N2} MB)",
                                 progressMessage,
                                 (float)normalizedProgress);
@@ -1687,7 +1678,6 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 CancelUpload();
                                 return;
                             }
-                        }
                     }
 
                     Thread.Sleep(10);
@@ -1711,7 +1701,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                         buildsArray,
                         suppressDialog,
                         onError,
-                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog));
+                        () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog: suppressDialog));
                     return;
                 }
 
@@ -1816,7 +1806,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                     onBuildSuccess,
                                     onError,
                                     tries + 1,
-                                    suppressDialog);
+                                    suppressDialog: suppressDialog);
                                 return;
                             }
 
@@ -1833,7 +1823,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                         onBuildSuccess,
                                         onError,
                                         tries + 1,
-                                        suppressDialog);
+                                        suppressDialog: suppressDialog);
                                 });
                                 return;
                             }
@@ -1846,7 +1836,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 buildsArray,
                                 suppressDialog,
                                 onError,
-                                () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog));
+                                () => UploadBundles(controller, bundlePath, buildsArray, assetUpsertForm, onBuildSuccess, onError, tries + 1, suppressDialog: suppressDialog));
                             return;
                         }
 
@@ -1866,7 +1856,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                                 onBuildSuccess,
                                 onError,
                                 tries + 1,
-                                suppressDialog),
+                                suppressDialog: suppressDialog),
                             () => onError?.Invoke(error));
                     }
                     else
