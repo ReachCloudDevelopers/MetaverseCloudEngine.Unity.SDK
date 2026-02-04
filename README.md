@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.10
-- Add DisableARCoreExtensionsMultiplePluginsError to suppress ARCore Extensions error logs
+## 2.207.11
+- Remove unused upload state management and improve upload handling
 
-Updated on February 02, 2026
+Updated on February 04, 2026
