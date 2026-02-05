@@ -74,6 +74,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                 UnityEditor.OSXStandalone.UserBuildSettings.architecture = UnityEditor.Build.OSArchitecture.ARM64;
 #endif
 
+            var assetsToCleanup = new HashSet<string>();
             preProcessBuild?.Invoke();
             try
             {
@@ -195,6 +196,7 @@ namespace MetaverseCloudEngine.Unity.Editors
                     var validAssetNames = new List<string>();
 
                     CollectAssetNamesFromAssetBundleDependencies(dependencies, targetBundleId, validAssetNames);
+                    assetsToCleanup.UnionWith(validAssetNames);
                     if (validAssetNames.Count == 0)
                         throw new BuildFailedException("There were no valid assets to build.");
                     ApplyPlatformOptions(platformOptions, platform, validAssetNames, group);
@@ -413,6 +415,8 @@ namespace MetaverseCloudEngine.Unity.Editors
             }
             finally
             {
+                CleanupAssetBundleNames(assetsToCleanup.ToList());
+
                 if (lockedAssemblies)
                     EditorApplication.UnlockReloadAssemblies();
                 postProcessBuild?.Invoke();
@@ -494,6 +498,20 @@ namespace MetaverseCloudEngine.Unity.Editors
                 validAssetNames.Add(assetName);
                 if (AssetDatabase.WriteImportSettingsIfDirty(assetName))
                     AssetDatabase.ImportAsset(assetName, ImportAssetOptions.DontDownloadFromCacheServer);
+            }
+        }
+
+        private static void CleanupAssetBundleNames(List<string> assetNames)
+        {
+            foreach (var assetName in assetNames)
+            {
+                var importer = AssetImporter.GetAtPath(assetName);
+                if (importer != null)
+                {
+                    importer.SetAssetBundleNameAndVariant(string.Empty, string.Empty);
+                    if (AssetDatabase.WriteImportSettingsIfDirty(assetName))
+                        AssetDatabase.ImportAsset(assetName, ImportAssetOptions.DontDownloadFromCacheServer);
+                }
             }
         }
 

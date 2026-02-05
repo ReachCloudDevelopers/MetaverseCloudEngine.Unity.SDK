@@ -12,7 +12,7 @@ This package enables you to install the Metaverse Cloud Engine SDK and perform a
 
 # Changelog
 
-## 2.207.12
-- Fixed stalling uploads
+## 2.207.13
+- Add asset cleanup functionality in BuildAssetBundle process
 
-Updated on February 04, 2026
+Updated on February 05, 2026
